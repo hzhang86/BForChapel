@@ -1,0 +1,8 @@
+#!/bin/bash
+
+echo "COPYing all the files in BFC_StaticAnalysis to build and llvm/lib folders"
+cp /export/home/hzhang86/BForChapel/BFC_StaticAnalysis/* /export/home/hzhang86/chapel/chapel/third-party/llvm/build/linux64-gnu/lib/Transforms/BFC
+
+cp /export/home/hzhang86/chapel/chapel/third-party/llvm/build/linux64-gnu/lib/Transforms/BFC/* /export/home/hzhang86/chapel/chapel/third-party/llvm/llvm/lib/Transforms/BFC/
+
+
