@@ -1,3 +1,12 @@
+/*
+ *  FunctionBFC.h
+ *  Class definition for a function in the source program
+ *  Main member function: firstPass
+ *
+ *  Created by Hui Zhang on 03/18/15
+ *  Copyright 2015 __MyCompanyName__. All rights reserved.
+ *
+ */
 #include <string>
 #include <algorithm>
 #include <set>
@@ -31,16 +40,22 @@ struct eqstr {
     }
 };
 
-struct ExternFunctionBlame {
+struct ExternFunctionBFC {
     
     std::string funcName;
     std::set<int> paramNums;
     
-    ExternFunctionBlame(std::string s) {
+    ExternFunctionBFC(std::string s) {
         funcName = s;
     }
 };
 
-typedef std::hash_map<const char*, ExternFunctionBlame *, std::hash<const char*>, eqstr> ExternFuncBlameHash;
+typedef std::hash_map<const char*, ExternFunctionBFC *, std::hash<const char*>, eqstr> ExternFuncBFCHash;
 
 
+
+///////////////////////// Generic Public Calls ///////////////////////////////
+public:
+    void firstPass(Function *F, std::vector<NodeProps *> &globalVars,
+            ExternFuncBFCHash &efInfo, std::ostream &blame_file,
+            std::ostream &blame_se_file, std::ostream &call_file, int &numMissing);
