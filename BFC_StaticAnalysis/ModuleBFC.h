@@ -4,6 +4,7 @@
  *  including global variables and functions
  *
  *  Created by Hui Zhang on 02/16/15.
+ *  Previous contribution by Nick Rutar
  *  Copyright 2015 __MyCompanyName__. All rights reserved.
  *
  */

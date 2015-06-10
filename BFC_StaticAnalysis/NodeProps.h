@@ -4,6 +4,7 @@
  *  Data structure to keep info of global var/local var/parameter 
  *
  *  Created by Hui Zhang on 02/26/15.
+ *  Previous contribution by Nick Rutar 
  *  Copyright 2015 __MyCompanyName__. All rights reserved.
  *
  */
@@ -112,23 +113,22 @@ namespace std
 class ExitSuper;
 class NodeProps;
 struct StructField;
-struct StructBlame;
+struct StructBFC;
 struct ImpNodeProps;
-class FunctionBlameBB;
+class FunctionBFCBB;
  
 struct FuncCall {
-  int paramNumber;
-  string funcName;
-	int lineNum;
-  ExitSuper * es;
+    int paramNumber;
+    string funcName;
+    int lineNum;
+    ExitSuper * es;
 	short resolveStatus;
-  NodeProps * param;
+    NodeProps * param;
 	bool outputEvaluated;
 	
-  FuncCall(int pN, string fn)
-  {
-    paramNumber = pN;
-    funcName = fn;
+    FuncCall(int pN, string fn) {
+        paramNumber = pN;
+        funcName = fn;
 		lineNum = 0;
 		resolveStatus = NOT_RESOLVED;
 		param = NULL;
@@ -167,7 +167,7 @@ public:
 	bool operator<(NodeProps rhs) { return line_num < rhs.line_num; }
 	
 	
-	static bool LinenumSort(const NodeProps * d1, const NodeProps * d2)
+	static bool LinenumSort(const NodeProps *d1, const NodeProps *d2)
 	{
 		return d1->line_num < d2->line_num;
 	}
@@ -177,7 +177,7 @@ public:
 	void getStructName(std::string & structName, std::set<NodeProps *> & visited);
 	
     int number;
-	int impNumber;
+	int impNumber; // Don't know what's it
 	
 	
 	// this is for imp vertices, assume they are all exported
@@ -272,7 +272,7 @@ public:
 	
 	// Field info
 	StructField * sField;
-	StructBlame * sBlame;
+	StructBFC * sBFC;
 	
     set<int> lineNumbers;
 	set<int> descLineNumbers;
@@ -341,7 +341,7 @@ public:
 	Value * collapsed_inst;
 	
 	BasicBlock * bb;
-    FunctionBlameBB * fbb;
+    FunctionBFCBB * fbb;
 	
   //Up Pointers
 	NodeProps * dpUpPtr;
@@ -365,7 +365,7 @@ public:
 	// For each line number, the order at which the statement appeared
 	int lineNumOrder;
   
-    NodeProps(int nu, string na, int ln, Value * pi)
+    NodeProps(int nu, string na, int ln, Value *pi)
     {
         number = nu;
 		impNumber = -1;
@@ -398,7 +398,7 @@ public:
 		resolved = false;
 		
 		sField = NULL;
-		sBlame = NULL;
+		sBFC = NULL;
 		
 		bb = NULL;
 		fbb = NULL;
@@ -461,8 +461,20 @@ public:
 			
 	}
   
-    void addFuncCall(FuncCall * fc);// {funcCalls.push_back(fc);}
+    void addFuncCall(FuncCall *fc) //Moved Implementation from ..Graph.cpp
+    {
+        std::set<FuncCall*>::iterator vec_fc_i;
   
+        for (vec_fc_i = funcCalls.begin(); vec_fc_i != funcCalls.end(); vec_fc_i++){
+		    if ((*vec_fc_i)->funcName == fc->funcName && (*vec_fc_i)->paramNumber == fc->paramNumber) {
+			return;
+		    }
+	    }
+	    //std::cout<<"Pushing back call to "<<fc->funcName<<" param "<<fc->paramNumber<<" for vertex "<<name<<std::endl;
+        funcCalls.insert(fc);
+    }
+
+ 
 };
 
 #endif

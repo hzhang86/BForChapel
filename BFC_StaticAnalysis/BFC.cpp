@@ -1,3 +1,15 @@
+/*
+*  BFC.cpp    
+*  
+*  Comments:
+*  Implementation file for BFC.h 
+*  Most important:  runOnModule
+*
+*  Created by Hui Zhang on 02/10/15.
+*  Previous contribution by Nick Rutar
+*  Copyright 2015 __MyCompanyName__. All rights reserved.
+*
+*/
 #include "BFC.h"
 #include "ModuleBFC.h"
 #include "NodeProps.h"
@@ -11,7 +23,7 @@
 
 using namespace std;
 
-void importSharedBlame(const char *path, ExternFuncBlameHash &externFuncInformation)
+void importSharedBFC(const char *path, ExternFuncBFCHash &externFuncInformation)
 {
     ifstream bI(path);
     string line;
@@ -24,7 +36,7 @@ void importSharedBlame(const char *path, ExternFuncBlameHash &externFuncInformat
         ss >> buf;
         name = buf; //assign name of the func
 
-        ExternFunctionBlame *ef = new ExternFunctionBlame(name);
+        ExternFunctionBFC *ef = new ExternFunctionBFC(name);
 
         while (ss >> buf) {
             ef->paramNums.insert(atoi(buf.c_str()));
@@ -37,14 +49,15 @@ void importSharedBlame(const char *path, ExternFuncBlameHash &externFuncInformat
 bool BFC::runOnModule(Module &M)
 {
     cerr<<"IN run on module"<<endl;
+    cerr<<"Module name: "<<M.getModuleIdentifier()<<endl;
     ModuleBFC *bm = new ModuleBFC(&M); //address of a ref=address of the 
 					   //address of the object it refers to
 
     ////////////////// GLOBAL VARIABLES ////////////////////////////////////////////
     vector<NodeProps *> globalVars;
     int globalNumber = 0; //global variable index
-
-/*    for (Module::global_iterator gI = M.getGlobalList().begin(), 
+/*
+    for (Module::global_iterator gI = M.getGlobalList().begin(), 
         gE = M.getGlobalList().end(); gI != gE; ++gI)
     {
 	    GlobalVariable *gv = gI;
@@ -66,6 +79,7 @@ bool BFC::runOnModule(Module &M)
                 globalVars.push_back(v);
             }
 	    }
+
     }
 */
     Finder.processModule(M);//That's it, all DIDescriptors are stored in Vecs:
@@ -75,7 +89,6 @@ bool BFC::runOnModule(Module &M)
 	    E = Finder.global_variable_end(); I != E; I++) {
 
         DIGlobalVariable *dgv = new DIGlobalVariable(*I);
-
         if (dgv->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
         //TODO: Distinguish user funcs from library funcs in the same dir
 #ifdef DEBUG_P
@@ -105,7 +118,6 @@ bool BFC::runOnModule(Module &M)
 	    E = Finder.type_end(); I != E; I++) {
         
         DIType *dt = new DIType(*I); //create an instance of DIType, not a ptr
-        
         if (dt->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
 #ifdef DEBUG_P
             cout<<"Same Path DIType: "<<dt->getName().str()<<endl;
@@ -116,11 +128,11 @@ bool BFC::runOnModule(Module &M)
     }
 
 //  Make records of the information of external library functions  //
-    ExternFuncBlameHash externFuncInformation;
+    ExternFuncBFCHash externFuncInformation;
     
-    importSharedBlame("/export/home/hzhang86/BForChapel/BFC_StaticAnalysis/SHARED/mpi.bs", externFuncInformation);
-    importSharedBlame("/export/home/hzhang86/BForChapel/BFC_StaticAnalysis/SHARED/fortran.bs", externFuncInformation);
-    importSharedBlame("/export/home/hzhang86/BForChapel/BFC_StaticAnalysis/SHARED/cblas.bs", externFuncInformation);
+    importSharedBFC("/export/home/hzhang86/BForChapel/BFC_StaticAnalysis/SHARED/mpi.bs", externFuncInformation);
+    importSharedBFC("/export/home/hzhang86/BForChapel/BFC_StaticAnalysis/SHARED/fortran.bs", externFuncInformation);
+    importSharedBFC("/export/home/hzhang86/BForChapel/BFC_StaticAnalysis/SHARED/cblas.bs", externFuncInformation);
 //  NOT SURE THE ABOVE IS NEEDED FOR Chapel Program //
 
     // SETUP all the exports files 
@@ -171,26 +183,31 @@ bool BFC::runOnModule(Module &M)
 	    E = Finder.subprogram_end(); I != E; I++) {
 
         DISubprogram *dsp = new DISubprogram(*I);
-        
         if (dsp->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
-
-            Function *F = dsp->getFunction();
+            std::string dspName = dsp->getName().str();
+            if (dspName.find("chpl") == std::string::npos) { //no chpl in user funcNm
+                //if (!dspName.empty() && (*(dspName.begin()) != '_')) { //no '_XXX'
+                if (dspName.compare("main")==0 || dspName.compare("sayhello")==0 ||\
+                    dspName.compare("factorial")==0) {
+                    Function *F = dsp->getFunction();
 #ifdef DEBUG_P
-            cout<<"Same directory of DISP: "<<dsp->getName().str()<< \
-                " is "<<dsp->getDirectory().str()<<endl;
-            cout<<"Corresponding Function is: "<<F->getName().str()<<endl;
+                    cout<<"Same directory of DISP: "<<dsp->getName().str()<< \
+                        " is "<<dsp->getDirectory().str()<<endl;
+                    cout<<"Corresponding Function is: "<<F->getName().str()<<endl;
 #endif
-            if (F->isDeclaration()) //Function: public GlobalValue->isDeclaration
-                continue;
-            else 
-                knownFuncNames.insert(F->getName().str().c_str());
+                    if (F->isDeclaration())//GlobalValue->isDeclaration
+                        continue;
+                    else 
+                        knownFuncNames.insert(F->getName().str().c_str());
+                }
+            }
         }
     }
 
 
     //////////////// FIRST PASS ////////////////////////////////////
        
-    FuncBlameHash funcInformation;
+    FuncBFCHash funcInformation;
 
     int numMissing = 0;
     int numMEV = 0;
@@ -202,48 +219,56 @@ bool BFC::runOnModule(Module &M)
 	    E = Finder.subprogram_end(); I != E; I++) {
 
         DISubprogram *dsp = new DISubprogram(*I);
-        
         if (dsp->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
-
-            Function *F = dsp->getFunction();
-            FunctionBlame *fb;
-
-            if (F->isDeclaration())
-                continue;
-            else {
-                // Run regular blame calculation
-                fb = new FunctionBlame(F, knownFuncNames);
-                fb->setModule(&M);
-                fb->setModuleBlame(bm);
-
-                calls_file<<"FUNCTION "<<F->getName().str()<<endl;
-                fb->firstPass(F, globalVars, externFuncInformation, 
-                    blame_file, blame_se_file, calls_file, numMissing);
-                calls_file<<"END FUNCTION "<<endl;
-
-                int numMEVL = 0;
-                int numMEV2L = 0;
-                int numMEV3L = 0;
+            std::string dspName = dsp->getName().str();
+            if (dspName.find("chpl") == std::string::npos) { //no chpl in user funcNm
+                //if (!dspName.empty() && (*(dspName.begin()) != '_'))  //no '_XXX'
+                if (dspName.compare("main")==0 || dspName.compare("sayhello")==0 ||\
+                    dspName.compare("factorial")==0) {
                 
-                fb->moreThanOneEV(numMEVL, numMEV2L, numMEV3L);
+                    Function *F = dsp->getFunction();
+                    FunctionBFC *fb;
 
-                numMEV += numMEVL;
-                numMEV2 += numMEV2L;
-                numMEV3 += numMEV3L;
+                    if (F->isDeclaration())
+                        continue;
+                    else {
+                        // Run regular blame calculation
+                        fb = new FunctionBFC(F, knownFuncNames);
+                        fb->setModule(&M);
+                        fb->setModuleBFC(bm);
 
-                fb->exportParams(params_file);
-                params_file<<"NEVs - "<<numMEVL<<" "<<numMEV2L<<" "<<numMEV3L<< \
-                    " out of "<<knownFuncNames.size()<<endl;
-                params_file<<endl;
+                        calls_file<<"FUNCTION "<<F->getName().str()<<endl;
+#ifdef DEBUG_P  
+                        cout<<"Running firstPass on Func: "<<F->getName().str()<<endl;
+#endif
+                        fb->firstPass(F, globalVars, externFuncInformation, 
+                            blame_file, blame_se_file, calls_file, numMissing);
+                        calls_file<<"END FUNCTION "<<endl;
 
-                delete(fb);
-            }
+                        int numMEVL = 0;
+                        int numMEV2L = 0;
+                        int numMEV3L = 0;
+                        
+                        fb->moreThanOneEV(numMEVL, numMEV2L, numMEV3L);
+
+                        numMEV += numMEVL;
+                        numMEV2 += numMEV2L;
+                        numMEV3 += numMEV3L;
+
+                        fb->exportParams(params_file);
+                        params_file<<"NEVs - "<<numMEVL<<" "<<numMEV2L<<" " \
+                            <<numMEV3L<<" out of "<<knownFuncNames.size()<<endl;
+                        params_file<<endl;
+
+                        delete(fb);
+                    }
+                } //end of != '_'
+            } //end of ==string::npos
         }
     }
 
     params_file<<"NEVs - "<<numMEV<<" "<<numMEV3<<" "<<numMEV2<<" out of "<< \
         knownFuncNames.size()<<endl;
-
 
     return false;
 }

@@ -1,0 +1,33 @@
+------------------------------------------------------------------
+Creating PAPI/SW shared blame file for inserting into blame target
+-------------------------------------------------------------------
+
+blameFuncs.cpp - source file that contains functions that will be inserted into instrumented program
+
+compile-blameFuncs.csh - script that compiles above file into .o
+
+createshared.csh - creates .so shared library from above .o
+
+--
+./compile-blameFuncs.csh
+./createshared.csh
+--
+
+-----------------------------------------------------------------
+Creating Mutator 
+-----------------------------------------------------------------
+mutator.C - source file for creating mutator
+
+compile-mutator.csh - compiles and links mutator
+
+--
+./compile-mutator.csh
+--
+
+-----------------------------------------------------------------
+Running Mutator
+-----------------------------------------------------------------
+--
+mutator <name of file you'd like to mutate>
+Output: mutant
+--

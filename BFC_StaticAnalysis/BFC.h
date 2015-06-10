@@ -9,6 +9,7 @@
  *	Most important:  runOnModule
  *
  *  Created by Hui Zhang on 02/10/15.
+ *  Previous contribution by Nick Rutar
  *  Copyright 2008 __MyCompanyName__. All rights reserved.
  *
  */

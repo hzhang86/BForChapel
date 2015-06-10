@@ -1,9 +1,9 @@
 /*
  *  ModuleBFC.cpp
  *  
- *
- *  Created by Nick Rutar on 2/8/10.
- *  Copyright 2010 __MyCompanyName__. All rights reserved.
+ *  Implementation of Module-level LLVM pass
+ *  Created by Hui Zhang on 2/8/15.
+ *  Copyright 2015 __MyCompanyName__. All rights reserved.
  *
  */
 
