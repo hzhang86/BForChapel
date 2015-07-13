@@ -25,6 +25,8 @@ static int EventSet = PAPI_NULL;
 static unsigned topAddr;
 static char buffer[256];
 static FILE * pFile;
+static char host_name[128];
+static char path[] = "./SSFs/";
 static unsigned long runcount;
 
 //////////////////////////////////////////
@@ -109,7 +111,10 @@ extern "C" void initIndex(unsigned address)
 
 extern "C" void __attribute__ ((constructor)) initializePAPI()
 {
-  gethostname(buffer, 255);
+  unsigned tid;
+  gethostname(host_name,64);
+  tid = PAPI_thread_id();
+  sprintf(buffer,"%s%s%u",path,host_name,tid);
   pFile = fopen (buffer,"a");
   if (pFile==NULL) {
     printf("File failed to be created\n");

@@ -60,22 +60,33 @@ void FunctionBFC::adjustLocalVars()
     for (begin = variables.begin(), end = variables.end(); begin != end; begin++) {
 		std::vector<LocalVar *>::iterator lv_i;
 		for (lv_i = localVars.begin();  lv_i != localVars.end(); lv_i++) {
-			if (strcmp(begin->first, (*lv_i)->varName.c_str()) == 0) {
+            std::string chplName = std::string(begin->first);
+            if (has_suffix(chplName, "_chpl")) {
+                std::string realName = chplName.substr(0, chplName.size()-5);
+		        if (realName.compare((*lv_i)->varName) == 0) {
 #ifdef DEBUG_LOCALS			
-				blame_info<<"Local Var found "<<begin->first<<std::endl;
+				    blame_info<<"Local Var found "<<begin->first<<std::endl;
 #endif				
-				NodeProps *v = begin->second;
-				v->isLocalVar = true;
-				v->line_num = (*lv_i)->definedLine;
-				allLineNums.insert(v->line_num);
+				    NodeProps *v = begin->second;
+				    v->isLocalVar = true;
+				    v->line_num = (*lv_i)->definedLine;
+				    allLineNums.insert(v->line_num);
 				
-				if (((*lv_i)->varName.find(".") != std::string::npos || (*lv_i)->varName.find("0x") != std::string::npos )
+				    if (((*lv_i)->varName.find(".") != std::string::npos || 
+                        (*lv_i)->varName.find("0x") != std::string::npos )
 						&&  (*lv_i)->varName.find("equiv.") == std::string::npos   
-						&&  (*lv_i)->varName.find("result.") == std::string::npos) //TC: not sure about above conds
-				{
-					v->isFakeLocal = true;
-				}
+						&&  (*lv_i)->varName.find("result.") == std::string::npos) 
+                        //TC: not sure about above conds
+				    {
+					    v->isFakeLocal = true;
+				    }
+                }
 			}
+            else
+#ifdef DEBUG_LOCALS
+                blame_info<<"Local Var Not Found: begin = "<<begin->first<< \
+                    ", lv_i = "<<(*lv_i)->varName.c_str()<<std::endl;
+#endif
 		}
 	}
 }
@@ -1088,7 +1099,10 @@ void FunctionBFC::grabVarInformation(llvm::Value *varDeclare)
         else {
             DIVariable *dv = new DIVariable(MDVarDeclare); 
             LocalVar *lv = new LocalVar(); // in FunctionBFC
-            
+#ifdef DEBUG_P
+            cout<<"adding localVar "<<dv->getName().str()<<endl;
+#endif
+           
             lv->definedLine = dv->getLineNumber();
             lv->varName = dv->getName().str();
             localVars.push_back(lv);

@@ -186,8 +186,8 @@ bool BFC::runOnModule(Module &M)
         if (dsp->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
             std::string dspName = dsp->getName().str();
             if (dspName.find("chpl") == std::string::npos) { //no chpl in user funcNm
-                //if (!dspName.empty() && (*(dspName.begin()) != '_')) { //no '_XXX'
-                if (dspName.compare("main")==0 || dspName.compare("sayhello")==0 ||\
+                if (!dspName.empty() && (*(dspName.begin()) != '_')) { //no '_XXX'
+                //if (dspName.compare("main")==0 || dspName.compare("sayhello")==0 ||\
                     dspName.compare("factorial")==0) {
                     Function *F = dsp->getFunction();
 #ifdef DEBUG_P
@@ -222,8 +222,8 @@ bool BFC::runOnModule(Module &M)
         if (dsp->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
             std::string dspName = dsp->getName().str();
             if (dspName.find("chpl") == std::string::npos) { //no chpl in user funcNm
-                //if (!dspName.empty() && (*(dspName.begin()) != '_'))  //no '_XXX'
-                if (dspName.compare("main")==0 || dspName.compare("sayhello")==0 ||\
+                if (!dspName.empty() && (*(dspName.begin()) != '_')) { //no '_XXX'
+                //if (dspName.compare("main")==0 || dspName.compare("sayhello")==0 ||\
                     dspName.compare("factorial")==0) {
                 
                     Function *F = dsp->getFunction();

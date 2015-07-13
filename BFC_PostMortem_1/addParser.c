@@ -6,6 +6,7 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <dirent.h> // for interating the directory
 
 #include "BlameProgram.h"
 #include "BlameFunction.h"
@@ -207,6 +208,28 @@ void populateSamples(vector<Instance> &instances, char *exeName, const char *tra
 }
 
 
+void popSamplesFromDir(vector<Instance> &instances, char *exeName, const char *dirName, const char *nodeName)
+{
+    DIR *dir;
+    struct dirent *ent;
+    std::string traceName;
+
+    if ((dir = opendir(dirName)) != NULL) {
+        while ((ent = readdir(dir)) != NULL) {
+            if((ent->d_type == DT_REG) && (strstr(ent->d_name, nodeName) != NULL)){
+                traceName = std::string(dirName) + "/" + std::string(ent->d_name);
+                populateSamples(instances, exeName, traceName.c_str());    
+            }
+            else 
+                std::cerr<<""<<std::endl;
+        }
+        closedir(dir);
+    } 
+
+    else 
+        /* could not open directory */
+        std::cerr<<"Couldn't open the directory !"<<std::endl;
+}
 
 
 int main(int argc, char** argv)
@@ -218,61 +241,38 @@ int main(int argc, char** argv)
     exit(0);
   }
  
-  //  BlameProgram bp;
-  //  bp.parseConfigFile(argv[3]);
-
-  //  bp.parseStructs();
-  //  bp.printStructs(std::cout);
-
-  
-  //  bp.parseProgram();
-  
-  
-  //bool verbose = bp.isVerbose();
-  //  bool verbose = false;
-  
-  std::string whichNode(argv[2]);  // whichNode = pygmy
+  char buffer[128];
+  gethostname(buffer,255);
+  std::string whichNode(buffer);  // whichNode = pygmy
   std::string guiOut("Input_");    
   guiOut += whichNode;       // guiOut = Input_pygmy  
   std::ofstream gOut(guiOut.c_str());
   
   vector<Instance>  instances;  
-  populateSamples(instances, argv[1], argv[2]);
-
-  int size = instances.size();
+  popSamplesFromDir(instances, argv[1], argv[2], buffer);
   
+  int size = instances.size();
   gOut<<size<<endl;   // output the number of instances in Input_pygmy
     
-////////////////////////////////////////////////////////////////
-  int num_x, num_imp, num_heap;
-  num_x = num_imp = num_heap = 0;
-  int temp_ln;
-//////////////////////////////////////////////////////////////
   vector<Instance>::iterator vec_I_i;
   for (vec_I_i = instances.begin(); vec_I_i != instances.end(); vec_I_i++) {
       int frameSize = (*vec_I_i).frames.size();
       gOut<<frameSize<<endl;
       vector<StackFrame>::iterator vec_sf_i;
-      for (vec_sf_i = (*vec_I_i).frames.begin();  vec_sf_i != (*vec_I_i).frames.end(); vec_sf_i++)
+      for (vec_sf_i = (*vec_I_i).frames.begin(); \
+              vec_sf_i != (*vec_I_i).frames.end(); vec_sf_i++)
       {
               // Is always the address of the unwind sampler
-        if ( (*vec_sf_i).frameNumber == 0)  // kind of unnecessary, should be just distinguish on lineNumber
-            {
-          gOut<<"0 "<<(*vec_sf_i).frameNumber<<" NULL "<<std::hex<<(*vec_sf_i).address<<std::dec<<endl;
-        }
-        else if ( (*vec_sf_i).lineNumber > 0)
+        if ((*vec_sf_i).frameNumber == 0)//unnecessary, use lineNumber enough
         {
-    //////////////////////////////////////////////////////////////////////////////////////////////
-          temp_ln = (*vec_sf_i).lineNumber;
-          if(temp_ln==96||temp_ln==101||temp_ln==103||temp_ln==104||temp_ln==108)
-            ++num_x;
-          else if(temp_ln==96||temp_ln==97||temp_ln==103||temp_ln==104||temp_ln==109)
-            ++num_heap;
-          else if(temp_ln==96||temp_ln==98||temp_ln==103||temp_ln==104||temp_ln==110)
-            ++num_imp;
-    //////////////////////////////////////////////////////////////////////////////////////////////
+          gOut<<"0 "<<(*vec_sf_i).frameNumber<<" NULL "<<std::hex \
+              <<(*vec_sf_i).address<<std::dec<<endl;
+        }
+        else if ((*vec_sf_i).lineNumber > 0)
+        {
           gOut<<(*vec_sf_i).lineNumber<<" "<<(*vec_sf_i).frameNumber<<" ";
-          gOut<<(*vec_sf_i).moduleName<<" "<<std::hex<<(*vec_sf_i).address<<std::dec<<endl;;
+          gOut<<(*vec_sf_i).moduleName<<" "<<std::hex \
+              <<(*vec_sf_i).address<<std::dec<<endl;;
         }
         else
         {
@@ -280,14 +280,5 @@ int main(int argc, char** argv)
         }
       }
   }
-  ////////////////////////////////////////////////////////////
-//  cout<<"# instances blamed on x is "<<num_x<<endl;
-//  cout<<"# instances blamed on impInput is "<<num_imp<<endl;
-//  cout<<"# instances blamed on heapVar is "<<num_heap<<endl;
-  /////////////////////////////////////////////////////////
 }
 
-
-/*
- g++ -g -I/fs/driver/rutar/dyninst/dyninst -I/fs/driver/rutar/dyninst/dyninst/external -I/fs/driver/rutar/dyninst/include -W -Wall -L/fs/driver/rutar/dyninst/i386-unknown-linux2.4/lib -lcommon -ldl -lsymtabAPI -linstructionAPI -liberty -o foo foo.C
- */

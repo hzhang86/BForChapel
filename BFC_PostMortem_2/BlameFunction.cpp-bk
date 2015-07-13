@@ -3399,8 +3399,8 @@ cout<<beginLineNum<<" "<<endLineNum<<std::endl;
       
       if ((*vec_SF_i).lineNumber > 0)
       {
-        cout<<"*****At Frame(3) "<<(*vec_SF_i).frameNumber<<" at line num "<<(*vec_SF_i).lineNumber;
-        cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
+        //cout<<"*****At Frame(3) "<<(*vec_SF_i).frameNumber<<" at line num "<<(*vec_SF_i).lineNumber;
+        //cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
         
         // Get the module from the debugging information
         BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
@@ -3408,12 +3408,12 @@ cout<<beginLineNum<<" "<<endLineNum<<std::endl;
         if (bm != NULL)
         {
           // Use the combination of the module and the line number to determine the function
-          BlameFunction *nextbf = bm->findLineRange((*vec_SF_i).lineNumber);
-          //Changed by Hui, two consecutive stackFrames cannot mapped to same func
-          if (nextbf&&((this->getName()).compare(nextbf->getName())!=0)) 
+          BlameFunction * bf = bm->findLineRange((*vec_SF_i).lineNumber);
+          
+          if (bf)
           {
-            nextbf->resolveLineNum(frames, modules, vec_SF_i, blamees, 
-                               nextbf->getBlamePoint(), false, this, O);
+            bf->resolveLineNum(frames, modules, vec_SF_i, blamees, 
+                               bf->getBlamePoint(), false, this, O);
           }
           else
           {
@@ -3513,8 +3513,8 @@ cout<<beginLineNum<<" "<<endLineNum<<std::endl;
       
       if ((*vec_SF_i).lineNumber > 0)
       {
-        cout<<"*****At Frame(4) "<<(*vec_SF_i).frameNumber<<" at line num "<<(*vec_SF_i).lineNumber;
-        cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
+        //cout<<"*****At Frame(4) "<<(*vec_SF_i).frameNumber<<" at line num "<<(*vec_SF_i).lineNumber;
+        //cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
         
         // Get the module from the debugging information
         BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
@@ -3523,14 +3523,13 @@ cout<<beginLineNum<<" "<<endLineNum<<std::endl;
         {
           //cout<<"Checking(4) BM line range "<<bm->getName()<<std::endl;
           // Use the combination of the module and the line number to determine the function
-          BlameFunction *nextbf = bm->findLineRange((*vec_SF_i).lineNumber);
+          BlameFunction * bf = bm->findLineRange((*vec_SF_i).lineNumber);
           
-          //Changed by Hui, two consecutive stackFrames cannot mapped to same func
-          if (nextbf&&((this->getName()).compare(nextbf->getName())!=0)) 
+          if (bf)
           {
             //cout<<"Checking(4) BF line range "<<bf->getName()<<std::endl;
-            nextbf->resolveLineNum(frames, modules, vec_SF_i, blamees, 
-                               nextbf->getBlamePoint(), false, this, O);
+            bf->resolveLineNum(frames, modules, vec_SF_i, blamees, 
+                               bf->getBlamePoint(), false, this, O);
           }
         }
         else
@@ -3583,14 +3582,14 @@ cout<<beginLineNum<<" "<<endLineNum<<std::endl;
       if (bm != NULL)
       {
   // Use the combination of the module and the line number to determine the function
-        BlameFunction *nextbf = bm->findLineRange((*vec_SF_i).lineNumber);
-        //Changed by Hui, two consecutive stackFrames cannot mapped to same func
-        if (nextbf&&((this->getName()).compare(nextbf->getName())!=0)) 
+        BlameFunction * bf = bm->findLineRange((*vec_SF_i).lineNumber);
+        
+        if (bf)
         {
 //////////////////////////////////////////////////////////////////////////
           cout<<"Gonna start recursion when isBottomParsed=false"<<endl;
 /////////////////////////////////////////////////////////////////////////
-          nextbf->resolveLineNum(frames, modules, vec_SF_i, blamees, nextbf->getBlamePoint(), false, this, O);
+          bf->resolveLineNum(frames, modules, vec_SF_i, blamees, bf->getBlamePoint(), false, this, O);
         }
       }
     }    
@@ -3745,15 +3744,14 @@ cout<<beginLineNum<<" "<<endLineNum<<std::endl;
       
       if (bm != NULL)
       {
-        cout<<"bm != NULL in :3748!"<<endl;
-        BlameFunction *nextbf = bm->findLineRange((*vec_SF_i).lineNumber);
-        //Changed by Hui, two consecutive stackFrames cannot mapped to same func
-        if (nextbf&&((this->getName()).compare(nextbf->getName())!=0))
+        BlameFunction * bf = bm->findLineRange((*vec_SF_i).lineNumber);
+        
+        if (bf)
         {
           if (isBlamePoint == IMPLICIT)
           {
-            nextbf->resolveLineNum(frames, modules, vec_SF_i, blamees, \
-                               nextbf->getBlamePoint(), false, this, O);
+            bf->resolveLineNum(frames, modules, vec_SF_i, blamees, 
+                               bf->getBlamePoint(), false, this, O);
           }
         }
       }

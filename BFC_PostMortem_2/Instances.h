@@ -54,8 +54,8 @@ struct Instance
 {
   std::vector<StackFrame> frames;
   void printInstance();
-  void handleInstance(ModuleHash & modules, std::ostream &O, bool verbose);
-  void handleInstance_OA(ModuleHash & modules, std::ostream &O, std::ostream &O2, bool verbose);
+  void handleInstance(ModuleHash & modules, std::ostream &O, bool verbose, int InstanceNum);
+  void handleInstance_OA(ModuleHash & modules, std::ostream &O, std::ostream &O2, bool verbose, int InstanceNum);
 
 };
 

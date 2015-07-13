@@ -1,5 +1,5 @@
 /*
- * mutator.C
+ * mutator.c
  */
 
 #include <stdio.h>

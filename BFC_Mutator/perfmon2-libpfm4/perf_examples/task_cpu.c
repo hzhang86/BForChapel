@@ -226,12 +226,12 @@ parent(char **arg)
 		 *
 		 * The pipe is used to avoid a race condition
 		 * between for() and exec(). We need the pid
-		 * of the new tak but we want to start measuring
+		 * of the new task but we want to start measuring
 		 * at the first user level instruction. Thus we
 		 * need to prevent exec until we have attached
 		 * the events.
 		 */
-		if (pid == 0) {
+		if (pid == 0) { // it means we are in the child process
 			close(ready[0]);
 			close(go[1]);
 
@@ -420,5 +420,5 @@ main(int argc, char **argv)
 
 	signal(SIGINT, sig_handler);
 
-	return parent(argv+optind);
+	return parent(argv+optind); //argv+optind points to the start of the `command`
 }

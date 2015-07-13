@@ -95,7 +95,7 @@ void BlameFunction::resolveLineNum_OAR(vector<StackFrame> & frames, ModuleHash &
 		}
 		if (matchingCalls.size() == 0)
 		{
-			std::cerr<<"TRANSFER FUNC - No lineNums found for sample in "<<getName();
+			std::cerr<<"TRANSFER FUNC BAR.cpp:98 - No lineNums found for sample in "<<getName();
 			std::cerr<<" Line Num "<<(*vec_SF_i).lineNumber<<" Frame Number  "<<(*vec_SF_i).frameNumber<<std::endl;
 			std::cout<<"TF(2) - No linenums found "<<std::endl;
 		}
@@ -345,7 +345,7 @@ void BlameFunction::resolveLineNum_OAR(vector<StackFrame> & frames, ModuleHash &
 		}
 		if (matchingCalls.size() == 0)
 		{
-			std::cerr<<"TRANSFER FUNC - No lineNums found for sample in "<<getName();
+			std::cerr<<"TRANSFER FUNC BAR.cpp:348 - No lineNums found for sample in "<<getName();
 			std::cerr<<" Line Num "<<(*vec_SF_i).lineNumber<<" Frame Number  "<<(*vec_SF_i).frameNumber<<std::endl;
 			std::cout<<"TF(1) - No line nums found"<<std::endl;
 		}

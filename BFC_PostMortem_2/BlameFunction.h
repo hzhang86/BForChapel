@@ -105,7 +105,7 @@ struct LoopInfo
 class BlameFunction
 {
  public:
-	BlameProgram * BP;
+	BlameProgram *BP;
  
  	BlameFunction(std::string name){realName = name; blamePoint = NO_BLAME; isFull = false; sideEffectC = false; hasSE = true; seAliasCalc = false; }
 
@@ -289,8 +289,8 @@ class BlameFunction
   	std::vector<VertexProps *>  exitVariables;
   	std::vector<VertexProps *>  exitPrograms;
 	std::vector<VertexProps *>  exitOutputs;
-	std::vector<VertexProps *>  callNodes;
-
+	std::vector<VertexProps *>  callNodes;//nodes that call other funcs in 
+                                          //this BlameFunction
 	//std::vector<VertexProps *>  allVertices;
 	VertexHash  allVertices;
 };

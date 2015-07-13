@@ -120,8 +120,8 @@ BlameFunction * BlameModule::findLineRange(int lineNum)
 	
 	if (funcsBySet.count(dummyFunc))
 	{
-		set_bf_i = funcsBySet.find(dummyFunc); // get the iterator to the dummyFunc
-		topCand = *set_bf_i;  // wouldn't topCan=dummyFunc ???
+		set_bf_i = funcsBySet.find(dummyFunc);//get the iterator to dummyFunc
+		topCand = *set_bf_i;  // wouldn't topCan=dummyFunc ??? yes,same
 	}
 	else
 	{
