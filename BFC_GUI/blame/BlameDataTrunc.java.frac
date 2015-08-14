@@ -1,5 +1,5 @@
 package blame;
-
+//
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -30,12 +30,165 @@ public class BlameDataTrunc extends BlameData {
 	}
 	
 	
+	// FIRST round parse to get numBlameeInst
+	public void  firstParseFrame(BufferedReader bufReader, Instance currInst, String line)
+	{
+		
+		String pathTokens[] = line.split("\\s");
+                 //String strFrameNum = pathTokens[1];
+                 //int frameNum = Integer.valueOf(strFrameNum).intValue();
+                String funcName = pathTokens[2];
+                String moduleName = pathTokens[3];
+                String pathName = pathTokens[4];
+                //String strLineNum  = pathTokens[5];
+                //int lineNumber = Integer.valueOf(strLineNum).intValue();
+                String strBPType   = pathTokens[6];
+                short bptType = Short.valueOf(strBPType).shortValue();
+                String strFBeginLine = pathTokens[7];
+                int beginLine = Integer.valueOf(strFBeginLine).intValue();
+                String strFEndLine = pathTokens[8];
+                int endLine = Integer.valueOf(strFEndLine).intValue();
 
+		try {
+				
+			String evLine = bufReader.readLine();
+			//////////////////////////////////////////////////////
+			//System.out.println("JUST got in try! evLine = "+evLine);
+			////////////////////////////////////////////////////////
+					
+			while (evLine.indexOf("FRAME#") < 0)
+			{
+				if (evLine.indexOf("$$INSTANCE") >= 0)
+				{
+					//return evLine;
+					break;
+				}
+								
+				if (evLine.indexOf("***No") >= 0)
+				{
+					evLine = bufReader.readLine();
+					continue;
+				}
+					
+				
+				/*
+				// Combo of Exit Variable Type and Exit Variable designators
+				
+				// Exit Variable Types
+				// EV (Exit Variable)
+				// EO (Exit Output)
+				// EF (Exit Field)
+				// EDF (Exit Derived Field)
+				// LF (Local Field)
+				// LDF (Local Derived Field)
+				// VFL (Ignored Field Local)
+				// VL  (Ignored Local)
+				
+				// Exit Variable Designators 
+				//1(11) - EV lineNumbers
+				//2(12) - EV declaredLine
+				//3(13) - EV tempLine
+				//4(14) - EV findBlamedExits
+				//5(15) - BP lineNumbers
+				//6(16) - BP declaredLine
+				//7(17) - BP tempLine
+				//8(18) - BP findBlamedExits
+
+				//21(31) - LV lineNumbers
+				//22(32) - LV declaredLine
+				//23(33) - LV tempLine
+				//24(34) - LV findBlamedExits
+
+				//40(50) - SE EV seLineNumbers
+				//41(51) - SE BP seLineNumbers
+				//42(52) - SE LV seLineNumbers
+
+				//61-64 - DQ EV
+
+				//81(91) - SE Alias
+				//82(92) - SE Relation
+
+				//90 - Derived
+				 */
+				
+				//better way is to use String.split() method
+				StringTokenizer st = new StringTokenizer(evLine);
+				
+				String[] esTokens = new String[st.countTokens()];
+				
+				
+				int counter = 0;
+				while (st.hasMoreTokens())
+				{
+					esTokens[counter] = st.nextToken();
+					counter++;
+				}
+				//////////////////////////////////////////////////////
+				//System.out.println(evLine);
+				/////////////////////////////////////////////////////
+				if (counter < 4)
+				{
+					System.err.println("Not enough info for line " + evLine);
+					System.exit(1);
+				}
+				
+				// EV Type concatenated with EV designator
+				String strEVType = esTokens[0];
+				
+				// Full Name
+				String strVarName = esTokens[1];
+				
+				// Type Name
+				String strTypeName = esTokens[2];
+
+				// Struct Name (may be NULL)
+				String structName = esTokens[3];
+				
+				//bc.addType(strTypeName, structName);
+				
+				boolean validFlag = (strEVType.indexOf("EV") >= 0)||
+                    (strEVType.indexOf("EO") >= 0)||
+                    (strEVType.indexOf("EF") >= 0||strEVType.indexOf("EDF") >= 0)||
+					(strEVType.indexOf("LF") >= 0||strEVType.indexOf("LDF") >= 0)||
+					(strEVType.indexOf("VL") >= 0)||
+                    (strEVType.indexOf("VFL") >= 0)||
+					(strEVType.indexOf("U") >= 0);
+				///////////////////////////////////////////////////////////////////
+		//System.out.println("I'm in the outter while loop, validFlag= "+validFlag);
+				///////////////////////////////////////////////////////////////////
+		
+		
+		//		if (validFlag && (bptType > BlameFunction.NO_BLAME_POINT))
+				if (validFlag)
+				    //Increment the number of blamees for this instance by 1
+				    currInst.incNumBlamees();
+				else
+				{
+				    evLine = bufReader.readLine();
+				    continue;
+				}
+				
+				evLine = bufReader.readLine();
+            //System.out.println("Setting GT " + strTypeName + " ST " + structName + " for " + es.getName());
+
+			}// end of while loop
+			//////////////////////////////////////////////////////////////////
+			//System.out.println("I'm in firstFrameParse, numBlamees for this frame is"+currInst.getNumBlamees());
+			/////////////////////////////////////////////////////////////////
+		}//end of try
+		catch (IOException e) {
+			System.err.println("exception happened - here's what I know: ");
+			e.printStackTrace();
+			System.exit(-1);
+		}
+		
+	//	return new String();
+	}
+
+	
 	
 	public String parseFrame(BufferedReader bufReader, Instance currInst, String line)
 	{
-        //////////////////////////////////////////
-        System.out.println("parseFrame in BlameDataTrunc Called !");
 		String pathTokens[] = line.split("\\s");
 		//String strFrameNum = pathTokens[1];
 		//int frameNum = Integer.valueOf(strFrameNum).intValue();
@@ -150,6 +303,10 @@ public class BlameDataTrunc extends BlameData {
 					counter++;
 				}
 				
+				//////////////////////////////////////////////////////
+               //System.out.println(evLine);
+              /////////////////////////////////////////////////////
+
 				if (counter < 4)
 				{
 					System.err.println("Not enough info for line " + evLine);
@@ -172,7 +329,7 @@ public class BlameDataTrunc extends BlameData {
 						
 				ExitSuper es = new ExitSuper();
 				
-				if (strEVType.indexOf("EV") >= 0)
+				if (strEVType.indexOf("EV") >= 0)  //TO CONTINUE 07/20/15
 				{
 					ExitVariable ev = bf.getOrCreateEV(strVarName);
 					es = ev;
@@ -301,6 +458,7 @@ public class BlameDataTrunc extends BlameData {
 				// We set this to make sure we don't have any repeats
 				es.setLastInst(currInst);
 
+				
 				evLine = bufReader.readLine();
 			}
 			
@@ -318,6 +476,7 @@ public class BlameDataTrunc extends BlameData {
 	}
 	
 
+
 	public void parseOutputFile(String outputFile, String nodeName)
 	{				
 		File f = new File(outputFile);
@@ -325,12 +484,15 @@ public class BlameDataTrunc extends BlameData {
 		try {	
 			//System.out.println("Read in file " + outputFile);
 			BufferedReader bufReader = new BufferedReader(new FileReader(f));
+			//BufferedReader tempBufReader;//another File pointer points to the same file
 			String line = null;
-			
+			//String tempLine = null;
 			//int instanceCount = 0;
 			
 			while ((line = bufReader.readLine()) != null) 
 			{				
+			//	tempLine = tempBufReader.readLine(); // just keep the same pace with bufReader
+
 				Instance currInst;
 					
 				if (line.indexOf("--INSTANCE") >= 0) 
@@ -340,11 +502,21 @@ public class BlameDataTrunc extends BlameData {
 					int sfCount = 0;
 					
 					line = bufReader.readLine();
+				//	tempLine = bufReader.readLine();// just keep the same pace with bufReader
 					
 					// We are dealing with a FRAME
 					while (line.indexOf("$$INSTANCE") < 0)
 					{
+						bufReader.mark((int)(f.length()-1)); // Marks the present position in the stream
+						firstParseFrame(bufReader, currInst, line); // first round parse to get numBlameePerInst
+						bufReader.reset();
+						///////////////////////////////////////////////////////////////
+						//System.out.println("Check if line changes, "+ line);
+						////////////////////////////////////////////////////////////////
 						line = parseFrame(bufReader, currInst, line);
+						////////////////////////////////////////////////////////////////
+						//System.out.println("I'm here2, "+bufReader.readLine());
+						////////////////////////////////////////////////////////////////
 						sfCount++;
 					}
 					

@@ -66,9 +66,6 @@ public class MainGUI {
 		
 		tabbedPane.addTab("Full Code Centric", pt);
 		
-		
-		
-		
 		BlameNodeWindow   bnw = new BlameNodeWindow(bc);
 		VariableMetaData vmd = new VariableMetaData();
 		
@@ -98,14 +95,9 @@ public class MainGUI {
 		
 		//bt.createAndShowGUI();
 		
-		
-	        
-		
-		
-//		 Window for showing the source files blame touches
+//		Window for showing the source files blame touches
 		BlameSourceWindow bsw = new BlameSourceWindow(bc, bnw, vmd, bt, btdc);
 		bsw.setVisible(true);	
-		
 		
 		
 		/*
@@ -291,9 +283,6 @@ public class MainGUI {
 				pStream.println();							
 				
 			}
-
-			
-			
 			
 		}
 		catch(Exception e)
@@ -301,7 +290,6 @@ public class MainGUI {
 			System.err.println("Could not load file!");
 		}
 	}
-	
 	
 	
 
@@ -733,7 +721,7 @@ public class MainGUI {
 		BlameContainer bc = new BlameContainer();	
 		profiler.ProfilerData pd = new profiler.ProfilerData();
 
-		
+		//SourceContainer has a public static member: sourceFiles Q:why 'new' here?
 		SourceContainer.sourceFiles = new HashMap<String, SourceFile>();
 		
 		int numNodes = 0;
@@ -749,12 +737,10 @@ public class MainGUI {
 			
 			String typeOfTest = bufReader.readLine(); // typeOfTest = 0
 			Global.typeOfTest = Integer.valueOf(typeOfTest).intValue();
-			Global.useMetaData = false;
+			Global.useMetaData = false; //TOCHECK: Originally was false
 			
 			Global.testProgram = new String(bufReader.readLine()); //Global.testProgram = HelloBlame3
 			profiler.Global.testProgram = Global.testProgram;
-			
-			
 			
 			System.out.println("Name of test program is " + Global.testProgram);
 			
@@ -767,8 +753,6 @@ public class MainGUI {
 				System.err.println("Not enough nodes!");
 				return;
 			}
-			
-			
 			
 			for (int a = 0; a < numNodes; a++)
 			{
@@ -811,11 +795,11 @@ public class MainGUI {
 				//	System.out.println(it.next());
 				//}
 				
-				//System.out.println("Size of LV" + bc.getAllLocalVariables().size());
-				//System.out.println("Size of GV" + bc.getAllGlobalVariables().size());
+			//System.out.println("Size of LV" + bc.getAllLocalVariables().size());
+			//System.out.println("Size of GV" + bc.getAllGlobalVariables().size());
 				
 /////////////////////////////////////////////////////////////////////////////////
-                                        System.out.println("Globla.useMetaData = "+Global.useMetaData);
+                System.out.println("Global.useMetaData = "+Global.useMetaData);
 /////////////////////////////////////////////////////////////////////////////////
 
 				if (Global.useMetaData)
@@ -872,10 +856,12 @@ public class MainGUI {
 			System.out.println("Total instances for " + bd.nodeName + " is " + bd.numInstances());
 			
 			total += bd.numInstances();
+            //////////////added by Hui//////////////////////
+            numN++;
+            ///////////////////////////////////////////////
 		}
 		Global.totalInstances = total;
 		profiler.Global.totalInstances = total;
-		
 	
 		if (Global.typeOfTest == 0)
 		{

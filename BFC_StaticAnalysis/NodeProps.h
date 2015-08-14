@@ -194,7 +194,7 @@ public:
 	int paramNum; 
 	
 	string fullName;
-    int line_num;
+    int line_num; //declared line number for vars, or where the instruction appears
 	
 	bool calcAgg;  // has the aggregate line number been calculated
 	// for this vertex yet, used in calcAggregateLN()
@@ -274,7 +274,7 @@ public:
 	StructField * sField;
 	StructBFC * sBFC;
 	
-    set<int> lineNumbers;
+    set<int> lineNumbers; // set of 'line_num's
 	set<int> descLineNumbers;
 	
 	// Mostly used with Fortran, these are the line numbers that 
@@ -355,7 +355,7 @@ public:
 	// TODO: probably should make this a vector
 	NodeProps * fieldAlias;
 	
-    NodeProps * pointsTo;
+    NodeProps * pointsTo; //if this is a pointer, then pointsTo=pointee ??
     NodeProps * exitV;
   
     // For Constants

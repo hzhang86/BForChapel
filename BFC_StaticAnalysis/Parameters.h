@@ -14,14 +14,17 @@
 
 
 #define DEBUG_P
-//#define DEBUG_SUMMARY
-//#define DEBUG_ERROR
+#define DEBUG_SUMMARY
+#define DEBUG_ERROR
+//////////////////////////
+#define ENABLE_FORTRAN 
+#define HUI_C
+//////////////////////////
 
-/*
 #define DEBUG_GRAPH_BUILD
 #define DEBUG_GRAPH_BUILD_EDGES
 #define DEBUG_GRAPH_COLLAPSE
-*/
+
 
 #define DEBUG_GRAPH_IMPLICIT
 #define DEBUG_LLVM_IMPLICIT
@@ -31,7 +34,7 @@
 
 #define DEBUG_STRUCTS
 
-#define DEBUG_NP_CREATE
+#define DEBUG_VP_CREATE
 
 #define DEBUG_LLVM
 #define DEBUG_LLVM_L2
@@ -48,7 +51,9 @@
 #define DEBUG_IMPORTANT_VERTICES
 #define DEBUG_RECURSIVE_EX_CHILDREN
 #define DEBUG_LINE_NUMS
-
+////////////////////////////
+#define DEBUG_PRINT_LINE_NUMS
+/////////////////////////
 #define DEBUG_COMPLETENESS
 
 #define DEBUG_EXTERN_CALLS

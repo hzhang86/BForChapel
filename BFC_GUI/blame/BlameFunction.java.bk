@@ -91,27 +91,10 @@ public class BlameFunction implements Comparable {
 		return maxBlame;
 	}
 	
-	////////////added by Hui//////////////////////////////
-    protected String toRealName(String name)
-    {
-        if(name.contains("_chpl")){
-            String realName = name.replace("_chpl","");
-            return realName;
-        }
-        
-        else if(name.contains("chpl_user_main")){
-            String realName = name.replaceAll("chpl_user_main","main");
-            return realName;
-        }
-        
-        else 
-            return name;
-    }
-    //////////////////////////////////////////////////////
+	
 	BlameFunction(String n, String mN, short bPT)
 	{
-		//name = n;
-        name = toRealName(n); //changed by Hui
+		name = n;
 		moduleName = mN;
 		blamePointType = bPT;
 		
@@ -126,8 +109,7 @@ public class BlameFunction implements Comparable {
 	
 	BlameFunction(String n, String mN, int bNum, int eNum, int isBlamePoint, int isGraphParsed, boolean isUDBP)
 	{
-		//name = n;
-        name = toRealName(n); //changed by Hui
+		name = n;
 		moduleName = mN;
 		
 		beginNum = bNum;

@@ -26,6 +26,8 @@ public class ReadData extends ParentData {
 	
 	public String parseFrame(BufferedReader bufReader, Instance currInst, String line)
 	{
+        ///////////////////////////////
+        System.out.println("parseFrame in ReadData Called !");
 		String pathTokens[] = line.split("\\s");
 		String strFrameNum = pathTokens[1];
 		int frameNum = Integer.valueOf(strFrameNum).intValue();
@@ -188,6 +190,9 @@ public class ReadData extends ParentData {
 				if (strEVType.indexOf("EV") >= 0)
 				{
 					ExitVariable ev = bf.getOrCreateEV(strVarName);
+                    ///////////added by Hui/////////////////////
+                    System.out.println("EV: "+strVarName+" has been captured");
+                    /////////////////////////////////////////////
 					es = ev;
 
 				}

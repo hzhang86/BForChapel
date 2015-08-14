@@ -57,31 +57,36 @@ void FunctionBFC::adjustLocalVars()
 	 -> first is const char * associated with their name
 	 -> second is NodeProps * for node
 	*/
+    //std::string chplName = NULL;
+    //std::string realName = NULL;
+
     for (begin = variables.begin(), end = variables.end(); begin != end; begin++) {
 		std::vector<LocalVar *>::iterator lv_i;
 		for (lv_i = localVars.begin();  lv_i != localVars.end(); lv_i++) {
             std::string chplName = std::string(begin->first);
-            if (has_suffix(chplName, "_chpl")) {
-                std::string realName = chplName.substr(0, chplName.size()-5);
-		        if (realName.compare((*lv_i)->varName) == 0) {
+            //std::string realName;
+            //if (has_suffix(chplName, "_chpl"))
+            //    realName = chplName.substr(0, chplName.size()-5);
+            //else realName.assign(chplName); //for Vars not ended with _chpl
+            if (chplName.compare((*lv_i)->varName) == 0) {
 #ifdef DEBUG_LOCALS			
-				    blame_info<<"Local Var found "<<begin->first<<std::endl;
+                blame_info<<"Local Var found begin="<<begin->first<<
+                    ", it's line_num will be "<<(*lv_i)->definedLine<<std::endl;
 #endif				
-				    NodeProps *v = begin->second;
-				    v->isLocalVar = true;
-				    v->line_num = (*lv_i)->definedLine;
-				    allLineNums.insert(v->line_num);
-				
-				    if (((*lv_i)->varName.find(".") != std::string::npos || 
-                        (*lv_i)->varName.find("0x") != std::string::npos )
-						&&  (*lv_i)->varName.find("equiv.") == std::string::npos   
-						&&  (*lv_i)->varName.find("result.") == std::string::npos) 
-                        //TC: not sure about above conds
-				    {
-					    v->isFakeLocal = true;
-				    }
+                NodeProps *v = begin->second;
+                v->isLocalVar = true;
+                v->line_num = (*lv_i)->definedLine;
+                allLineNums.insert(v->line_num);
+            
+                if (((*lv_i)->varName.find(".") != std::string::npos || 
+                    (*lv_i)->varName.find("0x") != std::string::npos )
+                    &&  (*lv_i)->varName.find("equiv.") == std::string::npos   
+                    &&  (*lv_i)->varName.find("result.") == std::string::npos) 
+                    //TC: not sure about above conds
+                {
+                    v->isFakeLocal = true; //no use later
                 }
-			}
+            }
             else
 #ifdef DEBUG_LOCALS
                 blame_info<<"Local Var Not Found: begin = "<<begin->first<< \
@@ -98,7 +103,7 @@ void FunctionBFC::populateGlobals(std::vector<NodeProps *> &gvs)
   for (gv_i = gvs.begin(), gv_e = gvs.end(); gv_i != gv_e; gv_i++) {
 		NodeProps *global = *gv_i;
 		
-#ifdef DEBUG_NP_CREATE
+#ifdef DEBUG_VP_CREATE
 		blame_info<<"Adding NodeProps(9) for "<<global->name<<std::endl;
 #endif
 		
@@ -1258,7 +1263,7 @@ void FunctionBFC::printCurrentVariables()
 }
 
 
-/*
+
 bool FunctionBFC::firstGEPCheck(User * pi)
 {
 	
@@ -1304,7 +1309,7 @@ bool FunctionBFC::firstGEPCheck(User * pi)
 	if (typeVal == Type::StructTyID)
 	{
 		const llvm::StructType * type = cast<StructType>(pointT);
-		string structNameFull = M->getTypeName(type);
+		string structNameFull = type->getName().str();
 		
 #ifdef DEBUG_LLVM
 		blame_info<<"first GEP check -- structNameFull -- "<<structNameFull<<std::endl;
@@ -1315,15 +1320,23 @@ bool FunctionBFC::firstGEPCheck(User * pi)
 		
 		if (structNameFull.find("struct.array1") != std::string::npos)
 		{
-			if (pi->getNumOperands() >= 3)
-			{
-				Value * vOp = pi->getOperand(2);
+#ifdef DEBUG_LLVM
+		    blame_info<<"I'm in Hui 1 for "<<structNameFull<<std::endl;
+#endif
+		    if (pi->getNumOperands() >= 3)
+		    {
+#ifdef DEBUG_LLVM
+		        blame_info<<"I'm in Hui 2 for "<<structNameFull<<std::endl;
+#endif
+			    Value * vOp = pi->getOperand(2);
 				if (vOp->getValueID() == Value::ConstantIntVal)
 				{
-					
 					ConstantInt * cv = (ConstantInt *)vOp;
 					int number = cv->getSExtValue();
-					if (number != 0)
+#ifdef DEBUG_LLVM
+		            blame_info<<"I'm in Hui 3, cv= "<<number<<std::endl;
+#endif
+				    if (number != 0)
 						return false;
 				}
 			}
@@ -1331,7 +1344,7 @@ bool FunctionBFC::firstGEPCheck(User * pi)
 	}
 	return true;
 }
-*/
+
 
 void FunctionBFC::genDILocationInfo(Instruction *pi, int &currentLineNum, FunctionBFCBB *fbb)
 {
@@ -1699,7 +1712,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 
 				else { //Param didn't exist
 #ifdef DEBUG_VP_CREATE
-					blame_info<<"Adding NodeProps(14a) for "<<v->getName()<<std::endl;
+					blame_info<<"Adding NodeProps(14a) for "<<v->getName().str()<<std::endl;
 #endif
 					vp = new NodeProps(varCount, v->getName().str(), currentLineNum, pi);
 					vp->fbb = fbb;
@@ -1806,7 +1819,13 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
 		std::string name = pi->getName().str();
 		
 #ifdef DEBUG_VP_CREATE
-		blame_info<<"Adding NodeProps(1) for "<<name<<std::endl;
+		blame_info<<"Adding NodeProps(1) for "<<name<<" currentLineNum="<<currentLineNum<<std::endl;
+        if(isa<ConstantExpr>(pi)){
+ 		    char tempHui[24];
+		    sprintf(tempHui, "0x%x", /*(unsigned)*/pi);
+		    std::string Hui(tempHui);
+            blame_info<<"Hui value of this inst="<<Hui<<std::endl;
+        }
 #endif 
 		NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
 		vp->fbb = fbb;
@@ -1835,13 +1854,13 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
 			sprintf(tempBuf2, ".%d", currentLineNum);
 			name.append(tempBuf2);
 #ifdef DEBUG_VP_CREATE
-			blame_info<<"Adding NodeProps(F1CE) for "<<name<<std::endl;
+			blame_info<<"Adding NodeProps(F1CE) for "<<name<<" currentLineNum="<<currentLineNum<<std::endl;
 #endif
 			vp = new NodeProps(varCount,name,currentLineNum,pi);
 		}
 		else {
 #ifdef DEBUG_VP_CREATE
-			blame_info<<"Adding NodeProps(F1) for "<<name<<std::endl;
+			blame_info<<"Adding NodeProps(F1) for "<<name<<" currentLineNum="<<currentLineNum<<std::endl;
 #endif
 			vp = new NodeProps(varCount,name,currentLineNum,pi);
 		}
@@ -1858,7 +1877,10 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
 		if (variables.count(name.c_str()) == 0) {
 			variables[name.c_str()] = vp;
 			varCount++;
-		}
+#ifdef DEBUG_VP_CREATE
+		blame_info<<"New added variable:  "<<name<<std::endl;
+#endif 
+	    }
 		//printCurrentVariables();
 	}
 }
@@ -2124,6 +2146,7 @@ void FunctionBFC::ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum
 {
 	int opNum = 0;
 	// Add operands to list of symbols, which are var nodes in AST
+    //blame_info<<"NumOperands="<<pi->getNumOperands()<<std::endl;
 	for (User::op_iterator op_i = pi->op_begin(), op_e = pi->op_end(); op_i != op_e; ++op_i) {
 		Value *v = *op_i;
 #ifdef DEBUG_LLVM
@@ -2154,14 +2177,14 @@ void FunctionBFC::ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum
 				varCount++;
 			}
 		}
-		// This is for dealing with Constants 
+		// This is for dealing with Constants, no matter v has name or not
 		else if (v->getValueID() == Value::ConstantIntVal) {
 			ConstantInt *cv = (ConstantInt *)v;	
 			int number = cv->getSExtValue();
 			
-			if (opNum == 0 || opNum == 1) {  //ignore the first two operands: ptr&index
-				opNum++;
-				continue;
+			if (opNum == 0 || opNum == 1) { //ignore the first two operands
+				opNum++;                    //major var and its index in array
+				continue;                   //default 0 if only 1 structure isf
 			}
 			
 			char tempBuf[64];
@@ -2472,12 +2495,13 @@ void FunctionBFC::examineInstruction(Instruction *pi, int &varCount, int &curren
     // - Binary Ops
 	// - Comparison Operations 
 	// - Cast Operations
-	// - Malloc/Free
+	// - Malloc/Free/Alloca
 	// - Load/Store
 	
 #ifdef ENABLE_FORTRAN
 	if (firstGEPCheck(pi) == false)
 		return;
+    //    blame_info<<"firstGEPCheck return false !"<<std::endl;
 #endif
 
 	genDILocationInfo(pi, currentLineNum, fbb); //generate location info of the current instruction

@@ -198,6 +198,7 @@ typedef std::hash_map<int, int> LineNumHash;
 
 typedef std::hash_map<const char*, std::set<const char*, ltstr>, std::hash<const char*>, eqstr> ImpRegSet; 
 
+typedef std::hash_map<const char*, NodeProps*, std::hash<const char*>, eqstr> CollapsePairHash;
 typedef std::hash_map<const char*, ExternFunctionBFC*, std::hash<const char*>, eqstr> ExternFuncBFCHash;
 
 
@@ -216,11 +217,16 @@ private:
     MyGraphType G; // All nodes
     MyTruncGraphType G_trunc; // only important nodes
     MyTruncGraphType G_abbr; // only exit variables and calls
-
+    //map from source lineNum to how many statements appeared in this line
     LineNumHash lnm;
     
     std::vector<FuncStores *> allStores;
     std::set<const char*> funcCallNames;
+
+    // These two are tied together
+	//std::set<std::string> collapsableFields;
+	std::vector<CollapsePair *> collapsePairs;
+	CollapsePairHash cpHash; //each pair is nameFieldCombo <-> Instance NodeProps*
 
     //Underlying LLVM Objects
     Function *func;
@@ -479,6 +485,7 @@ private:
     void determineFunctionExitStatus();
     void examineInstruction(Instruction *pi, int &varCount, int &currentLineNum, RegHashProps &variables, FunctionBFCBB *fbb);
     void createNPFromConstantExpr(ConstantExpr *ce, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
+    bool firstGEPCheck(User* pi); //for ENABLE_FORTRAN
     void genDILocationInfo(Instruction *pi, int &currentLineNum, FunctionBFCBB *fbb);
     bool parseDeclareIntrinsic(Instruction *pi, int &currentLineNum, FunctionBFCBB *fbb);
     void grabVarInformation(llvm::Value *varDeclare);    

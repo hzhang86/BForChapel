@@ -59,8 +59,12 @@ void FunctionBFC::determineBFCForVertexLite(NodeProps *v)
 	// By being in this function we already know that the return value was 
     // used in some form in this function (in/out degree of greater than 1) 
     // so we assign it an exit value
-	if (v->isGlobal)
+	if (v->isGlobal) {
+#ifdef DEBUG_EXIT
+        blame_info<<v->name<<" isGlobal !"<<std::endl;
+#endif
 		v->eStatus = EXIT_VAR_GLOBAL;
+    }
 	
 	
 	// EV:  RETURN VALUES
@@ -2577,7 +2581,7 @@ void FunctionBFC::resolveLocalDFA(NodeProps * v, std::set<NodeProps *> & pointer
 	}
 }
 
-/*
+
 void FunctionBFC::collapseRedundantFields()
 {
 	std::vector<CollapsePair *>::iterator vec_cp_i;
@@ -2585,14 +2589,14 @@ void FunctionBFC::collapseRedundantFields()
 	for (vec_cp_i = collapsePairs.begin(); vec_cp_i != collapsePairs.end(); vec_cp_i++)
 	{
 		CollapsePair * cp = *vec_cp_i;
-		#ifdef DEBUG_GRAPH_COLLAPSE
+#ifdef DEBUG_GRAPH_COLLAPSE
 		blame_info<<"Transferring CRF edges from field "<<cp->collapseVertex->name<<" to "<<cp->destVertex->name;
 		blame_info<<" for "<<cp->nameFieldCombo<<std::endl;
-		#endif 
+#endif 
 		transferEdgesAndDeleteNode(cp->collapseVertex, cp->destVertex, false);
 	}
 }
-*/
+
 
 void FunctionBFC::resolveDataReads()
 {
@@ -2785,9 +2789,9 @@ void FunctionBFC::genGraph(ExternFuncBFCHash &efInfo)
   
     collapseGraph(); 
 	
-//#ifdef ENABLE_FORTRAN
-//	collapseRedundantFields();
-//#endif 
+#ifdef ENABLE_FORTRAN
+	collapseRedundantFields();
+#endif 
 	printDotFiles("_afterCompressImp.dot", true);
 	
 	//Make the edges incoming to nodes that have stores based on
@@ -3223,7 +3227,20 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 			tie(ed, inserted) = add_edge(variables[instName.c_str()]->number,variables[v->getName().data()]->number,G);
 			if (inserted) {
 				if (opCount == 0) {
-					edge_type[ed] = GEP_BASE_OP;//pi->getOpcode();	
+                    /////added by Hui////////////////////
+                    //remove_edge(variables[instName.c_str()]->number,variables[v->getName().data()]->number,G);//blame relation should be struct -> field, e.g: localPeople->bd, bd->day
+			        //tie(ed, inserted) = add_edge(variables[v->getName().data()]->number,variables[instName.c_str()]->number,G);
+                    //if(inserted){
+                    /////////////////////////////////////
+					    edge_type[ed] = GEP_BASE_OP;//pi->getOpcode();	previously existed
+                        /*blame_info<<"reGenEdge YES from "<<v->getName().data()<<" to "<<instName;
+                        blame_info<<std::endl;
+                    }
+                    else {
+                        blame_info<<"rGenEdge Failed from "<<v->getName().data()<<" to"<<instName;
+                        blame_info<<std::endl;
+                    }*/
+                    //////////////////////////////////////////
 					variables[instName.c_str()]->pointsTo = variables[v->getName().data()];
 					variables[v->getName().data()]->pointedTo.insert(variables[instName.c_str()]);
 #ifdef DEBUG_GRAPH_BUILD
@@ -3280,11 +3297,20 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 					char fieldNumStr[3];
 					sprintf(fieldNumStr, "%d", number);
 					structVarName.insert(0, fieldNumStr);
-					
+#ifdef HUI_C
+                    ///added by Hui, temporary way to solve multi-level structures//
+                    char lastChar = *structVarName.rbegin();
+                    while('0'<=lastChar && lastChar<='9'){
+                        structVarName = structVarName.substr(0,structVarName.length()-1);
+                        lastChar = *structVarName.rbegin();
+                    }
+					blame_info<<"structVarName is "<<structVarName<<std::endl;
+                    //////////////////////////////////////////////////////////////
+#endif
 					const char *strAlloc = (const char *) malloc(sizeof(char) *(structVarName.length() + 1));				
 					
-					strcpy((char *)strAlloc,structVarName.c_str());
-					
+					strcpy((char *)strAlloc,structVarName.c_str()); //strAlloc: 0.P.localPeople
+					                                                //for name in People
 					#ifdef DEBUG_GRAPH_COLLAPSE
 					blame_info<<"Name of collapsable field candidate is "<<structVarName<<" for "<<instName<<std::endl;
 					#endif 
@@ -3306,7 +3332,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 					}
 					else {
 						//collapsableFields.insert(structVarName);
-						cpHash[strAlloc] = variables[instName.c_str()];
+						cpHash[strAlloc] = variables[instName.c_str()]; //cpHash only insert here
 						#ifdef DEBUG_GRAPH_COLLAPSE
 						blame_info<<"Collapsable field does not exist.  Create field and make inst name "<<instName<<" destination node."<<std::endl;
 						#endif 
@@ -4326,7 +4352,7 @@ void FunctionBFC::genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet,
 					if (vOp->getValueID() == Value::ConstantIntVal) {
 						ConstantInt *cv = (ConstantInt *)vOp;
 						int number = cv->getSExtValue();
-						if (number != 0)
+						if (number != 0)//TOCHECK: why is this cond
 							return;
 					}
 				}
@@ -5110,7 +5136,9 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
 		// Don't want a self loop edge
 		if (inTargetV->number != recipientNode) {//&& movedOpCode > 0)
 			// May be some implicit edges already there and we want explicit to trump implicit ... for now
-			remove_edge(inTargetV->number, recipientNode, G);
+            if(edge(inTargetV->number, recipientNode, G).second) 
+                //edge(u,v,g) returns pair<e_d, bool>, bool=>whether edge exists
+			    remove_edge(inTargetV->number, recipientNode, G);
 			tie(ed, inserted) = add_edge(inTargetV->number, recipientNode, G);
 			//std::cout<<"**SN -- Adding edge from "<<inTargetV->name<<"("<<inTargetV->number<<") to ";
 			//std::cout<<rN->name<<"("<<recipientNode<<")"<<std::endl;

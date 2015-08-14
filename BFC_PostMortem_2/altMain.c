@@ -109,7 +109,7 @@ void Instance::handleInstance(ModuleHash &modules, std::ostream &O, bool verbose
           //std::cout<<endl;
       
           //We have now parsed a frame and we are moving up the stack,no more unparsed
-          // TODO: what do do when we have a break in the debugging info from the stack trace
+          // TODO: what to do when we have a break in the debugging info from the stack trace
           isBottomParsed = false;
         }
         else {

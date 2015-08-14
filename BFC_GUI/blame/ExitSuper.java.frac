@@ -1,5 +1,5 @@
 package blame;
-
+//
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -409,15 +409,18 @@ public class ExitSuper implements Comparable<ExitSuper> {
 	
 	public void calcNumInstances()
 	{
+///////////////////////////////////////////////////////////////////////////////
+		System.out.println("I'm in calcNumInstances()");
+//////////////////////////////////////////////////////////////////////////////	
 		Iterator<NodeInstance> it = nodeInstances.values().iterator();
 		int num = 0;
 		while (it.hasNext())
 		{
 			NodeInstance ni = (NodeInstance) it.next();
 			String nodeName = ni.getNodeName();
-			double val = (double) ni.numInstances();
-			
-			//System.out.println("For Variable " + name + " and node " + nodeName + " the blame is " + val);
+			double val = (double) ni.numInstances();// HashMap<Integer, VariableInstance > varInstances.size()
+///////////////////////////////////////////////////////////////			
+			System.out.println("For Variable " + name + " and node " + nodeName + " the blame is " + val);
 			
 			this.blameByNode.put(nodeName, val);
 			
@@ -427,7 +430,7 @@ public class ExitSuper implements Comparable<ExitSuper> {
 		for (ExitSuper es : this.getFields().values() )
 			es.calcNumInstances();
 		
-		//System.out.println("Aggregate blame is " + num);
+		System.out.println("Aggregate blame is " + num);
 		aggregateBlame = (double) num;
 	}
 	
@@ -484,17 +487,26 @@ public class ExitSuper implements Comparable<ExitSuper> {
 	
 	void addInstance(Instance currInst, StackFrame currFrame)
 	{
+///////////////////////////////////////////////////////////////////
+		System.out.println("I'm in addInstance");
+//////////////////////////////////////////////////////////////////
 		if (Global.typeOfTest == 1)
 		{
 			instances.add(currInst);
+///////////////////////////////////////////////////////////////////
+                        System.out.println("I'm in if1");
+///////////////////////////////////////////////////////////////////
 		}
 		
 		String nodeName = currInst.getNodeName();
 		NodeInstance nI = nodeInstances.get(nodeName);
 		if (nI == null)
 		{
-			nI = new NodeInstance(name, nodeName);
+			nI = new NodeInstance(name, nodeName); // name is the variable
 			nodeInstances.put(nodeName, nI);
+///////////////////////////////////////////////////////////////////
+                        System.out.println("I'm in if2");
+///////////////////////////////////////////////////////////////////
 		}
 		
 		VariableInstance vi = new VariableInstance(this, currInst);
@@ -502,6 +514,9 @@ public class ExitSuper implements Comparable<ExitSuper> {
 		if (currFrame != null)
 		{
 			currFrame.addVarInstance(vi);
+///////////////////////////////////////////////////////////////////
+                        System.out.println("I'm in if3");
+///////////////////////////////////////////////////////////////////
 		}
 		
 		//nI.addInstance(lineNumber, currInst, vi );
@@ -509,10 +524,16 @@ public class ExitSuper implements Comparable<ExitSuper> {
 		if (this.getEvTypeName().contains("-") == false)
 		{
 			nI.addInstance(vi);
+///////////////////////////////////////////////////////////////////
+			System.out.println("I'm in if4");
+///////////////////////////////////////////////////////////////////
 		}
 		else
 		{
 			nI.addInstanceSkid(vi);
+///////////////////////////////////////////////////////////////////
+                        System.out.println("I'm in else");
+///////////////////////////////////////////////////////////////////
 		}
 		vi.setNodeName(nodeName);
 		vi.setWeight(getRawWeight());
@@ -524,20 +545,29 @@ public class ExitSuper implements Comparable<ExitSuper> {
 	
 	void addInstanceTrunc(Instance currInst)
 	{
-		//System.out.println("In function addInstanceTrunc");
-		
+//////////////////////////////////////////////////////////////////////////////
+//		System.out.println("In function addInstanceTrunc");
+		// get the number of vars to be blamed for this instance
+		int numBlamees = currInst.getNumBlamees();
+		double fractionAggregateBlame = 1.0/numBlamees;
+
 		Double value = this.blameByNode.get(currInst.getNodeName());
+		// increment the blame value for a variable in a certain node
 		if (value == null)
 		{
-			this.blameByNode.put(currInst.getNodeName(), 1.0);
+			this.blameByNode.put(currInst.getNodeName(), fractionAggregateBlame);
 		}
 		else
 		{
-			value++;
+			//value++;
+			value = value + fractionAggregateBlame;
 			this.blameByNode.put(currInst.getNodeName(), value);
 		}		
-		aggregateBlame++;
-		//System.out.println("New value for aggregate blame is " + aggregateBlame + " for variable " + name);
+		//aggregateBlame++;
+		aggregateBlame = aggregateBlame + fractionAggregateBlame;
+/////////////////////////////////////////////////////////////////////////////////////
+//		System.out.println("New value for aggregate blame is " + aggregateBlame + " for variable " + name);
+/////////////////////////////////////////////////////////////////////////////////////
 	}
 	
 	protected double percentageBlame()

@@ -23,9 +23,8 @@ public class BlameData extends ParentData {
 		this.bc = bc;
 		instanceCount = 0;	// = instanceNum
 		
-		nodeName = outputFile.substring(outputFile.indexOf("PARSED_") + 7);		// "Output_" has been changed to "PARSED_"
+		nodeName = outputFile.substring(outputFile.indexOf("PARSED_") + 7);
 		parseOutputFile(outputFile, nodeName);
-			
 		
 	}
 	
@@ -33,6 +32,8 @@ public class BlameData extends ParentData {
 	
 	public String parseFrame(BufferedReader bufReader, Instance currInst, String line)
 	{
+        ///////////////////////////////
+        System.out.println("parseFrame in BlameData Called !");
 		String pathTokens[] = line.split("\\s"); // return an array of strings that are separated by "\\s"(white space) in line
 		String strFrameNum = pathTokens[1];
 		int frameNum = Integer.valueOf(strFrameNum).intValue();   //=4

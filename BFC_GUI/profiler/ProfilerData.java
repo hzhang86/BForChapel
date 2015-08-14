@@ -51,7 +51,7 @@ public class ProfilerData {
 
 	public int parseNode(String outputFile)
 	{
-		String nodeName = outputFile.substring(outputFile.indexOf("PARSED_") + 7);// QUESTION: why looking for Output ?? (there's no such files)
+		String nodeName = outputFile.substring(outputFile.indexOf("PARSED_") + 7);
 		return parseOutputFile(outputFile, nodeName);
 	}
 	
@@ -95,7 +95,7 @@ public class ProfilerData {
 	
 	public String parseFrame(BufferedReader bufReader, ProfileInstance currInst, String line)
 	{
-		String pathTokens[] = line.split("\\s");
+		String pathTokens[] = line.split("\\s"); //Q: why double back slash
 		//String strFrameNum = pathTokens[1];
 		//int frameNum = Integer.valueOf(strFrameNum).intValue();
 		String funcName = pathTokens[2];
@@ -130,16 +130,13 @@ public class ProfilerData {
 			{
 				if (evLine.indexOf("$$INSTANCE") >= 0)
 				{
-					
-					
-					
 					return evLine;
 				}
 									
 				evLine = bufReader.readLine();
 			}
 						
-			return evLine;
+			return evLine; //until next frame
 			
 		}
 		catch (IOException e) {
@@ -184,6 +181,7 @@ public class ProfilerData {
 					if (line.indexOf("FRAME") >= 0)
 					{
 						atLeastOneFrame = true;
+                        //just to get the func name for this frame
 						line = parseFrame(bufReader, currInst, line);
 					}
 
@@ -207,7 +205,6 @@ public class ProfilerData {
 						}
 						
 						pf.addInstance(currInst);
-						
 						
 					}
 				

@@ -216,13 +216,14 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, 				
 			blame_info<<targetVP->nStatus[a]<<" ";
 		
 		blame_info<<std::endl;	
+        blame_info<<"Edge's opCode/edge_type="<<opCode<<std::endl;
 #endif 
 		
 		if ( targetVP->eStatus > 0 || targetVP->nStatus[ANY_EXIT] ) {
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN
 			blame_info<<"Target "<<targetVP->name<<" "<<targetVP->exitV<<" "<<origVP->exitV;
 			blame_info<<" ";
-			if (targetVP->dpUpPtr)
+			if (targetVP->dpUpPtr) //dpUpPtr: Up pointer, =itself by default
 				blame_info<<targetVP->dpUpPtr->name;
 			else
 				blame_info<<targetVP->dpUpPtr;
@@ -248,9 +249,17 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, 				
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN			
 				blame_info<<"Adding Child/Parent relation between "<<targetVP->name<<" and "<<origVP->name<<std::endl;
 #endif
-				origVP->children.insert(targetVP);
-				targetVP->parents.insert(origVP);
-				
+                //////added by Hui///////////////
+                if(opCode==GEP_BASE_OP) {
+                    origVP->parents.insert(targetVP);
+                    targetVP->children.insert(origVP);
+                }
+                //////////////////////////////////
+                else {
+				    origVP->children.insert(targetVP);
+				    targetVP->parents.insert(origVP);
+                }
+                ///////////////////////////////////
 				if ((origVP->nStatus[EXIT_VAR_PTR] || origVP->nStatus[LOCAL_VAR_PTR]) && (targetVP->nStatus[EXIT_VAR_PTR] || targetVP->nStatus[LOCAL_VAR_PTR])) {
 					//addControlFlowChildren(origVP, targetVP);
 					std::set<NodeProps *> visited;
@@ -908,10 +917,11 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
+    blame_info<<std::endl;
 #endif
 	
 #ifdef DEBUG_PRINT_LINE_NUMS
-	blame_info<<"Inserting Line Numbers(0) from baseline for "<<ivp->name<<std::endl;
+	blame_info<<"Inserting lineNumbers(0) from baseline for "<<ivp->name<<std::endl;
 	for (set_i_i = ivp->lineNumbers.begin(); set_i_i != ivp->lineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
@@ -920,28 +930,42 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	
 	ivp->descLineNumbers.insert(ivp->lineNumbers.begin(), ivp->lineNumbers.end());
 	ivp->descLineNumbers.insert(ivp->line_num);
-	
-	// TODO: DETAILS BELOW
-	//7/12/2010  INVESTIGATE FURTHER, do we need this still and why
-	if (ivp->storeFrom != NULL)
-		ivp->descLineNumbers.insert(ivp->storeFrom->line_num);
+
 #ifdef DEBUG_PRINT_LINE_NUMS
-	blame_info<<"After Store From "<<ivp->name<<std::endl;
+	blame_info<<"After insert line_num of "<<ivp->name<<std::endl;
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
-	
-		blame_info<<std::endl;
+	blame_info<<std::endl;
 #endif 
 	
+	// TODO: DETAILS BELOW
+	//7/12/2010  INVESTIGATE FURTHER, do we need this still and why
+	if (ivp->storeFrom != NULL){//changed by Hui on 08/03/15
+		//ivp->descLineNumbers.insert(ivp->storeFrom->line_num);
+        blame_info<<"ivp->eStatus="<<ivp->eStatus<<std::endl;
+        blame_info<<"ivp->nStatus:  ";
+        for(int a=0; a< NODE_PROPS_SIZE; a++)
+            blame_info<<ivp->nStatus[a]<<" ";
+        blame_info<<std::endl;
+        NodeProps *storeFrom = ivp->storeFrom;
+        ivp->descLineNumbers.insert(storeFrom->descLineNumbers.begin(), storeFrom->descLineNumbers.end());
+#ifdef DEBUG_PRINT_LINE_NUMS
+	    blame_info<<"After Store From "<<ivp->storeFrom->name<<std::endl;
+	    for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		    blame_info<<*set_i_i<<" ";
+	    }
+	
+	    blame_info<<std::endl;
+#endif 
+    }
 	std::set<NodeProps *>::iterator s_vp_i;
 	std::set<NodeProps *>::iterator s_vp_i2;
 	
 	std::set<NodeProps *>::iterator v_vp_i;
 	std::set<NodeProps *>::iterator v_vp_i2;
 	
-	if ((ivp->nStatus[LOCAL_VAR_PTR] || ivp->nStatus[EXIT_VAR_PTR]) && ivp->isWritten == false) {
-		
+	if ((ivp->nStatus[LOCAL_VAR_PTR] || ivp->nStatus[EXIT_VAR_PTR]) && ivp->isWritten == false) {		
 		if (ivp->dpUpPtr != ivp && ivp->dpUpPtr != NULL) {
 			for (s_vp_i = ivp->dpUpPtr->dataPtrs.begin(); s_vp_i != ivp->dpUpPtr->dataPtrs.end(); s_vp_i++) {
 				NodeProps *cand = *s_vp_i;
@@ -1492,7 +1516,7 @@ int FunctionBFC::checkCompleteness()
 	std::set<int> setDiff;
 	if (isMissing) {
 		std::cout<<"Set Diff is "<<std::endl;
-		set_difference(firstCheck.begin(), firstCheck.end(), \ //It's a std template func
+		set_difference(firstCheck.begin(), firstCheck.end(),//It's a std template func
 	    secondCheck.begin(), secondCheck.end(), ostream_iterator<int>(std::cout, " "));
 		
 		std::cout<<std::endl<<std::endl;		

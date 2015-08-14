@@ -93,7 +93,7 @@ public class BlameContainer {
 				String truncName = ep.getName().substring(ep.getName().lastIndexOf('.')+1);
 
 				
-				if (truncName.contains("ierr") || truncName.startsWith("_"))
+				if (truncName.contains("ierr") )
 				{
 					//////////////////////////////////////////////////////////
 					System.out.println("Not Adding var " + truncName);
@@ -107,19 +107,6 @@ public class BlameContainer {
 				}
 				else
 				{
-                    /////////////added by Hui///////////////////
-                    if(ep.getName().contains("_tmp")) 
-                     //   System.out.print(ep.getParentBF().getName());
-                        if(ep.getParentBF().getName().
-                            compareTo("main.main") != 0) //Temporary solution
-                            continue;
-                    
-                    if(ep.getName().contains("_chpl")){ //will show 'call_tmp2'
-                        String realName;
-                        realName = ep.getName().replace("_chpl","");
-                        ep.setName(realName);
-                    }
-                    ////////////////////////////////////////////
 					allLocalVariables.add(ep);
 				}
 			}
@@ -151,17 +138,9 @@ public class BlameContainer {
 				
 				String truncName = ev.getName().substring(ev.getName().lastIndexOf('.')+1);
 				
-				if (ev.isGlobal && !ev.getName().contains("_tmp")) //2nd Cond is uncertain
+				if (ev.isGlobal)
 				{
 					System.out.println("Adding " + ev.getName() + " to allGlobalVariables.");
-                    /////////////added by Hui///////////////////
-                    if(ev.getName().contains("_chpl")){
-                        String realName;
-                        realName = ev.getName().replace("_chpl","");
-                        ev.setName(realName);
-                    }
-                    ////////////////////////////////////////////
-
 					allGlobalVariables.add(ev);				
 				}
 			}

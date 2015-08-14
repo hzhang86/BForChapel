@@ -9,7 +9,9 @@ public class Instance {
 
 	private int instanceNum;
 	private String nodeName;
-	
+	// keep the number of variables to be blamed on for this instance
+	private int numBlamees;
+
 	private	Vector<StackFrame> stackFrames;
 
 	private Vector<ExitSuper> variables;
@@ -29,6 +31,15 @@ public class Instance {
 		return variables;
 	}
 
+	// getter of numBlamees
+	public int getNumBlamees(){
+		return numBlamees;
+	}
+
+	// increment numBlamees
+	public void incNumBlamees(){
+		this.numBlamees++;
+	}
 
 	public String getNodeName() {
 		return nodeName;
