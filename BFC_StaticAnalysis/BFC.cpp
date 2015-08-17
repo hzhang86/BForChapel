@@ -117,13 +117,13 @@ bool BFC::runOnModule(Module &M)
     for (DebugInfoFinder::iterator I = Finder.type_begin(),
 	    E = Finder.type_end(); I != E; I++) {
         DIType *dt = new DIType(*I); //create an instance of DIType, not a ptr
-        //if (dt->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
+        if (dt->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
 #ifdef DEBUG_P
             cout<<"Same Path DIType: "<<dt->getName().str()<<endl;
 #endif
             
             bm->parseDITypes(dt);
-        //}
+        }
     }
 
 //  Make records of the information of external library functions  //

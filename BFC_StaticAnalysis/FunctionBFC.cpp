@@ -250,15 +250,19 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, 				
 				blame_info<<"Adding Child/Parent relation between "<<targetVP->name<<" and "<<origVP->name<<std::endl;
 #endif
                 //////added by Hui///////////////
+#ifdef REVERSE_CP_REL1
                 if(opCode==GEP_BASE_OP) {
                     origVP->parents.insert(targetVP);
                     targetVP->children.insert(origVP);
-                }
-                //////////////////////////////////
+                 }
+                
                 else {
+#endif
 				    origVP->children.insert(targetVP);
 				    targetVP->parents.insert(origVP);
+#ifdef REVERSE_CP_REL1
                 }
+#endif
                 ///////////////////////////////////
 				if ((origVP->nStatus[EXIT_VAR_PTR] || origVP->nStatus[LOCAL_VAR_PTR]) && (targetVP->nStatus[EXIT_VAR_PTR] || targetVP->nStatus[LOCAL_VAR_PTR])) {
 					//addControlFlowChildren(origVP, targetVP);
@@ -1123,10 +1127,29 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 			vRevisit.insert(child);
 			vRevisit.insert(ivp);
 		}
-		
+
+		/////////////////////added by Hui/////////////////////////
+#ifdef REVERSE_CP_REL2
+        bool existed;
+        graph_traits < MyGraphType >::edge_descriptor Edge;
+#endif
+        /////////////////////////////////////////////////////////
+
 		if (!(child->nStatus[LOCAL_VAR] && child->storesTo.size() > 1) && 
                 !(child->nStatus[CALL_NODE]) && !(child->nStatus[LOCAL_VAR] && 
                 child->nStatus[CALL_PARAM])) {
+            ////////added by Hui///////////////////////
+#ifdef REVERSE_CP_REL2
+            tie(Edge, existed) = edge(ivp->number, child->number, G);
+            if(existed && get(get(edge_iore, G),Edge)==GEP_BASE_OP){
+                ivp->line_num=child->line_num;
+                ivp->descLineNumbers.insert(child->line_num);
+                blame_info<<"child "<<child->name<<" is actually the parent";
+                blame_info<<", and it's line_num="<<child->line_num<<std::endl;
+                continue; //field only blamed for struct's declaration line
+            }
+#endif
+            //////////////////////////////////////////////////////
 			ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
 			debugPrintLineNumbers(ivp, child, 2);
 		}

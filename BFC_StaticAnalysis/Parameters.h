@@ -19,6 +19,8 @@
 //////////////////////////
 #define ENABLE_FORTRAN 
 #define HUI_C
+#define REVERSE_CP_REL1
+//#define REVERSE_CP_REL2
 //////////////////////////
 
 #define DEBUG_GRAPH_BUILD
