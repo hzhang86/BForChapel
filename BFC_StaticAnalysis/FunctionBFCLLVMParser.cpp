@@ -911,6 +911,8 @@ void FunctionBFC::structResolve(Value *v, int fieldNum, NodeProps *fieldVP)
 #ifdef DEBUG_STRUCTS
 		blame_info<<"structNameFull -- "<<structNameFull<<std::endl;
 #endif
+
+#ifdef USE_LLVM25
 		if (structNameFull.find("struct.") == std::string::npos) {
 #ifdef DEBUG_ERROR
 			blame_info<<"structName is incomplete--"<<structNameFull<<std::endl;
@@ -920,19 +922,21 @@ void FunctionBFC::structResolve(Value *v, int fieldNum, NodeProps *fieldVP)
 		}
 		// need to get rid of preceding "struct." and trailing NULL character
 		string justStructName = structNameFull.substr(7, structNameFull.length() - 7 );
-		
 		StructBFC *sb = mb->structLookUp(justStructName);
-		
+#else
+        StructBFC *sb = mb->structLookUp(structNameFull);
+#endif
 		if (sb == NULL)
 			return;
 		
 #ifdef DEBUG_STRUCTS
-		blame_info<<"Found sb for "<<justStructName<<std::endl;
+		blame_info<<"Found sb for "<<structNameFull<<std::endl;
 #endif
 		
 		// TODO: Hash
 		std::vector<StructField *>::iterator vec_sf_i;
-		for (vec_sf_i = sb->fields.begin(); vec_sf_i != sb->fields.end(); vec_sf_i++) {
+		for (vec_sf_i = sb->fields.begin(); vec_sf_i != sb->fields.end(); vec_sf_i++)
+        {
 			StructField *sf = (*vec_sf_i);
 			if (sf->fieldNum == fieldNum) {				
 #ifdef DEBUG_STRUCTS

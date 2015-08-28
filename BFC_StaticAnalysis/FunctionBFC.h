@@ -336,7 +336,9 @@ private:
     void genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum, std::set<NodeProps *> &seenCall);
 	//generate edges based on opcode
     void geCall(Instruction *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum, std::set<NodeProps *> &seenCall);
-														 
+	
+    //Added by Hui 08/20/15
+    std::string getRealStructName(std::string rawStructVarName, Value *v, User *pi,  std::string instName);
 	std::string geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum);
 														 
 	void geDefault(Instruction *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum);

@@ -308,7 +308,6 @@ public:
 	set<int> borderLines;
 	/////////////////////////
 	
-	
 	// More DataFlow Analysis (reaching defs for pointers)
 	set<NodeProps *> genPTR_VP;
 	set<NodeProps *> killPTR_VP;

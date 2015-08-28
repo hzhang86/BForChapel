@@ -773,11 +773,11 @@ BlameFunction * BlameFunction::parseBlameFunction(ifstream & bI)
   
   if (BP->sampledModules.count(moduleName.c_str()))
   {
-    //std::cout<<"MODULE "<<moduleName<<" FOUND as one containing a sampled function "<<line<<std::endl;
+    std::cout<<"MODULE "<<moduleName<<" FOUND as one containing a sampled function "<<line<<std::endl;
   }
   else
   {
-    ////std::cout<<"MODULE NOT FOUND, no sampled function - "<<moduleName<<" "<<strlen(moduleName.c_str())<<std::endl;
+    std::cout<<"MODULE NOT FOUND, no sampled function - "<<moduleName<<" "<<strlen(moduleName.c_str())<<std::endl;
     return NULL;
   }
   

@@ -1,5 +1,5 @@
 /*
- *  Module.cpp
+ *  BlameProgram.cpp
  *  
  *
  *  Created by Nick Rutar on 4/13/09.
@@ -100,8 +100,8 @@ void BlameProgram::grabUsedModules(const char * traceName)
 			if (strcmp(buffer,"NULL") != 0)
 			{
 				std::pair<set<std::string>::iterator,bool> ret;
-				ret = sampledModules.insert(buffer);
-				if (ret.second)
+				ret = sampledModules.insert(buffer);//insert the module name to set
+				if (ret.second)                     //returns true if inserted succ
 				{
 					//std::cout<<"Inserting "<<buffer<<" into list of modules. "<<strlen(buffer)<<std::endl;
 				}
@@ -310,8 +310,6 @@ void StructBlame::parseStruct(ifstream & bI)
 	
 	// END S_NAME
 	getline(bI, line);
-	
-	
 	
 	
 	/////////
@@ -1014,10 +1012,16 @@ void BlameProgram::parseProgram()
 				bf->BP = this;
 				
 				bool isMain = false;	
-				
+#ifdef HUI_CHPL
+                string MAIN = "chpl_user_main";
+                int MAINLEN = 14;
+#else
+                string MAIN = "main";
+                int MAINLEN = 4;
+#endif
 				// TODO: Make this determined at runtime
-				if (funcName.find("main") != std::string::npos 
-						&& funcName.length() == 4)
+				if (funcName.find(MAIN) != std::string::npos 
+						&& funcName.length() == MAINLEN) //Changed by Hui 08/21/15 
 				{
 					//std::cout<<"Setting main as a blame point"<<std::endl;
 					isMain = true;
@@ -1035,7 +1039,7 @@ void BlameProgram::parseProgram()
 					//addFunction(bf);	
 					
 					if (isMain)
-						bf->setBlamePoint(EXPLICIT);
+						bf->setBlamePoint(EXPLICIT); //TOCHECK: chpl_user_main
 				}
 			}
 		}

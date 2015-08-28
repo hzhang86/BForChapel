@@ -18,9 +18,11 @@
 #define DEBUG_ERROR
 //////////////////////////
 #define ENABLE_FORTRAN 
-#define HUI_C
-#define REVERSE_CP_REL1
-//#define REVERSE_CP_REL2
+#define HUI_CHPL
+//#define HUI_C
+//#define REVERSE_CP_REL1
+#define REVERSE_CP_REL2
+//#define USE_LLVM25 //shall never be turned on for llvm newer than 2.5
 //////////////////////////
 
 #define DEBUG_GRAPH_BUILD

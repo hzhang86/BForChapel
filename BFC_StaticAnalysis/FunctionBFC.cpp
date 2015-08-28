@@ -2112,39 +2112,48 @@ void FunctionBFC::resolveLooseStructs()
 					//if (ivp->sBFC == NULL && ivp->nStatus[LOCAL_VAR] )
                     if (ivp->sBFC == NULL) {
 #ifdef DEBUG_STRUCTS
-						blame_info<<"Struct "<<ivp->name<<" has no SBFC"<<std::endl;
+						blame_info<<"Struct "<<ivp->name<<" has no sBFC"<<std::endl;
 #endif
 						Value *v = cast<Value>(ivp->llvm_inst);	
 						const llvm::Type *pointT = v->getType();
 						unsigned typeVal = pointT->getTypeID();
+#ifdef DEBUG_STRUCTS
+                        blame_info<<"Before while, typeVal="<<typeVal<<std::endl;
+#endif
 						while (typeVal == Type::PointerTyID) {		
 							pointT = cast<PointerType>(pointT)->getElementType();
 							//std::string origTStr = returnTypeName(pointT, std::string(" "));
 							typeVal = pointT->getTypeID();
 						}
-						
+#ifdef DEBUG_STRUCTS
+                        blame_info<<"After while, typeVal="<<typeVal<<std::endl;
+#endif
 						if (typeVal == Type::StructTyID) {
 							const llvm::StructType *type = cast<StructType>(pointT);
 							string structNameFull = type->getName().str();
-							
-							if (structNameFull.find("struct.") == std::string::npos) {
+							//TO CONTINUE: 08/19/15
+#ifdef USE_LLVM25
+                            if (structNameFull.find("struct.") == std::string::npos){
 #ifdef DEBUG_ERROR
-								std::cerr<<"structName(2) is incomplete -- "<<structNameFull<<std::endl;
+								blame_info<<"Error: structName(2) is incomplete -- "<<structNameFull<<std::endl;
 #endif 
 								continue;
 							}
 							// need to get rid of preceding "struct." and trailing NULL character
 							string justStructName = structNameFull.substr(7, structNameFull.length() - 7 );
-							StructBFC * sb = mb->structLookUp(justStructName);
-							
+                            StructBFC * sb = mb->structLookUp(justStructName);
+#else
+                            StructBFC *sb = mb->structLookUp(structNameFull);
+#endif
+
 							if (sb == NULL) {
 #ifdef DEBUG_STRUCTS
-								blame_info<<"SB is NULL for "<<justStructName<<" for IVP "<<ivp->name<<std::endl;
+								blame_info<<"SB is NULL for "<<structNameFull<<" for IVP "<<ivp->name<<std::endl;
 #endif
 								continue;
 							}
 #ifdef DEBUG_STRUCTS
-							blame_info<<"Found sb for "<<justStructName<<" assiging sBFC to "<<ivp->name<<std::endl;
+							blame_info<<"Found sb for "<<structNameFull<<" assiging sBFC to "<<ivp->name<<std::endl;
 #endif
 							ivp->sBFC = sb;
 							

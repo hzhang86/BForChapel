@@ -28,6 +28,10 @@
 #include "BlameModule.h"
 #include "BlameStruct.h"
 
+////added by Hui///////
+#define HUI_CHPL
+//////////////////////
+
 using namespace std;
 
 

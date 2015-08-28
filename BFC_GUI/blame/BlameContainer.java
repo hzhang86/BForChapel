@@ -108,17 +108,28 @@ public class BlameContainer {
 				else
 				{
                     /////////////added by Hui///////////////////
-                    if(ep.getName().contains("_tmp")) 
-                     //   System.out.print(ep.getParentBF().getName());
-                        if(ep.getParentBF().getName().
-                            compareTo("main.main") != 0) //Temporary solution
-                            continue;
-                    
-                    if(ep.getName().contains("_chpl")){ //will show 'call_tmp2'
-                        String realName;
-                        realName = ep.getName().replace("_chpl","");
-                        ep.setName(realName);
+
+                    //we want to keep call_tmps that came from main
+                    /*if(ep.getParentBF().getName().compareTo("main.main") == 0){ 
+                        if(ep.getName().compareTo("call_tmp") ==0)
+                            ep.setName("foo");
+                        else if(ep.getName().compareTo("ret4") ==0)
+                            ep.setName("Number");
+                        else 
+                            if(ep.getName().contains("_tmp") ||
+                                ep.getName().compareTo("ret3")==0)
+                                continue;
                     }
+                    else {
+                        if(ep.getName().contains("_tmp")) 
+                            continue;
+                    }*/
+                   
+                    /*if(ep.getName().contains("_chpl")){ //will show 'call_tmp2'
+                        String realName;
+                        realName = ep.getName().replaceAll("_chpl","");
+                        ep.setName(realName);
+                    }*/
                     ////////////////////////////////////////////
 					allLocalVariables.add(ep);
 				}
@@ -155,11 +166,11 @@ public class BlameContainer {
 				{
 					System.out.println("Adding " + ev.getName() + " to allGlobalVariables.");
                     /////////////added by Hui///////////////////
-                    if(ev.getName().contains("_chpl")){
+                    /*if(ev.getName().contains("_chpl")){
                         String realName;
-                        realName = ev.getName().replace("_chpl","");
+                        realName = ev.getName().replaceAll("_chpl","");
                         ev.setName(realName);
-                    }
+                    }*/
                     ////////////////////////////////////////////
 
 					allGlobalVariables.add(ev);				

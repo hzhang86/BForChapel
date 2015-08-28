@@ -443,9 +443,12 @@ void ModuleBFC::parseDITypes(DIType* dt) //deal with derived type and composite 
 #ifdef DEBUG_P    //stands for debug_print
     cout<<"Entering parseDITypes for "<<dt->getName().str()<<endl;
 #endif	
-    StructBFC * sb;
+    StructBFC *sb;
     string dtName = dt->getName().str();
-    if (dtName.compare("object") && dtName.compare("super") && dtName.find("chpl")==string::npos) {
+    if (dtName.compare("object") && dtName.compare("super")) {
+        if (dtName.find("chpl_") == 0) //not deal types that start with "chpl_"
+            return;
+
         if (dt->isCompositeType()) { //DICompositeType:public DIDerivedType
 #ifdef DEBUG_P
             cout<<"Composite Type primary for: "<<dt->getName().str()<<endl;

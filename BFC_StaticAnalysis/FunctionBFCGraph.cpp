@@ -2020,21 +2020,33 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 	#endif 	
 		
 		if (isa<Instruction>(v->llvm_inst)) {
+	#ifdef DEBUG_RP
+		blame_info<<v->name<<" is Instruction"<<std::endl;
+	#endif 	
 			Instruction *pi = cast<Instruction>(v->llvm_inst);	
 			origT = pi->getType();	
 			origPointerLevel = pointerLevel(origT,0);
 		}
 		else if (isa<ConstantExpr>(v->llvm_inst)) {
-			ConstantExpr *ce = cast<ConstantExpr>(v->llvm_inst);
+	#ifdef DEBUG_RP
+		blame_info<<v->name<<" is ConstantExpr"<<std::endl;
+	#endif 	
+		    ConstantExpr *ce = cast<ConstantExpr>(v->llvm_inst);
 			origT = ce->getType();
 			origPointerLevel = pointerLevel(origT, 0);
 		}
 		else if (isa<ConstantAggregateZero> (v->llvm_inst)) {
-			ConstantAggregateZero *caz = cast<ConstantAggregateZero>(v->llvm_inst);
+	#ifdef DEBUG_RP
+		blame_info<<v->name<<" is ConstantAggregateZero"<<std::endl;
+	#endif 	
+		    ConstantAggregateZero *caz = cast<ConstantAggregateZero>(v->llvm_inst);
 			origT = caz->getType();
 			origPointerLevel = pointerLevel(origT, 0);
 		}
 		else if (isa<ConstantArray> (v->llvm_inst)) {
+	#ifdef DEBUG_RP
+		blame_info<<v->name<<" is ConstantArray"<<std::endl;
+	#endif 	
 			ConstantArray *ca = cast<ConstantArray>(v->llvm_inst);
 			origT = ca->getType();
 			origPointerLevel = pointerLevel(origT, 0);
@@ -2271,7 +2283,12 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 		// iterate through the edges trying to find a Store between pointers
 		for(; e_beg != e_end; ++e_beg) {
 			int opCode = get(get(edge_iore, G),*e_beg);
+            //here,targetV is the coming node for v, not v itself
 			NodeProps * targetV = get(get(vertex_props,G), source(*e_beg,G));
+#ifdef DEBUG_RP
+        blame_info<<"For the struct pointer: "<<v->name<<", targetV of this in_edge is "<<targetV->name<<std::endl;
+#endif
+
 			if (opCode == GEP_BASE_OP) {
 				boost::graph_traits<MyGraphType>::out_edge_iterator e_beg2, e_end2;
 				e_beg2 = boost::out_edges(targetV->number,G).first;//edge iter begin
@@ -2311,8 +2328,77 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 					tempPointers.insert(targetV);
 				}
 			}
-		}
-	}
+#ifdef HUI_CHPL
+            else if (opCode == Instruction::Store) {
+                boost::graph_traits<MyGraphType>::in_edge_iterator e_beg2, e_end2;
+                e_beg2 = boost::in_edges(targetV->number, G).first;
+                e_end2 = boost::in_edges(targetV->number, G).second;
+
+                for (; e_beg2 != e_end2; ++e_beg2) {
+                    int opCode2 = get(get(edge_iore, G), *e_beg2);
+                    NodeProps *targetV2 = get(get(vertex_props,G),source(*e_beg2,G));
+#ifdef DEBUG_RP
+                    blame_info<<"For "<<targetV->name<<", targetV2 of this in_edge is "<<targetV2->name<<std::endl;
+#endif
+                    if (opCode2 == Instruction::Load) {
+                        boost::graph_traits<MyGraphType>::in_edge_iterator e_beg3, 
+                                                                            e_end3;
+                        e_beg3 = boost::in_edges(targetV2->number, G).first;
+                        e_end3 = boost::in_edges(targetV2->number, G).second;
+
+                        for (; e_beg3 != e_end3; ++e_beg3) {
+                            int opCode3 = get(get(edge_iore, G), *e_beg3);
+                            NodeProps *targetV3 = get(get(vertex_props, G), source(*e_beg3, G));
+#ifdef DEBUG_RP
+                            blame_info<<"For "<<targetV2->name<<", targetV3 of this in_edge is "<<targetV3->name<<std::endl;
+
+#endif
+ 			                if (opCode3 == GEP_BASE_OP) {
+				                boost::graph_traits<MyGraphType>::out_edge_iterator e_beg4, e_end4;
+				                e_beg4 = boost::out_edges(targetV3->number,G).first;//edge iter begin
+				                e_end4 = boost::out_edges(targetV3->number,G).second;//edge iter  end
+				
+		// iterate through the edges trying to find relationship between pointers
+				                for(; e_beg4 != e_end4; ++e_beg4) {
+					                int opCodeForField = get(get(edge_iore, G),*e_beg4);
+					                int fNum = 0;
+					                if (opCodeForField >= GEP_S_FIELD_OFFSET_OP) {
+						                fNum = opCodeForField - GEP_S_FIELD_OFFSET_OP; 
+						                if (isa<Value>(v->llvm_inst)) {
+							                Value *val = cast<Value>(v->llvm_inst);	
+#ifdef DEBUG_RP
+							                blame_info<<"Calling structDump for "<<v->name<<" of type "<<origTStr<<endl;
+#endif                                      //TO BE CHECKED: 08/22/15 structResolve
+							                structResolve(val, fNum, targetV3);
+                                        }
+                                    }
+					                if (opCodeForField == Instruction::Store) {
+						                targetV3->isWritten = true;
+#ifdef DEBUG_RP
+						                blame_info<<"Vertex "<<targetV3->name<<" is written(2)"<<std::endl;
+#endif 
+					                }
+				                }
+#ifdef DEBUG_RP
+				                blame_info<<"Transferring sBFC from(sf->ps) "<<targetV3->name<<" to "<<v->name<<std::endl;
+#endif 
+
+				                if (targetV3->sField != NULL)
+					                v->sBFC = targetV3->sField->parentStruct;
+				                v->fields.insert(targetV3);
+				                targetV3->fieldUpPtr = v;
+				
+				                if (v->isGlobal) {
+					                tempPointers.insert(targetV3);
+				                }
+			                }// if opCode3=GEP_BASE_OP
+                        }// for each in_edge of targetV2
+                    }// if opCode2=Load
+                }// for each in_edge of targetV
+            }// else if opCode=Store
+#endif
+		}// for each in_edge of v
+	}// origTstr.find("Struct")
 	else if (origTStr.find("Array") != std::string::npos) {
 		resolveArrays(v, v, tempPointers);
 	}	
@@ -2321,7 +2407,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 	
 	blame_info<<std::endl;
 	blame_info<<"For PTR "<<v->name<<std::endl;
-	blame_info<<"Is Pointer "<<v->isPtr<<std::endl;
+	blame_info<<"Is Pointer "<<v->isPtr<<std::endl; //TC: Should it be set to 1?
 	blame_info<<"Is Written "<<v->isWritten<<std::endl;
 	std::set<NodeProps *>::iterator vec_vp_i;
 	std::set<NodeProps *>::iterator set_vp_i;
@@ -2758,7 +2844,7 @@ void FunctionBFC::genGraph(ExternFuncBFCHash &efInfo)
 #endif 
 		put(props, v->number, v);
 	}
-  
+  //every block has a iSet, is a set of implicit blame nodes:Condition Names
     std::set<const char*, ltstr> iSet;	
   
     //int varCount = 0, currentLineNum = 0;
@@ -2883,11 +2969,19 @@ void FunctionBFC::resolveStores()
 				
 				if (sourceV->name.find("_addr") == std::string::npos)
 					sourceV->isWritten = true;
-				targetV->storeFrom = sourceV;
+				                
+                targetV->storeFrom = sourceV;
 				sourceV->storesTo.insert(targetV);
 				//storeCount++;
 				stores.insert(targetV);
 				storesSource.insert(sourceV);
+                /*
+                sourceV->storeFrom = targetV;
+				targetV->storesTo.insert(sourceV);
+				//storeCount++;
+				stores.insert(sourceV);
+				storesSource.insert(targetV);
+                */
 			}
 		}
 		
@@ -3184,7 +3278,99 @@ void FunctionBFC::geDefault(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	}
 	
 }
+//added by Hui 08/20/15  Temporary solution for multi-level structures (2-level)
+string FunctionBFC::getRealStructName(string rawStructVarName, Value *v, User *pi,
+                                                                string instName)
+{
+    if (v->getValueID() == Value::ConstantIntVal) {
+        blame_info<<"The instName of GEP(1): "<<instName<<std::endl;
+        /////step1 done/////////////NOT very useful///////////////////////
+        //if(rawStructVarName.find("localActor") != std::string::npos)
+        //    return rawStructVarName; //temporary scheme, for the first level GEP
 
+        Value *vLoad = *(pi->op_begin());
+        if (isa<Instruction>(vLoad)) {
+            blame_info<<"vLoad is an instruction\n";
+            Instruction *vInstLoad = cast<Instruction>(vLoad);
+            if(vInstLoad->getOpcode() == Instruction::Load){
+                blame_info<<"vInstLoad is a Load instruction\n";
+                Value *midTemp = vInstLoad->getOperand(0);
+                /*if(midTemp->hasName())
+                    NodeProps *nodeTemp=variables[midTemp->getName().str().c_str()];
+                    if(nodeTemp->storeFrom != NULL)
+                        blame_info<<"We have nodeStore now !\n";
+                        NodeProps *nodeStore = nodeTemp->storeFrom;
+                */
+                Value::use_iterator ui, ue;
+                for(ui=midTemp->use_begin(),ue=midTemp->use_end(); ui!=ue; ++ui){
+                    if(Instruction *useInst = dyn_cast<Instruction>(*ui)){
+                        if(useInst->getOpcode()==Instruction::Store){
+                            blame_info<<"We find the store inst for call_tmp\n";
+                            Value *storeFrom = *(useInst->op_begin());
+                            if(isa<Instruction>(storeFrom)){
+                                Instruction *instGEP = cast<Instruction>(storeFrom);
+                                if(instGEP->getOpcode()==Instruction::GetElementPtr){
+                                    blame_info<<"We find GEP inst !\n";
+                                    Value *topStruct = *(instGEP->op_begin());
+                                    string tempStr; //hold the return string
+                                    tempStr.insert(0,topStruct->getName().str());
+                                    User::op_iterator op_i = instGEP->op_begin();
+                                    ++op_i; //first index
+                                    ++op_i; //second index
+                                    Value *offset = *op_i;
+                                    if(v->getValueID()==Value::ConstantIntVal){
+                                        ConstantInt *cO = (ConstantInt *)offset;
+                                        int offNum = cO->getSExtValue();
+					                    tempStr.insert(0, ".P.");
+					
+					                    char fNumStr[3];
+					                    sprintf(fNumStr, "%d", offNum);
+					                    tempStr.insert(0, fNumStr);
+                                        return tempStr;
+                                    }
+                                    else {
+                                        blame_info<<"Fail in Cond 1\n";
+                                        return rawStructVarName;
+                                    }
+                                }   
+                                else {
+                                    blame_info<<"Fail in Cond 2\n";
+                                    return rawStructVarName;
+                                }
+                            }
+                            else {
+                                blame_info<<"Fail in Cond 3\n";
+                                return rawStructVarName;
+                            }
+                        }
+                        else {
+                            blame_info<<"Fail in Cond4\n";
+                            continue; //if the Instruction isn't Store
+                        }
+                    }
+                    else {
+                        blame_info<<"Fail in Cond5\n";
+                        continue; //if the use isn't an Instruction
+                    }
+                }
+                blame_info<<"Searched all uses, didn't find Store\n";
+                return rawStructVarName;
+            }
+            else {
+                blame_info<<"Fail in Cond6\n";
+                return rawStructVarName;
+            }
+        }
+        else {
+            blame_info<<"Fail in Cond7\n";
+            return rawStructVarName;
+        }
+    }
+    else {
+        blame_info<<"Fail in Cond8\n";
+        return rawStructVarName;
+    }
+}
 
 
 string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet,								property_map<MyGraphType, vertex_props_t>::type props,
@@ -3232,7 +3418,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 			        //tie(ed, inserted) = add_edge(variables[v->getName().data()]->number,variables[instName.c_str()]->number,G);
                     //if(inserted){
                     /////////////////////////////////////
-					    edge_type[ed] = GEP_BASE_OP;//pi->getOpcode();	previously existed
+					edge_type[ed] = GEP_BASE_OP;//pi->getOpcode();	previously existed
                         /*blame_info<<"reGenEdge YES from "<<v->getName().data()<<" to "<<instName;
                         blame_info<<std::endl;
                     }
@@ -3264,7 +3450,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 				std::cerr<<"Insertion fail in genEges for "<<instName<<" to "<<v->getName().data()<<std::endl;
 #endif 
 			}
-		}
+		} //v hasName() = true
 		else if (v->getValueID() == Value::ConstantIntVal) {
 			if (opCount == 1 || opCount == 0) {
 				opCount++;
@@ -3290,7 +3476,10 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 				if (inserted) {
 					edge_type[ed] = GEP_S_FIELD_OFFSET_OP + number;
 #ifdef ENABLE_FORTRAN
-					
+#ifdef HUI_CHPL //still temporary, we back follow GEP->store->load->GEP
+                    structVarNameGlobal = //can be changed to iteratively call
+                        getRealStructName(structVarNameGlobal,v,pi,instName);
+#endif
 					std::string structVarName = structVarNameGlobal;
 					structVarName.insert(0, ".P.");
 					
@@ -3298,15 +3487,16 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 					sprintf(fieldNumStr, "%d", number);
 					structVarName.insert(0, fieldNumStr);
 #ifdef HUI_C
-                    ///added by Hui, temporary way to solve multi-level structures//
+                ///added by Hui, temporary way to solve multi-level structures////
                     char lastChar = *structVarName.rbegin();
                     while('0'<=lastChar && lastChar<='9'){
                         structVarName = structVarName.substr(0,structVarName.length()-1);
                         lastChar = *structVarName.rbegin();
                     }
+#endif
 					blame_info<<"structVarName is "<<structVarName<<std::endl;
                     //////////////////////////////////////////////////////////////
-#endif
+
 					const char *strAlloc = (const char *) malloc(sizeof(char) *(structVarName.length() + 1));				
 					
 					strcpy((char *)strAlloc,structVarName.c_str()); //strAlloc: 0.P.localPeople
@@ -4158,7 +4348,9 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	
 	
 	if (variables.count(secondName.c_str()) && variables.count(firstName.c_str()))
-		addEdge(secondName.c_str(), firstName.c_str(), pi);
+	//changed by Hui 08/21/15: switch first and second
+    //    addEdge(firstName.c_str(), secondName.c_str(), pi);
+        addEdge(secondName.c_str(), firstName.c_str(), pi);
 }
 
 
@@ -4285,7 +4477,7 @@ void FunctionBFC::genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	
 #ifdef DEBUG_GRAPH_BUILD
 	if (pi->hasName())
-		blame_info<<"GE Instruction "<<pi->getName().str()<<" "<<pi->getOpcode()<<std::endl;
+		blame_info<<"GE Instruction "<<pi->getName().str()<<" "<<pi->getOpcodeName()<<std::endl;
 	else
 		blame_info<<"GE No name "<<pi->getOpcodeName()<<std::endl;
 #endif 

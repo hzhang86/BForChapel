@@ -40,6 +40,10 @@ public class BlameDataTrunc extends BlameData {
 		//String strFrameNum = pathTokens[1];
 		//int frameNum = Integer.valueOf(strFrameNum).intValue();
 		String funcName = pathTokens[2];
+        /////////////added by HUI 08/23/15////////////////
+        String cleanFuncName = funcName.replaceAll("chpl_user_main","main");
+        funcName = cleanFuncName.replace("_chpl","");
+        //////////////////////////////////////////////////
 		String moduleName = pathTokens[3];
 		String pathName = pathTokens[4];
 		//String strLineNum  = pathTokens[5];
@@ -161,14 +165,20 @@ public class BlameDataTrunc extends BlameData {
 				
 				// Full Name
 				String strVarName = esTokens[1];
-				
+				/////added by HUI 08/23/15////////////////
+                strVarName = strVarName.replaceAll("_chpl","");
+                /////////////////////////////////////////
+			
 				// Type Name
 				String strTypeName = esTokens[2];
 
 				// Struct Name (may be NULL)
 				String structName = esTokens[3];
+				/////added by HUI 08/23/15////////////////
+                structName = structName.replaceAll("_chpl","");
+                /////////////////////////////////////////
 				
-				//bc.addType(strTypeName, structName);
+                //bc.addType(strTypeName, structName);
 						
 				ExitSuper es = new ExitSuper();
 				
@@ -287,8 +297,8 @@ public class BlameDataTrunc extends BlameData {
 				    continue;
 				}
 				
-				
-				//System.out.println("Setting GT " + strTypeName + " ST " + structName + " for " + es.getName());
+				/////////////////////HUI//////////////////////////////////
+				System.out.println("Setting GT " + strTypeName + " ST " + structName + " for " + es.getName());
 				es.setGenType(strTypeName);
 				es.setStructType(structName);
 				es.setType();

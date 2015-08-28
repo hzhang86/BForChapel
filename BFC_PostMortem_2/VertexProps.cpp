@@ -616,7 +616,7 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 	
 	if (line.find("NULL") != std::string::npos)
 		sType = NULL;
-	else
+	else // never executed for experiment 
 	{
 		if (BF == NULL)
 		{
@@ -651,7 +651,7 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 	//std::cout<<"SP - "<<line<<std::endl;
 	if (line.find("NULL") != std::string::npos)
 		bs = NULL;
-	else
+	else // never executed for experiment
 	{
 		if (BF == NULL)
 		{
@@ -676,7 +676,7 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 	
 	
 	// - 
-	// BEGIN STRUCTFIELD
+	// BEGIN STRUCTFIELDNUM
 	getline(bI, line);
 
 	//StructField * sField;
