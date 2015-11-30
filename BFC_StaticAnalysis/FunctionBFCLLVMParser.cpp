@@ -20,8 +20,9 @@
 
 void FunctionBFC::parseLLVM(std::vector<NodeProps *> &globalVars)
 {
-    determineFunctionExitStatus();  // push back all the exit variables in this function(ret, pointer params)
-	                                // set isBFCPoint to be true if no exit variables
+    // push back all the exit variables in this function(ret, pointer params)
+    determineFunctionExitStatus();
+	// set isBFCPoint to be true if no exit variables
     RegHashProps::iterator begin, end;
   
     populateGlobals(globalVars);
@@ -720,7 +721,9 @@ void FunctionBFC::determineFunctionExitStatus()
 								if (i2->getOpcode() == Instruction::Store) {
 									User::op_iterator op_i = i2->op_begin(); //typedef Use* op_iterator
 									//Value  *first = *op_i,  
-									Value *second = *(++op_i); // second is the actual mem address where to store the value
+									//Hui: test which is EV? 11/30/15
+                                    Value *second = *op_i;
+                                    //Value *second = *(++op_i); // second is the actual mem address where to store the value
 									
 									if (second->hasName()) {	
 										const llvm::Type * origT = second->getType();		
@@ -728,9 +731,7 @@ void FunctionBFC::determineFunctionExitStatus()
 										
 										int ptrLevel = pointerLevel(origT, 0); //ptrLevel = 1 means it's a 1-level pointer, like int *ip
 										
-										if (ptrLevel > 1 || origTStr.find("Array") != std::string::npos ||
-											(origTStr.find("Struct") != std::string::npos)) { 						
-											
+										if (ptrLevel > 1 || origTStr.find("Array") != std::string::npos || (origTStr.find("Struct") != std::string::npos)) { 						
 											addExitVar(new ExitVariable(second->getName().str(), PARAM, whichParam, isStructPtr));
 #ifdef DEBUG_LLVM	
 											blame_info<<"LLVM_(checkFunctionProto) - Adding exit var(2) "<<second->getName().str();
@@ -750,10 +751,12 @@ void FunctionBFC::determineFunctionExitStatus()
 					}
 					else if (i->getOpcode() == Instruction::Store) {
 						User::op_iterator op_i = i->op_begin();
-						Value  *first = *op_i,  *second = *(++op_i);
+						//Hui: test which is the EV? 11/30/15
+                        Value *second = *op_i, *first = *(++op_i);
+                        //Value  *first = *op_i,  *second = *(++op_i);
 						
 						if (first->hasName() && second->hasName()) {	
-							const llvm::Type * origT = second->getType();		
+							const llvm::Type *origT = second->getType();		
 							std::string origTStr = returnTypeName(origT, std::string(" "));
 							
 							int ptrLevel = pointerLevel(origT, 0);
@@ -1099,7 +1102,7 @@ void FunctionBFC::grabVarInformation(llvm::Value *varDeclare)
         MDNode *MDVarDeclare = cast<MDNode>(varDeclare);
         if(MDVarDeclare->getNumOperands() < 7) {
 #ifdef DEBUG_P
-            cout<<"grabVarInformation failed: "<<varDeclare->getName().str()<< \
+            blame_info<<"grabVarInformation failed: "<<varDeclare->getName().str()<< 
                 "doesn't have complete operands"<<endl;
 #endif
             return;
@@ -1109,7 +1112,7 @@ void FunctionBFC::grabVarInformation(llvm::Value *varDeclare)
             DIVariable *dv = new DIVariable(MDVarDeclare); 
             LocalVar *lv = new LocalVar(); // in FunctionBFC
 #ifdef DEBUG_P
-            cout<<"adding localVar "<<dv->getName().str()<<endl;
+            blame_info<<"adding localVar "<<dv->getName().str()<<endl;
 #endif
            
             lv->definedLine = dv->getLineNumber();
@@ -1405,6 +1408,7 @@ bool FunctionBFC::parseDeclareIntrinsic(Instruction *pi, int &currentLineNum, Fu
         //Function::arg_iterator arg_i = calledFunc->arg_begin();
         //arg_i++;
         //Value *varDeclare = calledFunc->getOperand(1);
+        blame_info<<"parseDeclareIntrinsic called!"<<std::endl;
 		Value *varDeclare = ci->getArgOperand(1);//Only this work, aboves NOT
         grabVarInformation(varDeclare);
 	    return true;
@@ -1514,6 +1518,12 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 	bool isTradName = true; //is traditional name
 	std::string nonTradName; //represents embedded func names 
 	
+    /////added by Hui,trying to get the called function///////////
+    llvm::CallInst *cpi = cast<CallInst>(pi);
+    llvm::Function *calledFunc = cpi->getCalledFunction();
+    blame_info<<"calledFunc's name = "<<calledFunc->getName().data()<< \
+        "  Operand(0) = "<<cpi->getOperand(0)->getName().data()<<std::endl;
+    //////////////////////////////////////////////////////////
 	// Assigning function name VP and VPs for all the parameters
 	for (User::op_iterator op_i = pi->op_begin(), op_e = pi->op_end(); op_i != op_e; ++op_i) {
 		Value *v = *op_i;
@@ -1579,20 +1589,30 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 #endif 
 			}
 		}
-		
-		const char *tempName = calcMetaFuncName(variables, v, isTradName, opNum, nonTradName, currentLineNum);
-	
-        char tempBuf[1024];
-	    sprintf(tempBuf, "%s", tempName);
-		
-		char * vN = (char *)malloc(sizeof(char)*(strlen(tempBuf)+1));
-		if (!vN) {
-			printf("Uh oh, malloc vN failed\n");
-			exit(0);
-		}
-		strcpy(vN,tempBuf);
-		vN[strlen(tempBuf)]='\0';
-		const char * vName = vN;
+	    
+        /////added by Hui,trying to get the called function///////////
+        llvm::CallInst *cpi = cast<CallInst>(pi);
+        llvm::Function *calledFunc = cpi->getCalledFunction();
+        const char *vName = NULL;
+
+        if(calledFunc->hasName())
+            vName = calledFunc->getName().data();
+
+	    else {
+            const char *tempName = calcMetaFuncName(variables, v, isTradName, opNum, nonTradName, currentLineNum);
+            
+            char tempBuf[1024];
+            sprintf(tempBuf, "%s", tempName);
+            
+            char * vN = (char *)malloc(sizeof(char)*(strlen(tempBuf)+1));
+            if (!vN) {
+                printf("Uh oh, malloc vN failed\n");
+                exit(0);
+            }
+            strcpy(vN,tempBuf);
+            vN[strlen(tempBuf)]='\0';
+            vName = vN;
+        }
 		
 		// We add the VP for the actual call
 		if (variables.count(vName) == 0 && opNum == 0) {
@@ -1622,7 +1642,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 			addFuncCalls(fp);
 			vp->nStatus[CALL_NODE] = true; //CALL_NODE = 16, NODE_PROPS_SIZE = 20
 			
-	//if OpNum 0 has a name it means there is a return value for the function
+	//if the instruction has a name it means there is a return value for the function
 	//We need to assign a funcCall object to the return and treat it as "parameter"0
 			if (pi->hasName()) {
 				if (variables.count(pi->getName().data())) {
@@ -1807,7 +1827,7 @@ void FunctionBFC::ieGen_LHS_Alloca(User *pi, int &varCount, int &currentLineNum,
 	
 	//if (name.find(".") != std::string::npos || name.find("0x") != std::string::npos)  
     //"." refers to names as: *.addr in llvm 3.3, not sure what it represents in 2.5 !
-	if (name.find("0x") != std::string::npos) {
+	if (name.find(".")!=std::string::npos || name.find("0x")!=std::string::npos) {
         LocalVar *lv = new LocalVar();
 		lv->definedLine = currentLineNum;
 		lv->varName = name;
@@ -2512,7 +2532,7 @@ void FunctionBFC::examineInstruction(Instruction *pi, int &varCount, int &curren
 
 	// These call operations are almost exclusively for llvm.dbg.declare, the
 	//  more general case with "real" data will be tackled below
-      if (pi->getOpcode() == Instruction::Call) {
+    if (pi->getOpcode() == Instruction::Call) {
 		if (parseDeclareIntrinsic(pi, currentLineNum, fbb) == true)   //TO CHECK: should the condition be false ?
 			return;
 	}
@@ -2665,8 +2685,8 @@ void FunctionBFC::createNPFromConstantExpr(ConstantExpr *ce, int &varCount, int 
 
 
 // In LLVM, each Param has the param number appended to it.  We are interested
-// in the address of these params "_addr" appended to the name without
-//  the number
+// in the address of these params ".addr" appended to the name without
+//  the number, THIS FUNCTION not used anywhere
 void paramWithoutNumWithAddr(std::string & original)
 {
 	unsigned i;
@@ -2679,7 +2699,7 @@ void paramWithoutNumWithAddr(std::string & original)
 			startOfNum = -1;
 	}
 	
-	original.replace(startOfNum, 5, "_addr");
+	original.replace(startOfNum, 5, ".addr");
 }
 
 

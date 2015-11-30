@@ -114,7 +114,7 @@
 #define GEP_S_FIELD_OFFSET_OP  1003
 
 extern const char* PRJ_HOME_DIR;
-
+extern char *PARAM_REC;
 
 
 

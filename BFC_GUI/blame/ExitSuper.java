@@ -49,11 +49,11 @@ public class ExitSuper implements Comparable<ExitSuper> {
 	
 	// Aggregate Blame for GUI
 	//protected double[] blameByNode;
-	protected HashMap<String, Double> blameByNode;
+	protected HashMap<String, Double> blameByNode; //#intances for this variable on each node
 	
 
 
-	protected double aggregateBlame;
+	protected double aggregateBlame; //total #instances for this variable(es)
 	
 	protected String genType;
 	protected Set<Integer> lineNums;
@@ -417,7 +417,7 @@ public class ExitSuper implements Comparable<ExitSuper> {
 			String nodeName = ni.getNodeName();
 			double val = (double) ni.numInstances();
 			
-			//System.out.println("For Variable " + name + " and node " + nodeName + " the blame is " + val);
+			System.out.println("For Variable " + name + " and node " + nodeName + " the blame is " + val);
 			
 			this.blameByNode.put(nodeName, val);
 			

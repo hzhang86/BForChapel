@@ -2065,7 +2065,7 @@ void FunctionBFC::printToDotTrunc(std::ostream &O)
 						O<<":("<<v->line_num<<":"<<v->lineNumOrder<<")";
 					if (v->isLocalVar == true)
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=white]\n";
-					else if ( strstr(v->name.c_str(), "_addr") != NULL )
+					else if ( strstr(v->name.c_str(), PARAM_REC) != NULL )
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=white]\n";
 					else
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=white]\n";
@@ -2322,7 +2322,7 @@ void FunctionBFC::printToDot(std::ostream &O, bool printImplicit, bool printInst
 						O<<":("<<v->line_num<<":"<<v->lineNumOrder<<")";
 					if (v->isLocalVar == true)
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=forestgreen]\n";
-					else if ( strstr(v->name.c_str(), "_addr") != NULL )
+					else if ( strstr(v->name.c_str(), PARAM_REC) != NULL )
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=green]\n";
 					else
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=darkseagreen]\n";
@@ -2567,7 +2567,7 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
 						O<<":("<<v->line_num<<":"<<v->lineNumOrder<<")";
 					if (v->isLocalVar == true)
 						O<<"\",shape=rectangle, style=filled, fillcolor=pink]\n";
-					else if ( strstr(v->name.c_str(), "_addr") != NULL )
+					else if ( strstr(v->name.c_str(), PARAM_REC) != NULL )
 						O<<"\",shape=invtriangle, style=filled, fillcolor=green]\n";
 					else
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=darkseagreen]\n";

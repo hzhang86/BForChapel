@@ -63,7 +63,7 @@ void Instance::handleInstance(ModuleHash &modules, std::ostream &O, bool verbose
     }
   */
   
-  std::cout<<"Handle instance "<<InstanceNum<<"!"<<std::endl;
+  std::cout<<"Handle instance "<<InstanceNum<<"! It has "<<frames.size()<<" frames"<<std::endl;
   // This is true in the case where we're at the last stack frame that can be parsed
   bool isBottomParsed = true;
   //if main->foo->bar, then bar is the bottom stackframe
@@ -98,12 +98,12 @@ void Instance::handleInstance(ModuleHash &modules, std::ostream &O, bool verbose
             // frames(all frames), modules (hash of all modules), vec_SF_i (current iterator),
             //blamedParams(empty int vector), true (is a blamePoint), isBottomParsed(true/false) blamePoint can be 0,1,2, why always set true(1) here ??
             bf->resolveLineNum(frames, modules, vec_SF_i, blamedParams, true, isBottomParsed, NULL, O);
-            return;
+            return; //once the resolveLineNum returns from a frame, then the whole instance done
           }
           else {
             cout<<"In function "<<bf->getName()<<" is not BP"<<endl;
             bf->resolveLineNum(frames, modules, vec_SF_i, blamedParams, false, isBottomParsed, NULL, O);
-            return;
+            return;//once the resolveLineNum returns from a frame, the whole instance is done
           }
       
           //std::cout<<endl;

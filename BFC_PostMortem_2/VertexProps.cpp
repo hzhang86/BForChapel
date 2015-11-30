@@ -324,7 +324,7 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 	// BEGIN N_TYPE
 	getline(bI, line);
 	
-			//char arr[100];
+	//char arr[100];
 	//int paramNum;
 	
 	

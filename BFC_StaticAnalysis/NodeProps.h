@@ -258,8 +258,8 @@ public:
 	
 	
 	// Important Vertex Vectors
-	set<NodeProps *> parents;
-	set<NodeProps *> children;
+	set<NodeProps *> parents; //if store a @b, then b is a parent of a, a is a child of b
+	set<NodeProps *> children; //TC: not sure what's the diff against fields
 
 	// DF_CHILD_EDGE
 	set<NodeProps *> dfChildren; 

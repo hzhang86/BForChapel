@@ -157,7 +157,7 @@ void populateSamples(vector<Instance> &instances, char *exeName, const char *tra
           found = 1;
         
         if (stackFrame != 0)
-          address = address - 1; // no idea why do this minus 1
+          address = address - 1; //sampled IP should points to the last instruction 
         
         BPatch_Vector<BPatch_statement> sLines;
         
@@ -166,8 +166,13 @@ void populateSamples(vector<Instance> &instances, char *exeName, const char *tra
         
         if (sLines.size() > 0)
         {
-        cout<<"Line Number "<<sLines[0].lineNumber()<<" in file ";
-        cout<<sLines[0].fileName()<<" stack pos "<<a<<std::endl;
+//        cout<<"Line Number "<<sLines[0].lineNumber()<<" in file ";
+//        cout<<sLines[0].fileName()<<" stack pos "<<a<<std::endl;
+          for (int i=0; i<sLines.size(); i++){
+            cout<<"Line Number "<<sLines[i].lineNumber()<<" in file ";
+            cout<<sLines[i].fileName()<<" stack pos "<<a<<std::endl;
+          }
+
           sf.lineNumber = sLines[0].lineNumber();
           string fileN(sLines[0].fileName());
           sf.moduleName = fileN;
@@ -237,7 +242,7 @@ int main(int argc, char** argv)
   if (argc != 3)
   {
     std::cerr<<"Wrong Number of Arguments! "<<argc<<std::endl;
-    std::cerr<<"Usage: <this.exe>  <target app>  <node file to be transformed>"<<std::endl; 
+    std::cerr<<"Usage: <this.exe>  <target app>  <Directory containing node files to be transformed>"<<std::endl; 
     exit(0);
   }
  

@@ -55,7 +55,6 @@ public class BlameDataTrunc extends BlameData {
 		String strFEndLine = pathTokens[8];
 		int endLine = Integer.valueOf(strFEndLine).intValue();
         
-		
 		BlameFunction bf = bc.getOrCreateBlameFunction(funcName, moduleName, bptType);
 		
 		bf.setBeginNum(beginLine);

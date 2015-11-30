@@ -129,8 +129,8 @@ void FunctionBFC::determineBFCForVertexLite(NodeProps *v)
 	}
 	
 	// NO E: UNUSED PARAMETERS
-    std::string::size_type unusedParam = v->name.find("_addr",0);
-  // TODO: This doesn't cover local, unused variables with "_addr" in the name
+    std::string::size_type unusedParam = v->name.find(PARAM_REC,0);
+  // TODO: This doesn't cover local, unused variables with PARAM_REC in the name
     if (unusedParam != std::string::npos && v->llvm_inst != NULL) {
 		if (isa<Instruction>(v->llvm_inst)) {
 			Instruction *l_i = cast<Instruction>(v->llvm_inst);	
@@ -332,13 +332,13 @@ void FunctionBFC::determineBFCHoldersLite()
 		
 		if (in_d == 0){
 			if (out_d > 0 || v->isLocalVar)
-	      determineBFCForVertexLite(v);
+	            determineBFCForVertexLite(v);
 		}
-		else if (v->name.find("_addr") != std::string::npos) {
+		else if (v->name.find(PARAM_REC) != std::string::npos) {
 			// We always check the parameters, the EV sanity check will kick in ... hopefully
 			// TODO: verify this
 #ifdef DEBUG_EXIT
-			blame_info<<"EXIT__(determineBFCHolders) for _addr with in_d > 0 "<<v->name<<std::endl;
+			blame_info<<"EXIT__(determineBFCHolders) for PARAM_REC with in_d > 0 "<<v->name<<std::endl;
 #endif
 			determineBFCForVertexLite(v);
 		}
@@ -2500,7 +2500,7 @@ void FunctionBFC::resolvePointers2()
 		}
 		
 		// First we want to resolve the local variables and function parameters
-		if (v->isLocalVar == true || v->name.find("_addr") != std::string::npos
+		if (v->isLocalVar == true || v->name.find(PARAM_REC) != std::string::npos
 				|| v->isGlobal) {
 			resolvePointersForNode2(v, tempPointers);
 		}
@@ -2550,7 +2550,7 @@ void FunctionBFC::resolvePointers2()
 	// Now assign the EXIT_VAR, EXIT_VAR_ALIAS, EXIT_VAR_PTR distinctions
 	for (set_vp_i = pointers.begin(); set_vp_i != pointers.end(); set_vp_i++) {
 		NodeProps *vp = (*set_vp_i);
-		if (vp->name.find("_addr") != std::string::npos && vp->isLocalVar == false 
+		if (vp->name.find(PARAM_REC) != std::string::npos && vp->isLocalVar == false 
 				|| vp->isGlobal || vp->name.find("retval") != std::string::npos) {
 			// First we need to make sure that it is actually written in at least
 			//   one of the aliases
@@ -2967,7 +2967,7 @@ void FunctionBFC::resolveStores()
 				blame_info<<"Vertex "<<sourceV->name<<" is written(4)"<<std::endl;
 #endif 
 				
-				if (sourceV->name.find("_addr") == std::string::npos)
+				if (sourceV->name.find(PARAM_REC) == std::string::npos)
 					sourceV->isWritten = true;
 				                
                 targetV->storeFrom = sourceV;
@@ -5405,9 +5405,9 @@ int FunctionBFC::collapseAll(std::set<int>& collapseInstructions)
 				// would be recipient node
 				NodeProps *targetV = get(get(vertex_props,G), target(*e_beg,G));
 				
-				if (sourceV->isLocalVar || sourceV->name.find("_addr") != std::string::npos || sourceV->isGlobal) {
+				if (sourceV->isLocalVar || sourceV->name.find(PARAM_REC) != std::string::npos || sourceV->isGlobal) {
 					if ((opCode == Instruction::BitCast || opCode == Instruction::Load) 
-						&& (!targetV->isLocalVar && targetV->name.find("_addr") == std::string::npos && !targetV->isGlobal)) {
+						&& (!targetV->isLocalVar && targetV->name.find(PARAM_REC) == std::string::npos && !targetV->isGlobal)) {
 						// Swap the order for these cases 
 						transferEdgesAndDeleteNode(targetV, sourceV);
 						collapsedEdges++;

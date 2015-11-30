@@ -21,7 +21,7 @@
 
 using namespace std;
 
-VertexProps * BlameFunction::findOrCreateVP(std::string & name)
+VertexProps *BlameFunction::findOrCreateVP(std::string & name)
 {
   
   VertexProps * vp = NULL;
@@ -42,7 +42,7 @@ VertexProps * BlameFunction::findOrCreateVP(std::string & name)
   
 }
 
-VertexProps *   BlameFunction::findOrCreateTempBlamees(std::set<VertexProps *> & blamees, std::string name, bool & found)
+VertexProps *BlameFunction::findOrCreateTempBlamees(std::set<VertexProps *> & blamees, std::string name, bool & found)
 {
   ////std::cout<<"In findOrCreateTempBlamees for "<<getName()<<std::endl;
   
@@ -3468,7 +3468,7 @@ cout<<beginLineNum<<" "<<endLineNum<<std::endl;
           VertexProps * vpCheck = *vec_vp_i2;
           //std::cout<<vpCheck->name<<"  (tmpCheck)  "<<bfCheck->getName()<<std::endl;
           
-          // Look for function pointers resolved at runtime
+          // Look for function pointers resolved at runtime //TC: why tmp? Hui
           if (vpCheck->name.find("tmp") != std::string::npos)
             callNode = vpCheck;
         }
@@ -3535,7 +3535,7 @@ cout<<beginLineNum<<" "<<endLineNum<<std::endl;
         }
         else
         {
-          //cout<<"BM(4) is NULL"<<std::endl;
+          cout<<"BM(4) is NULL"<<std::endl;
         }
       }
     }

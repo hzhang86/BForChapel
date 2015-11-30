@@ -76,8 +76,7 @@ public class BlameContainer {
 		if (allLocalVariables.size() > 0)
 			return allLocalVariables;
 		
-		
-    		Iterator<BlameFunction> it = getAllFunctions().values().iterator();
+		Iterator<BlameFunction> it = getAllFunctions().values().iterator();
 		while (it.hasNext())
 		{
 			BlameFunction bf = (BlameFunction) it.next();
@@ -93,7 +92,7 @@ public class BlameContainer {
 				String truncName = ep.getName().substring(ep.getName().lastIndexOf('.')+1);
 
 				
-				if (truncName.contains("ierr") || truncName.startsWith("_"))
+				if (truncName.contains("ierr"))//|| truncName.startsWith("_"))
 				{
 					//////////////////////////////////////////////////////////
 					System.out.println("Not Adding var " + truncName);
