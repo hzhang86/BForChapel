@@ -48,13 +48,16 @@ struct StackFrame
   int frameNumber;
   std::string moduleName;
   unsigned address;
+  bool toRemove;//Added by Hui 12/20/15
 };
 
 struct Instance
 {
   std::vector<StackFrame> frames;
   void printInstance();
+  void printInstance_concise();//Added by Hui 12/20/15
   void handleInstance(ModuleHash & modules, std::ostream &O, bool verbose, int InstanceNum);
+  void trimFrames(ModuleHash &modules, int InstanceNum/*, std::vector<StackFrame> &oldFrames*/); //Added by Hui 12/20/15
   void handleInstance_OA(ModuleHash & modules, std::ostream &O, std::ostream &O2, bool verbose, int InstanceNum);
 
 };

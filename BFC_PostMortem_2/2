@@ -100,10 +100,7 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum/*, vector<StackFr
         (*vec_SF_i).toRemove = true;
     }
     else {
-      BlameModule *bm = NULL;
-      const char* tmpptr = (*vec_SF_i).moduleName.c_str();
-      if (tmpptr)
-          bm = modules[tmpptr];
+      BlameModule *bm = modules[(*vec_SF_i).moduleName.c_str()];
       if (bm == NULL) {
         cout<<"BM is NULL, delete frame "<<(*vec_SF_i).frameNumber<<endl;
         (*vec_SF_i).toRemove = true;
@@ -133,47 +130,12 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum/*, vector<StackFr
               for (vec_vp_i = bf->callNodes.begin(); vec_vp_i != bf->callNodes.end(); vec_vp_i++) {
                 VertexProps *vp = *vec_vp_i;
                 if (vp->declaredLine == (*vec_SF_i).lineNumber) {
-                  //just for test 
-                  cout<<"matching callNode: "<<vp->name<<endl;
                   matchingCalls.push_back(vp);
                 }
               }
               if (matchingCalls.size() == 0) {
                 cout<<"There's no matching callNode in this line, delete frame "<<(*vec_SF_i).frameNumber<<endl;
                 (*vec_SF_i).toRemove = true;
-              }
-              else if (matchingCalls.size() > 1) { //exclude frame that maps to "forall/coforall" loop lines
-                callNode = NULL;
-                std::cout<<"More than one call node at that line number"<<std::endl;
-                // figure out which call is appropriate
-                vector<StackFrame>::iterator minusOne = vec_SF_i - 1;
-                BlameModule *bmCheck = modules[(*minusOne).moduleName.c_str()];
-                if (bmCheck == NULL) {
-                  cout<<"BM of previous frame is null ! delete frame "<<(*vec_SF_i).frameNumber<<endl;
-                  (*vec_SF_i).toRemove = true;
-                }
-
-                else {
-                  BlameFunction *bfCheck = bmCheck->findLineRange((*minusOne).lineNumber);
-                  if (bfCheck == NULL) {
-                    cout<<"BF of previous frame is null ! delete frame "<<(*vec_SF_i).frameNumber<<endl;
-                    (*vec_SF_i).toRemove = true;
-                  }
-                  else {
-                    std::vector<VertexProps *>::iterator vec_vp_i2;
-                    for (vec_vp_i2 = matchingCalls.begin(); vec_vp_i2 != matchingCalls.end(); vec_vp_i2++) {
-                      VertexProps *vpCheck = *vec_vp_i2;
-                      // Look for subsets since vpCheck will have the line number concatenated
-                      if (vpCheck->name.find(bfCheck->getName()) != std::string::npos)
-                        callNode = vpCheck;
-                    }
-              
-                    if (callNode == NULL) {
-                      cout<<"No matching call nodes from multiple matches, delete frame "<<(*vec_SF_i).frameNumber<<endl;
-                      (*vec_SF_i).toRemove = true;
-                    }
-                  }
-                }
               }
             }
           }
@@ -188,8 +150,7 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum/*, vector<StackFr
         StackFrame sf;
         sf.lineNumber = (*vec_SF_i).lineNumber;
         sf.frameNumber = (*vec_SF_i).frameNumber;
-        //sf.moduleName.assign((*vec_SF_i).moduleName.c_str());
-        sf.moduleName = (*vec_SF_i).moduleName;
+        sf.moduleName.assign((*vec_SF_i).moduleName.c_str());
         sf.address = (*vec_SF_i).address;
         sf.toRemove = (*vec_SF_i).toRemove;
 
@@ -197,9 +158,6 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum/*, vector<StackFr
     }
   }
 
-  //thorougly free the memory of newFrames
-  vector<StackFrame>().swap(newFrames); //here is why this works: 
-                //http://prateekvjoshi.com/2013/10/20/c-vector-memory-release/
   // print the new instance
   cout<<"After trimFrames, Instance #"<<InstanceNum<<endl;
   printInstance_concise();
@@ -209,7 +167,6 @@ void Instance::handleInstance(ModuleHash &modules, std::ostream &O, bool verbose
 {
   
   std::cout<<"Handle instance "<<InstanceNum<<"! Originally it has "<<frames.size()<<" frames"<<std::endl;
-
   //Added by Hui 12/20/15/////////////////////////////
   trimFrames(modules, InstanceNum);
   ////////////////////////////////////////////////////
@@ -217,12 +174,17 @@ void Instance::handleInstance(ModuleHash &modules, std::ostream &O, bool verbose
   bool isBottomParsed = true;
   //if main->foo->bar, then bar is the bottom stackframe
   vector<StackFrame>::iterator vec_SF_i;
+  
   // Each instance has multiple stack frames, we apply transfer functions to propagate
   //   the stack
   for (vec_SF_i = frames.begin(); vec_SF_i != frames.end(); vec_SF_i++) {
     if ((*vec_SF_i).lineNumber > 0 && (*vec_SF_i).toRemove == false) {
+    //cout<<endl;
+    //cout<<"^^^^^At Frame "<<(*vec_SF_i).frameNumber<<" at line num "<<(*vec_SF_i).lineNumber;
+    //cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
+    
     // Get the module from the debugging information
-    BlameModule *bm = modules[(*vec_SF_i).moduleName.c_str()];   //return the pointer to a BlameModule object
+      BlameModule *bm = modules[(*vec_SF_i).moduleName.c_str()];   //return the pointer to a BlameModule object
     
       ////////Hui test funcBySet 12/07/15/////////////////
       /*cout<<"In funcsBySet: ";

@@ -246,7 +246,7 @@ int VertexProps::findBlamedExits(std::set<VertexProps *> & visited, int lineNum)
 	for (set_vp_i = params.begin(); set_vp_i != params.end(); set_vp_i++)
 	{
 			VertexProps * vp = (*set_vp_i);
-			//std::cout<<"Param VP "<<vp->name<<" examined for parent "<<name<<std::endl;
+			std::cout<<"Param VP "<<vp->name<<" examined for parent "<<name<<std::endl;
 			//std::cout<<"Total before - "<<total<<std::endl;
 			//std::cout<<"Temp Parents size - "<<vp->tempParents.size()<<std::endl;
 			if (vp->tempParents.size() == 0)

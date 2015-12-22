@@ -218,11 +218,11 @@ void BlameProgram::addFunction(BlameFunction * bf)
 {
 	//std::cout<<"BF addFunction "<<bf->realName<<std::endl;
 
-  BlameModule * bm = findOrCreateModule(bf->getModuleName().c_str());
-  bm->addFunction(bf);
+    BlameModule * bm = findOrCreateModule(bf->getModuleName().c_str());
+    bm->addFunction(bf); //add to FunctionHash blameFunctions in this bm
 	bm->addFunctionSet(bf);
 	
-	blameFunctions[bf->getName().c_str()] = bf;
+	blameFunctions[bf->getName().c_str()] = bf; //add to blameFunctions in this bp
 	
 }
 

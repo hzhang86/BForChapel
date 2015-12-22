@@ -80,7 +80,7 @@ class BlameProgram
 	//  effects for all of them
 	void calcSideEffects();
 	StructHash blameStructs;
-  ModuleHash blameModules;
+    ModuleHash blameModules;
 	FunctionHash blameFunctions;
 	std::set<std::string> sampledModules;
 	

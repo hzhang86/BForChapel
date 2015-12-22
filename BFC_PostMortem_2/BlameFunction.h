@@ -25,8 +25,8 @@
 #include <sstream>
 
 #include "Instances.h"
-#include "ExitVariable.h"
-#include "ExitProgram.h"
+//#include "ExitVariable.h"
+//#include "ExitProgram.h"
 #include "VertexProps.h"
 
 #ifdef __GNUC__
@@ -273,8 +273,8 @@ class BlameFunction
 	////////////////////////////
 	
 	VertexMap   allLines;
-	std::set<VertexProps *> hasParams;
-
+	std::set<VertexProps *> hasParams; //all the actual args in this bf for all
+                                    //call nodes
 	
 	// Sets that hold pointers to temp variables so we can clear them later
 	VertexMap   tempLines;
@@ -283,14 +283,14 @@ class BlameFunction
 	std::set<VertexProps *> tempParentsHolder;
 	std::set<VertexProps *> tempChildrenHolder;
 
-
+	std::vector<VertexProps *>  callNodes;//nodes that call other funcs in 
+                                          //this BlameFunction
  private:
 	short blamePoint;
   	std::vector<VertexProps *>  exitVariables;
   	std::vector<VertexProps *>  exitPrograms;
 	std::vector<VertexProps *>  exitOutputs;
-	std::vector<VertexProps *>  callNodes;//nodes that call other funcs in 
-                                          //this BlameFunction
+
 	//std::vector<VertexProps *>  allVertices;
 	VertexHash  allVertices;
 };
