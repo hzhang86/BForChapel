@@ -434,7 +434,7 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, \
 {
 #ifdef DEBUG_RP
 	blame_info<<"In resolvePointersHelper for "<<targetV->name<<" oV - "<<origV->name;
-	blame_info<<"OPL "<<origPLevel<<std::endl;
+	blame_info<<" OPL "<<origPLevel<<std::endl;
 #endif 
 	int newPtrLevel = 0;
 	const llvm::Type * origT = 0;		
@@ -501,10 +501,10 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, \
 				}
 			}			
 			
-			if (opCode == Instruction::Store) {	
-				// treat as alias
+			if (opCode == Instruction::Store) {	//*targetV = load **origV;
+				// treat as alias               //store *targetV **tV;
 #ifdef DEBUG_RP				
-				blame_info<<"RHP Store between "<<origV->name<<" and "<<targetV->name<<std::endl;
+				blame_info<<"RHP Store between "<<origV->name<<" and "<<targetV->name<<"the actual destination of Store is "<<tV->name<<std::endl;
 				blame_info<<tVPtrLevel<<" "<<origPLevel<<" "<<origV->resolvedLSFrom.size();
 				blame_info<<" "<<targetV->resolvedLSFrom.size()<<std::endl;
 #endif
@@ -536,18 +536,6 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, \
 						tempPointers.insert(tV);
 					}
 				}
-				// It is an alias from an overarching variable to one of the data flow specific spaces
-				// We need to assign an alias from the root variable to the load from the resolvedLS target
-				/*
-				else if (targetV->resolvedLSFrom.size())
-				{
-					std::set<NodeProps *>::iterator vec_vp_i_in;
-					
-					for (vec_vp_i_in = targetV->almostAlias.begin(); vec_vp_i_in != targetV->almostAlias.end(); vec_vp_i_in++)
-					{
-						blame_info<<"LSAlias relation between "<<tV->name<<" and "<<(*vec_vp_i_in)->name<<std::endl;
-					}
-				}*/
 				// treat as write within data space
 				else {
 				    #ifdef DEBUG_RP
@@ -590,7 +578,7 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, \
 					}
 				}
 			}
-			else if (opCode == Instruction::Load) {
+			else if (opCode == Instruction::Load) { //if a = load b, c = load a, then b.loads.insert(c);
 				if (tVPtrLevel > 0)
 					origV->loads.insert(tV);
 				resolvePointersHelper2(origV, origPLevel, tV, visited, tempPointers, alias);
@@ -614,7 +602,7 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, \
 								if (isa<Value>(origV->llvm_inst)) {
 									Value *v = cast<Value>(origV->llvm_inst);	
 #ifdef DEBUG_RP
-									blame_info<<"Calling structDump for "<<origV->name<<" of type "<<origTStr<<endl;
+									blame_info<<"Calling structResolve for "<<origV->name<<" of type "<<origTStr<<endl;
 #endif
 									structResolve(v, fNum, tV);
 								}
@@ -660,7 +648,7 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, \
 			else if (opCode == RESOLVED_L_S_OP) {
 				//std::cerr<<"Shouldn't hit this here!"<<std::endl;
 #ifdef DEBUG_RP
-				blame_info<<"R_L_S Source "<<tV->name<<" Dest "<<targetV->name<<std::endl;
+				blame_info<<"R_L_S blame Source "<<tV->name<<" Dest "<<targetV->name<<std::endl;
 #endif 
 			}
 		}
@@ -687,15 +675,14 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, \
 	}
 	else {
 	#ifdef DEBUG_RP
-		blame_info<<"New pointer leveli is "<<newPtrLevel<<" and  old is "<<origPLevel<<std::endl;
+		blame_info<<"New pointer level is "<<newPtrLevel<<" and  old is "<<origPLevel<<std::endl;
 		#endif
 	
 	}
 }
 
 
-short FunctionBFC::checkIfWritten2(NodeProps * currNode,
-																		 std::set<int> & visited)
+short FunctionBFC::checkIfWritten2(NodeProps * currNode, std::set<int> & visited)
 {
 #ifdef DEBUG_RP
 	blame_info<<"In checkIfWritten for "<<currNode->name<<std::endl;
@@ -920,6 +907,8 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 		
 		vp->dpUpPtr = currNode;
 		
+        //Hui dataPtrs.insert test 12/04/15
+        blame_info<<"dataPtrs.insert 1: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
 		currNode->dataPtrs.insert(vp);
 		resolveLocalAliases2(exitCand, vp, visited, exitV);
 	}
@@ -1086,6 +1075,8 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			}
 			vp->dpUpPtr = currNode;
 			
+            //Hui dataPtrs.insert test 12/04/15
+            blame_info<<"dataPtrs.insert 2: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
 			currNode->dataPtrs.insert(vp);
 		}
 		
@@ -1119,6 +1110,8 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			
 			vp->dpUpPtr = currNode;
 			
+            //Hui dataPtrs.insert test 12/04/15
+            blame_info<<"dataPtrs.insert 3: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
 			currNode->dataPtrs.insert(vp);
 		}
 		
@@ -1153,6 +1146,8 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			
 			vp->dpUpPtr = currNode;
 			
+            //Hui dataPtrs.insert test 12/04/15
+            blame_info<<"dataPtrs.insert 4: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
 			currNode->dataPtrs.insert(vp);
 			
 		}
@@ -1188,6 +1183,8 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			
 			vp->dpUpPtr = currNode;
 			
+            //Hui dataPtrs.insert test 12/04/15
+            blame_info<<"dataPtrs.insert 5: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
 			currNode->dataPtrs.insert(vp);
 		}
 	}
@@ -1199,7 +1196,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 
 
 void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
-																		std::set<int> & visited, NodeProps * exitV)
+									std::set<int> & visited, NodeProps * exitV)
 {
 #ifdef DEBUG_RP
 	blame_info<<"In resolveAliases for "<<exitCand->name<<"("<<exitCand->eStatus<<")";
@@ -1222,7 +1219,6 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 	
 	if (currNode->nStatus[EXIT_VAR] )
 	{
-		
 		// Looking at the aliases in
 		for (vec_vp_i = currNode->aliasesOut.begin(); vec_vp_i != currNode->aliasesOut.end(); vec_vp_i++)
 		{
@@ -1535,6 +1531,8 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 		
 		vp->dpUpPtr = currNode;
 		
+        //Hui dataPtrs.insert test 12/04/15
+        blame_info<<"dataPtrs.insert 6: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
 		currNode->dataPtrs.insert(vp);
 		resolveAliases2(exitCand, vp, visited, exitV);
 	}
@@ -1787,6 +1785,8 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			
 			vp->dpUpPtr = currNode;
 			
+            //Hui dataPtrs.insert test 12/04/15
+            blame_info<<"dataPtrs.insert 7: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
 			currNode->dataPtrs.insert(vp);
 		}
 	}
@@ -1827,6 +1827,8 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			
 			vp->dpUpPtr = currNode;
 			
+            //Hui dataPtrs.insert test 12/04/15
+            blame_info<<"dataPtrs.insert 8: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
 			currNode->dataPtrs.insert(vp);
 		}
 		
@@ -1875,6 +1877,9 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			}
 			
 			vp->dpUpPtr = currNode;
+
+            //Hui dataPtrs.insert test 12/04/15
+            blame_info<<"dataPtrs.insert 9: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
 			currNode->dataPtrs.insert(vp);
 		}
 	}
@@ -1916,6 +1921,9 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			}
 			
 			vp->dpUpPtr = currNode;
+
+            //Hui dataPtrs.insert test 12/04/15
+            blame_info<<"dataPtrs.insert 10: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
 			currNode->dataPtrs.insert(vp);
 		}
 	}
@@ -1948,6 +1956,7 @@ void FunctionBFC::resolveArrays(NodeProps * origV, NodeProps * v, std::set<NodeP
 		if (opCode == GEP_BASE_OP)
 		{
 			//v->aliasesIn.push_back(targetV);
+            blame_info<<"Inserting arrayAccess for "<<origV->name<<" of "<<targetV->name<<"\n";
 			origV->arrayAccess.insert(targetV);
 			//blame_info<<"Inserting pointer(5) "<<targetV->name<<std::endl;
 			
@@ -1979,22 +1988,21 @@ void FunctionBFC::resolveArrays(NodeProps * origV, NodeProps * v, std::set<NodeP
 		}
 		else if (opCode == Instruction::Store)
 		{
-				// treat as alias
-				#ifdef DEBUG_RP
-				blame_info<<"RHP Store(2) between "<<v->name<<" and "<<targetV->name<<std::endl;
-				#endif
+			// treat as alias  why ? v and targetV have different ptr level
+			#ifdef DEBUG_RP
+			blame_info<<"RHP Store(2) between "<<v->name<<" and "<<targetV->name<<std::endl;
+			#endif
 				
-				#ifdef DEBUG_RP
-							blame_info<<"Inserting alias(12) out  "<<targetV->name<<" into "<<v->name<<std::endl;
-				#endif 			
-
-						v->aliasesOut.insert(targetV);
-						targetV->aliasesIn.insert(v);
+			#ifdef DEBUG_RP
+			blame_info<<"Inserting alias(12) out  "<<targetV->name<<" into "<<v->name<<std::endl;
+			#endif 			
+			v->aliasesOut.insert(targetV);
+			targetV->aliasesIn.insert(v);
 				
 #ifdef DEBUG_RP
-						blame_info<<"Inserting STORE ALIAS pointer(3) "<<targetV->name<<std::endl;
+			blame_info<<"Inserting STORE ALIAS pointer(3) "<<targetV->name<<std::endl;
 #endif
-						tempPointers.insert(targetV);
+			tempPointers.insert(targetV);
 		}
 	}
 }
@@ -2121,7 +2129,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 			proceed = false;
 		}
 		
-		if (proceed) {
+		if (proceed) { //for case that v came from a bitcast instruction
 			std::string colTStr = returnTypeName(collapsedT, std::string(" "));
 			
 #ifdef DEBUG_RP
@@ -2152,6 +2160,8 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 	blame_info<<v->name<<"'s pointer level is "<<origPointerLevel<<std::endl;
 	blame_info<<v->name<<" has pointer type "<<origTStr<<std::endl;
 #endif 
+    if(origPointerLevel >=1) //added by Hui 12/16/15, doesn't matter later
+        v->isPtr = true;
 	
 	// A pointer level of 1 is just the location in memory for a standard primitive
 	// We do make an exception here for structs since we treat fields and pointers
@@ -2192,7 +2202,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 			else if (opCode == GEP_BASE_OP){
 #ifdef DEBUG_RP
 				blame_info<<"GEPB operation between "<<v->name<<" and "<<targetV->name<<std::endl;
-#endif 
+#endif          //here, targetV is the field ptr,e.g. a = GEP b, 0, 1 then a=targetV
 				boost::graph_traits<MyGraphType>::out_edge_iterator o_beg, o_end;
 				o_beg = boost::out_edges(targetV->number, G).first;//edge iter begin
 				o_end = boost::out_edges(targetV->number, G).second;//edge iter end
@@ -2206,7 +2216,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 				}	
 				
 				if (circumVent) {
-					v->GEPs.insert(targetV);
+					v->GEPs.insert(targetV); //a = GEP b, then b.GEPs.insert(a)
 #ifdef DEBUG_RP
 					blame_info<<"Adding GEP(3) "<<targetV->name<<" to load "<<v->name<<std::endl;
 #endif 
@@ -2299,16 +2309,16 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 					int opCodeForField = get(get(edge_iore, G),*e_beg2);
 					int fNum = 0;
 					if (opCodeForField >= GEP_S_FIELD_OFFSET_OP) {
-						fNum = opCodeForField - GEP_S_FIELD_OFFSET_OP; 
+						fNum = opCodeForField - GEP_S_FIELD_OFFSET_OP;//=which field
 						if (isa<Value>(v->llvm_inst)) {
 							Value *val = cast<Value>(v->llvm_inst);	
 #ifdef DEBUG_RP
-							blame_info<<"Calling structDump for "<<v->name<<" of type "<<origTStr<<endl;
+							blame_info<<"Calling structResolve for "<<v->name<<" of type "<<origTStr<<endl;
 #endif 
 							structResolve(val, fNum, targetV);
 						}
 					}
-					if (opCodeForField == Instruction::Store) {
+					if (opCodeForField == Instruction::Store) { //field is written
 						targetV->isWritten = true;
 #ifdef DEBUG_RP
 						blame_info<<"Vertex "<<targetV->name<<" is written(2)"<<std::endl;
@@ -2367,7 +2377,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 						                if (isa<Value>(v->llvm_inst)) {
 							                Value *val = cast<Value>(v->llvm_inst);	
 #ifdef DEBUG_RP
-							                blame_info<<"Calling structDump for "<<v->name<<" of type "<<origTStr<<endl;
+							                blame_info<<"Calling structResolve for "<<v->name<<" of type "<<origTStr<<endl;
 #endif                                      //TO BE CHECKED: 08/22/15 structResolve
 							                structResolve(val, fNum, targetV3);
                                         }
@@ -2985,7 +2995,7 @@ void FunctionBFC::resolveStores()
 			}
 		}
 		
-		if (stores.size() > 1) {
+		if (stores.size() > 1){//store a *b, then a is in sotres, b is in sotresS..
 #ifdef DEBUG_GRAPH_BUILD
 			blame_info<<"Stores for V - "<<v->name<<" number "<<stores.size()<<std::endl;
 #endif 
@@ -3059,11 +3069,11 @@ void FunctionBFC::adjustMainGraph()
 	for(tie(i,v_end) = vertices(G); i != v_end; ++i)  {
 		NodeProps *vp = get(get(vertex_props, G),*i);
 		// We have more than 1+ store going out
-		if (vp->storesTo.size() > 0) {
+		if (vp->storesTo.size() > 0) { //eg. store a1 b; store a2 b (b=vp)
 			boost::graph_traits<MyGraphType>::in_edge_iterator e_beg, e_end;
 			
-			e_beg = boost::in_edges(vp->number, G).first;		// edge iterator begin
-			e_end = boost::in_edges(vp->number, G).second;    // edge iterator end
+			e_beg = boost::in_edges(vp->number, G).first;	// edge iterator begin
+			e_end = boost::in_edges(vp->number, G).second;  // edge iterator end
 			
 			std::set<int> deleteMe;
 			// iterate through the edges to find matching opcode
@@ -3109,7 +3119,7 @@ void FunctionBFC::adjustMainGraph()
 							
 							tie(ed, inserted) = add_edge(sourceVP->number, storeVP->number, G);
 							if (inserted)
-								edge_type[ed] = RESOLVED_L_S_OP;
+								edge_type[ed] = RESOLVED_L_S_OP;//load_store op
 						}
 					}
 #ifdef DEBUG_GRAPH_COLLAPSE
@@ -4877,6 +4887,8 @@ void FunctionBFC::collapseIO()
 				NodeProps * sourceV = get(get(vertex_props,G), source(*e_beg,G));
 				NodeProps * targetV = get(get(vertex_props,G), target(*e_beg,G));
 				//c++ "<<" basic_ostream
+                //TOCHECK: Hui 12/14/15: should add "writeln"? why check targetV
+                //since edge is like: writeln -> a ??
 				std::string::size_type loc = targetV->name.find("basic_ostream", 0);
 				std::string::size_type loc2 = targetV->name.find("SolsEi", 0);
 				

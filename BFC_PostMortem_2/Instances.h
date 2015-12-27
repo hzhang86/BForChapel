@@ -37,10 +37,7 @@ struct eqstr
 
 typedef std::hash_map<const char *, BlameModule *, std::hash<const char *>, eqstr> ModuleHash;
 typedef std::hash_map<const char *, StructBlame *, std::hash<const char *>, eqstr> StructHash;
-typedef std::hash_map<int, StructField *> FieldHash;
-
-
-
+typedef std::hash_map<int, StructField*> FieldHash;
 
 struct StackFrame
 {
@@ -54,12 +51,15 @@ struct StackFrame
 struct Instance
 {
   std::vector<StackFrame> frames;
+  int processTLNum; //added by Hui 12/25/15: processTaskList called#
+  bool isMainThread; //added by Hui 12/25/15: this instance is from the main thread
   void printInstance();
   void printInstance_concise();//Added by Hui 12/20/15
-  void handleInstance(ModuleHash & modules, std::ostream &O, bool verbose, int InstanceNum);
-  void trimFrames(ModuleHash &modules, int InstanceNum/*, std::vector<StackFrame> &oldFrames*/); //Added by Hui 12/20/15
-  void handleInstance_OA(ModuleHash & modules, std::ostream &O, std::ostream &O2, bool verbose, int InstanceNum);
+  void handleInstance(ModuleHash & modules, std::ostream &O, bool verbose);
+  void trimFrames(ModuleHash &modules, int InstanceNum, int whichStack); //Added by Hui 12/20/15
+  void secondTrim(ModuleHash &modules); //added by Hui 12/25/15
 
+  void handleInstance_OA(ModuleHash & modules, std::ostream &O, std::ostream &O2, bool verbose, int InstanceNum);
 };
 
 
@@ -71,5 +71,8 @@ struct FullSample
 	int frameNumber;
 	int lineNumber;
 };
+
+typedef std::hash_map<int, Instance> InstanceHash;//added by Hui 12/25/15
+                                            //NOTE: pair.second is NOT a pointer !
 
 #endif

@@ -945,7 +945,8 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	
 	// TODO: DETAILS BELOW
 	//7/12/2010  INVESTIGATE FURTHER, do we need this still and why
-	if (ivp->storeFrom != NULL){//changed by Hui on 08/03/15
+	/*
+    if (ivp->storeFrom != NULL){//changed by Hui on 08/03/15
 		//ivp->descLineNumbers.insert(ivp->storeFrom->line_num);
         blame_info<<"ivp->eStatus="<<ivp->eStatus<<std::endl;
         blame_info<<"ivp->nStatus:  ";
@@ -955,7 +956,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         NodeProps *storeFrom = ivp->storeFrom;
         ivp->descLineNumbers.insert(storeFrom->descLineNumbers.begin(), storeFrom->descLineNumbers.end());
 #ifdef DEBUG_PRINT_LINE_NUMS
-	    blame_info<<"After Store From "<<ivp->storeFrom->name<<std::endl;
+	    blame_info<<"After storeFrom: "<<ivp->name<<std::endl;
 	    for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		    blame_info<<*set_i_i<<" ";
 	    }
@@ -963,6 +964,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	    blame_info<<std::endl;
 #endif 
     }
+    */
 	std::set<NodeProps *>::iterator s_vp_i;
 	std::set<NodeProps *>::iterator s_vp_i2;
 	
@@ -1181,12 +1183,11 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 		if (child->isWritten) {
 			ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
 			debugPrintLineNumbers(ivp, child, 3);
-			
 		}
 	}
 
 #ifdef DEBUG_LINE_NUMS
-	blame_info<<"After Data Ptrs"<<ivp->name<<std::endl;
+	blame_info<<"After Data Ptrs "<<ivp->name<<std::endl;
 	
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
@@ -1199,7 +1200,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 		NodeProps *child = *v_vp_i;
 		 
 		NodeProps *childFieldParent = child->fieldUpPtr;
-		if (childFieldParent != NULL) {
+		if (childFieldParent != NULL) { //"parm" only used for Fortran
 			if (childFieldParent->name.find("parm") != std::string::npos) {
 				ivp->descLineNumbers.insert(childFieldParent->externCallLineNumbers.begin(), childFieldParent->externCallLineNumbers.end());
 				
@@ -1208,6 +1209,26 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
             #endif									
 			}
 		}
+
+        //Added by Hui on 12/12/15: aliases should all have the same blamed lines
+        ////////////////////////////////////////////////////////////////////////
+		/*
+        if (child->calcAgg == false)
+			calcAggregateLNRecursive(child, vStack, vRevisit);
+		
+		if (vStack.count(child)) {
+		#ifdef DEBUG_LINE_NUMS
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+		#endif
+			vRevisit.insert(child);
+			vRevisit.insert(ivp);
+		}
+		
+		if (child->isWritten) {
+			ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+			debugPrintLineNumbers(ivp, child, 7);
+		}*/
+        ////////////////////////////////////////////////////////////////////////
 		  
 		for (v_vp_i2 = child->dataPtrs.begin(); v_vp_i2 != child->dataPtrs.end(); v_vp_i2++) {
 			NodeProps *child2 = *v_vp_i2;
@@ -1224,7 +1245,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 			
 			if (child2->isWritten && child2 != ivp) {
 				ivp->descLineNumbers.insert(child2->descLineNumbers.begin(), child2->descLineNumbers.end());
-				debugPrintLineNumbers(ivp, child, 4);
+				debugPrintLineNumbers(ivp, child2, 4);
 			}
 		}
 	}
@@ -1238,7 +1259,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	blame_info<<std::endl;
 #endif
 
-	for (v_vp_i = ivp->dfAliases.begin(); v_vp_i != ivp->dfAliases.end(); v_vp_i++) {
+	for (v_vp_i = ivp->dfAliases.begin(); v_vp_i != ivp->dfAliases.end(); v_vp_i++){
 		NodeProps *child = *v_vp_i;
 		if (child->calcAgg == false)
 			calcAggregateLNRecursive(child, vStack, vRevisit);
@@ -2264,10 +2285,11 @@ void FunctionBFC::firstPass(Function *F, std::vector<NodeProps *> &globalVars,
 	resolveLooseStructs();
 	
 	// Calc aggregate line numbers (and calls)
-	calcAggregateLN();
+	calcAggregateLN(); //TOCHECK: why it's called before makeNewTruncGraph ?
 	
 	makeNewTruncGraph();
-	
+	//calcAggregateLN();
+
 	resolveSideEffects();
 	resolveSideEffectCalls();
 	

@@ -54,6 +54,7 @@ struct StackFrame
 struct Instance
 {
   std::vector<StackFrame> frames;
+  int processTLNum; //Added by Hui 12/25/15: processTaskList Number
   void printInstance();
   void handleInstance(ModuleHash & modules, std::ostream &O, bool verbose);
   void handleInstance_OA(ModuleHash & modules, std::ostream &O, std::ostream &O2, bool verbose, 

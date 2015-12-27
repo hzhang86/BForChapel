@@ -66,104 +66,13 @@ void Instance::printInstance_concise()
       cout<<endl;
     //}
   }
-  std::cout<<"The inst now has "<<validFrameCount<<" valid frames"<<std::endl;
+  std::cout<<"After trimFrames, the inst now has "<<validFrameCount<<" valid frames"<<std::endl;
   std::cout<<endl;
 }
 
-//Added by Hui 12/25/15: trim the stack trace from main thread again
-void Instance::secondTrim(ModuleHash &modules)
-{
-  cout<<"In secondTrim for an instance from main thread"<<endl;
-  vector<StackFrame>::iterator vec_SF_i;
-  vector<StackFrame> newFrames(frames);
-  bool isBottomParsed = true;
-  frames.clear();
-  
-  for (vec_SF_i=newFrames.begin(); vec_SF_i!=newFrames.end(); vec_SF_i++) {
-    BlameModule *bm = NULL;
-    const char* tmpptr = (*vec_SF_i).moduleName.c_str();
-    bm = modules[tmpptr];
-    BlameFunction *bf = bm->findLineRange((*vec_SF_i).lineNumber);
-    if (bf==NULL) {
-      cout<<"Weird: bf should exist!"<<endl;
-      return;
-    }
-    else {
-      if (isBottomParsed == true) {
-        isBottomParsed = false; //if it's first frame, then it doesn't
-        continue;               //have to have callNodes, but later does
-      }
-      else {
-        std::vector<VertexProps*>::iterator vec_vp_i;
-        VertexProps *callNode = NULL;
-        std::vector<VertexProps*> matchingCalls;
-          
-        for (vec_vp_i = bf->callNodes.begin(); vec_vp_i != bf->callNodes.end(); vec_vp_i++) {
-          VertexProps *vp = *vec_vp_i;
-          if (vp->declaredLine == (*vec_SF_i).lineNumber) {
-            //just for test 
-            cout<<"matching callNode: "<<vp->name<<endl;
-            matchingCalls.push_back(vp);
-          }
-        }
-        // we only need to check middle frames mapped to "coforall_fn/wrapcoforall_fn"
-        if (matchingCalls.size() > 1) { //exclude frame that maps to "forall/coforall" loop lines
-          callNode = NULL;
-          std::cout<<"More than one call node at that line number"<<std::endl;
-            // figure out which call is appropriate
-          vector<StackFrame>::iterator minusOne = vec_SF_i - 1;
-          BlameModule *bmCheck = modules[(*minusOne).moduleName.c_str()];
-          if (bmCheck == NULL) {
-            cout<<"BM of previous frame is null ! delete frame "<<(*vec_SF_i).frameNumber<<endl;
-            (*vec_SF_i).toRemove = true;
-          }
-          else {
-            BlameFunction *bfCheck = bmCheck->findLineRange((*minusOne).lineNumber);
-            if (bfCheck == NULL) {
-              cout<<"BF of previous frame is null ! delete frame "<<(*vec_SF_i).frameNumber<<endl;
-              (*vec_SF_i).toRemove = true;
-            }
-            else {
-              std::vector<VertexProps *>::iterator vec_vp_i2;
-              for (vec_vp_i2 = matchingCalls.begin(); vec_vp_i2 != matchingCalls.end(); vec_vp_i2++) {
-                VertexProps *vpCheck = *vec_vp_i2;
-                // Look for subsets since vpCheck will have the line number concatenated
-                if (vpCheck->name.find(bfCheck->getName()) != std::string::npos)
-                  callNode = vpCheck;
-              }
-          
-              if (callNode == NULL) {
-                  cout<<"No matching call nodes from multiple matches, delete frame "<<(*vec_SF_i).frameNumber<<endl;
-                  (*vec_SF_i).toRemove = true;
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  //pick all the valid frames and push_back to "frames" again
-  for (vec_SF_i=newFrames.begin(); vec_SF_i!=newFrames.end(); vec_SF_i++) {
-    if ((*vec_SF_i).toRemove == false) {
-        StackFrame sf;
-        sf.lineNumber = (*vec_SF_i).lineNumber;
-        sf.frameNumber = (*vec_SF_i).frameNumber;
-        sf.moduleName = (*vec_SF_i).moduleName;
-        sf.address = (*vec_SF_i).address;
-        sf.toRemove = (*vec_SF_i).toRemove;
-
-        frames.push_back(sf);
-    }
-  }
-  //thorougly free the memory of newFrames
-  vector<StackFrame>().swap(newFrames); 
-}
 //Added by Hui 12/20/15 : set all invalid frames's toRemove tag to TRUE in an instance
-void Instance::trimFrames(ModuleHash &modules, int InstanceNum, int whichStack)
+void Instance::trimFrames(ModuleHash &modules, int InstanceNum/*, vector<StackFrame> &oldFrames*/)
 {
-  if(whichStack == 0)
-    cout<<"For preStackTrace: ";
   cout<<"Triming Instance "<<InstanceNum<<endl;
   vector<StackFrame>::iterator vec_SF_i;
   vector<StackFrame> newFrames(frames);
@@ -192,11 +101,9 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, int whichStack)
           (*vec_SF_i).toRemove = true;
         }
         else {
-          if (bf->getName().compare("chpl_user_main")==0) {
-            if (bf->getBLineNum()==(*vec_SF_i).lineNumber) {
-              cout<<"Frame cannot be main while the ln is BLineNum, delete frame "<<(*vec_SF_i).frameNumber<<endl;
-              (*vec_SF_i).toRemove = true;
-            }
+          if (bf->getName().compare("chpl_user_main")==0 && bf->getBLineNum()==(*vec_SF_i).lineNumber) {
+            cout<<"Frame cannot be main while the ln is BLineNum, delete frame "<<(*vec_SF_i).frameNumber<<endl;
+            (*vec_SF_i).toRemove = true;
           }
           else {
             if (isBottomParsed == true) {
@@ -219,6 +126,39 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, int whichStack)
               if (matchingCalls.size() == 0) {
                 cout<<"There's no matching callNode in this line, delete frame "<<(*vec_SF_i).frameNumber<<endl;
                 (*vec_SF_i).toRemove = true;
+              }
+              else if (matchingCalls.size() > 1) { //exclude frame that maps to "forall/coforall" loop lines
+                callNode = NULL;
+                std::cout<<"More than one call node at that line number"<<std::endl;
+                // figure out which call is appropriate
+                vector<StackFrame>::iterator minusOne = vec_SF_i - 1;
+                BlameModule *bmCheck = modules[(*minusOne).moduleName.c_str()];
+                if (bmCheck == NULL) {
+                  cout<<"BM of previous frame is null ! delete frame "<<(*vec_SF_i).frameNumber<<endl;
+                  (*vec_SF_i).toRemove = true;
+                }
+
+                else {
+                  BlameFunction *bfCheck = bmCheck->findLineRange((*minusOne).lineNumber);
+                  if (bfCheck == NULL) {
+                    cout<<"BF of previous frame is null ! delete frame "<<(*vec_SF_i).frameNumber<<endl;
+                    (*vec_SF_i).toRemove = true;
+                  }
+                  else {
+                    std::vector<VertexProps *>::iterator vec_vp_i2;
+                    for (vec_vp_i2 = matchingCalls.begin(); vec_vp_i2 != matchingCalls.end(); vec_vp_i2++) {
+                      VertexProps *vpCheck = *vec_vp_i2;
+                      // Look for subsets since vpCheck will have the line number concatenated
+                      if (vpCheck->name.find(bfCheck->getName()) != std::string::npos)
+                        callNode = vpCheck;
+                    }
+              
+                    if (callNode == NULL) {
+                      cout<<"No matching call nodes from multiple matches, delete frame "<<(*vec_SF_i).frameNumber<<endl;
+                      (*vec_SF_i).toRemove = true;
+                    }
+                  }
+                }
               }
             }
           }
@@ -245,66 +185,18 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, int whichStack)
   //thorougly free the memory of newFrames
   vector<StackFrame>().swap(newFrames); //here is why this works: 
                 //http://prateekvjoshi.com/2013/10/20/c-vector-memory-release/
-  
-  //check whether this instance is from the main thread
-  if (!frames.empty()) {
-    StackFrame &vec_SF_r = frames.back();
-    BlameModule *bmEnd = modules[vec_SF_r.moduleName.c_str()];
-    BlameFunction *bfEnd = bmEnd->findLineRange(vec_SF_r.lineNumber);
-    if (bfEnd->getName().compare("chpl_user_main")==0)
-      isMainThread = true;
-    else 
-      isMainThread = false;
-
-    if(isMainThread && whichStack==1)
-      secondTrim(modules); //reomove frames 77<-77 in 79<-77<-77<-88<-91
-    
-    // print the new instance
-    cout<<"After trimFrames, Instance #"<<InstanceNum<<endl;
-    printInstance_concise();
-  }
+  // print the new instance
+  cout<<"After trimFrames, Instance #"<<InstanceNum<<endl;
+  printInstance_concise();
 }
 
-//Added by Hui 12/25/15
-void glueTwoStackTrace(InstanceHash &pre_instances, int InstanceNum, Instance &i)
+void Instance::handleInstance(ModuleHash &modules, std::ostream &O, bool verbose, int InstanceNum)
 {
-  cout<<"In glueTwoStackTrace for instance "<<InstanceNum<<endl;
-  if (pre_instances.count(i.processTLNum) == 0) {
-    cout<<"Error: worker thread has pTLN "<<i.processTLNum<<" not found in preStackTrace"<<endl;
-    return;
-  }
   
-  Instance &parent = pre_instances[i.processTLNum];
-  vector<StackFrame>::iterator p_SFi = parent.frames.begin(); //points to SF from parent 
-  
-  if (!i.frames.empty()) {
-    StackFrame &c_SFr = i.frames.back(); //returns a reference, not iterator
-    if ((*p_SFi).lineNumber != c_SFr.lineNumber || (*p_SFi).moduleName != c_SFr.moduleName) {
-      cout<<"Can't glue the child and parent stacktrace due to mismatch!"<<endl;
-      return;
-    }
+  std::cout<<"Handle instance "<<InstanceNum<<"! Originally it has "<<frames.size()<<" frames"<<std::endl;
 
-    i.frames.pop_back(); //delete the last element in the vector
-    p_SFi++; //start from the second frame in parent 
-    for (; p_SFi!=parent.frames.end(); p_SFi++) {
-      if ((*p_SFi).toRemove == false) {
-        StackFrame sf;
-        sf.lineNumber = (*p_SFi).lineNumber;
-        sf.frameNumber = i.frames.back().frameNumber+1;
-        sf.moduleName = (*p_SFi).moduleName;
-        sf.address = (*p_SFi).address;
-        sf.toRemove = (*p_SFi).toRemove;
-
-        i.frames.push_back(sf);
-      }
-    }
-    //print final frames(after glued)
-    i.printInstance_concise();
-  }
-}
-
-void Instance::handleInstance(ModuleHash &modules, std::ostream &O, bool verbose)
-{
+  //Added by Hui 12/20/15/////////////////////////////
+  trimFrames(modules, InstanceNum);
   ////////////////////////////////////////////////////
   // This is true in the case where we're at the last stack frame that can be parsed
   bool isBottomParsed = true;
@@ -392,7 +284,8 @@ void Instance::handleInstance(ModuleHash &modules, std::ostream &O, bool verbose
   }
 }
 
-void populateSamples(vector<Instance> &instances, const char *traceName)
+void populateSamples(vector<Instance> & instances, char * exeName,
+        const char *traceName)
 {
   ifstream bI(traceName);
   std::string line;
@@ -408,43 +301,8 @@ void populateSamples(vector<Instance> &instances, const char *traceName)
   for (int a = 0; a < numInstances; a++) {
     Instance i;
     getline(bI, line);
-    //added by Hui 12/25/15
-    int numFrames;
-    sscanf(line.c_str(), "%d %d", &numFrames, &(i.processTLNum));
-    
-    for (int b = 0; b < numFrames; b++) {
-      StackFrame sf;
-      getline(bI, line);
-    
-      sscanf(line.c_str(), "%d %d %s %x", &(sf.lineNumber), &(sf.frameNumber), 
-        buffer, &(sf.address));
-      //printf("%d %d %s %x\n", sf.lineNumber, sf.frameNumber, buffer, sf.address);
-      sf.moduleName.assign(buffer);
-      sf.toRemove = false;//Added by Hui 12/20/15
-      i.frames.push_back(sf);
-    }
-    
-    instances.push_back(i);
-  }
-}
-
-void populatePreSamples(InstanceHash &pre_instances, const char *traceName)
-{
-  ifstream bI(traceName);
-  string line;
-
-  getline(bI, line);
-  int numInstances = atoi(line.c_str()); 
-  fprintf(stderr,"Number of pre_instances is %d\n", numInstances);
-  
-  char *buffer = (char *) malloc(100*sizeof(char));
-  
-  for (int a = 0; a < numInstances; a++) {
-    Instance i;
-    getline(bI, line);
-    //added by Hui 12/25/15
-    int numFrames;
-    sscanf(line.c_str(), "%d %d", &numFrames, &(i.processTLNum));
+      
+    int numFrames = atoi(line.c_str());
          
     for (int b = 0; b < numFrames; b++) {
       StackFrame sf;
@@ -457,21 +315,21 @@ void populatePreSamples(InstanceHash &pre_instances, const char *traceName)
       sf.toRemove = false;//Added by Hui 12/20/15
       i.frames.push_back(sf);
     }
-    if(pre_instances.count(i.processTLNum) == 0)
-      pre_instances[i.processTLNum] = i;
-    else
-      cerr<<"Error: there shouldn't be more than 1 instance mapped to same pTLN "<< \
-          i.processTLNum<<endl;
+    
+    instances.push_back(i);
   }
 }
+
+
 // <altMain> <exe Name(not used)> <trace name> <config file name> 
 
 int main(int argc, char** argv)
 { 
-  if (argc <4){
+  if (argc != 4)
+    {
       std::cerr<<"Wrong Number of Arguments! "<<argc<<std::endl;
       exit(0);
-  }
+    }
   
   bool verbose = false;
   
@@ -527,17 +385,19 @@ int main(int argc, char** argv)
 
   
   vector<Instance>  instances;
-  InstanceHash  pre_instances; //Added by Hui 12/25/15
+  vector<Instance>  pre_instances; //Added by Hui 12/25/15
   //bp.calcSideEffects();
+  
+  
   //std::cout<<"Populating samples."<<std::endl;
+
   fprintf(stderr,"SAMPLES - ");
   my_timestamp();
 
-  populateSamples(instances, argv[2]);
-  populatePreSamples(pre_instances, argv[4]); //Added by Hui 12/25/15
+  populateSamples(instances, argv[1], argv[2]);
   
   unsigned iCounter = 0;
-  unsigned preCounter = 1; //we ignore the first preStackTrace
+  
   vector<Instance>::iterator vec_I_i;
   /*
   for (vec_I_i = instances.begin(); vec_I_i != instances.end(); vec_I_i++)
@@ -545,28 +405,22 @@ int main(int argc, char** argv)
       (*vec_I_i).printInstance();
     }
   */
-  //added by Hui 12/25/15: trim pre_instances frames first
-  InstanceHash::iterator pre_i;
-  for (pre_i = pre_instances.begin(); pre_i != pre_instances.end(); pre_i++) {
-    if((*pre_i).first == 1)
-      continue; //we don't deal with the first preStackTrace, which is chapel initialization
-    (*pre_i).second.trimFrames(bp.blameModules, preCounter, 0);
-    preCounter++;
-  }
 
   for (vec_I_i = instances.begin(); vec_I_i != instances.end(); vec_I_i++)
   {
     gOut<<"---INSTANCE "<<iCounter<<"  ---"<<std::endl;
-
-    cout<<"Instance "<<iCounter<<" originally has "<<(*vec_I_i).frames.size()<<" frames"<<endl;
-    (*vec_I_i).trimFrames(bp.blameModules, iCounter, 1);
-    if ((*vec_I_i).isMainThread == false) //we don't glue stacktraces from main trd
-      glueTwoStackTrace(pre_instances, iCounter, (*vec_I_i));
-    (*vec_I_i).handleInstance(bp.blameModules, gOut, verbose);
+      
+    //std::cout<<std::endl<<std::endl;
+    //std::cout<<"---INSTANCE "<<iCounter<<"  ---"<<std::endl;
     
+    (*vec_I_i).handleInstance(bp.blameModules,gOut,verbose,iCounter);
+    //(*vec_I_i).handleInstance(bp.blameModules,std::cout,verbose);
     gOut<<"$$$INSTANCE "<<iCounter<<"  $$$"<<std::endl;
+    //std::cout<<"$$$INSTANCE "<<iCounter<<"  $$$"<<std::endl;
     
     iCounter++;
+    
+    //cout<<"-----------------\n";
   }
   
   fprintf(stderr,"DONE - ");

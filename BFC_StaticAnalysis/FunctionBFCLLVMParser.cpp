@@ -722,8 +722,8 @@ void FunctionBFC::determineFunctionExitStatus()
 									User::op_iterator op_i = i2->op_begin(); //typedef Use* op_iterator
 									//Value  *first = *op_i,  
 									//Hui: test which is EV? 11/30/15
-                                    Value *second = *op_i;
-                                    //Value *second = *(++op_i); // second is the actual mem address where to store the value
+                                    //Value *second = *op_i;
+                                    Value *second = *(++op_i); // second is the actual mem address where to store the value
 									
 									if (second->hasName()) {	
 										const llvm::Type * origT = second->getType();		
@@ -752,8 +752,8 @@ void FunctionBFC::determineFunctionExitStatus()
 					else if (i->getOpcode() == Instruction::Store) {
 						User::op_iterator op_i = i->op_begin();
 						//Hui: test which is the EV? 11/30/15
-                        Value *second = *op_i, *first = *(++op_i);
-                        //Value  *first = *op_i,  *second = *(++op_i);
+                        //Value *second = *op_i, *first = *(++op_i);
+                        Value  *first = *op_i,  *second = *(++op_i);
 						
 						if (first->hasName() && second->hasName()) {	
 							const llvm::Type *origT = second->getType();		

@@ -636,13 +636,13 @@ void FunctionBFCCFG::calcStoreLines()
 			    std::vector<NodeProps *>::iterator vec_vp_i2;
 				// Find an instruction that kills the IN instruction
 				for (vec_vp_i2 = fbb->relevantInstructions.begin(); 
-						vec_vp_i2 != fbb->relevantInstructions.end(); vec_vp_i2++) {
-						NodeProps *potKiller = (*vec_vp_i2);
-						if (potKiller->killVP.count(vp) > 0) {
-							killer = potKiller;
-							break;
-						}
-					}				
+					vec_vp_i2 != fbb->relevantInstructions.end(); vec_vp_i2++) {
+					NodeProps *potKiller = (*vec_vp_i2);
+					if (potKiller->killVP.count(vp) > 0) {
+						killer = potKiller;
+						break;
+					}
+				}				
 			
 				if (killer != NULL) {
 					for (set_i_i = fbb->lineNumbers.begin(); set_i_i != fbb->lineNumbers.end(); set_i_i++) {

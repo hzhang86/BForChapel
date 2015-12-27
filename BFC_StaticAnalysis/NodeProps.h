@@ -232,21 +232,27 @@ public:
 	bool  nStatus[NODE_PROPS_SIZE];
 	
 	// Pointer Info (raw, refined into the sets for IVVs below
-	set<NodeProps *> aliasesIn;
-	set<NodeProps *> aliasesOut;
-	set<NodeProps *> fields; // for structures
-	set<NodeProps *> GEPs;
-	set<NodeProps *> loads;
-	set<NodeProps *> nonAliasStores;
-	set<NodeProps *> arrayAccess;
+	//e.g we have: *a=load **b; store *a **c; then
+    set<NodeProps *> aliasesIn; // c.aliasesIn.insert(b);
+	set<NodeProps *> aliasesOut;// b.aliasesOut.insert(c);
+	
+    set<NodeProps *> fields; // for structures
+	set<NodeProps *> GEPs;  //a=GEP array, .... Then a is a GEP of array
+	set<NodeProps *> loads; //%val = load i32* %ptr, then ptr.loads.insert(val)
+	set<NodeProps *> nonAliasStores;//if v has no almostAlias, then it has nonAliasStores
+                            //for a_(GEP/LOAD)_>b, c_(STORE)_>a, then b.nonAliasStores.insert(c)
+	set<NodeProps *> arrayAccess;//if array A, you access a in A, then A.arrayAccess.insert(a)
 	set<NodeProps *> almostAlias; // it's an alias to one instantiation of
-	// a variable, thought technically the pointers arent' the same level
-	
-	// The list of nodes that resolves to the VP through a RESOLVED_LS_OP
-	set<NodeProps *> resolvedLS;
-	
+	// a variable,thought technically the pointers arent' the same level
+	//if *a=load **b; store *a **c; store *d **c; 
+    //then a and b are almostAliases respectively
+
+	// The list of nodes that resolves to the VP through a RESOLVED_L_S_OP
+    //RESOLVED_L_S_OP: resolved from the load-store operation
+	set<NodeProps *> resolvedLS;//e.g. if we have: store a, b; c=load b;
+	                            //then we create c->a, a.resolvedLS.insert(c)
 	// The list of nodes that are resolved from the VP through a R_LS
-	set<NodeProps *> resolvedLSFrom;
+	set<NodeProps *> resolvedLSFrom; //c.resolvedLSFrom.insert(a);
 	
 	// A subset of the resolvedLS nodes that write to the data range
 	//  thus causing potential side effects to all the other nodes that
@@ -267,12 +273,15 @@ public:
 	
 	set<NodeProps *> aliases; // taken care of with pointer analysis
 	set<NodeProps *> dfAliases; // aliases dictated by data flow
-	set<NodeProps *> dataPtrs; // as is this
-	set<ImpFuncCall *> calls;
-	
-	// Field info
-	StructField * sField;
-	StructBFC * sBFC;
+	set<NodeProps *> dataPtrs; //if this node is int** array, and we have 
+	set<ImpFuncCall *> calls;  // store int* a int** array
+	                           // int* b = load int** array
+	                        // int* c = GEP b, 4
+                            //then to array: a is child, b is load, c is dataPtr
+
+    // Field info          if we have a = GEP b, 0, 1...    then	
+    StructField * sField;  //b.sBFC = a.sField.parentStruct    	
+    StructBFC * sBFC;
 	
     set<int> lineNumbers; // set of 'line_num's
 	set<int> descLineNumbers;
@@ -291,7 +300,7 @@ public:
 	set<NodeProps *> descParams;
 	set<NodeProps *> aliasParams;
 	
-    set<NodeProps *> pointedTo;
+    set<NodeProps *> pointedTo; //if a=GEP b, 0, 1, 1.. then b.pointedTo.insert(a)
 	set<NodeProps *> dominatedBy;
 	
 	
@@ -302,10 +311,12 @@ public:
 	set<NodeProps *> inVP;
 	set<NodeProps *> outVP;	
 	
-	NodeProps * storeFrom;
-	set<NodeProps *> storesTo;
-	set<int> storeLines;
-	set<int> borderLines;
+	NodeProps * storeFrom;   // if store int a int* b  edge: b->a
+	set<NodeProps *> storesTo;// then a.storeFrom = b, b.storesTo.insert(a)
+	//storeLines has all lines that this node's definition reaches/valid
+    set<int> storeLines;      //one node can have many sources(like a),  
+    //borderLines has farthest line# for this node's valid definition in each fbb
+	set<int> borderLines;     //but it can only have single destination(like b)
 	/////////////////////////
 	
 	// More DataFlow Analysis (reaching defs for pointers)
@@ -343,7 +354,7 @@ public:
     FunctionBFCBB * fbb;
 	
   //Up Pointers
-	NodeProps * dpUpPtr;
+	NodeProps * dpUpPtr;//%val = load i32* %ptr, then val.dpUpPtr = ptr
 	NodeProps * dfaUpPtr;
 	
 	// TODO: Probably should tweak how we handle this for
@@ -354,7 +365,7 @@ public:
 	// TODO: probably should make this a vector
 	NodeProps * fieldAlias;
 	
-    NodeProps * pointsTo; //if this is a pointer, then pointsTo=pointee ??
+    NodeProps * pointsTo; //if a=GEP b, 0, 1, 1.. then a.pointsTo = b;
     NodeProps * exitV;
   
     // For Constants

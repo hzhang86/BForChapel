@@ -26,19 +26,17 @@ BlameModule *  BlameProgram::findOrCreateModule(const char * modName)
   //bm = blameModules[modName];
 	
 	
-  if (blameModules.count(modName) == 0)
-	{
-		//std::cout<<"Creating new blame module for "<<modName<<std::endl;
-		bm = new BlameModule();
-		std::string s(modName);
-		bm->setName(s);
-		blameModules[bm->getName().c_str()] = bm;
-	}
-	else
-	{
-		bm = blameModules[modName];
+  if (blameModules.count(modName) == 0){
+	//std::cout<<"Creating new blame module for "<<modName<<std::endl;
+	bm = new BlameModule();
+	std::string s(modName);
+	bm->setName(s);
+	blameModules[bm->getName().c_str()] = bm;
+  }
+  else {
+	bm = blameModules[modName];
 		//std::cout<<bm->getName()<<" already created "<<std::endl;
-	}
+  }
 	
   return bm;
 	
