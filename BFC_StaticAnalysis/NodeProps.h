@@ -118,8 +118,8 @@ struct ImpNodeProps;
 class FunctionBFCBB;
  
 struct FuncCall {
-    int paramNumber;
-    string funcName;
+    int paramNumber;//changed by Hui 12/31/15: now -1 represents return val,
+    string funcName;//and -2 represents the callnode, normal params start from 0  
     int lineNum;
     ExitSuper * es;
 	short resolveStatus;
@@ -333,18 +333,15 @@ public:
 	/////////////////////////////////////////////
 	
 	
-	
 	///////// For Alias only operations /////
 	LineReadHash readLines;
 	//////////////////////////////////////////////
 	
-	
-	
-	
 	set<NodeProps *> suckedInEVs;
 	
 	
-    set<FuncCall *> funcCalls;
+    set<FuncCall *> funcCalls;//all the func calls that this node was involved(
+                            //being as param/return value/the callNode(func))
     Value * llvm_inst;
 	
 	// For BitCast Instructions

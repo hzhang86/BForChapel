@@ -203,14 +203,14 @@ void FunctionBFC::determineBFCForOutputVertexLite(NodeProps *v, int v_index)
 				if (fc->funcName == targetVP->name) {
 					fc->outputEvaluated = true;
 					paramNum = fc->paramNumber;
-					if (paramNum == 0) {
+					if (paramNum == -1) { //changed by Hui 12/31/15: 0=>-1
 						zeroParam = sourceVP->number;
 						zParam = sourceVP;
 #ifdef DEBUG_EXIT_OUT
 						blame_info<<"Inputs to "<<v->name<<" is "<<sourceVP->name<<" "<<paramNum<<std::endl;
 #endif
 					}
-					else if (paramNum > 0) {
+					else if (paramNum >= 0) {//changed by Hui 12/31/15:'>' => '>='
 						inputVertices.insert(sourceV);
 #ifdef DEBUG_EXIT_OUT
 						blame_info<<"Inputs to "<<v->name<<" is "<<sourceVP->name<<" "<<paramNum<<std::endl;
@@ -293,7 +293,9 @@ bool FunctionBFC::isLibraryOutput(const char * tStr)
 			(strcmp("fwrite",tStr) == 0) ||
 			(strcmp("fprintf",tStr) == 0) ||
 			(strcmp("fflush",tStr) == 0) ||
-			(strcmp("perror",tStr) == 0))
+			(strcmp("perror",tStr) == 0) || 
+            (strcmp("write",tStr) == 0) || //adde by Hui 12/31/15 for chpl
+            (strcmp("writeln",tStr) == 0)) //added by Hui 12/31/15 for chpl
 	{		
 		return true;
 	}
@@ -3323,26 +3325,66 @@ string FunctionBFC::getRealStructName(string rawStructVarName, Value *v, User *p
                                     blame_info<<"We find GEP inst !\n";
                                     Value *topStruct = *(instGEP->op_begin());
                                     string tempStr; //hold the return string
-                                    tempStr.insert(0,topStruct->getName().str());
-                                    User::op_iterator op_i = instGEP->op_begin();
-                                    ++op_i; //first index
-                                    ++op_i; //second index
-                                    Value *offset = *op_i;
-                                    if(v->getValueID()==Value::ConstantIntVal){
-                                        ConstantInt *cO = (ConstantInt *)offset;
-                                        int offNum = cO->getSExtValue();
-					                    tempStr.insert(0, ".P.");
+                                    if(topStruct->hasName()){ //TO CONTINUE: 12/28/15
+                                      tempStr.insert(0,topStruct->getName().str());
+                                      User::op_iterator op_i = instGEP->op_begin();
+                                      if(instGEP->getNumOperands()>2){
+                                        ++op_i; //first index
+                                        ++op_i; //second index
+                                        Value *offset = *op_i;
+                                        if(v->getValueID()==Value::ConstantIntVal){
+                                          ConstantInt *cO = (ConstantInt *)offset;
+                                          int offNum = cO->getSExtValue();
+					                      tempStr.insert(0, ".P.");
 					
-					                    char fNumStr[3];
-					                    sprintf(fNumStr, "%d", offNum);
-					                    tempStr.insert(0, fNumStr);
+					                      char fNumStr[3];
+					                      sprintf(fNumStr, "%d", offNum);
+					                      tempStr.insert(0, fNumStr);
+                                          return tempStr;
+                                        }
+                                        else {
+                                          blame_info<<"Fail in Cond 0\n";
+                                          return rawStructVarName; //to check: should I return x.P.tempStr ?
+                                        }
+                                      }
+                                      else{
+                                        blame_info<<"We are accesing one element in an array\n";
                                         return tempStr;
+                                      } 
                                     }
-                                    else {
-                                        blame_info<<"Fail in Cond 1\n";
-                                        return rawStructVarName;
-                                    }
-                                }   
+                                    else { //topStruct doesn't have a name(still a register)
+                                      User::op_iterator op_i = instGEP->op_begin();
+                                      Value *vLoad2 = *op_i;
+                                      char tempBuff2[18];
+                                      sprintf(tempBuff2, "0x%x",vLoad2);
+                                      string tempStr2(tempBuff2);
+                                      tempStr.clear();
+                                      tempStr.insert(0,tempStr2);  
+                                      if(instGEP->getNumOperands()>2){
+                                        ++op_i; //first index
+                                        ++op_i; //second index
+                                        Value *offset = *op_i;
+                                        if(v->getValueID()==Value::ConstantIntVal){
+                                          ConstantInt *cO = (ConstantInt *)offset;
+                                          int offNum = cO->getSExtValue();
+					                      tempStr.insert(0, ".P.");
+					
+					                      char fNumStr[3];
+					                      sprintf(fNumStr, "%d", offNum);
+					                      tempStr.insert(0, fNumStr);
+                                          return tempStr;
+                                        }
+                                        else {
+                                          blame_info<<"Fail in Cond -1\n";
+                                          return rawStructVarName; //to check: should I return x.P.tempStr ?
+                                        }
+                                      }
+                                      else{
+                                        blame_info<<"We are accesing one element in an array\n";
+                                        return tempStr;
+                                      } 
+                                    }//end of ! topStruct->hasName()
+                                }//end of upper level GEP inst   
                                 else {
                                     blame_info<<"Fail in Cond 2\n";
                                     return rawStructVarName;
@@ -3480,7 +3522,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 			if (variables.count(instName.c_str()) && variables.count(vName)) {
 #ifdef DEBUG_GRAPH_BUILD
 				blame_info<<"Adding edge from "<<instName<<" to "<<vName<<std::endl;
-				#endif 
+#endif 
 				tie(ed, inserted) = add_edge(variables[instName.c_str()]->number,variables[vName]->number,G);
 				
 				if (inserted) {
@@ -3516,7 +3558,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 					#endif 
 					if (cpHash.count(strAlloc)) {
 					    #ifdef DEBUG_GRAPH_COLLAPSE
-						blame_info<<"Collapsable field alread exists.  Add inst name "<<instName<<" to collapsable pairs."<<std::endl;
+						blame_info<<"Collapsable field already exists.  Add inst name "<<instName<<" to collapsable pairs."<<std::endl;
 						#endif 
 						
 						CollapsePair *cp = new CollapsePair();
@@ -5716,9 +5758,9 @@ void FunctionBFC::handleMallocs()
 						if (fc->funcName == targetVP->name)
 						{
 							paramNum = fc->paramNumber;
-							if (paramNum == 0)
+							if (paramNum == -1)//changed by Hui 12/31/15, 0=>-1
 								zeroParam = sourceVP->number;
-							else if (paramNum == 1)
+							else if (paramNum == 0)//changed by Hui 12/31/15 1=>0
 								oneParam = sourceVP->number;
 							
 							break;

@@ -887,7 +887,7 @@ void FunctionBFC::printFinalDot(bool printAllLines, std::string ext)
 		if (opCode == DF_CHILD_EDGE)
 			continue;
 				
-		int paramNum = -1;
+		int paramNum = -1; //TOCHECK: should it be -2 ? Hui 12/31/15 
 		if (opCode >= CALL_EDGE)
 			paramNum = opCode - CALL_EDGE;
 		
@@ -1270,7 +1270,7 @@ void FunctionBFC::printFinalDotPretty(bool printAllLines, std::string ext)
 		if (opCode == DF_CHILD_EDGE || opCode == DF_ALIAS_EDGE || opCode == DF_CHILD_EDGE)
 			continue;
 				
-		int paramNum = -1;
+		int paramNum = -1;//TOCHECK: should it be -2? Hui 12/31/15
 		if (opCode >= CALL_EDGE)
 			paramNum = opCode - CALL_EDGE;
 		
@@ -1649,7 +1649,7 @@ void FunctionBFC::printFinalDotAbbr(std::string ext)
 		
 		int opCode = get(get(edge_iore, G_abbr),*ei);
 		
-		int paramNum = -1;
+		int paramNum = -1; //TOCHECK: should it be -2? Hui: 12/31/15
 		if (opCode >= CALL_EDGE)
 			paramNum = opCode - CALL_EDGE;
 		

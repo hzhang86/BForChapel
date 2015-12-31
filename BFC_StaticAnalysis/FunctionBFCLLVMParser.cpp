@@ -1208,31 +1208,8 @@ void FunctionBFC::printValueIDName(Value *v)
 	
 }
 
-const char *FunctionBFC::calcMetaFuncName(RegHashProps &variables, Value *v, bool isTradName, int opNum, std::string nonTradName, int currentLineNum)
+const char *FunctionBFC::calcMetaFuncName(RegHashProps &variables, Value *v, bool isTradName, std::string nonTradName, int currentLineNum)
 {
-	// (1230)
-	// TODO: funcCallNames, ????
-	// We create the call name by appending the line number to the name of the call
-	/*
-	 char tempBuf[1024];
-	 if (isTradName)
-	 {
-	 if (opNum == 0)
-	 funcCallNames.insert(v->getNameStart());
-	 sprintf (tempBuf, "%s--%i", v->getNameStart(), currentLineNum);	
-	 }
-	 else
-	 sprintf (tempBuf, "%s--%i", nonTradName.c_str(), currentLineNum);	
-	 
-	 char * vN = (char *) malloc(sizeof(char)*(strlen(tempBuf)+1));
-	 if (!vN)
-	 {
-	 printf("Uh oh\n");
-	 exit(0);
-	 }
-	 strcpy(vN,tempBuf);
-	 vN[strlen(tempBuf)]='\0';
-	 */
 	
 	std::string newName;
 	char tempBuf[1024];
@@ -1487,8 +1464,8 @@ void FunctionBFC::ieInvoke(Instruction *pi, int &varCount, int &currentLineNum, 
 void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
 {
 	// pi->getName = return value
-	// op0 = name of call
-	// op[1,2,...] - parameters
+	// op[#ops-1] = name of call (the last operand of pi)
+	// op[0,1,...] - parameters
 #ifdef DEBUG_LLVM
 	blame_info<<"LLVM__(examineInstruction)(Call) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<std::endl;
 #endif 
@@ -1514,65 +1491,80 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 	}
 	
 	int opNum = 0;
-	std::string callName;
+    int callNameIdx = pi->getNumOperands()-1; //called func is the last operand of this callInst
 	bool isTradName = true; //is traditional name
 	std::string nonTradName; //represents embedded func names 
 	
     /////added by Hui,trying to get the called function///////////
     llvm::CallInst *cpi = cast<CallInst>(pi);
     llvm::Function *calledFunc = cpi->getCalledFunction();
-    blame_info<<"calledFunc's name = "<<calledFunc->getName().data()<< \
-        "  Operand(0) = "<<cpi->getOperand(0)->getName().data()<<std::endl;
+    blame_info<<"calledFunc's name = "<<calledFunc->getName().data();
+    blame_info<<"  pi->getNumOperands()="<<pi->getNumOperands()<<std::endl;
     //////////////////////////////////////////////////////////
-	// Assigning function name VP and VPs for all the parameters
+    //added by Hui 12/31/15: get the callName from the last operand first
+    Value *lastOp = pi->getOperand(callNameIdx);
+    if(lastOp->hasName()){
+        funcCallNames.insert(lastOp->getName().data());
+        blame_info<<"Called function has a name: "<<lastOp->getName().data()<<std::endl;
+    }
+    else { //if no name, then it's an embedded func
+        if (lastOp->getValueID() == Value::ConstantExprVal) {
+#ifdef DEBUG_LLVM
+            blame_info<<"Called function is ConstantExpr"<<std::endl;
+#endif
+            if (isa<ConstantExpr>(lastOp)) {
+                ConstantExpr *ce = cast<ConstantExpr>(lastOp);
+                User::op_iterator op_i = ce->op_begin();
+                for (; op_i != ce->op_end(); op_i++) {
+                    Value *funcVal = *op_i;			
+                    if (isa<Function>(funcVal)) {
+                        Function * embFunc = cast<Function>(funcVal);
+#ifdef DEBUG_LLVM
+                        blame_info<<"EMB Func "<<embFunc->getName().str()<<std::endl;
+#endif 
+                        isTradName = false;
+                        nonTradName = embFunc->getName().str();
+                        funcCallNames.insert(embFunc->getName().data());
+                    }
+                }
+            }
+        }
+    }
+    
+    const char *vName = NULL;
+    const char *tempName = calcMetaFuncName(variables, lastOp, isTradName, nonTradName, currentLineNum);
+    char tempBuf[1024];
+    sprintf(tempBuf, "%s", tempName);
+    
+    char * vN = (char *)malloc(sizeof(char)*(strlen(tempBuf)+1));
+    if (!vN) {
+        printf("Uh oh, malloc vN failed\n");
+        exit(0);
+    }
+    strcpy(vN,tempBuf);
+    vN[strlen(tempBuf)]='\0';
+    vName = vN;
+    std::string callName(vName); //name for each callnode: bar--51a, bar--51aa..
+    blame_info<<"After calcMetaFuncName, callName="<<callName<<std::endl;
+  
+    // Assigning function name VP and VPs for all the parameters
 	for (User::op_iterator op_i = pi->op_begin(), op_e = pi->op_end(); op_i != op_e; ++op_i) {
 		Value *v = *op_i;
-#ifdef DEBUG_LLVM
+
 		if (!(v->hasName())) {
-			blame_info<<"Call Operand No Name "<<" "<<v<<" ";
+#ifdef DEBUG_LLVM
+			blame_info<<"In ieCall -- Call Operand No Name "<<v<<" ";
 			printValueIDName(v);
 			blame_info<<std::endl;
-		}
 #endif			
-		if (v->hasName()) {
-			if (opNum == 0)
-				funcCallNames.insert(v->getName().data());
-			
+        }
+        else { //v doesn't have a name
 #ifdef DEBUG_LLVM
-			blame_info<<"LLVM__(examineInstruction) -- Call Operand "<<opNum<<" "<<v->getName().str()<<std::endl;
-			blame_info<<"LLVM__(examineInstruction) -- Type "<<v->getValueID()<<std::endl;
+			blame_info<<"In ieCall -- Call Operand "<<opNum<<" "<<v->getName().str()<<std::endl;
+			blame_info<<"In ieCall -- Type "<<v->getValueID()<<std::endl;
 #endif
 		}
-		else if (opNum == 0) { //Function call name, if it doesn't have a name it's an embedded function
-			if (v->getValueID() == Value::ConstantExprVal) {
-#ifdef DEBUG_LLVM
-				blame_info<<"Op is ConstantExpr"<<std::endl;
-#endif
-				if (isa<ConstantExpr>(v)) {
-					ConstantExpr *ce = cast<ConstantExpr>(v);
-					
-					User::op_iterator op_i = ce->op_begin();
-					for (; op_i != ce->op_end(); op_i++) {
-						Value * funcVal = *op_i;			
-						
-						if (isa<Function>(funcVal)) {
-							//blame_info<<"Function value "<<std::endl;
-							Function * embFunc = cast<Function>(funcVal);
-#ifdef DEBUG_LLVM
-							blame_info<<"EMB Func "<<embFunc->getName().str()<<std::endl;
-#endif 
-							isTradName = false;
-							nonTradName = embFunc->getName().str();
-							funcCallNames.insert(embFunc->getName().data());
-						}
-					}
-				}
-			}
-#ifdef DEBUG_LLVM
-			blame_info<<"LLVM__(examineInstruction) -- Call Operand "<<opNum<<" NO NAME "<<v->getValueID()<<std::endl;
-#endif
-		}
-		else if (isa<ConstantExpr>(v)) {// The parameter is a BitCast or GEP operation pointing to something else
+		if (isa<ConstantExpr>(v)) {// The parameter is a BitCast or GEP operation pointing to something else
 			ConstantExpr *ce = cast<ConstantExpr>(v);
 			
 			if (ce->getOpcode() == Instruction::GetElementPtr) {
@@ -1589,39 +1581,13 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 #endif 
 			}
 		}
-	    
-        /////added by Hui,trying to get the called function///////////
-        llvm::CallInst *cpi = cast<CallInst>(pi);
-        llvm::Function *calledFunc = cpi->getCalledFunction();
-        const char *vName = NULL;
-
-        if(calledFunc->hasName())
-            vName = calledFunc->getName().data();
-
-	    else {
-            const char *tempName = calcMetaFuncName(variables, v, isTradName, opNum, nonTradName, currentLineNum);
-            
-            char tempBuf[1024];
-            sprintf(tempBuf, "%s", tempName);
-            
-            char * vN = (char *)malloc(sizeof(char)*(strlen(tempBuf)+1));
-            if (!vN) {
-                printf("Uh oh, malloc vN failed\n");
-                exit(0);
-            }
-            strcpy(vN,tempBuf);
-            vN[strlen(tempBuf)]='\0';
-            vName = vN;
-        }
 		
 		// We add the VP for the actual call
-		if (variables.count(vName) == 0 && opNum == 0) {
-			std::string name(vName);
-			callName = name;
+		if (variables.count(vName) == 0 && opNum == callNameIdx) { 
 #ifdef DEBUG_VP_CREATE
-			blame_info<<"Adding NodeProps(13) for "<<name<<std::endl;
+			blame_info<<"Adding NodeProps(13) for "<<callName<<std::endl;
 #endif
-			NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
+			NodeProps *vp = new NodeProps(varCount,callName,currentLineNum,pi);
 			vp->fbb = fbb;
 			
 			if (currentLineNum != 0) {
@@ -1636,13 +1602,12 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 			//printCurrentVariables();
 			
 			// OpNum -1 signifies an entry for the name of the function call
-			FuncCall *fp = new FuncCall(-1, callName);
+			FuncCall *fp = new FuncCall(-2, callName); //CHANGEd: -1 =>-2
 			fp->lineNum = currentLineNum;
 			vp->addFuncCall(fp);
 			addFuncCalls(fp);
 			vp->nStatus[CALL_NODE] = true; //CALL_NODE = 16, NODE_PROPS_SIZE = 20
 			
-	//if the instruction has a name it means there is a return value for the function
 	//We need to assign a funcCall object to the return and treat it as "parameter"0
 			if (pi->hasName()) {
 				if (variables.count(pi->getName().data())) {
@@ -1650,7 +1615,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 					
 					if (retVP) {
 					// Adding a funcCall object for the return value ("parameter" 0)
-						FuncCall *fp = new FuncCall(0, callName);
+						FuncCall *fp = new FuncCall(-1, callName);//CHANGEd 0=>-1
 						fp->lineNum = currentLineNum;
 						retVP->addFuncCall(fp);
 						addFuncCalls(fp);
@@ -1686,7 +1651,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 					variables[name.c_str()] = retVP;
 					varCount++;
 					
-					FuncCall *fp = new FuncCall(0, callName);
+					FuncCall *fp = new FuncCall(-1, callName); //CHANGEd 0=>-1
 					fp->lineNum = currentLineNum;
 					retVP->addFuncCall(fp);
 					addFuncCalls(fp);
@@ -1701,13 +1666,13 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 #endif 
 			}
 		}
-		else if (opNum != 0) {// We take care of the parameters
+		else if (opNum != callNameIdx) {// We take care of the parameters
 			// opNum is the parameter number to call, callName is as advertised
 			FuncCall *fp = new FuncCall(opNum, callName);
 			fp->lineNum = currentLineNum;
 #ifdef DEBUG_LLVM
 			blame_info<<"Adding func call in "<<getSourceFuncName()<<" to "<<callName<<" p "<<opNum<<" for node ";
-			blame_info<<v->getName().str()<<" 0x"<<std::hex<<v<<std::dec<<std::endl;
+			blame_info<<v->getName().str()<<std::hex<<v<<std::dec<<std::endl;
 #endif
 			if (v->hasName()) {
 				NodeProps *vp;

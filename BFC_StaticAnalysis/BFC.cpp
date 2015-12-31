@@ -184,7 +184,7 @@ bool BFC::runOnModule(Module &M)
         DISubprogram *dsp = new DISubprogram(*I);
         if (dsp->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
             std::string dspName = dsp->getName().str();
-            if (dspName.find("chpl") == std::string::npos) { //no chpl in user funcNm
+            if (dspName.find("chpl") == std::string::npos && dspName.compare("=") != 0) { //no chpl in user funcNm
                 if (!dspName.empty() && (*(dspName.begin()) != '_')) { //no '_XXX'
                 //if (dspName.compare("main")==0 || dspName.compare("sayhello")==0 ||\
                     dspName.compare("factorial")==0) {
@@ -220,7 +220,7 @@ bool BFC::runOnModule(Module &M)
         DISubprogram *dsp = new DISubprogram(*I);
         if (dsp->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
             std::string dspName = dsp->getName().str();
-            if (dspName.find("chpl") == std::string::npos) { //no chpl in user funcNm
+            if (dspName.find("chpl") == std::string::npos && dspName.compare("=") != 0) { //no chpl in user funcNm
                 if (!dspName.empty() && (*(dspName.begin()) != '_')) { //no '_XXX'
                 //if (dspName.compare("main")==0 || dspName.compare("sayhello")==0 ||\
                     dspName.compare("factorial")==0) {

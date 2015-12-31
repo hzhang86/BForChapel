@@ -221,8 +221,9 @@ private:
     LineNumHash lnm;
     
     std::vector<FuncStores *> allStores;
-    std::set<const char*> funcCallNames;
-
+    std::set<const char*> funcCallNames; //different called func names
+                                         //if "bar" called twice in foo,only one
+                                         // "bar" kept here
     // These two are tied together
 	//std::set<std::string> collapsableFields;
 	std::vector<CollapsePair *> collapsePairs;
@@ -469,7 +470,7 @@ private:
     void adjustLocalVars();
     bool varLengthParams();
     void printValueIDName(Value *v);
-    const char * calcMetaFuncName(RegHashProps &variables, Value *v, bool isTradName, int opNum, std::string nonTradName, int currentLineNum);
+    const char * calcMetaFuncName(RegHashProps &variables, Value *v, bool isTradName, std::string nonTradName, int currentLineNum);
     void printCurrentVariables();
 
     // IMPLICIT
