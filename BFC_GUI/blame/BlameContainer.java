@@ -87,7 +87,7 @@ public class BlameContainer {
 			{
 				ExitProgram ep = (ExitProgram) it2.next();
 			//////////////////////////////////////////////////////////////////////////	
-				System.out.println("Examining " + ep.getName());
+				System.out.println("Examining localVar " + ep.getName());
 			/////////////////////////////////////////////////////////////////////////	
 				String truncName = ep.getName().substring(ep.getName().lastIndexOf('.')+1);
 
@@ -95,7 +95,7 @@ public class BlameContainer {
 				if (truncName.contains("ierr"))//|| truncName.startsWith("_"))
 				{
 					//////////////////////////////////////////////////////////
-					System.out.println("Not Adding var " + truncName);
+					System.out.println("Not Adding localVar " + truncName);
 					//////////////////////////////////////////////////////////
 				}
 				else if (startsWithNum(truncName))
@@ -157,7 +157,7 @@ public class BlameContainer {
 			{
 				ExitVariable ev = (ExitVariable) it2.next();
 				
-				System.out.println("Examining " + ev.getName() + " " + ev.getHierName());
+				System.out.println("Examining globalVar " + ev.getName() + " " + ev.getHierName());
 				
 				String truncName = ev.getName().substring(ev.getName().lastIndexOf('.')+1);
 				

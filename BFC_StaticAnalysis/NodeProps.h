@@ -185,7 +185,10 @@ public:
 	//  then we make this false
 	bool isExported;
 	
-	
+    ///added by Hui 01/14/16///////////////////////////////////////////
+    const char *uniqueNameAsField; //2.P.I.8.P.3.P.topStructName
+    //////////////////////////////////////////////////////////////////
+
     string name;
 	
 	bool calcName;
@@ -236,7 +239,7 @@ public:
     set<NodeProps *> aliasesIn; // c.aliasesIn.insert(b);
 	set<NodeProps *> aliasesOut;// b.aliasesOut.insert(c);
 	
-    set<NodeProps *> fields; // for structures
+    set<NodeProps *> fields; // for structures, shouldn't include itself
 	set<NodeProps *> GEPs;  //a=GEP array, .... Then a is a GEP of array
 	set<NodeProps *> loads; //%val = load i32* %ptr, then ptr.loads.insert(val)
 	set<NodeProps *> nonAliasStores;//if v has no almostAlias, then it has nonAliasStores
@@ -271,7 +274,7 @@ public:
 	set<NodeProps *> dfChildren; 
 	set<NodeProps *> dfParents;
 	
-	set<NodeProps *> aliases; // taken care of with pointer analysis
+	set<NodeProps *> aliases; // taken care of with pointer analysis, can include itself
 	set<NodeProps *> dfAliases; // aliases dictated by data flow
 	set<NodeProps *> dataPtrs; //if this node is int** array, and we have 
 	set<ImpFuncCall *> calls;  // store int* a int** array
@@ -283,7 +286,7 @@ public:
     StructField * sField;  //b.sBFC = a.sField.parentStruct    	
     StructBFC * sBFC;
 	
-    set<int> lineNumbers; // set of 'line_num's
+    set<int> lineNumbers; //loop line + lines that this node is as a lhs val(左值）
 	set<int> descLineNumbers;
 	
 	// Mostly used with Fortran, these are the line numbers that 
@@ -377,7 +380,9 @@ public:
         number = nu;
 		impNumber = -1;
         name = na;
-		
+		//added by Hui 01/14/16///////
+        uniqueNameAsField = NULL;
+        //////////////////////////////
 		paramNum = 0;
 		
 		// We have calculated the more elaborate name
@@ -385,7 +390,7 @@ public:
 		
         line_num = ln;
 		lineNumOrder = 0;
-        llvm_inst = pi; // the value could be a constant here
+        llvm_inst = pi; // the value could be a constant(for global var) here
 		collapsed_inst = NULL;
 		
 		dpUpPtr = this;

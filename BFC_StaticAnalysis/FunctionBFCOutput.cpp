@@ -321,8 +321,7 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 		{
 			Instruction * pi = cast<Instruction>(ivp->llvm_inst);	
 			
-			//std::cout<<"pi is "<<pi<<std::endl;
-			if (pi == NULL)
+            if (pi == NULL)
 			{
 				O<<"UNDEF"<<std::endl;
 			}
@@ -335,7 +334,13 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 		}
 		else
 		{
-			O<<"UNDEF"<<std::endl;
+            if(ivp->llvm_inst != NULL){//it could be a constant(when ivp is a gv)
+                origT = ivp->llvm_inst->getType();
+                std::string origTStr = returnTypeName(origT, std::string(" "));
+                O<<origTStr<<std::endl;
+            }
+            else
+			    O<<"UNDEF"<<std::endl;
 		}
 		
 		O<<"END GEN_TYPE"<<std::endl;

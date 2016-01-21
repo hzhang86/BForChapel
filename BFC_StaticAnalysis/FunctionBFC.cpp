@@ -945,7 +945,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	
 	// TODO: DETAILS BELOW
 	//7/12/2010  INVESTIGATE FURTHER, do we need this still and why
-	/*
+	
     if (ivp->storeFrom != NULL){//changed by Hui on 08/03/15
 		//ivp->descLineNumbers.insert(ivp->storeFrom->line_num);
         blame_info<<"ivp->eStatus="<<ivp->eStatus<<std::endl;
@@ -964,7 +964,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	    blame_info<<std::endl;
 #endif 
     }
-    */
+    
 	std::set<NodeProps *>::iterator s_vp_i;
 	std::set<NodeProps *>::iterator s_vp_i2;
 	

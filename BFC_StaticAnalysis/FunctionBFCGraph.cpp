@@ -619,8 +619,11 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, \
 #endif 
 					if (tV->sField != NULL)
 						origV->sBFC = tV->sField->parentStruct;
-					origV->fields.insert(tV);
-					tV->fieldUpPtr = origV;
+                    if(origV != tV){ //condition added by Hui 01/20/16
+                        blame_info<<"Adding "<<tV->name<<" to "<<origV->name<<" as a field(1)"<<endl;
+					    origV->fields.insert(tV);
+					    tV->fieldUpPtr = origV;
+                    }
 				}
 				else{ //not struct
 					if (tVPtrLevel > 0) {
@@ -769,7 +772,7 @@ short FunctionBFC::checkIfWritten2(NodeProps * currNode, std::set<int> & visited
 
 
 void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNode,
-																				 std::set<int> & visited, NodeProps * exitV)
+										std::set<int> & visited, NodeProps * exitV)
 {
 #ifdef DEBUG_RP
 	blame_info<<"In resolveLocalAliases2 for "<<exitCand->name<<"("<<exitCand->eStatus<<")";
@@ -781,9 +784,6 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 	visited.insert(currNode->number);
 	
 	set<NodeProps *>::iterator vec_vp_i;
-	
-	
-	
 	
 	if (currNode->nStatus[LOCAL_VAR] || currNode->nStatus[LOCAL_VAR_ALIAS])
 	{
@@ -850,7 +850,8 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			exitCand->aliases.insert(vp);
 			// FORTRAN
 			//vp->aliasesIn.insert(exitCand);
-			
+			//HUI_CHECK
+            blame_info<<"rLA2 called in here(1)"<<endl;
 			resolveLocalAliases2(exitCand, vp, visited, exitV);
 		}
 		
@@ -874,8 +875,8 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			}
 			 
 			 #ifdef DEBUG_RP
-						blame_info<<"Inserting dfAlias(4) "<<vp->name<<"into set for "<<exitCand->name<<std::endl;
-						#endif 
+			 blame_info<<"Inserting dfAlias(4) "<<vp->name<<"into set for "<<exitCand->name<<std::endl;
+			 #endif 
 
 			exitCand->dfAliases.insert(vp);
 			vp->dfaUpPtr = exitCand;
@@ -921,8 +922,6 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 		{
 			NodeProps * vp = (*vec_vp_i);
 			//blame_info<<"VP AO(LVF) - "<<vp->name<<"("<<vp->exitStatus<<")"<<std::endl;
-			
-			
 			
 			//if (vp->exitStatus == NO_EXIT)
 			vp->nStatus[LOCAL_VAR_FIELD_ALIAS] = true;
@@ -1018,7 +1017,8 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 #endif 
 				vp->exitV = exitV;
 			}
-			
+			//HUI_CHECK
+            blame_info<<"rLA2 called in here(2)"<<endl;
 			resolveLocalAliases2(vp, vp, visited, exitV);
 		}
 	}
@@ -1044,10 +1044,12 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 #endif 
 				vp->exitV = exitV;
 			}
-			
-			resolveLocalAliases2(currNode, vp, visited, exitV);
+			//HUI_CHECK
+            blame_info<<"rLA2 called in here(3)"<<endl;
+			//resolveLocalAliases2(currNode, vp, visited, exitV);
+            //changed by Hui 01/20/16 from above
+            resolveLocalAliases2(vp, vp, visited, exitV);
 		}
-		
 	}
 	
 	
@@ -2333,9 +2335,11 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 
 				if (targetV->sField != NULL)
 					v->sBFC = targetV->sField->parentStruct;
-				v->fields.insert(targetV);
-				targetV->fieldUpPtr = v;
-				
+				if(v != targetV){ //condition added by Hui 01/20/16
+                    blame_info<<"Adding "<<targetV->name<<" to "<<v->name<<" as a field(2)"<<endl;
+                    v->fields.insert(targetV);
+                    targetV->fieldUpPtr = v;
+                }
 				if (v->isGlobal) {
 					tempPointers.insert(targetV);
 				}
@@ -2397,9 +2401,11 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 
 				                if (targetV3->sField != NULL)
 					                v->sBFC = targetV3->sField->parentStruct;
-				                v->fields.insert(targetV3);
-				                targetV3->fieldUpPtr = v;
-				
+				                if(v != targetV3){ //condition added by Hui 01/20/16
+                                    blame_info<<"Adding "<<targetV3->name<<" to "<<v->name<<" as a field(3)"<<endl;
+                                    v->fields.insert(targetV3);
+				                    targetV3->fieldUpPtr = v;
+				                }
 				                if (v->isGlobal) {
 					                tempPointers.insert(targetV3);
 				                }
@@ -2790,10 +2796,12 @@ void FunctionBFC::resolveFieldAliases()
 				if (al == v)
 					continue;
 					
-				if (al->nStatus[EXIT_VAR_FIELD] && al->fieldUpPtr != NULL) {
+				if (al->nStatus[EXIT_VAR_FIELD] && al->fieldUpPtr != NULL && al->fieldUpPtr != v) {//last cond added by Hui 01/20/16
 					v->fieldUpPtr = al->fieldUpPtr;
 					v->fieldAlias = al; //TC: you can have >=1 alias right ?
-					al->fieldUpPtr->fields.insert(v);
+					
+                    blame_info<<"Adding "<<v->name<<" to "<<al->name<<"'s fieldUpPtr:"<<al->fieldUpPtr->name<<" as a field(4)"<<endl;
+                    al->fieldUpPtr->fields.insert(v);
 					v->nStatus[EXIT_VAR_FIELD] = true;
 					#ifdef DEBUG_RP
 					blame_info<<"Making EVFA variable an EVF for "<<v->name<<" to "<<v->fieldUpPtr->name<<std::endl;
@@ -2817,10 +2825,12 @@ void FunctionBFC::resolveFieldAliases()
 				if (al == v)
 					continue;
 					
-				if (al->nStatus[LOCAL_VAR_FIELD] && al->fieldUpPtr != NULL) {
+				if (al->nStatus[LOCAL_VAR_FIELD] && al->fieldUpPtr != NULL && al->fieldUpPtr != v) {//last cond added by Hui 01/20/16
 					v->fieldUpPtr = al->fieldUpPtr;
 					v->fieldAlias = al; //TC: what if v has >1 alias ?
-					al->fieldUpPtr->fields.insert(v);
+					
+                    blame_info<<"Adding "<<v->name<<" to "<<al->name<<"'s fieldUpPtr:"<<al->fieldUpPtr->name<<" as a field(5)"<<endl;
+                    al->fieldUpPtr->fields.insert(v);
 					v->nStatus[LOCAL_VAR_FIELD] = true;
 					#ifdef DEBUG_RP
 					blame_info<<"Making LVFA variable an LVF for "<<v->name<<" to "<<v->fieldUpPtr->name<<std::endl;
@@ -3070,7 +3080,7 @@ void FunctionBFC::adjustMainGraph()
 	
 	for(tie(i,v_end) = vertices(G); i != v_end; ++i)  {
 		NodeProps *vp = get(get(vertex_props, G),*i);
-		// We have more than 1+ store going out
+		// We have more than 1+ store coming in
 		if (vp->storesTo.size() > 0) { //eg. store a1 b; store a2 b (b=vp)
 			boost::graph_traits<MyGraphType>::in_edge_iterator e_beg, e_end;
 			
@@ -3327,6 +3337,7 @@ string FunctionBFC::getRealStructName(string rawStructVarName, Value *v, User *p
                                     string tempStr; //hold the return string
                                     if(topStruct->hasName()){ //TO CONTINUE: 12/28/15
                                       tempStr.insert(0,topStruct->getName().str());
+                                      blame_info<<"GEP topStruct hasName: "<<tempStr<<endl;
                                       User::op_iterator op_i = instGEP->op_begin();
                                       if(instGEP->getNumOperands()>2){
                                         ++op_i; //first index
@@ -3348,13 +3359,13 @@ string FunctionBFC::getRealStructName(string rawStructVarName, Value *v, User *p
                                         }
                                       }
                                       else{
-                                        blame_info<<"We are accesing one element in an array\n";
+                                        blame_info<<"We are accesing one element in an array(topStruct hasName: "<<tempStr<<")\n";
                                         return tempStr;
                                       } 
                                     }
                                     else { //topStruct doesn't have a name(still a register)
                                       User::op_iterator op_i = instGEP->op_begin();
-                                      Value *vLoad2 = *op_i;
+                                      Value *vLoad2 = *op_i; //vLoad2=topStruct
                                       char tempBuff2[18];
                                       sprintf(tempBuff2, "0x%x",vLoad2);
                                       string tempStr2(tempBuff2);
@@ -3380,10 +3391,10 @@ string FunctionBFC::getRealStructName(string rawStructVarName, Value *v, User *p
                                         }
                                       }
                                       else{
-                                        blame_info<<"We are accesing one element in an array\n";
+                                        blame_info<<"We are accesing one element in an array(topStruct doesn't hasName\n";
                                         return tempStr;
                                       } 
-                                    }//end of ! topStruct->hasName()
+                                    }//end of !topStruct->hasName()
                                 }//end of upper level GEP inst   
                                 else {
                                     blame_info<<"Fail in Cond 2\n";
@@ -3424,10 +3435,212 @@ string FunctionBFC::getRealStructName(string rawStructVarName, Value *v, User *p
     }
 }
 
+//added by Hui 01/14/16: get the original value back-following the S->L chain
+Value* FunctionBFC::getValueFromOrig(Instruction *vInstLoad) 
+{
+  Value *loadFrom = *(vInstLoad->op_begin());
+  if(Instruction *loadFromInst = dyn_cast<Instruction>(loadFrom)){
+    if(loadFromInst->getOpcode()==Instruction::GetElementPtr) //It means there's no more store->load chains before
+      return vInstLoad;                                       //we reach to GEP,simply return this load inst
+    //else: store r1, tmp;  r2=load tmp;(tmp is just Alloca, we need to do store-load backtrace)
+    Value::use_iterator ui, ue;
+    for(ui=loadFrom->use_begin(),ue=loadFrom->use_end(); ui!=ue; ++ui){
+      if(Instruction *useInst = dyn_cast<Instruction>(*ui)){
+        if(useInst->getOpcode()==Instruction::Store){
+          Value *valueFrom = *(useInst->op_begin());
+          if(Instruction *valueFromInst = dyn_cast<Instruction>(valueFrom)){
+            if(valueFromInst->getOpcode()==Instruction::Load){
+              blame_info<<"Start recursion inside getValueFromOrig"<<endl;
+              return getValueFromOrig(valueFromInst); //recursively call this function
+            }
+            else return valueFrom;//valueFromInst is the GEP retVal,simply return it
+          }
+          else return valueFrom;//valueFrom isn't inst,so it's an exitVar(param/gv)
+        }
+      }
+    }
+    blame_info<<"Weird: shouldn't be here!"<<endl;
+    return vInstLoad;
+  }
+  blame_info<<"loadFrom isn't an inst(even not alloca), we deal it after return"<<endl;
+  return vInstLoad;
+}
 
-string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet,								property_map<MyGraphType, vertex_props_t>::type props,
-						    property_map<MyGraphType, edge_iore_t>::type edge_type,
-							int &currentLineNum)
+//added by Hui 01/14/16: try to get the uniqueNameAsField for a GEP field node
+string FunctionBFC::getUpperLevelFieldName(string rawStructVarName, User *pi, string instName)
+{
+  blame_info<<"In getUpperLevelFieldName for inst "<<instName<<endl;
+  Value *vBase = *(pi->op_begin()); //vBase's name should be equal to rawStructVarName
+  //if GEP base already has its uniqueNameAsField, simply return it
+  if(variables.count(rawStructVarName.c_str())>0){
+    const char *baseName = rawStructVarName.c_str();
+    if(variables[baseName]->uniqueNameAsField){
+      std::string retName(variables[baseName]->uniqueNameAsField);
+      blame_info<<"GEP base: "<<rawStructVarName<<"  already has the uniqueNameAsField, simply return it!"<<endl;
+      return retName;
+    }
+  }
+  //else: GEP base doesn't have a uniqueNameAsField yet, we back trace
+  if(Instruction *vInstLoad = dyn_cast<Instruction>(vBase)){
+    if(vInstLoad->getOpcode() == Instruction::Load){
+      if(vInstLoad->hasName()){ //We've arrived at top level struct TOCHECK:should be moved to back?
+        blame_info<<"should-be Top struct(1): vInstLoad="<<vInstLoad->getName().str()<<" rawStructVarName="<<rawStructVarName<<endl;
+        const char* nodeName = vInstLoad->getName().data();//should be equal to rawStructVarName
+        if(variables.count(nodeName)>0){
+          if(variables[nodeName]->uniqueNameAsField){
+            std::string retName(variables[nodeName]->uniqueNameAsField);
+            return retName;
+          }
+          else
+            return vInstLoad->getName().str();
+        }
+      }
+      else{
+        Value *valueFrom = getValueFromOrig(vInstLoad);
+        blame_info<<"After getValueFromOrig, we have "<<valueFrom<<endl;
+        if(valueFrom->hasName()){//It's an exitVar(passed-in param): SL...->GEP (TOCHECK)
+          blame_info<<"should-be Top struct(2): valueFrom="<<valueFrom->getName().str()<<" rawStructVarName="<<rawStructVarName<<endl;
+          const char* nodeName = valueFrom->getName().data();
+          if(variables.count(nodeName)>0){
+            if(variables[nodeName]->uniqueNameAsField){
+              std::string retName(variables[nodeName]->uniqueNameAsField);
+              return retName;
+            }
+            else
+              return valueFrom->getName().str();
+          }
+        }
+        else if(Instruction *valueFromInst = dyn_cast<Instruction>(valueFrom)){
+          if(valueFromInst->getOpcode()==Instruction::GetElementPtr){//1st most common case: GEP->SL...->GEP
+            //return the uniqueNameAsField of this GEP retVal
+            char tempBuff[18];
+            sprintf(tempBuff, "0x%x",valueFrom);
+            string tempStr(tempBuff);
+            blame_info<<"Upper struct(1): valueFrom="<<tempStr<<" rawStructVarName="<<rawStructVarName<<endl;
+            const char* nodeName = tempStr.c_str();
+            if(variables.count(nodeName)>0){
+              if(variables[nodeName]->uniqueNameAsField){
+                std::string retName(variables[nodeName]->uniqueNameAsField);
+                return retName;
+              }
+              else
+                blame_info<<"Error: register should have uniqueNameAsField"<<endl;
+            }
+          }
+          else if(valueFromInst->getOpcode()==Instruction::Load){
+            Value *loadFrom = *(valueFromInst->op_begin());
+            if(loadFrom->hasName()){//It's an exitVar(globalVar): load->SL...->GEP (TOCHECK)
+              blame_info<<"should-be Top struct(3): loadFrom="<<loadFrom->getName().str()<<" rawStructVarName="<<rawStructVarName<<endl;
+              const char* nodeName = loadFrom->getName().data();
+              if(variables.count(nodeName)>0){
+                if(variables[nodeName]->uniqueNameAsField){
+                  std::string retName(variables[nodeName]->uniqueNameAsField);
+                  return retName;
+                }
+                else
+                  return loadFrom->getName().str();
+              }
+            }
+            else if(Instruction *loadFromInst = dyn_cast<Instruction>(loadFrom)){
+              if(loadFromInst->getOpcode()==Instruction::GetElementPtr){//2nd most common case: GEP->load->(SL...)->GEP
+                //return the uniqueNameAsField of this GEP retVal   
+                char tempBuff2[18];
+                sprintf(tempBuff2, "0x%x",loadFrom);
+                string tempStr2(tempBuff2);
+                blame_info<<"Upper struct(2): loadFrom="<<tempStr2<<" rawStructVarName="<<rawStructVarName<<endl;
+                const char* nodeName2 = tempStr2.c_str();
+                if(variables.count(nodeName2)>0){
+                  if(variables[nodeName2]->uniqueNameAsField){
+                    std::string retName(variables[nodeName2]->uniqueNameAsField);
+                    return retName;
+                  }
+                  else
+                    blame_info<<"Error2: register should have uniqueNameAsField"<<endl;
+                }
+              }
+              else blame_info<<"Fail in case 0"<<endl;
+            }
+            else if(isa<ConstantExpr>(loadFrom)){
+              //return variables[0x330b2d8.CE.44]->uniqueNameAsField
+              blame_info<<"The loadFrom is a ConstantExpr, there is an embedded GEP!"<<endl;// so the load is like: %1=load GEP(%2, 0, 3)
+              ConstantExpr *ceGEP = cast<ConstantExpr>(loadFrom);
+              if(ceGEP->getOpcode() == Instruction::GetElementPtr){
+                //since we don't know the currentlinenum of this ceGEP node when it's called
+                //so we can't directly get its uniqueNameAsField, have to recompute it from the base
+                Value *ceBase = *(ceGEP->op_begin());
+                string baseName;
+                if(ceBase->hasName())
+                  baseName = ceBase->getName().str();
+                else{
+                  char tempBuff[18];
+                  sprintf(tempBuff, "0x%x", ceBase);
+                  string tempStr(tempBuff);
+                  baseName.clear();
+                  baseName.insert(0, tempStr);
+                }
+                baseName = getUpperLevelFieldName(baseName, ceGEP, "ceGEP");
+                //now start to manully get loadFrom's uniqueNameAsField
+                if(ceGEP->getNumOperands() == 3){
+                  Value *fieldNum = ceGEP->getOperand(2);
+                  if(fieldNum->getValueID() == Value::ConstantIntVal){
+                    ConstantInt *cv = (ConstantInt *)fieldNum;
+                    int number = cv->getSExtValue();
+                    
+                    string fieldName = baseName;
+                    fieldName.insert(0, ".P.");
+                    char fieldNumStr[3];
+                    sprintf(fieldNumStr, "%d", number);
+                    fieldName.insert(0, fieldNumStr);
+                        
+                    return fieldName;
+                  }
+                }
+                else
+                  blame_info<<"Error: ceGEP has only "<<ceGEP->getNumOperands()<<" Operands"<<endl;
+              }
+            }
+          }
+          else blame_info<<"Fail in case 1"<<endl;
+        }
+        else blame_info<<"Fail in case 2, not likely"<<endl;
+      }
+    }
+    else if(vInstLoad->getOpcode() == Instruction::Alloca && vInstLoad->hasName()){
+      blame_info<<"should-be Top struct(0): vInstAlloca="<<vInstLoad->getName().str()<<" rawStructVarName="<<rawStructVarName<<endl;
+      const char* nodeName = vInstLoad->getName().data();//should be equal to rawStructVarName
+      if(variables.count(nodeName)>0){
+        if(variables[nodeName]->uniqueNameAsField){
+          std::string retName(variables[nodeName]->uniqueNameAsField);
+          blame_info<<"Shouldn't be here(1)"<<endl;
+          return retName;
+        }
+        else
+          return vInstLoad->getName().str();
+      }
+    }
+    else blame_info<<"If inst before GEP isn't load/alloca, then we shouldn't be here!"<<endl;
+  }
+  else if(vBase->hasName()){ //not likely to happen
+    blame_info<<"should-be Top struct(-1): vBase="<<vBase->getName().str()<<" rawStructVarName="<<rawStructVarName<<endl;
+    const char* nodeName = vBase->getName().data();//should be equal to rawStructVarName
+    if(variables.count(nodeName)>0){
+      if(variables[nodeName]->uniqueNameAsField){
+        std::string retName(variables[nodeName]->uniqueNameAsField);
+        blame_info<<"Shouldn't be here(2)"<<endl;
+        return retName;
+      }
+      else
+        return vBase->getName().str();
+    }
+  }
+  else blame_info<<"If GEP base isn't an inst nor hasName(), then we shouldn't be here!"<<endl;
+
+  return rawStructVarName;
+}
+        
+
+string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet,property_map<MyGraphType, 
+        vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type,int &currentLineNum)
 {
 	bool inserted;
     graph_traits < MyGraphType >::edge_descriptor ed;
@@ -3484,17 +3697,66 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 #ifdef DEBUG_GRAPH_BUILD
 					blame_info<<"GRAPH_(genEdge) - GEP "<<instName<<" points to "<<v->getName().data()<<std::endl;
 #endif
+                    //added by Hui 01/14/16
+                    blame_info<<"GEP base "<<v->getName().data()<<" will have uniqueNameAsField of itself"<<endl;
+
+                    if(!(variables[v->getName().data()]->uniqueNameAsField))
+                      variables[v->getName().data()]->uniqueNameAsField = v->getName().data(); //topLevel struct name is itself
+                    else{
+                      blame_info<<"To check(v already has its uniqueNameAsField): old="<<variables[v->getName().data()]->uniqueNameAsField
+                          <<"  new(its own name)="<<v->getName().data()<<endl;
+                      if(strcmp(variables[v->getName().data()]->uniqueNameAsField, v->getName().data())!=0)
+                        blame_info<<"Check! named node has a different uniqueNameASField!"<<endl;
+                    }
 					//structVarNameGlobal.clear();
-					structVarNameGlobal.insert(0, v->getName().str());
+					structVarNameGlobal.insert(0, v->getName().str());//only for comparison, not real useful
 					opCount++;
 				}
 				else if (opCount == 1) {
 					edge_type[ed] = GEP_OFFSET_OP;
 					opCount++;
+#ifdef DEBUG_GRAPH_BUILD
+                    blame_info<<"GEP_OFFSET_OP: "<<v->getName().data()<<" to inst: "<<instName<<endl;
+#endif
+                    ////added by Hui 01/14/16/////////
+                    if(pi->getNumOperands()==2){//we are accessing an element in an array
+                      string upperStructName = getUpperLevelFieldName(structVarNameGlobal,pi,instName);
+                      upperStructName.insert(0,"I.");
+                      const char *strAlloc = (const char*)malloc(sizeof(char)*(upperStructName.length()+1));
+                      strcpy((char*)strAlloc, upperStructName.c_str());
+                      variables[instName.c_str()]->uniqueNameAsField = strAlloc;
+                      blame_info<<"(1)Inst "<<instName<<" has uniqueNameAsField: "<<strAlloc<<endl;
+                      if (cpHash.count(strAlloc)) {
+                        #ifdef DEBUG_GRAPH_COLLAPSE
+                        blame_info<<"Collapsable field already exists(1).  Add inst name "<<instName<<" to collapsable pairs."<<std::endl;
+                        #endif 
+                        
+                        CollapsePair *cp = new CollapsePair();
+                        cp->nameFieldCombo = strAlloc;
+                        cp->collapseVertex = variables[instName.c_str()];
+                        cp->destVertex = cpHash[strAlloc];
+                        collapsePairs.push_back(cp);
+ 	
+#ifdef DEBUG_GRAPH_COLLAPSE
+            			blame_info<<"Deleting edge from "<<instName<<" to "<<v->getName().data()<<std::endl;
+#endif 
+						remove_edge(variables[instName.c_str()]->number,variables[v->getName().data()]->number,G);//TOCHECK: whether we need to remove_edge
+                     }
+                      else {
+                        //collapsableFields.insert(structVarName);
+                        cpHash[strAlloc] = variables[instName.c_str()]; //cpHash only insert here
+                        #ifdef DEBUG_GRAPH_COLLAPSE
+                        blame_info<<"Collapsable field does not exist(1).  Create field and make inst name "<<instName<<" destination node."<<std::endl;
+                        #endif 
+                      }
+                    }
 				}
-				else if (opCount == 2){
+				else if (opCount == 2){//barely happen in this case 
 					edge_type[ed] = GEP_S_FIELD_VAR_OFF_OP;
 					opCount++;
+#ifdef DEBUG_GRAPH_BUILD
+                    blame_info<<"GEP_S_FIELD_VAR_OFF_OP: "<<v->getName().data()<<" to inst: "<<instName<<endl;
+#endif
 				}
 			}
 			else {
@@ -3504,11 +3766,42 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 			}
 		} //v hasName() = true
 		else if (v->getValueID() == Value::ConstantIntVal) {
-			if (opCount == 1 || opCount == 0) {
+			if (opCount == 0) {
 				opCount++;
 				continue;
 			}
-			
+            else if (opCount == 1){
+                opCount++;
+                if(pi->getNumOperands()==2){//we are accessing an element in an array, rarely happen in this case
+                  string upperStructName = getUpperLevelFieldName(structVarNameGlobal,pi,instName);
+                  upperStructName.insert(0,"I.");
+                  const char *strAlloc = (const char*)malloc(sizeof(char)*(upperStructName.length()+1));
+                  strcpy((char*)strAlloc, upperStructName.c_str());
+                  variables[instName.c_str()]->uniqueNameAsField = strAlloc;
+                  blame_info<<"(2)Inst "<<instName<<" has uniqueNameAsField: "<<strAlloc<<endl;
+
+                  if (cpHash.count(strAlloc)) {
+                    #ifdef DEBUG_GRAPH_COLLAPSE
+                    blame_info<<"Collapsable field already exists(2).  Add inst name "<<instName<<" to collapsable pairs."<<std::endl;
+                    #endif 
+                    
+                    CollapsePair *cp = new CollapsePair();
+                    cp->nameFieldCombo = strAlloc;
+                    cp->collapseVertex = variables[instName.c_str()];
+                    cp->destVertex = cpHash[strAlloc];
+                    collapsePairs.push_back(cp);
+                  }
+                  else {
+                    //collapsableFields.insert(structVarName);
+                    cpHash[strAlloc] = variables[instName.c_str()]; //cpHash only insert here
+                    #ifdef DEBUG_GRAPH_COLLAPSE
+                    blame_info<<"Collapsable field does not exist(2).  Create field and make inst name "<<instName<<" destination node."<<std::endl;
+                    #endif 
+                  }
+                }
+                continue;
+            }
+
 			ConstantInt *cv = (ConstantInt *)v;
 			int number = cv->getSExtValue();
 			
@@ -3529,8 +3822,9 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 					edge_type[ed] = GEP_S_FIELD_OFFSET_OP + number;
 #ifdef ENABLE_FORTRAN
 #ifdef HUI_CHPL //still temporary, we back follow GEP->store->load->GEP
-                    structVarNameGlobal = //can be changed to iteratively call
-                        getRealStructName(structVarNameGlobal,v,pi,instName);
+                    structVarNameGlobal = //can be changed to recursively/iteratively call
+                        //getRealStructName(structVarNameGlobal,v,pi,instName);
+                        getUpperLevelFieldName(structVarNameGlobal,pi,instName);
 #endif
 					std::string structVarName = structVarNameGlobal;
 					structVarName.insert(0, ".P.");
@@ -3556,6 +3850,13 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 					#ifdef DEBUG_GRAPH_COLLAPSE
 					blame_info<<"Name of collapsable field candidate is "<<structVarName<<" for "<<instName<<std::endl;
 					#endif 
+
+                    /////////added by Hui 01/14/16////////////////////
+                    NodeProps *instNode = variables[instName.c_str()];
+                    instNode->uniqueNameAsField = strAlloc;
+                    blame_info<<"(3)Inst "<<instName<<" has uniqueNameAsField: "<<strAlloc<<endl;
+                    //////////////////////////////////////////////////
+
 					if (cpHash.count(strAlloc)) {
 					    #ifdef DEBUG_GRAPH_COLLAPSE
 						blame_info<<"Collapsable field already exists.  Add inst name "<<instName<<" to collapsable pairs."<<std::endl;
@@ -3604,7 +3905,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 			std::string tempStr(tempBuff);
 			opName.clear();
 			opName.insert(0, tempStr);
-			
+			//structVarNameGlobal not really useful, just for comparison
 			if (opCount == 0) {
 				structVarNameGlobal.insert(0, tempStr);
 			}
@@ -3620,14 +3921,69 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 						blame_info<<"GRAPH_(genEdge) - GEP(2) "<<instName.c_str()<<" points to "<<opName.c_str()<<std::endl;
 #endif
 						opCount++;
+                        //added by Hui 01/14/16/////////////////////
+                        string upperStructName = getUpperLevelFieldName(structVarNameGlobal,pi,instName);
+                        const char *strAlloc = (const char*)malloc(sizeof(char)*(upperStructName.length()+1));
+                        strcpy((char*)strAlloc, upperStructName.c_str());
+                        blame_info<<"GEP base "<<opName<<" will have uniqueNameAsField: "<<strAlloc<<endl;
+
+                        if(!(variables[opName.c_str()]->uniqueNameAsField))//very likely, unless in 2nd GEP of two successive GEPs
+                          variables[opName.c_str()]->uniqueNameAsField = strAlloc; //topLevel struct name is itself
+                        else{
+                          blame_info<<"To check(opName already has its uniqueNameAsField)(2): old="<<
+                              variables[opName.c_str()]->uniqueNameAsField<<"  new="<<strAlloc<<endl;
+                          if(strcmp(variables[opName.c_str()]->uniqueNameAsField, strAlloc)!=0){ //shouldn't happen
+                            blame_info<<"Error: register can't hold retval from 2 diff GEPs!"<<endl;
+                            variables[opName.c_str()]->uniqueNameAsField = strAlloc;
+                          }
+                        }
+                        ///////////////////////////////////////////////
 					}
 					else if (opCount == 1) {
 						edge_type[ed] = GEP_OFFSET_OP;
 						opCount++;
-					}
-					else if (opCount == 2) {
+#ifdef DEBUG_GRAPH_BUILD
+                        blame_info<<"GEP_OFFSET_OP(2): "<<opName<<" to inst: "<<instName<<endl;
+#endif
+                        ////added by Hui 01/14/16/////////
+                        if(pi->getNumOperands()==2){//we are accessing an element in an array
+                          string upperStructName = getUpperLevelFieldName(structVarNameGlobal,pi,instName);
+                          upperStructName.insert(0,"I.");
+                          const char *strAlloc = (const char*)malloc(sizeof(char)*(upperStructName.length()+1));
+                          strcpy((char*)strAlloc, upperStructName.c_str());
+                          variables[instName.c_str()]->uniqueNameAsField = strAlloc;
+                          blame_info<<"(4)Inst "<<instName<<" has uniqueNameAsField: "<<strAlloc<<endl;
+
+                          if (cpHash.count(strAlloc)) {
+                            #ifdef DEBUG_GRAPH_COLLAPSE
+                            blame_info<<"Collapsable field already exists(1).  Add inst name "<<instName<<" to collapsable pairs."<<std::endl;
+                            #endif 
+                        
+                            CollapsePair *cp = new CollapsePair();
+                            cp->nameFieldCombo = strAlloc;
+                            cp->collapseVertex = variables[instName.c_str()];
+                            cp->destVertex = cpHash[strAlloc];
+                            collapsePairs.push_back(cp);
+#ifdef DEBUG_GRAPH_COLLAPSE
+            			    blame_info<<"Deleting edge from "<<instName<<" to "<<opName<<std::endl;
+#endif 
+						    remove_edge(variables[instName.c_str()]->number,variables[opName.c_str()]->number,G);//TOCHECK:whether we need to remove_edge
+                          }
+                          else {
+                            //collapsableFields.insert(structVarName);
+                            cpHash[strAlloc] = variables[instName.c_str()]; //cpHash only insert here
+                            #ifdef DEBUG_GRAPH_COLLAPSE
+                            blame_info<<"Collapsable field does not exist(1).  Create field and make inst name "<<instName<<" destination node."<<std::endl;
+                            #endif 
+                          }
+                        }
+                    }
+					else if (opCount == 2) {//barely happen in this case
 						edge_type[ed] = GEP_S_FIELD_VAR_OFF_OP;
 						opCount++;
+#ifdef DEBUG_GRAPH_BUILD
+                        blame_info<<"GEP_S_FIELD_VAR_OFF_OP(2): "<<opName<<" to inst: "<<instName<<endl;
+#endif
 					}
 				}
 				else { //not inserted
@@ -3636,7 +3992,6 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 #endif 
 				}
 			}
-
 			else {	
 #ifdef DEBUG_ERROR
 				blame_info<<"Variables can't find value of "<<instName<<" "<<variables.count(instName.c_str());
@@ -3658,22 +4013,25 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 {
     //bool inserted;
     graph_traits < MyGraphType >::edge_descriptor ed;
-	
-	User::op_iterator op_i = pi->op_begin(), op_e = pi->op_end();
-	Value *call_name = *op_i;
-	op_i++;
-	
-	const char *callNameStr = call_name->getName().data();
+    /////added by Hui,trying to get the called function///////////
+    llvm::CallInst *cpi = cast<CallInst>(pi);
+    llvm::Function *calledFunc = cpi->getCalledFunction();
+    blame_info<<"In geCall, calledFunc's name = "<<calledFunc->getName().data();
+    blame_info<<"  pi->getNumOperands()="<<pi->getNumOperands()<<std::endl;
+    //////////////////////////////////////////////////////////
+    int callNameIdx = pi->getNumOperands()-1; //called func is the last operand of this inst
+    Value *call_name = pi->getOperand(callNameIdx);
+	const char *callNameStr;
 	bool isTradName = true;
+    if(call_name->hasName())
+        callNameStr = call_name->getName().data();
 	//else: !call_name->hasName()
-	if (call_name->getValueID() == Value::ConstantExprVal) {
+    else if (call_name->getValueID() == Value::ConstantExprVal) {
 #ifdef DEBUG_GRAPH_BUILD
-		blame_info<<"Op is ConstantExpr"<<std::endl;
+		blame_info<<"call_name is ConstantExpr"<<std::endl;
 #endif
-		
 		if (isa<ConstantExpr>(call_name)) {
 			ConstantExpr *ce = cast<ConstantExpr>(call_name);
-			
 			User::op_iterator op_i = ce->op_begin();
 			for (; op_i != ce->op_end(); op_i++) {
 				Value *funcVal = *op_i;			
@@ -3687,9 +4045,10 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 		}
 	}
 	
-	
-	if(strstr(call_name->getName().data(),"llvm.dbg") != NULL)
+	if(strstr(call_name->getName().data(),"llvm.dbg") != NULL){
+        blame_info<<"We don't deal with intrinsic func calls"<<endl;
 		return;
+    }
 	
 	//bool foundFunc = true;
 	int sizeSuffix = 0;
@@ -3729,12 +4088,11 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 			break;
 	}
 	
-	const char *vName = tempStr.c_str();
-	
+	const char *vName = tempStr.c_str(); //calculated callName, with line#
+	                                     //like: child--22a
 	// Add edge for the return value container 
 	// call_name - function call name
 	// pi - variable that receives return value, if none then function is void
-	//if ((call_name->hasName() || !isTradName) && pi->hasName() )
 
 	if (pi->hasName()) {
 		addEdge(pi->getName().data(), vName, pi);
@@ -3753,18 +4111,22 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 		addImplicitEdges(pi, iSet, edge_type, vName, true);
 	
 	// Add edges for all parameters of the function					
-	for ( ; op_i != op_e; ++op_i) {
-		Value *v = *op_i;
+	int opCount = 0;
+	User::op_iterator op_i = pi->op_begin(), op_e = pi->op_end();
+    for ( ; op_i != op_e; ++op_i) {
+	  Value *v = *op_i;
+      if(opCount != callNameIdx) {//call_name is the last Op, we don't want to deal with it
+#ifdef DEBUG_GRAPH_BUILD
+        blame_info<<"op["<<opCount<<"]: "<<v->getName().data()<<endl;
+#endif
 		// Normal case where the parameter has a name and we have a normal function
-		// if ((call_name->hasName() || !isTradName) && v->hasName() && 
-		// variables[v->getName().data()] && variables[vName] )  
 		if (v->hasName()) {						
 			addEdge(v->getName().data(), vName, pi);
 		}
 		// corner case where parameter is a constantExpr (GEP or BitCast)
 		else if (v->getValueID() == Value::ConstantExprVal) {
 #ifdef DEBUG_GRAPH_BUILD
-			blame_info<<"Call param for "<<call_name->getName().data()<<" is a constant"<<std::endl;
+			blame_info<<"Call param for "<<vName<<" is a constant"<<std::endl;
 #endif 
 			if (isa<ConstantExpr>(v)) {
 				ConstantExpr *ce = cast<ConstantExpr>(v);	
@@ -3813,6 +4175,8 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 			addEdge(paramName.c_str(), vName, pi);
 			
 		}
+      }
+      opCount++;
 	}// end for loop going through ops
 }
 
@@ -4561,8 +4925,8 @@ void FunctionBFC::genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet,
         currentLineNum = Line;
     }
 
-	if (pi->getOpcode() == Instruction::GetElementPtr) {
-		Value *v = pi->getOperand(0);
+	if (pi->getOpcode() == Instruction::GetElementPtr) { //corresponding to firstGEPCheck in LLVMParser.cpp,
+		Value *v = pi->getOperand(0);                   //probably only useful for fortran
 			
 		const llvm::Type *pointT = v->getType();
 		unsigned typeVal = pointT->getTypeID();

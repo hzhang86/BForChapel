@@ -70,6 +70,8 @@ VertexProps *BlameFunction::findOrCreateTempBlamees(std::set<VertexProps *> & bl
     vp->isDerived = true;
     found = false;
     vp->addedFromWhere = 90;
+
+    cout<<"Blamees insert "<<vp->name<<" in findOrCreateTempBlamees" <<endl;
     blamees.insert(vp);
   }
   
@@ -841,6 +843,15 @@ BlameFunction * BlameFunction::parseBlameFunction(ifstream & bI)
     else
       proceed = false;
   }
+  //added by Hui 12/30/15 for testing callNodes
+  std::vector<VertexProps*>::iterator vp_i;
+  cout<<"The callNodes of function "<<this->getName()<<" are:"<<endl;
+  for(vp_i = this->callNodes.begin(); vp_i != this->callNodes.end(); vp_i++){
+    VertexProps *node = *vp_i;
+    cout<<node->name<<" declaredLine="<<node->declaredLine<<endl;
+  }
+  /////////////////////////////////////////////
+
   return this;
 }
 
@@ -893,23 +904,29 @@ void BlameFunction::addBlameToFieldParents(VertexProps * vp, std::set<VertexProp
     
     std::set<VertexProps *> visited;
     VertexProps * upPtr = vp->fieldUpPtr;
-    while (upPtr != NULL && visited.count(upPtr) == 0)
-    {
+    while (upPtr != NULL && visited.count(upPtr) == 0) //Here visited is new for each call of this func
+    {                                               //TOCHECK: shall we make it global for each frame???
       visited.insert(upPtr);
       
       
       //std::cout<<"Adding field parent "<<upPtr->name<<std::endl;
       upPtr->addedFromWhere = fromWhere;
+      cout<<"Blamees insert "<<upPtr->name<<" in addBlameToFieldParents"<<endl;
       blamees.insert(upPtr);
       
       // Recursive parent situation, field is parent to container struct
       // TODO: Fix why this happens at the source
-      if (upPtr->fields.count(upPtr->fieldUpPtr) && upPtr->eStatus > NO_EXIT)
+      if (upPtr->fields.count(upPtr->fieldUpPtr) && upPtr->eStatus > NO_EXIT){
+        cout<<"Wooh,what's wrong with "<<upPtr->name<<", its fieldUpPtr: "<<upPtr->fieldUpPtr->name<<endl;
         upPtr = NULL;
+      }
       else
       {
         VertexProps * oldVP = upPtr;
         upPtr = upPtr->fieldUpPtr;
+        /////////////////for test///////////////////////////
+        if(upPtr != NULL)
+            cout<<"In place1: new upPtr="<<upPtr->name<<endl;
         
         if (upPtr == NULL)
         {
@@ -925,7 +942,8 @@ void BlameFunction::addBlameToFieldParents(VertexProps * vp, std::set<VertexProp
               if (vpAlias->fieldUpPtr != NULL)
               {
                 upPtr = vpAlias->fieldUpPtr;
-                            upPtr->temptempFields.insert(oldVP);
+                cout<<"In place2: new upPtr="<<upPtr->name<<endl;
+                upPtr->temptempFields.insert(oldVP);
 
                 break;
               }
@@ -933,15 +951,13 @@ void BlameFunction::addBlameToFieldParents(VertexProps * vp, std::set<VertexProp
           }
         }
         
-        
-        
         if (upPtr == NULL)
         {
           if (oldVP->aliasUpPtr != NULL)
           {
             ////std::cout<<"22a - AliasUpPtr "<<oldVP->aliasUpPtr->name<<std::endl;
             upPtr = oldVP->aliasUpPtr;
-            
+            cout<<"In place3: new upPtr="<<upPtr->name<<endl;
             // TODO: Need to change this intermediary step
             upPtr->temptempFields.insert(oldVP);
           }
@@ -1001,7 +1017,7 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
   for(it = ii.first; it != ii.second; ++it)
   {
     VertexProps * vp = it->second;
-    //cout<<"Key = "<<it->first<<"    Value = "<<it->second<<endl;
+    cout<<"Key = "<<it->first<<"    Value = "<<it->second->name<<endl;
     if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD])
     {
 /////////////////////////////////////////////////////////////
@@ -1012,8 +1028,9 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
         //std::cout<<"Blamees insert(1) "<<vp->name<<std::endl;
 
         // Make sure the callee EV param num matches the caller param num
-        if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees))
-        {
+        if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees)) //notARepeat always return true 
+        {                                                                           //if callNode==NULL, transferFuncApplies also returns true
+          cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(1)"<<endl;
           blamees.insert(vp);
           //std::cout<<"Blamees ACTUAL insert(1) "<<vp->name<<std::endl;
           vp->addedFromWhere = 1;
@@ -1025,15 +1042,15 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
           DQblamees.insert(vp);
         }
     }
-    else if ( isBlamePoint && (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD]))
+    else if (isBlamePoint && (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD]))
     {
 /////////////////////////////////////////////////////////////
-                cout<<"determinBlameHolders: in case 2"<<endl;
+      cout<<"determinBlameHolders: in case 2"<<endl;
 /////////////////////////////////////////////////////////////
-      if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR] ||vp->nStatus[LOCAL_VAR_FIELD])
-      {
+      //if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR] ||vp->nStatus[LOCAL_VAR_FIELD])
+      //{ redundant condition!
 //////////////////////////////////////////////////////////////////////////////////////
-          cout<<"I'm inside the first if "<<endl;
+          //cout<<"I'm inside the first if "<<endl;
 /////////////////////////////////////////////////////////////////////////////////////
           //std::cout<<"Blamees insert(5) "<<vp->name<<std::endl;
           vp->findSEExits(blamees);
@@ -1041,10 +1058,11 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
           
           // Make sure the callee EV param num matches the caller param num
           //vp could be the local var in this frame holding the retval from callNode
-          if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees)){
-///////////////////////////////////////////////////////////////////////////////////////
-          cout<<"I'm inside the second if"<<endl;
+          if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees)){//notARepeat always returns true
+///////////////////////////////////////////////////////////////////////////////////////  //transferFuncApplies returns true if callNode=NULL
+          cout<<"I'm inside the if transferFuncApplies=true"<<endl;
 //////////////////////////////////////////////////////////////////////////////////////
+            cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(2)"<<endl;
             blamees.insert(vp);
             std::cout<<"Blamees ACTUAL insert(5) "<<vp->name<<std::endl;
             vp->addedFromWhere = 5;
@@ -1056,7 +1074,7 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
             vp->addedFromWhere = 65;
             DQblamees.insert(vp);
           }          
-      }
+      //}
     }
     else if (vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD])
     {
@@ -1082,16 +1100,16 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
   
   for(it = ii.first; it != ii.second; ++it)
   {
-    VertexProps * vp = it->second;
     
+    VertexProps * vp = it->second;
     if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD])
     {
-      //std::cout<<"Blamees insert(3) "<<vp->name<<std::endl;
       vp->findSEExits(blamees);
         
       // Make sure the callee EV param num matches the caller param num
       if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees))        
       {
+        cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(3)"<<endl;
         blamees.insert(vp);
         vp->addedFromWhere = 3;
         addBlameToFieldParents(vp, blamees, 13);
@@ -1109,13 +1127,12 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
       //  otherwise that line number would be masked by the line number of
       //  the function
         
-      //std::cout<<"Blamees insert(7) "<<vp->name<<std::endl;
-          
       vp->findSEExits(blamees);
           
       // Make sure the callee EV param num matches the caller param num
       if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees))          
       {
+        cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(4)"<<endl;
         blamees.insert(vp);
         vp->addedFromWhere = 7;
         addBlameToFieldParents(vp, blamees, 17);
@@ -1131,7 +1148,7 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
     {
       vp->findSEExits(blamees);
 
-      //std::cout<<"Blamees insert(L3) "<<vp->name<<std::endl;
+      std::cout<<"Blamees insert(L3) "<<vp->name<<std::endl;
       localBlamees.insert(vp);
       vp->addedFromWhere = 23;
       addBlameToFieldParents(vp, localBlamees, 33);
@@ -1164,6 +1181,7 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
 ///////////////////////////////////////////////////////////////////////////////////////////
 //          cout<<"hasParams: inside if 12"<<endl;
 ///////////////////////////////////////////////////////////////////////////////////////////
+          cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(5)"<<endl;
           blamees.insert(vp);
           vp->addedFromWhere = 4;
           addBlameToFieldParents(vp, blamees, 14);
@@ -1198,7 +1216,7 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
 ///////////////////////////////////////////////////////////////////////////////////////////
 //                                        cout<<"hasParams: inside if 23"<<endl;
 ///////////////////////////////////////////////////////////////////////////////////////////
-
+            cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(6)"<<endl;
             blamees.insert(vp);
             vp->addedFromWhere = 8;
             addBlameToFieldParents(vp, blamees, 18);
@@ -1250,7 +1268,7 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
   if (blamees.size() == 0)
     proceed = true;
   
-  if (blamees.size() == 1)
+  if (blamees.size() == 1) //the only blamee in this stackframe(func) is return value
   {
     std::set<VertexProps *>::iterator set_vp_i;
     for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++)
@@ -1296,6 +1314,7 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
 /////////////////////////////////////////////////////////////////////////////////////////////
 //          cout<<"Insert blamee again !"<<endl;
 /////////////////////////////////////////////////////////////////////////////////////////////
+          cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(7)"<<endl;
           blamees.insert(vp);
           addBlameToFieldParents(vp, blamees, 50);
           //}
@@ -1317,6 +1336,7 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
 /////////////////////////////////////////////////////////////////////////////////////////////
 //                                        cout<<"Insert blamee again !"<<endl;
 /////////////////////////////////////////////////////////////////////////////////////////////      
+              cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(8)"<<endl;
               blamees.insert(vp);
               addBlameToFieldParents(vp, blamees, 51);
               
@@ -1344,9 +1364,9 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
   {
     if (DQblamees.size() > 0)
     {
-/////////////////////////////////////////////////////////////////////////////////////////////
-        cout<<"Insert blamee again from DQblamees !"<<endl;
-/////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////
+      cout<<"Insert blamee again from DQblamees in determineBlameHolders(9)!"<<endl;
+////////////////////////////////////////////////////////////////////////////////////
       blamees.insert(DQblamees.begin(), DQblamees.end());
     }
   }
@@ -2627,7 +2647,10 @@ void BlameFunction::outputFrameBlamees(std::set<VertexProps *> & blamees, std::s
   for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++)
   {
     VertexProps * vp = (*set_vp_i);
-    
+    /////////////added by Hui 01/08/16//////////////////////////////////////////////////
+    std::cout<<"Outputing blamee: "<<vp->name<<" estatus="<<vp->eStatus<<std::endl;
+    ////////////////////////////////////////////////////////////////////////////////////
+
     if (vp->isDerived) 
     {
       VertexProps * rootField = vp;
@@ -2661,7 +2684,13 @@ void BlameFunction::outputFrameBlamees(std::set<VertexProps *> & blamees, std::s
       //std::cout<<"EO ";
       
     }
-    else if (vp->eStatus >= EXIT_VAR_GLOBAL)
+    ////added by Hui 01/08/16, to distinguish global vars from params/returns///////////
+    else if (vp->eStatus == EXIT_VAR_GLOBAL)
+    {
+      O<<"EGV";
+    }
+    ///////////////////////////////////////////////////////////////////////////////////
+    else if (vp->eStatus > EXIT_VAR_GLOBAL) //'>=' --> '>'
     {
       O<<"EV";
       //std::cout<<"EV ";
@@ -3443,7 +3472,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
   {
     //std::cout<<"RLN (2) "<<std::endl;
 /////////////////////////////////////////////////////////////////////////////////////
-   cout<<"I'm IN isBottomPased==true"<<endl;
+   cout<<"I'm IN isBottomParsed==true"<<endl;
 ////////////////////////////////////////////////////////////////////////////////////    
     VertexProps * callNode = NULL;
     std::set<VertexProps *>  oldBlamees = blamees;

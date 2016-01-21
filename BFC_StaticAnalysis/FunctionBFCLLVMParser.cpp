@@ -945,7 +945,7 @@ void FunctionBFC::structResolve(Value *v, int fieldNum, NodeProps *fieldVP)
 #ifdef DEBUG_STRUCTS
 				blame_info<<"Assigning fieldVP->sfield "<<fieldVP->name<<" to "<<sf->fieldName<<std::endl;
 				blame_info<<"Field type is: ";
-				//blame_info<<returnTypeName(sf->llvmType, std::string(" "));
+				blame_info<<returnTypeName(sf->llvmType, std::string(" "));
 				blame_info<<std::endl;
 #endif
 				//fieldVP->name = newFieldName;
@@ -1465,7 +1465,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 {
 	// pi->getName = return value
 	// op[#ops-1] = name of call (the last operand of pi)
-	// op[0,1,...] - parameters
+	// op[0,1,...] = parameters
 #ifdef DEBUG_LLVM
 	blame_info<<"LLVM__(examineInstruction)(Call) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<std::endl;
 #endif 
@@ -1498,7 +1498,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
     /////added by Hui,trying to get the called function///////////
     llvm::CallInst *cpi = cast<CallInst>(pi);
     llvm::Function *calledFunc = cpi->getCalledFunction();
-    blame_info<<"calledFunc's name = "<<calledFunc->getName().data();
+    blame_info<<"In ieCall, calledFunc's name = "<<calledFunc->getName().data();
     blame_info<<"  pi->getNumOperands()="<<pi->getNumOperands()<<std::endl;
     //////////////////////////////////////////////////////////
     //added by Hui 12/31/15: get the callName from the last operand first
@@ -1558,7 +1558,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 			blame_info<<std::endl;
 #endif			
         }
-        else { //v doesn't have a name
+        else { //v has a name
 #ifdef DEBUG_LLVM
 			blame_info<<"In ieCall -- Call Operand "<<opNum<<" "<<v->getName().str()<<std::endl;
 			blame_info<<"In ieCall -- Type "<<v->getValueID()<<std::endl;
@@ -2488,7 +2488,7 @@ void FunctionBFC::examineInstruction(Instruction *pi, int &varCount, int &curren
 	// - Load/Store
 	
 #ifdef ENABLE_FORTRAN
-	if (firstGEPCheck(pi) == false)
+	if (firstGEPCheck(pi) == false) //only useful for fortran
 		return;
     //    blame_info<<"firstGEPCheck return false !"<<std::endl;
 #endif

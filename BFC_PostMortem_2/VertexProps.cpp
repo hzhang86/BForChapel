@@ -112,8 +112,8 @@ void VertexProps::findSEExits(std::set<VertexProps *> & blamees)
 		if (sep->vpValue == NULL)
 			continue;
 			
-		//std::cout<<"Blamees SE insert(1) "<<sep->vpValue->name<<std::endl;
 		sep->vpValue->addedFromWhere = 81;
+		std::cout<<"Blamees insert "<<sep->vpValue->name<<" in findSEExits(1)"<<std::endl;
 		blamees.insert(sep->vpValue);
 		
 		if (sep->vpValue->nStatus[EXIT_VAR_FIELD] || sep->vpValue->nStatus[LOCAL_VAR_FIELD])
@@ -122,6 +122,7 @@ void VertexProps::findSEExits(std::set<VertexProps *> & blamees)
 			while (upPtr != NULL)
 			{
 				upPtr->addedFromWhere = 91;
+                std::cout<<"Blamees insert "<<upPtr->name<<" in findSEExits(2)"<<std::endl;
 				blamees.insert(upPtr);
 				upPtr = upPtr->fieldUpPtr;
 			}
@@ -150,6 +151,7 @@ void VertexProps::populateSERBlamees(std::set<VertexProps *> & visited, std::set
 		{
 		  //std::cout<<"Blamees insert(13) "<<trp->name<<std::endl;
 			trp->addedFromWhere = 82;
+            cout<<"Blamees insert "<<trp->name<<" in populateSERBlamees(1)"<<endl;
 			blamees.insert(trp);
 			
 			if (trp->nStatus[EXIT_VAR_FIELD] || trp->nStatus[LOCAL_VAR_FIELD])
@@ -158,6 +160,7 @@ void VertexProps::populateSERBlamees(std::set<VertexProps *> & visited, std::set
 				while (upPtr != NULL)
 				{
 					upPtr->addedFromWhere = 92;
+                    cout<<"Blamees insert "<<upPtr->name<<" in populateSERBlamees(2)"<<endl;
 					blamees.insert(upPtr);
 					upPtr = upPtr->fieldUpPtr;
 				}
@@ -243,17 +246,19 @@ int VertexProps::findBlamedExits(std::set<VertexProps *> & visited, int lineNum)
 	//   that represent the EVs when passed into function ... unfortunately
 	//   if we don't represent the params correctly then we lose the link
 	//   to the EVs which is a bad thing
-	for (set_vp_i = params.begin(); set_vp_i != params.end(); set_vp_i++)
+    //params are "chpl_macro_tmp" in chapel and "_addr" in c
+	cout<<"Before params, total="<<total<<" for "<<this->name<<endl;
+    for (set_vp_i = params.begin(); set_vp_i != params.end(); set_vp_i++)
 	{
-			VertexProps * vp = (*set_vp_i);
-			std::cout<<"Param VP "<<vp->name<<" examined for parent "<<name<<std::endl;
-			//std::cout<<"Total before - "<<total<<std::endl;
-			//std::cout<<"Temp Parents size - "<<vp->tempParents.size()<<std::endl;
-			if (vp->tempParents.size() == 0)
-				total += vp->findBlamedExits(visited, lineNum);
+		VertexProps * vp = (*set_vp_i);
+		std::cout<<vp->name<<" is of params of "<<name<<std::endl;
+		//std::cout<<"Total before - "<<total<<std::endl;
+		//std::cout<<"Temp Parents size - "<<vp->tempParents.size()<<std::endl;
+		if (vp->tempParents.size() == 0)
+			total += vp->findBlamedExits(visited, lineNum);
 			//std::cout<<"Total after - "<<total<<std::endl;
 	}		
-	
+	cout<<"After params, total="<<total<<" for "<<this->name<<endl;
 	/*
 	for (vec_vp_i = calls.begin(); vec_vp_i != calls.end(); vec_vp_i++)
 	{
@@ -263,16 +268,20 @@ int VertexProps::findBlamedExits(std::set<VertexProps *> & visited, int lineNum)
 	for (set_vp_i = fields.begin(); set_vp_i != fields.end(); set_vp_i++)
 	{
 		VertexProps * vp = (*set_vp_i);
+		std::cout<<vp->name<<" is of fields of "<<name<<std::endl;
 		if (vp->tempParents.size() == 0)
 			total += vp->findBlamedExits(visited, lineNum);
 	}
-	
+	cout<<"After fields, total="<<total<<" for "<<this->name<<endl;
+
 	for (set_vp_i = tempChildren.begin(); set_vp_i != tempChildren.end(); set_vp_i++)
 	{
 			VertexProps * vp = (*set_vp_i);
+            std::cout<<vp->name<<" is of tempChildren of "<<name<<std::endl;
 			total += vp->findBlamedExits(visited, lineNum);
 	}		
-	
+	cout<<"After tempChildren, total="<<total<<" for "<<this->name<<endl;
+
 	return total;
 	
 }
@@ -280,7 +289,7 @@ int VertexProps::findBlamedExits(std::set<VertexProps *> & visited, int lineNum)
 
 void VertexProps::adjustVertex()
 {
-	if (eStatus > NO_EXIT)
+	if (eStatus > NO_EXIT) //TOCHECK: why?
 	{
 		fieldUpPtr = NULL;
 	}
@@ -294,7 +303,7 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 	bool proceed = true;
 	
 	bool interestingVar = false;  // exit variable, local variable, or field
-	
+	                             // are interestingVars
 	//----
 	//BEGIN V_TYPE
 	getline(bI, line);

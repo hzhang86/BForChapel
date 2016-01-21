@@ -29,7 +29,7 @@ import java.awt.GridLayout;
 public class MainGUI {
 	
 	
-	   protected static JComponent makeTextPanel(String text) {
+	protected static JComponent makeTextPanel(String text) {
 	        JPanel panel = new JPanel(false);
 	        JLabel filler = new JLabel(text);
 	        filler.setHorizontalAlignment(JLabel.CENTER);
@@ -138,8 +138,6 @@ public class MainGUI {
 		);	  //also an abstract class that partially implements
 			  //the interface WindowListener(the abstract function 
 			  //in WindowListener: windowClosing)
-		
-		
 		
 	}
 	
@@ -734,7 +732,6 @@ public class MainGUI {
 			
 			String line = null;
 			
-			
 			String typeOfTest = bufReader.readLine(); // typeOfTest = 0
 			Global.typeOfTest = Integer.valueOf(typeOfTest).intValue();
 			Global.useMetaData = false; //TOCHECK: Originally was false
@@ -799,7 +796,7 @@ public class MainGUI {
 			//System.out.println("Size of GV" + bc.getAllGlobalVariables().size());
 				
 /////////////////////////////////////////////////////////////////////////////////
-                System.out.println("Global.useMetaData = "+Global.useMetaData);
+                System.out.println("In typeOfTest=0, Global.useMetaData = "+Global.useMetaData);
 /////////////////////////////////////////////////////////////////////////////////
 
 				if (Global.useMetaData)

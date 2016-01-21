@@ -186,6 +186,14 @@ public class BlameDataTrunc extends BlameData {
 					ExitVariable ev = bf.getOrCreateEV(strVarName);
 					es = ev;
 				}
+                ///added by Hui 01/08/16, to distinguish global vars from params/rets
+                else if (strEVType.indexOf("EGV") >=0)
+                {
+                    ExitVariable ev = bf.getOrCreateEV(strVarName);
+                    ev.isGlobal = true;
+                    es = ev;
+                }
+                ////////////////////////////////////////////////////////////////
 				else if (strEVType.indexOf("EO") >= 0)
 				{
 					ExitOutput eo = bf.getOrCreateEO(strVarName);
@@ -260,17 +268,15 @@ public class BlameDataTrunc extends BlameData {
 					ExitProgram ep = bf.getOrCreateEP(strVarName);
 					es = ep;
 				}				
-				else if (strEVType.indexOf("VFL") >= 0 )//|| strEVType.indexOf("VL") >= 0)
+				else if (strEVType.indexOf("VFL") >= 0)//|| strEVType.indexOf("VL") >= 0)
 				{
 					
 					ExitProgram epf = bf.getOrCreateEPField(strVarName);
 					ExitProgram fieldParent;
 					es = epf;
 					
-					while (strVarName.indexOf('.') > 0)
-					{
+					while (strVarName.indexOf('.') > 0) {
 						String newStrVarName = strVarName.substring(0,strVarName.lastIndexOf('.'));
-						
 						if (newStrVarName.indexOf('.') < 0)
 						{
 							fieldParent = bf.getOrCreateEP(newStrVarName);
@@ -302,7 +308,6 @@ public class BlameDataTrunc extends BlameData {
 				es.setStructType(structName);
 				es.setType();
 				bc.addType(es.getType());
-	
 							
 				if (es.getLastInst() != currInst)
 					es.addInstanceTrunc(currInst);
@@ -313,9 +318,7 @@ public class BlameDataTrunc extends BlameData {
 				evLine = bufReader.readLine();
 			}
 			
-			
 			return evLine;
-			
 		}
 		catch (IOException e) {
 			System.err.println("exception happened - here's what I know: ");
