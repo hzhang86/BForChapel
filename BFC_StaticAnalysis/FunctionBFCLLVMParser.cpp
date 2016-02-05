@@ -944,9 +944,7 @@ void FunctionBFC::structResolve(Value *v, int fieldNum, NodeProps *fieldVP)
 			if (sf->fieldNum == fieldNum) {				
 #ifdef DEBUG_STRUCTS
 				blame_info<<"Assigning fieldVP->sfield "<<fieldVP->name<<" to "<<sf->fieldName<<std::endl;
-				blame_info<<"Field type is: ";
-				blame_info<<returnTypeName(sf->llvmType, std::string(" "));
-				blame_info<<std::endl;
+                //blame_info<<returnTypeName(sf->llvmType, std::string(" "));
 #endif
 				//fieldVP->name = newFieldName;
 				//fieldVP->structName = sb->structName;
@@ -1339,8 +1337,10 @@ void FunctionBFC::genDILocationInfo(Instruction *pi, int &currentLineNum, Functi
         string Dir = Loc.getDirectory().str();
 
         currentLineNum = Line;
-        //In FunctionBFC
-        lnm[currentLineNum] = 0;
+        //02/02/16: we really shouldn't zero lineNumOrder before every inst
+        if(lnm.find(currentLineNum) == lnm.end())
+            lnm[currentLineNum] = 0;
+        
         allLineNums.insert(currentLineNum);
         //In FunctionBFCBB
         fbb->lineNumbers.insert(currentLineNum);
@@ -1808,7 +1808,7 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
 		std::string name = pi->getName().str();
 		
 #ifdef DEBUG_VP_CREATE
-		blame_info<<"Adding NodeProps(1) for "<<name<<" currentLineNum="<<currentLineNum<<std::endl;
+		blame_info<<"Adding NodeProps(1) for "<<name<<" currentLineNum="<<currentLineNum<<" lnm="<<lnm[currentLineNum]<<std::endl;
         if(isa<ConstantExpr>(pi)){
  		    char tempHui[24];
 		    sprintf(tempHui, "0x%x", /*(unsigned)*/pi);
@@ -1843,13 +1843,13 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
 			sprintf(tempBuf2, ".%d", currentLineNum);
 			name.append(tempBuf2);
 #ifdef DEBUG_VP_CREATE
-			blame_info<<"Adding NodeProps(F1CE) for "<<name<<" currentLineNum="<<currentLineNum<<std::endl;
+			blame_info<<"Adding NodeProps(F1CE) for "<<name<<" currentLineNum="<<currentLineNum<<" lnm="<<lnm[currentLineNum]<<std::endl;
 #endif
 			vp = new NodeProps(varCount,name,currentLineNum,pi);
 		}
 		else {
 #ifdef DEBUG_VP_CREATE
-			blame_info<<"Adding NodeProps(F1) for "<<name<<" currentLineNum="<<currentLineNum<<std::endl;
+			blame_info<<"Adding NodeProps(F1) for "<<name<<" currentLineNum="<<currentLineNum<<" lnm="<<lnm[currentLineNum]<<std::endl;
 #endif
 			vp = new NodeProps(varCount,name,currentLineNum,pi);
 		}
@@ -1859,8 +1859,12 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
 		if (currentLineNum != 0) {
 			int lnm_cln = lnm[currentLineNum];
 			vp->lineNumOrder = lnm_cln;
+            //for temp test
+            blame_info<<"vp->lineNumOrder="<<lnm[currentLineNum]<<endl;
 			lnm_cln++;
 			lnm[currentLineNum] = lnm_cln;
+            //for temp test
+            blame_info<<"now lnm[currentLineNum]="<<lnm[currentLineNum]<<endl;
 		}
 
 		if (variables.count(name.c_str()) == 0) {
@@ -1942,23 +1946,52 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 		}
 #endif			
 		if (v->hasName() && v->getValueID() != Value::BasicBlockVal) {
+            bool lnmChanged = false;
+            NodeProps *vp = NULL;
 			if (variables.count(v->getName().data()) == 0) { //Usually the operands in store are pre-declared
 				std::string name = v->getName().str();              //so it should've been in variables already
 #ifdef DEBUG_VP_CREATE
 				blame_info<<"Adding NodeProps(2) for "<<name<<std::endl;
 #endif 
-				NodeProps * vp = new NodeProps(varCount,name,currentLineNum,pi);
+				vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
 				
 				if (currentLineNum != 0) {
-					int lnm_cln = lnm[currentLineNum];
-					vp->lineNumOrder = lnm_cln;
-					lnm_cln++;
-					lnm[currentLineNum] = lnm_cln;
-				}
+                  int lnm_cln = lnm[currentLineNum];
+				  vp->lineNumOrder = lnm_cln;
+				  lnm_cln++;
+				  lnm[currentLineNum] = lnm_cln;
+				  lnmChanged = true;
+                }
 				variables[v->getName().data()] = vp;					
 				varCount++;
 			}
+            else 
+                vp = variables[v->getName().data()];
+
+            //we create a FuncStore only when we met the content  
+            if(opNum==0) {
+                User::op_iterator op_i2 = pi->op_begin();
+                Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
+#ifdef DEBUG_LLVM
+                blame_info<<"STORE to(1) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+#endif 
+                FuncStores *fs = new FuncStores();
+                
+                if (secondStr->hasName() && variables.count(secondStr->getName().data()))
+                    fs->receiver = variables[secondStr->getName().data()];
+                else
+                    fs->receiver = NULL;
+                fs->contents = vp;
+                fs->line_num = currentLineNum;
+                if(lnmChanged)
+                    fs->lineNumOrder = lnm[currentLineNum]-1; //since we've increment lnm_cln before, so we need to one step back
+                else
+                    fs->lineNumOrder = lnm[currentLineNum];
+                blame_info<<"STORE to(1) fs->lineNumOrder="<<fs->lineNumOrder<<" in line# "<<currentLineNum<<endl;
+
+                allStores.push_back(fs);
+            }	
 		}
 		// This is for dealing with Constants 
 		else if (v->getValueID() == Value::ConstantIntVal) {
@@ -1972,43 +2005,55 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 			strcpy(vN,tempBuf);
 			vN[strlen(tempBuf)]='\0';
 			const char * vName = vN;
-			
-            if (variables.count(vName) == 0 && opNum == 0) {
+            bool lnmChanged = false;
+            NodeProps *vp = NULL;
+
+            if (variables.count(vName) == 0) {
 				std::string name(vName);
 				//std::cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<std::endl;
 #ifdef DEBUG_VP_CREATE
 				blame_info<<"Adding NodeProps(3) for "<<name<<std::endl;
 #endif 
-				NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
+				vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
 							
 				if (currentLineNum != 0) {
-					User::op_iterator op_i2 = pi->op_begin();
-					Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
-#ifdef DEBUG_LLVM
-					blame_info<<"STORE to(2) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
-#endif 
-					FuncStores *fs = new FuncStores();
-					
-					if (secondStr->hasName() && variables.count(secondStr->getName().data()))
-						fs->receiver = variables[secondStr->getName().data()];
-					else
-						fs->receiver = NULL;
-					fs->contents = vp;
-					fs->line_num = currentLineNum;
-					fs->lineNumOrder = lnm[currentLineNum];
-					
-					allStores.push_back(fs);
-					
-					int lnm_cln = lnm[currentLineNum];
-					vp->lineNumOrder = lnm_cln;
-					lnm_cln++;
-					lnm[currentLineNum] = lnm_cln;
-				}
+                  int lnm_cln = lnm[currentLineNum];
+				  vp->lineNumOrder = lnm_cln;
+				  lnm_cln++;
+				  lnm[currentLineNum] = lnm_cln;
+				  lnmChanged = true;
+                }
 				
 				variables[vName] = vp;
 				varCount++;
 			}
+            else
+                vp = variables[vName];
+
+            //we create a FuncStore only when we met the content  
+            if(opNum==0) {
+                User::op_iterator op_i2 = pi->op_begin();
+                Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
+#ifdef DEBUG_LLVM
+                blame_info<<"STORE to(2) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+#endif 
+                FuncStores *fs = new FuncStores();
+                
+                if (secondStr->hasName() && variables.count(secondStr->getName().data()))
+                    fs->receiver = variables[secondStr->getName().data()];
+                else
+                    fs->receiver = NULL;
+                fs->contents = vp;
+                fs->line_num = currentLineNum;
+                if(lnmChanged)
+                    fs->lineNumOrder = lnm[currentLineNum]-1;//same reason as before, we need to one step back
+                else
+                    fs->lineNumOrder = lnm[currentLineNum];
+
+                blame_info<<"STORE to(2) fs->lineNumOrder="<<fs->lineNumOrder<<" in line# "<<currentLineNum<<endl;
+                allStores.push_back(fs);
+            }
 		}
 		else if (v->getValueID() == Value::ConstantFPVal) {
 			ConstantFP *cfp = (ConstantFP *)v;
@@ -2026,27 +2071,55 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 				strcpy(vN,tempBuf);
 				vN[strlen(tempBuf)]='\0';
 				const char * vName = vN;
-				
-				if (variables.count(vName) == 0 && opNum == 0) {
+                bool lnmChanged = false;
+				NodeProps *vp = NULL;
+
+				if (variables.count(vName) == 0) {
 					std::string name(vName);
 					//std::cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<std::endl;
 #ifdef DEBUG_VP_CREATE
 					blame_info<<"Adding NodeProps(5) for "<<name<<std::endl;
 #endif 
-					NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
+					vp = new NodeProps(varCount,name,currentLineNum,pi);
 					vp->fbb = fbb;
 					
 					if (currentLineNum != 0) {
-						int lnm_cln = lnm[currentLineNum];
-						vp->lineNumOrder = lnm_cln;
-						lnm_cln++;
-						lnm[currentLineNum] = lnm_cln;
-					}
+					    int lnm_cln = lnm[currentLineNum];
+					    vp->lineNumOrder = lnm_cln;
+					    lnm_cln++;
+					    lnm[currentLineNum] = lnm_cln;
+					    lnmChanged = true;
+                    }
 					
 					variables[vName] = vp;
 					varCount++;
-						
 				}
+                else
+                    vp = variables[vName];
+
+                //we create a FuncStore only when we met the content  
+                if(opNum==0) {
+                    User::op_iterator op_i2 = pi->op_begin();
+                    Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
+#ifdef DEBUG_LLVM
+                    blame_info<<"STORE to(3) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+#endif 
+                    FuncStores *fs = new FuncStores();
+                
+                    if (secondStr->hasName() && variables.count(secondStr->getName().data()))
+                        fs->receiver = variables[secondStr->getName().data()];
+                    else
+                        fs->receiver = NULL;
+                    fs->contents = vp;
+                    fs->line_num = currentLineNum;
+                    if(lnmChanged)
+                        fs->lineNumOrder = lnm[currentLineNum]-1;
+                    else
+                        fs->lineNumOrder = lnm[currentLineNum];
+
+                    blame_info<<"STORE to(3) fs->lineNumOrder="<<fs->lineNumOrder<<" in line# "<<currentLineNum<<endl;
+                    allStores.push_back(fs);
+                }
 			}
 			else if(APFloat::semanticsPrecision(apf.getSemantics()) == 53) {
 				double floatNum = apf.convertToDouble();
@@ -2061,9 +2134,10 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 				strcpy(vN,tempBuf);
 				vN[strlen(tempBuf)]='\0';
 				const char * vName = vN;
+                bool lnmChanged = false;
+                NodeProps *vp = NULL;
 				
-				
-				if (variables.count(vName) == 0 && opNum == 0) {
+				if (variables.count(vName) == 0) {
 					std::string name(vName);
 					//std::cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<std::endl;
 #ifdef DEBUG_VP_CREATE
@@ -2075,19 +2149,100 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 					vp->fbb = fbb;
 					
 					if (currentLineNum != 0) {
-						int lnm_cln = lnm[currentLineNum];
-						vp->lineNumOrder = lnm_cln;
-						lnm_cln++;
-						lnm[currentLineNum] = lnm_cln;
+					  int lnm_cln = lnm[currentLineNum];
+					  vp->lineNumOrder = lnm_cln;
+					  lnm_cln++;
+					  lnm[currentLineNum] = lnm_cln;
+                      lnmChanged = true;
 					}
 					
 					variables[vName] = vp;
 					varCount++;
 				}
+                else 
+                    vp = variables[vName];
+    
+                //we create a FuncStore only when we met the content  
+                if(opNum==0) {
+                    User::op_iterator op_i2 = pi->op_begin();
+                    Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
+#ifdef DEBUG_LLVM
+                    blame_info<<"STORE to(4) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+#endif 
+                    FuncStores *fs = new FuncStores();
+                
+                    if (secondStr->hasName() && variables.count(secondStr->getName().data()))
+                        fs->receiver = variables[secondStr->getName().data()];
+                    else
+                        fs->receiver = NULL;
+                    fs->contents = vp;
+                    fs->line_num = currentLineNum;
+                    if(lnmChanged)
+                        fs->lineNumOrder = lnm[currentLineNum]-1;
+                    else
+                        fs->lineNumOrder = lnm[currentLineNum];
+
+                    blame_info<<"STORE to(4) fs->lineNumOrder="<<fs->lineNumOrder<<" in line# "<<currentLineNum<<endl;
+                    allStores.push_back(fs);
+                }
 			}
 		}
+        //added cases when the "content" is a register
+        else if(!v->hasName() && v->getValueID() != Value::ConstantFPVal && 
+                v->getValueID() != Value::ConstantIntVal && v->getValueID() != Value::ConstantPointerNullVal) {
+        //else if(!v->hasName() && !isa<Constant>(v)) { 
+ 			char tempBuf2[18];
+			sprintf(tempBuf2, "0x%x", /*(unsigned)*/v);
+			std::string name(tempBuf2);
+			bool lnmChanged = false;
+            NodeProps *vp = NULL;
 
-		else if( v->getValueID() == Value::ConstantExprVal) {
+			if (variables.count(name.c_str()) == 0){
+#ifdef DEBUG_VP_CREATE
+				blame_info<<"Adding NodeProps(Store Reg Operand) for "<<name<<std::endl;
+#endif
+				vp = new NodeProps(varCount,name,currentLineNum,pi);
+				vp->fbb = fbb;					
+                if (currentLineNum != 0) {
+				  int lnm_cln = lnm[currentLineNum];
+				  vp->lineNumOrder = lnm_cln;
+				  lnm_cln++;
+				  lnm[currentLineNum] = lnm_cln;
+                  lnmChanged = true;
+				}
+					
+				variables[name.c_str()] = vp;
+				varCount++;
+			}
+            else
+                vp = variables[name.c_str()];
+
+            //we create a FuncStore only when we met the content  
+            if(opNum==0) {
+                User::op_iterator op_i2 = pi->op_begin();
+                Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
+#ifdef DEBUG_LLVM
+                blame_info<<"STORE to(5) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+#endif 
+                FuncStores *fs = new FuncStores();
+                
+                if (secondStr->hasName() && variables.count(secondStr->getName().data()))
+                    fs->receiver = variables[secondStr->getName().data()];
+                else
+                    fs->receiver = NULL;
+                fs->contents = vp;
+                fs->line_num = currentLineNum;
+                if(lnmChanged)
+                    fs->lineNumOrder = lnm[currentLineNum]-1;
+                else
+                    fs->lineNumOrder = lnm[currentLineNum];
+
+                blame_info<<"STORE to(5) fs->lineNumOrder="<<fs->lineNumOrder<<" in line# "<<currentLineNum<<endl;
+                allStores.push_back(fs);
+            }
+        }
+
+		else if(v->getValueID() == Value::ConstantExprVal) {
 #ifdef DEBUG_LLVM
 			blame_info<<"ValueID is "<<v->getValueID()<<std::endl;
 #endif 
@@ -2314,39 +2469,9 @@ void FunctionBFC::ieStore(Instruction *pi, int &varCount, int &currentLineNum, F
 #ifdef DEBUG_LLVM
 	blame_info<<"In ieStore"<<std::endl;
 #endif
-	User::op_iterator op_i = pi->op_begin();
-	Value  *first = *op_i,  *second = *(++op_i);
-	
-	if (currentLineNum != 0) {
-		if (first->hasName() && second->hasName()) {
-#ifdef DEBUG_LLVM
-			blame_info<<"STORE to "<<second->getName().str()<<" from "<<first->getName().str()<<" "<<lnm[currentLineNum]<<std::endl;
-#endif 
-			FuncStores *fs = new FuncStores();
-			
-			if (second->hasName() && variables.count(second->getName().data()))
-				fs->receiver = variables[second->getName().data()];
-			else
-				fs->receiver = NULL;
-			
-			if (first->hasName() && variables.count(first->getName().data()))
-				fs->contents = variables[first->getName().data()];
-			else
-				fs->contents = NULL;
-			
-			fs->line_num = currentLineNum;
-			fs->lineNumOrder = lnm[currentLineNum];
-			
-			allStores.push_back(fs);
-			int lnm_cln = lnm[currentLineNum];
-			lnm_cln++;
-			lnm[currentLineNum] = lnm_cln;
-		}
-	}
-	
+	//We'll generate allStores later after both nodes of the operands are built
 	ieGen_OperandsStore(pi, varCount, currentLineNum, fbb);
 }
-
 
 void FunctionBFC::ieSelect(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
 {

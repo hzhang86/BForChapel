@@ -1,7 +1,7 @@
 package blame;
 
 import java.util.*;
-
+//EPs are local variables
 public class ExitProgram extends ExitSuper  {
 
 	// Is this a random local variable (found for all) or is this one from

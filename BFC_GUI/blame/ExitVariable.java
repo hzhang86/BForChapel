@@ -2,7 +2,7 @@ package blame;
 
 import java.util.*;
 
-
+// EVs are global variables, return values, pointer parameters
 public class ExitVariable extends ExitSuper {
 
 	/*

@@ -446,7 +446,7 @@ void ModuleBFC::parseDITypes(DIType* dt) //deal with derived type and composite 
     StructBFC *sb;
     string dtName = dt->getName().str();
     if (dtName.compare("object") && dtName.compare("super")) {
-        if (dtName.find("chpl_") == 0) //not deal types that start with "chpl_"
+        if (dtName.find("chpl_") == 0) //not deal types that "start"(because pos==0) with "chpl_"
             return;
 
         if (dt->isCompositeType()) { //DICompositeType:public DIDerivedType

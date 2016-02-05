@@ -1161,8 +1161,6 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
   for (set_vp_i = hasParams.begin(); set_vp_i != hasParams.end(); set_vp_i++)
   {
     VertexProps * vp = (*set_vp_i);
-    ////////////////////////
-    std::cout<<"BF.cpp: 1147  param: "<<vp->name<<std::endl;
   
     visited.clear();
     
@@ -1858,7 +1856,7 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
   if (vp->fsName.size() > 0)
     return vp->fsName;
   
-  //std::cout<<"In GFSN for "<<vp->name<<std::endl;
+  std::cout<<"In GFSN for "<<vp->name<<std::endl;
   //std::cout<<"vp->sField is "<<vp->sField<<std::endl;
   
   
@@ -1872,7 +1870,7 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
       
     if (vp->fieldAlias->sField != NULL)
     {
-      //std::cout<<"  7a - "<<vp->fieldAlias->sField->fieldName<<std::endl;
+      std::cout<<"  7a - "<<vp->fieldAlias->sField->fieldName<<std::endl;
       aName.insert(0, vp->fieldAlias->sField->fieldName);
     }
     else
@@ -1886,14 +1884,14 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
         
       std::string modName = vp->fieldAlias->name.substr(pos);
         
-      //std::cout<<"  7b - "<<modName<<std::endl;
+      std::cout<<"  7b - "<<modName<<std::endl;
       aName.insert(0, modName);
     }
   }
     
   if (vp->sField == NULL)
   {
-    //std::cout<<"1a - vp->sField is NULL"<<std::endl;
+    std::cout<<"1a - vp->sField is NULL"<<std::endl;
     
     // Uncomment these two lines to return behavior to old
     //fName = vp->name;
@@ -1920,7 +1918,7 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
   }
   else
   {
-    //std::cout<<"1b - vp->fsName is "<<vp->fsName<<std::endl;
+    std::cout<<"1b - vp->fsName is "<<vp->fsName<<std::endl;
     //fName = vp->sField->fieldName;
     
     if (aName.size() > 0 && aName != vp->sField->fieldName)
@@ -1947,7 +1945,7 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
       
       if (upPtr->fieldAlias->sField != NULL)
       {
-        //std::cout<<"  5a - "<<upPtr->fieldAlias->sField->fieldName<<std::endl;
+        std::cout<<"  5a - "<<upPtr->fieldAlias->sField->fieldName<<std::endl;
         aName.insert(0, upPtr->fieldAlias->sField->fieldName);
       }
       else
@@ -1962,7 +1960,7 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
         
         std::string modName = upPtr->fieldAlias->name.substr(pos);
         
-        //std::cout<<"  5b - "<<modName<<std::endl;
+        std::cout<<"  5b - "<<modName<<std::endl;
         aName.insert(0, modName);
       }
       
@@ -1973,7 +1971,7 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
     
     if (upPtr->sField != NULL)
     {
-      //std::cout<<"  2a - "<<upPtr->sField->fieldName<<std::endl;
+      std::cout<<"  2a - "<<upPtr->sField->fieldName<<std::endl;
       
       if (aName.size() > 0 && aName != upPtr->sField->fieldName)
       {
@@ -1996,7 +1994,7 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
       
       std::string modName = upPtr->name.substr(pos);
       
-      //std::cout<<"  2b - "<<modName<<std::endl;
+      std::cout<<"  2b - "<<modName<<std::endl;
       
       if (aName.size() > 0 && aName != modName)
       {
@@ -2027,7 +2025,7 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
           //calcSEDWritesRecursive(ev, child, visited);
           if (vpAlias != oldVP)
           {
-            //std::cout<<"21a - Alias "<<vpAlias->name<<std::endl;
+            std::cout<<"21a - Alias "<<vpAlias->name<<std::endl;
             
             if (vpAlias->fieldUpPtr != NULL)
             {
@@ -2041,7 +2039,7 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
         {
           if (oldVP->aliasUpPtr != NULL)
           {
-            //std::cout<<"22a - AliasUpPtr "<<oldVP->aliasUpPtr->name<<std::endl;
+            std::cout<<"22a - AliasUpPtr "<<oldVP->aliasUpPtr->name<<std::endl;
             upPtr = oldVP->aliasUpPtr;
           }
         }
@@ -2695,7 +2693,13 @@ void BlameFunction::outputFrameBlamees(std::set<VertexProps *> & blamees, std::s
       O<<"EV";
       //std::cout<<"EV ";
     }
-    else if (vp->nStatus[EXIT_VAR_FIELD])
+    ///////added by Hui 01/26/16 Exit Var's aliases shall also treated as 'EV' (aliases of gv in the func)
+    else if (vp->nStatus[EXIT_VAR] || vp->nStatus[EXIT_VAR_ALIAS])
+    {
+      O<<"EV";
+    }
+    //second cond is added by Hui 01/26/16 local aliases of gv should be treated just as a 'EF'
+    else if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[EXIT_VAR_FIELD_ALIAS])
     {
       O<<"EF";
       //std::cout<<"EF ";
@@ -2823,81 +2827,6 @@ void BlameFunction::outputFrameBlamees(std::set<VertexProps *> & blamees, std::s
     //std::cout<<std::endl;
     
   }
-  
-  
-  /*
-   for (set_vp_i = DQblamees.begin(); set_vp_i != DQblamees.end(); set_vp_i++)
-   {
-   VertexProps * vp = (*set_vp_i);
-   
-   if (vp->eStatus >= EXIT_VAR_GLOBAL)
-   {
-   O<<"DQV";
-   //std::cout<<"DQV ";
-   }
-   else if (vp->nStatus[EXIT_VAR_FIELD])
-   {
-   O<<"DQF";
-   //std::cout<<"DQF ";
-   }
-   else if (vp->nStatus[LOCAL_VAR_FIELD])
-   {
-   O<<"DQFL";
-   //std::cout<<"DQFL ";
-   }
-   else 
-   {
-   O<<"DQM ";
-   //std::cout<<"DQM ";
-   }
-   
-   O<<vp->addedFromWhere<<" ";
-   
-   
-   if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR_FIELD] || vp->isDerived)
-   {  
-   O<<getFullStructName(vp)<<" ";
-   //O<<vp->name;
-   }
-   else
-   {
-   O<<vp->name<<" ";
-   //O<<vp->name;
-   }
-   
-   // The generic type as given by LLVM (int, double, Struct*)
-   O<<vp->genType<<" ";
-   
-   if (vp->sType != NULL)
-   {
-   O<<vp->sType->structName<<" ";
-   ////std::cout<<" "<<vp->sType->structName<<" ";
-   }
-   else
-   {
-   O<<"NULL ";
-   ////std::cout<<" NULL ";
-   }
-   
-   //if (vp->fieldUpPtr != NULL)
-   //{
-   //  O<<getFullStructName(vp->fieldUpPtr)<<" ";
-   //}
-   //else
-   //  O<<"NULL ";
-   
-   //outputParamInfo(O,vp);
-   //outputParamInfo(//std::cout,vp);
-   
-   
-   O<<std::endl;
-   //std::cout<<std::endl;
-   
-   }
-   */
-  
-  
-  
   
   
   if (blamees.size() == 0)

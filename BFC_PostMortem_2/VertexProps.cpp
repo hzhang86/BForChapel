@@ -246,7 +246,6 @@ int VertexProps::findBlamedExits(std::set<VertexProps *> & visited, int lineNum)
 	//   that represent the EVs when passed into function ... unfortunately
 	//   if we don't represent the params correctly then we lose the link
 	//   to the EVs which is a bad thing
-    //params are "chpl_macro_tmp" in chapel and "_addr" in c
 	cout<<"Before params, total="<<total<<" for "<<this->name<<endl;
     for (set_vp_i = params.begin(); set_vp_i != params.end(); set_vp_i++)
 	{
@@ -423,7 +422,7 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 		{
 			VertexProps * alias = bf->findOrCreateVP(line);
 			aliases.insert(alias);
-			alias->aliasUpPtr = this;
+			//alias->aliasUpPtr = this; //a->alias->aliasUpPtr = a ??? what's the logic
 		}
 	}
 

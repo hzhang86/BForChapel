@@ -347,8 +347,24 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 		
 	
 		O<<"BEGIN STRUCTTYPE"<<std::endl;
-		if ( (*ivh_i)->sBFC == NULL)
-			O<<"NULL"<<std::endl;
+		if ( (*ivh_i)->sBFC == NULL){
+            /*if((*ivh_i)->llvm_inst != NULL){ //added by Hui 01/21/16
+                llvm::Type *origT = (*ivh_i)->llvm_inst->getType();
+                unsigned typeVal = origT->getTypeID();
+                if(typeVal == Type::StructTyID){
+                    const llvm::StructType *type = cast<StructType>(origT);
+                    string structNameReal = type->getStructName().str();
+                    blame_info<<"Create structName("<<structNameReal<<
+                        ") for "<<(*ivh_i)->name<<endl;
+                    O<<structNameReal<<std::endl;
+                }
+                else O<<"NULL"<<std::endl;
+            }*/
+            //If you really need chpl_** struct, you can first make sure
+            //the GEN_TYPE has "Struct" and its llvm_inst is either instruction
+            //or constantExpr, then get the operand(0) of it and apply above method
+            O<<"NULL"<<std::endl;
+        }
 		else
 			O<<(*ivh_i)->sBFC->structName<<std::endl;
 		O<<"END STRUCTTYPE "<<std::endl;
@@ -375,7 +391,7 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 		if ( (*ivh_i)->storeFrom == NULL)
 			O<<"NULL"<<std::endl;
 		else
-			O<< (*ivh_i)->storeFrom<<std::endl;
+			O<< (*ivh_i)->storeFrom->name<<std::endl;//changed by Hui 01/29/16, before it was just 'storeFrom'
 			
 		O<<"END STOREFROM "<<std::endl;
 

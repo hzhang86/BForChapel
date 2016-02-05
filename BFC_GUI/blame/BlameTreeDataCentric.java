@@ -153,11 +153,15 @@ public class BlameTreeDataCentric extends JPanel implements MouseListener {
 		Collections.sort(esVec);
 		
 		Iterator<ExitSuper> es_it = esVec.iterator();
-    	
+    	//added by Hui 01/26/16 for test //
+        System.out.println(es.getName()+" has "+esVec.size()+" fields");
 		//Iterator<ExitSuper> es_it = es.getFields().values().iterator();
 		while (es_it.hasNext())
 		{
 			ExitSuper field = (ExitSuper)es_it.next();
+            ////added by Hui 01/26/16 for test////
+            System.out.println("Adding field node " + field.getName() + " to parent node " + es.getName());
+            //////////////////////////////////////
 			DefaultMutableTreeNode fields = new DefaultMutableTreeNode(field);
 			parent.add(fields);
 			if (field.getFields().size() > 0)

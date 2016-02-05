@@ -2182,10 +2182,7 @@ void FunctionBFC::resolveLooseStructs()
 					}
 					else {
 #ifdef DEBUG_STRUCTS
-						if (ivp->sBFC != NULL)
-							blame_info<<"Struct  "<<ivp->name<<" has sBFC "<<std::endl;
-						else 
-							blame_info<<"Struct "<<ivp->name<<" has no sBFC and is not a local var."<<std::endl;
+						blame_info<<"Struct  "<<ivp->name<<" already has sBFC "<<std::endl;
 #endif
 					}
 				}

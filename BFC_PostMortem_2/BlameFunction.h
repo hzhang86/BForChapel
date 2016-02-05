@@ -273,7 +273,7 @@ class BlameFunction
 	////////////////////////////
 	
 	VertexMap   allLines;
-	std::set<VertexProps *> hasParams; //all the actual args in this bf for all
+	std::set<VertexProps *> hasParams; //all the actual args in this bf for all, if vp->params.size()>0, then vp is one of the hasParams of this fb
                                     //call nodes
 	
 	// Sets that hold pointers to temp variables so we can clear them later

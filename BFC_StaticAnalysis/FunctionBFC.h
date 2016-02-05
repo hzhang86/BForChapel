@@ -218,7 +218,7 @@ private:
     MyTruncGraphType G_trunc; // only important nodes
     MyTruncGraphType G_abbr; // only exit variables and calls
     //map from source lineNum to how many statements appeared in this line
-    LineNumHash lnm;
+    LineNumHash lnm; //doesn't work at all now
     
     std::vector<FuncStores *> allStores;
     std::set<const char*> funcCallNames; //different called func names
@@ -374,7 +374,10 @@ private:
 	//   (1) int x = 5;
 	//   (2) x++
 	//   Line (2) kills (1) but we still need the def of (1) to count
-	int resolveBorderLine(NodeProps *storeVP, NodeProps *sourceVP, NodeProps *origStoreVP, int sourceLine);
+	bool resolveBorderLine(NodeProps *storeVP, NodeProps *sourceVP, NodeProps *origStoreVP, int sourceLine);
+    // Cases like: x = x*10; where load and store in the same line, but store comes
+    // after the load, so there shouldn't be a RLS relation between THE load and store
+    bool resolveStoreLine(NodeProps *storeVP, NodeProps *sourceVP);
 
     void sortCFG();
     void printCFG();

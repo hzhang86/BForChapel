@@ -144,7 +144,7 @@ void FunctionBFCCFG::calcPTRStoreLines()
 	
 }
 
-void FunctionBFCBB::assignPTRGenKill()
+void FunctionBFCBB::assignPTRGenKill() //never called
 {
 	std::vector<NodeProps *>::iterator vec_vp_i;
 	
@@ -171,7 +171,7 @@ void FunctionBFCBB::assignPTRGenKill()
 		}
 		
 //////////////TO BE DELETED/////////////////////////////////////////////
-		std::set<NodeProps *>::iterator set_vp_i;
+		/*std::set<NodeProps *>::iterator set_vp_i;
 		for (set_vp_i = vp->storeFrom->storesTo.begin(); set_vp_i != vp->storeFrom->storesTo.end(); set_vp_i++)
 		{
 			NodeProps * kills = *set_vp_i;
@@ -179,7 +179,7 @@ void FunctionBFCBB::assignPTRGenKill()
 			// We kill all other stores that occur anywhere else besides the VP at that line
 			if (kills != vp)
 				vp->killVP.insert(kills);
-		}
+		}*/
 /////////////////////////////////////////////////////////////////////////
 		
 	}
@@ -208,7 +208,7 @@ void FunctionBFCBB::assignPTRGenKill()
 }
 
 // For Reaching Definitions
-void FunctionBFCCFG::assignPTRBBGenKill()
+void FunctionBFCCFG::assignPTRBBGenKill() //never called
 {
 	BBHash::iterator bbh_i;
 	//FunctionBFCBB * entry = NULL;	
@@ -622,37 +622,70 @@ void FunctionBFCCFG::calcStoreLines()
 			NodeProps *vp = (*set_vp_i);
 			
 			// TODO: Make it so it has statement granularity for this (instead of line nums)
-			vp->storeLines.insert(vp->line_num);
+			cerr<<"In inBB, "<<vp->name<<"->storeLines.insert("<<vp->line_num<<") in pos1"<<endl;
+            vp->storeLines.insert(vp->line_num);
 			
 			// the variable is in IN and OUT set, it doesn't get killed, we can safely 
 			// add all the line numbers for this basic block to the valid CF lines
 			if (fbb->outBB.count(vp) > 0) {
+                cerr<<vp->name<<"->storeLines.insert in pos2"<<endl;
 				vp->storeLines.insert(fbb->lineNumbers.begin(), fbb->lineNumbers.end());
 			}
 			//the variable is not in the out set, must get killed along the way, all of
-			// the line numbers leading up to being killed are relevant
-			else {
-				NodeProps *killer = NULL;
+			//the line numbers leading up to being killed are relevant
+			//Changed by Hui 02/03/16: we can have multiple killers in the same fbb
+            else {
+                cerr<<vp->name<<" isn't alive out of this BB"<<endl;
+                std::set<NodeProps *> killers;
+                std::set<int> borders;//line_num of killers
 			    std::vector<NodeProps *>::iterator vec_vp_i2;
 				// Find an instruction that kills the IN instruction
-				for (vec_vp_i2 = fbb->relevantInstructions.begin(); 
-					vec_vp_i2 != fbb->relevantInstructions.end(); vec_vp_i2++) {
+				for (vec_vp_i2 = fbb->relevantInstructions.begin(); //relevantInstruction is the storeVP
+					vec_vp_i2 != fbb->relevantInstructions.end(); vec_vp_i2++) { 
 					NodeProps *potKiller = (*vec_vp_i2);
 					if (potKiller->killVP.count(vp) > 0) {
-						killer = potKiller;
-						break;
+						killers.insert(potKiller);
+                        borders.insert(potKiller->line_num);
 					}
-				}				
+				} //what if you have multiple killers in fbb ??				
 			
-				if (killer != NULL) {
-					for (set_i_i = fbb->lineNumbers.begin(); set_i_i != fbb->lineNumbers.end(); set_i_i++) {
-						if (vp->line_num <= *set_i_i && *set_i_i < killer->line_num)
-							vp->storeLines.insert(*set_i_i);
-							
-						if (*set_i_i == killer->line_num)
-							vp->borderLines.insert(*set_i_i);	
-					}
-				}						
+				if (killers.size() > 0 && borders.size() > 0) {//both conds should be met/not met together
+                    //get the vp's borderLines first
+                    /*for (set_i_i = borders.begin(); set_i_i != borders.end(); set_i_i++) {
+                        int ln = *set_i_i;
+                        if (fbb->lineNumbers.find(ln) != fbb->lineNumbers.end()){
+                            vp->borderLines.insert(ln);
+                            cerr<<vp->name<<"->borderLines.inert("<<*set_i_i<<") in pos1"<<endl;
+                        }
+                    }*/
+                    //pick up the borderLine that comes after vp->line_num but closest to it
+                    int realBorder = 0;
+                    for (set_i_i=borders.begin(); set_i_i!=borders.end(); set_i_i++){
+                        if (vp->line_num < *set_i_i && (fbb->lineNumbers.find(*set_i_i) != fbb->lineNumbers.end())){
+                            realBorder = *set_i_i;
+                            break; //since set is always sorted so the first line that's larger than vp should be good
+                        }
+                    }
+                    if (realBorder != 0) {
+                        //insert to borderLines first
+                        vp->borderLines.insert(realBorder);
+                        cerr<<vp->name<<"->borderLines.inert("<<*set_i_i<<") in pos1"<<endl;
+                        //insert all lines from the startline of fbb(that's larger than vp->line_num) to vp's closet killer to vp->storeLines
+                        int realBegin = *(fbb->lineNumbers.begin());
+                        for(int i = realBegin; i != realBorder; i++){
+                            if(vp->line_num <= i){
+                                vp->storeLines.insert(i);
+                                cerr<<vp->name<<"->storeLines.insert("<<i<<") in pos3"<<endl;
+                            }
+                            else
+                                cerr<<vp->name<<"'s sl failed in Cond2"<<endl;
+                        }
+                    }
+                    else
+                        cerr<<"Weird: no border line comes after vp->line_num"<<endl;
+				}
+                else
+                    cerr<<"Weird in calcStoreLines:"<<vp->name<<"was killed but can't find a killer 1"<<endl;
 			}
 		}
 		
@@ -663,50 +696,102 @@ void FunctionBFCCFG::calcStoreLines()
 			
             NodeProps *vp = (*vec_vp_i);
 			vp->storeLines.insert(vp->line_num);
-			NodeProps *killer = NULL;
-			//std::vector<NodeProps *>::iterator vec_vp_i2 = vec_vp_i;
-			std::vector<NodeProps *>::iterator vec_vp_i2 = fbb->relevantInstructions.begin();
-			// Find an instruction that kills the genned instruction
-			for (; vec_vp_i2 != fbb->relevantInstructions.end(); vec_vp_i2++) {
-				NodeProps * potKiller = (*vec_vp_i2);
+			cerr<<"In genBB, "<<vp->name<<"->storeLines.insert("<<vp->line_num<<") in pos8"<<endl;
+
+            std::vector<NodeProps *>::iterator vec_vp_i2 = fbb->relevantInstructions.begin();
+	        std::set<NodeProps *> killers;
+            std::set<int> borders;//line_num of killers
+			// Find an instruction that kills the IN instruction
+			for (; vec_vp_i2 != fbb->relevantInstructions.end(); vec_vp_i2++) { 
+				NodeProps *potKiller = (*vec_vp_i2);
 				if (potKiller->killVP.count(vp) > 0) {
-					killer = potKiller;
-					break;
+					killers.insert(potKiller);
+                    borders.insert(potKiller->line_num);
 				}
-			}
-			 
+			}				
+		 
 			// if killer is null we take all line number from the genned line number on
-			if (killer == NULL) {
+			if (killers.size() == 0) {
 				for (set_i_i = fbb->lineNumbers.begin(); set_i_i != fbb->lineNumbers.end(); set_i_i++) {
-					if (vp->line_num <= *set_i_i)
+					if (vp->line_num <= *set_i_i){
+                        cerr<<vp->name<<"->storeLines.insert("<<*set_i_i<<") in pos4"<<endl;
 						vp->storeLines.insert(*set_i_i);
+                    }
+                    else
+                        cerr<<vp->name<<"'s sl failed in Cond3"<<endl;
 				}
 			}
-			// if there is a killer then we take all line number up to (and including) that line num
-			//  line number ties are resolved later on a case by case
-			else if (killer->line_num > 0) {
-				for (set_i_i = fbb->lineNumbers.begin(); set_i_i != fbb->lineNumbers.end(); set_i_i++) {
-					if (vp->line_num <= *set_i_i && *set_i_i < killer->line_num)
-						vp->storeLines.insert(*set_i_i);
-					
-					// This essentially means that
-					//a)they were both defined on the same line
-					//b)there is some kind of loop as the killer came before the killee
-					if (vp->line_num <= *set_i_i && ((vp->line_num == killer->line_num)
-                            && killer->lineNumOrder < vp->lineNumOrder))
-						vp->storeLines.insert(*set_i_i);
-					
-					if (*set_i_i == killer->line_num)
-						vp->borderLines.insert(*set_i_i);
-				}				
-			}
-			else {
-#ifdef DEBUG_CFG_ERROR			
-				std::cerr<<"NULL or lineNum == 0 killer"<<std::endl;
-#endif				
-			}
-		}
-	}
+            //if there is a killer then we take all line number up to (and including) that line num
+            //line number ties are resolved later on a case by case
+            else { //killers.size()>0
+                //get the vp's borderLines first
+                /*for (set_i_i = borders.begin(); set_i_i != borders.end(); set_i_i++) {
+                    int ln = *set_i_i;
+                    if (fbb->lineNumbers.find(ln) != fbb->lineNumbers.end()){
+                        vp->borderLines.insert(ln);
+                        cerr<<vp->name<<"->borderLines.inert("<<*set_i_i<<") in pos2"<<endl;
+                    }
+                }*/
+                //pick up the borderLine that comes after vp->line_num but closest to it
+                int realBorder = 0;
+                for (set_i_i=borders.begin(); set_i_i!=borders.end(); set_i_i++){
+                    if (vp->line_num < *set_i_i && (fbb->lineNumbers.find(*set_i_i) != fbb->lineNumbers.end())){  
+                        realBorder = *set_i_i;
+                        break; //since set is always sorted so the first line that's larger than vp should be good
+                    }
+                }
+                if (realBorder != 0) {
+                    //insert to borderLines first
+                    vp->borderLines.insert(realBorder);
+                    cerr<<vp->name<<"->borderLines.inert("<<*set_i_i<<") in pos2"<<endl;
+                    //insert all lines from the startline of fbb(that's larger than vp->line_num) to vp's closet killer to vp->storeLines
+                    int realBegin = *(fbb->lineNumbers.begin());
+                    for(int i = realBegin; i != realBorder; i++){
+                        if(vp->line_num <= i){
+                            vp->storeLines.insert(i);
+                            cerr<<vp->name<<"->storeLines.insert("<<i<<") in pos5"<<endl;
+                        }
+                        else
+                            cerr<<vp->name<<"'s sl failed in Cond4"<<endl;
+                    }
+                }
+                else { // we try to find the killer that has the line_num <= vp's
+                    set<NodeProps*>::iterator set_k_i;
+                    NodeProps *ki = NULL;
+                    for(set_k_i = killers.begin(); set_k_i != killers.end(); set_k_i++){
+                        if((*set_k_i)->line_num == vp->line_num){
+                            ki = *set_k_i;
+                            break;
+                        }
+                    }
+                    
+                    if(ki != NULL) { //there is a killer's ln = vp's ln
+                      if(ki->lineNumOrder < vp->lineNumOrder){
+                        for(set_i_i = fbb->lineNumbers.begin(); set_i_i != fbb->lineNumbers.end(); set_i_i++){
+                            if(vp->line_num <= *set_i_i){
+                                vp->storeLines.insert(*set_i_i);
+                                cerr<<vp->name<<"->storeLines.insert("<<*set_i_i<<") in pos6"<<endl;
+                            }
+                            else
+                                cerr<<vp->name<<"'s sl failed in Cond5"<<endl;
+                        }
+                      }
+                    }
+                    else { //the only killers are all before vp
+                        cerr<<"Guess we only have killers that are before the vp, so we safely add all ln from vp"<<endl;
+                        for(set_i_i = fbb->lineNumbers.begin(); set_i_i != fbb->lineNumbers.end(); set_i_i++){
+                            if(vp->line_num <= *set_i_i){
+                                vp->storeLines.insert(*set_i_i);
+                                cerr<<vp->name<<"->storeLines.insert("<<*set_i_i<<") in pos7"<<endl;
+                            }
+                            else
+                                cerr<<vp->name<<"'s sl failed in Cond6"<<endl;
+                        }
+                    }//killers < vp
+                }//killer <= vp
+            }//killers.size()>0
+		}//all vp in fbb->genBB
+	}//all fbb
 }
 
 // For Reaching Definitions
@@ -756,8 +841,8 @@ void FunctionBFCCFG::reachingDefs()
 				newOutBB.insert(*set_vp_i);
 			}
 			
-			if (newOutBB != fbb->outBB)
-				changed++;
+			if (newOutBB != fbb->outBB) //all containers can be compared using
+				changed++;              // ==/!=/</<=/>/>=
 			
 			fbb->outBB.swap(newOutBB);
 		}
@@ -768,7 +853,7 @@ void FunctionBFCCFG::reachingDefs()
 void FunctionBFCBB::assignGenKill()
 {
 	std::vector<NodeProps *>::iterator vec_vp_i;
-	// Create Gen and Kill for each Instruction (VP)
+	// Create Gen and Kill for each relevant store Instruction (VP)
 	for (vec_vp_i = relevantInstructions.begin(); vec_vp_i != relevantInstructions.end(); vec_vp_i++) {
 		NodeProps *vp = (*vec_vp_i);
 		// Trivial case that you gen yourself

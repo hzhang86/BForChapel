@@ -210,27 +210,31 @@ public class BlameDataTrunc extends BlameData {
 					ExitVariable fieldParent;
 					es = evf;
 					
-					while (strVarName.indexOf('.') != strVarName.lastIndexOf('.'))
+					//while (strVarName.indexOf('.') != strVarName.lastIndexOf('.'))
+					while (strVarName.indexOf('.') > 0) //changed by Hui 01/20/16: mimic LF to get hiearchical view 
 					{
 						String newStrVarName = strVarName.substring(0,strVarName.lastIndexOf('.'));
 						
 						if (strVarName.indexOf('.') == strVarName.lastIndexOf('.'))
 						{
 							fieldParent = bf.getOrCreateEV(newStrVarName);
+                            fieldParent.isGlobal = true; //added by Hui 01/26/16, in order to keep it in AllGlobalVariabales
 						}
 						else
 						{
 							fieldParent = bf.getOrCreateEVField(newStrVarName);
 						}
 						
+                        //added by Hui 01/25/16 for test
+                        System.out.println("Add field "+evf.getName()+" to parent "+fieldParent.getName());
 						fieldParent.addField(evf);	
 						
+                        //TOCHECK: WHETHER BELOW SHOULD BE ADDED !!!
 						//if (fieldParent.getLastInst() != currInst)
 							//fieldParent.addInstanceTrunc(currInst);
-						
 
 						strVarName = newStrVarName;
-						
+                        evf = fieldParent; //added by Hui 01/20/16: mimic what LF did to show hiearchical view
 					}
 				}
 				else if (strEVType.indexOf("LF") >= 0 || strEVType.indexOf("LDF") >= 0)

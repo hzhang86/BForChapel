@@ -515,13 +515,16 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, \
     			    blame_info<<"Pointer levels are equal"<<std::endl;
 #endif
 					if (tV->storesTo.size() > 1){
-						blame_info<<"Inserting almost alias(1) between "<<origV->name<<" and "<<targetV->name<<std::endl;
-						origV->almostAlias.insert(targetV);
-						targetV->almostAlias.insert(origV);
+						blame_info<<"Inserting almost alias(1) between "<<origV->name<<" and "<<tV->name<<std::endl;
+						//origV->almostAlias.insert(targetV); //TODO: shouldn't it between tV and origV ?
+						//targetV->almostAlias.insert(origV);
+                        origV->almostAlias.insert(tV); //New added 01/28/16
+                        tV->almostAlias.insert(origV); //New
 #ifdef DEBUG_RP
 						blame_info<<"Inserting pointer(6) "<<targetV->name<<std::endl;
 #endif
-						tempPointers.insert(targetV);
+						//tempPointers.insert(targetV);
+                        tempPointers.insert(tV); //New
 					}
 					else {
 						blame_info<<"Inserting alias(1) out "<<tV->name<<" into "<<origV->name<<std::endl;
@@ -539,7 +542,7 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, \
 					}
 				}
 				// treat as write within data space
-				else {
+				else { //how could it be not equal ??
 				    #ifdef DEBUG_RP
 					blame_info<<"Pointer levels are not equal"<<std::endl;
 					#endif
@@ -548,7 +551,7 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, \
 					
 					for (vec_vp_i_in = origV->almostAlias.begin(); vec_vp_i_in != origV->almostAlias.end(); vec_vp_i_in++) {
 					    #ifdef DEBUG_RP
-						blame_info<<"LSAlias relation between "<<tV->name<<" and "<<(*vec_vp_i_in)->name<<std::endl;
+						blame_info<<"dfAlias relation between "<<tV->name<<" and "<<(*vec_vp_i_in)->name<<std::endl;
 					    #endif 
 						tV->dfAliases.insert(*vec_vp_i_in);
 						(*vec_vp_i_in)->dfaUpPtr = tV;
@@ -678,7 +681,7 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, \
 			}
 		}
 	}
-	else {
+	else { // What to do with cases like: targetV = GEP origV, targetV
 	#ifdef DEBUG_RP
 		blame_info<<"New pointer level is "<<newPtrLevel<<" and  old is "<<origPLevel<<std::endl;
 		#endif
@@ -770,7 +773,7 @@ short FunctionBFC::checkIfWritten2(NodeProps * currNode, std::set<int> & visited
 }
 
 
-
+//At the very irst time this func was called, exitCand, currNode, exitV are all same
 void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNode,
 										std::set<int> & visited, NodeProps * exitV)
 {
@@ -844,9 +847,11 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			}
 			//}
 			
-			if (vp->nStatus[EXIT_VAR])
+            //CHECK: WHY return if vp is exit var ?  Hui 02/04/16
+			/*if (vp->nStatus[EXIT_VAR]){
+                blame_info<<"Because vp: "<<vp->name<<" is EXIT_VAR, so we don't add alias between it and "<<exitCand->name<<endl;
 				return;
-			
+			*/
 			exitCand->aliases.insert(vp);
 			// FORTRAN
 			//vp->aliasesIn.insert(exitCand);
@@ -1219,8 +1224,6 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 	
 	set<NodeProps *>::iterator vec_vp_i;
 	
-	
-	
 	if (currNode->nStatus[EXIT_VAR] )
 	{
 		// Looking at the aliases in
@@ -1349,7 +1352,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			}
 			
 			#ifdef DEBUG_RP
-						blame_info<<"Inserting dfAlias(1) "<<vp->name<<"into set for "<<exitCand->name<<std::endl;
+			blame_info<<"Inserting dfAlias(1) "<<vp->name<<"into set for "<<exitCand->name<<std::endl;
 			#endif 
 
 			exitCand->dfAliases.insert(vp);
@@ -1359,7 +1362,6 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			resolveAliases2(exitCand, vp, visited, exitV);
 			
 		}
-		
 	}
 	
 	if ( currNode->nStatus[EXIT_VAR_ALIAS])
@@ -1489,7 +1491,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			}
 			
 			#ifdef DEBUG_RP
-						blame_info<<"Inserting dfAlias(2) "<<vp->name<<"into set for "<<exitCand->name<<std::endl;
+			blame_info<<"Inserting dfAlias(2) "<<vp->name<<"into set for "<<exitCand->name<<std::endl;
 			#endif 			
 						
 			exitCand->dfAliases.insert(vp);
@@ -1574,7 +1576,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			}
 			
 			#ifdef DEBUG_RP
-						blame_info<<"Inserting alias(10) straight up "<<vp->name<<" into "<<exitCand->name<<std::endl;
+			blame_info<<"Inserting alias(10) straight up "<<vp->name<<" into "<<currNode->name<<std::endl;
 			#endif 			
 
 			currNode->aliases.insert(vp);
@@ -1687,6 +1689,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 		{
 			NodeProps * vp = (*vec_vp_i);
 			vp->nStatus[EXIT_VAR_FIELD] = true;
+            //TODO: change to be made by Hui 01/26/15 EVFA's field  should just be EVFA, not EVF
 			vp->pointsTo = exitCand;
 			if (vp->exitV == NULL)
 			{
@@ -1941,7 +1944,7 @@ void FunctionBFC::resolveArrays(NodeProps * origV, NodeProps * v, std::set<NodeP
 {
 	// At this point, we don't care if the pointer is written to or not,
 	//   we'll worry about that later
-	//blame_info<<"Inserting pointer(4) "<<v->name<<std::endl;
+	blame_info<<"In resolveArrays: Inserting pointer(4) "<<v->name<<std::endl;
 	
 	tempPointers.insert(v);
 	
@@ -2281,7 +2284,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 			}
 		}
 	}
-	else if (origTStr.find("Struct") != std::string::npos) { 
+	else if (origTStr.find("Struct") != std::string::npos) { //TOCONTINUE: 01/30/16
 		//At this point, we don't care if the pointer is written to or not,
 		//we'll worry about that later
 #ifdef DEBUG_RP
@@ -2992,6 +2995,8 @@ void FunctionBFC::resolveStores()
 				if (sourceV->name.find(PARAM_REC) == std::string::npos)
 					sourceV->isWritten = true;
 				                
+                blame_info<<"We have a storeFrom inserted: "<<targetV->name<<"->storeFrom="<<sourceV->name<<endl;
+
                 targetV->storeFrom = sourceV;
 				sourceV->storesTo.insert(targetV);
 				//storeCount++;
@@ -3007,7 +3012,9 @@ void FunctionBFC::resolveStores()
 			}
 		}
 		
-		if (stores.size() > 1){//store a *b, then a is in sotres, b is in sotresS..
+        //Since resolveDataRead is no longer used, so we put all stores into relevantInstructions
+        //no singleStores anymore !!!
+		if (stores.size() >= 1){//store a *b, then a is in stores, b is in storesSource..
 #ifdef DEBUG_GRAPH_BUILD
 			blame_info<<"Stores for V - "<<v->name<<" number "<<stores.size()<<std::endl;
 #endif 
@@ -3022,7 +3029,7 @@ void FunctionBFC::resolveStores()
 			}
 		}// These are single stores to one particular GEP grab of a variable, but in actuality they are one of many stores
 		// (in likelihood) to the variable pointer  
-		else if (stores.size() == 1) {
+		/*else if (stores.size() == 1) {
 #ifdef DEBUG_GRAPH_BUILD
 			blame_info<<"Stores for V(2) - "<<v->name<<" number "<<stores.size()<<std::endl;
 #endif 		
@@ -3037,7 +3044,7 @@ void FunctionBFC::resolveStores()
 				#endif 
 				storeVP->fbb->singleStores.push_back(storeVP);
 			}
-		}
+		}*/
 	}
 
 #ifdef DEBUG_CFG
@@ -3080,7 +3087,7 @@ void FunctionBFC::adjustMainGraph()
 	
 	for(tie(i,v_end) = vertices(G); i != v_end; ++i)  {
 		NodeProps *vp = get(get(vertex_props, G),*i);
-		// We have more than 1+ store coming in
+		// We have stores coming in
 		if (vp->storesTo.size() > 0) { //eg. store a1 b; store a2 b (b=vp)
 			boost::graph_traits<MyGraphType>::in_edge_iterator e_beg, e_end;
 			
@@ -3103,12 +3110,19 @@ void FunctionBFC::adjustMainGraph()
 					for (set_vp_i = vp->storesTo.begin(); set_vp_i != vp->storesTo.end(); set_vp_i++) {
 						NodeProps *storeVP = (*set_vp_i);
 #ifdef DEBUG_GRAPH_COLLAPSE
-						blame_info<<storeVP->name<<" "<<sourceLine<<" - Store Lines - "<<storeVP->storeLines.count(sourceLine);
-						blame_info<<", Border Lines - ";
-						blame_info<<storeVP->borderLines.count(sourceLine)<<std::endl;
+						blame_info<<"storeVP: "<<storeVP->name<<" - Store Lines - ";
+                        std::set<int>::iterator set_i_i;
+	                    for (set_i_i = storeVP->storeLines.begin(); set_i_i != storeVP->storeLines.end(); set_i_i++)
+		                    blame_info<<*set_i_i<<" ";
+	
+						blame_info<<" ; Border Lines - ";
+	                    for (set_i_i = storeVP->borderLines.begin(); set_i_i != storeVP->borderLines.end(); set_i_i++)
+		                    blame_info<<*set_i_i<<" ";
+
+						blame_info<<std::endl;
 #endif 
-						if (storeVP->storeLines.count(sourceLine) > 0 ||
-							(storeVP->borderLines.count(sourceLine) > 0 && 
+						if ((storeVP->storeLines.count(sourceLine) >0 && resolveStoreLine(storeVP, sourceVP)) ||
+							(storeVP->borderLines.count(sourceLine) >0 && 
                             resolveBorderLine(storeVP, sourceVP, vp, sourceLine))) {
 							if (sourceVP->llvm_inst != NULL) {
 								int newPtrLevel = 99;
@@ -3130,8 +3144,10 @@ void FunctionBFC::adjustMainGraph()
 							}
 							
 							tie(ed, inserted) = add_edge(sourceVP->number, storeVP->number, G);
-							if (inserted)
+							if (inserted){
+                                blame_info<<"RESOLVED_L_S_OP added between "<<sourceVP->name<<" and "<<storeVP->name<<endl;
 								edge_type[ed] = RESOLVED_L_S_OP;//load_store op
+                            }
 						}
 					}
 #ifdef DEBUG_GRAPH_COLLAPSE
@@ -3149,7 +3165,29 @@ void FunctionBFC::adjustMainGraph()
 	}
 }
 
-int FunctionBFC::resolveBorderLine(NodeProps *storeVP, NodeProps *sourceVP, \
+bool FunctionBFC::resolveStoreLine(NodeProps *storeVP, NodeProps *sourceVP)
+{
+#ifdef DEBUG_GRAPH_COLLAPSE
+	blame_info<<"In resolveStoreLine storeVP:"<<storeVP->name<<" ln="<<storeVP->line_num<<" lNO="<<storeVP->lineNumOrder
+        <<"  sourceVP:"<<sourceVP->name<<" ln="<<sourceVP->line_num<<" lNO="<<sourceVP->lineNumOrder<<std::endl;
+#endif 
+    if(storeVP->line_num < sourceVP->line_num)
+        return true;
+    else if(storeVP->line_num == sourceVP->line_num){ //cases like: findme = findme*10; both load and store
+        if(sourceVP->lineNumOrder > storeVP->lineNumOrder) //are in the same line, but THE load shouldn't depend on
+            return true;                                   //THE store since the store comes after the load
+        else{ 
+            blame_info<<"resolveStoreLine fails because lineNumOrder"<<endl;
+            return false; //the store comes after the load
+        }
+    }
+    else {// when storeVP->line_num > sourceVP->line_num, clearly false
+        blame_info<<"resolveStoreLine fails because line_num"<<endl;
+        return false;
+    }
+}
+
+bool FunctionBFC::resolveBorderLine(NodeProps *storeVP, NodeProps *sourceVP, \
                 					 NodeProps * origStoreVP, int sourceLine)
 {
 #ifdef DEBUG_GRAPH_COLLAPSE
@@ -3186,6 +3224,23 @@ int FunctionBFC::resolveBorderLine(NodeProps *storeVP, NodeProps *sourceVP, \
 				return true;
 			}
 		}
+/*        //Changed by Hui 02/02/16 from above
+		if (fs->receiver == origStoreVP) {		
+#ifdef DEBUG_GRAPH_COLLAPSE
+			blame_info<<"Border Line between "<<storeVP->name<<" "<<sourceVP->name<<" "<<origStoreVP->name<<std::endl;
+#endif 
+            if (fs->line_num < sourceLine){
+                blame_info<<"Border Cond resolved 1"<<endl;
+                return true;
+            }
+            else if ((fs->line_num == sourceLine)&&(fs->lineNumOrder > sourceVP->lineNumOrder)) {
+#ifdef DEBUG_GRAPH_COLLAPSE
+				blame_info<<"Border Cond resolved 2"<<std::endl;
+#endif 
+				return true;
+			}
+		}
+*/
 	}
 	
 #ifdef DEBUG_GRAPH_COLLAPSE
@@ -3289,10 +3344,56 @@ void FunctionBFC::geDefault(Instruction *pi, std::set<const char*, ltstr> &iSet,
 				opName = v->getName().str();
 			}
 			else {
+                //added by Hui : deal with constant operands
+	          if (v->getValueID() == Value::ConstantIntVal) {
+		        ConstantInt *cv = (ConstantInt *)v;
+		        int number = cv->getSExtValue();
+		
+		        char tempBuf[64];
+		        sprintf(tempBuf, "Constant+%i+%i+%i+%i", number, currentLineNum, 0, pi->getOpcode());		
+		        char *vN = (char *) malloc(sizeof(char)*(strlen(tempBuf)+1));
+	
+		        strcpy(vN,tempBuf);
+		        vN[strlen(tempBuf)]='\0';
+		        const char *vName = vN;
+		
+		        opName.insert(0, vName);
+	          } 
+
+	          else if (v->getValueID() == Value::ConstantFPVal) {
+		        char tempBuf[70];
+		        ConstantFP *cfp = (ConstantFP *)v;
+		        const APFloat apf = cfp->getValueAPF();
+	
+		        if(APFloat::semanticsPrecision(apf.getSemantics()) == 24) {
+			      float floatNum = apf.convertToFloat();
+			      sprintf (tempBuf, "Constant+%g+%i+%i+%i", floatNum, currentLineNum, 0, pi->getOpcode());		
+		        }
+		        else if(APFloat::semanticsPrecision(apf.getSemantics()) == 53) {
+			      double floatNum = apf.convertToDouble();
+			      sprintf (tempBuf, "Constant+%g2.2+%i+%i+%i", floatNum, currentLineNum, 0, pi->getOpcode());		
+		        }
+		        else {
+#ifdef DEBUG_ERROR
+			      std::cerr<<"Not a float or a double FPVal"<<std::endl;
+			      blame_info<<"Not a float or a double FPVal"<<std::endl;
+#endif 
+			      return;
+		        }
+		
+		        char *vN = (char *) malloc(sizeof(char)*(strlen(tempBuf)+1));
+		        strcpy(vN,tempBuf);
+		        vN[strlen(tempBuf)]='\0';
+		        const char * vName = vN;
+		
+		        opName.insert(0, vName);
+	          }
+            
+              else{
 				sprintf(tempBuf, "0x%x", /*(unsigned)*/v);
 				std::string tempStr(tempBuf);
-				
 				opName.insert(0, tempStr);
+              }
 			}
 			
 			addEdge(instName.c_str(), opName.c_str(), pi);

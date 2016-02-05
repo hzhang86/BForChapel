@@ -252,9 +252,11 @@ public:
 
 	// The list of nodes that resolves to the VP through a RESOLVED_L_S_OP
     //RESOLVED_L_S_OP: resolved from the load-store operation
+    //用来作为此node的datatrs的一部分
 	set<NodeProps *> resolvedLS;//e.g. if we have: store a, b; c=load b;
 	                            //then we create c->a, a.resolvedLS.insert(c)
 	// The list of nodes that are resolved from the VP through a R_LS
+    //在calcLineNum时有相关操作（非直接加入所有lines）
 	set<NodeProps *> resolvedLSFrom; //c.resolvedLSFrom.insert(a);
 	
 	// A subset of the resolvedLS nodes that write to the data range
@@ -317,8 +319,10 @@ public:
 	NodeProps * storeFrom;   // if store int a int* b  edge: b->a
 	set<NodeProps *> storesTo;// then a.storeFrom = b, b.storesTo.insert(a)
 	//storeLines has all lines that this node's definition reaches/valid
+    //所有此node reaching definitions的line
     set<int> storeLines;      //one node can have many sources(like a),  
     //borderLines has farthest line# for this node's valid definition in each fbb
+    //此node的def能reach到的最远的line/被kill的line
 	set<int> borderLines;     //but it can only have single destination(like b)
 	/////////////////////////
 	
@@ -345,8 +349,10 @@ public:
 	
     set<FuncCall *> funcCalls;//all the func calls that this node was involved(
                             //being as param/return value/the callNode(func))
-    Value * llvm_inst;
-	
+    Value * llvm_inst;//the first instruction this node associated with
+	//for var, it's usually alloca(for lv), for reg, it can be any inst
+    //it also can be a constantExpr when the node is a gv
+
 	// For BitCast Instructions
 	Value * collapsed_inst;
 	
@@ -442,7 +448,7 @@ public:
         pointsTo = NULL;
 		exitV = NULL;
 	
-  }
+    }
 	
 	~NodeProps()
 	{
