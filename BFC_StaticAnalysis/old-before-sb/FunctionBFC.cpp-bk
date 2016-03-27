@@ -1,0 +1,2341 @@
+/*
+ *  FunctionBFC.cpp
+ *  
+ *  Implementation of Function-level LLVM pass 
+ *  Created by Hui Zhang on 02/18/15.
+ *  Previous contribution by Nick Rutar
+ *  Copyright 2015 __MyCompanyName__. All rights reserved.
+ *
+ */
+
+#include "FunctionBFC.h"
+#include <iostream>
+#include <map>
+#include <time.h>
+
+using namespace std;
+
+
+void FunctionBFC::addFuncCalls(FuncCall *fc)
+{
+	
+    std::set<FuncCall*>::iterator vec_fc_i;
+    for (vec_fc_i = funcCalls.begin(); vec_fc_i != funcCalls.end(); vec_fc_i++) {
+		if ((*vec_fc_i)->funcName == fc->funcName && (*vec_fc_i)->paramNumber == fc->paramNumber) {
+			return;
+		}
+	}
+	
+    funcCalls.insert(fc);
+}
+
+ExitProgram *FunctionBFC::findOrCreateExitProgram(std::string &name)
+{
+  for (std::vector<ExitProgram *>::iterator ev_i = exitPrograms.begin(); 
+       ev_i != exitPrograms.end();  ev_i++) {
+		if ( (*ev_i)->realName == name) {
+			return *ev_i;
+		}
+	}
+	
+  ExitProgram *ep = new ExitProgram(name, BLAME_HOLDER);
+  addExitProg(ep);
+  return ep;
+}
+
+void FunctionBFC::LLVMtoOutputVar(NodeProps * v)
+{
+	exitOutput->addVertex(v);
+	v->eStatus = EXIT_OUTP;
+	v->nStatus[CALL_NODE] = false;
+}
+
+
+int FunctionBFC::checkForUnreadReturn(NodeProps *v, int v_index)
+{
+	boost::graph_traits<MyGraphType>::out_edge_iterator e_beg, e_end;
+	
+    e_beg = boost::out_edges(v_index, G).first;		
+    e_end = boost::out_edges(v_index, G).second;
+	
+    int returnVal = 0;
+    int out_d = out_degree(v_index, G);
+	
+	// Iterate over all of the outgoing edges from the vertex
+    for(; e_beg != e_end; ++e_beg) {
+		int opCode = get(get(edge_iore, G),*e_beg);
+		bool funcName = false;
+    //Early on we attached "--" along with line number information to functions
+		std::string::size_type loc = v->name.find( "--", 0 );
+		
+		// if we find that string we are dealing with a function
+		if( loc != std::string::npos ) {
+			funcName = true;   
+		}
+		
+///////////////////////////TO BE DELETED/////////////////////////////////
+        //These are both for cases where
+/*		 
+		 tmp19  -->  |  Call to Foo | 
+		 
+		 where tmp19 is never read.  Common in cases such as malloc or printf
+		 where there is technically a return but sometimes not read
+		 
+		 opCode - has to equal Call or Invoke
+		 funcName - if funcName is true, then we are dealing with the call, not the return
+		 out_d   -  if out_d is greater than 1, it's not an unused variable
+*/
+///////////////////////////////////////////////////////////////////////////
+		
+		if ((opCode == Instruction::Call || opCode == Instruction::Invoke )
+				&& !funcName && out_d == 1)
+			returnVal = 1;
+		
+		// If it's a local var we don't care if it's an unread return, we
+		//  deal with it specially anyway 
+		if (v->isLocalVar == true)
+			returnVal = 0;
+	}
+
+	return returnVal;
+}
+
+
+// TODO 7/6/2010 Either make this much more efficient or get rid of it completely
+void FunctionBFC::goThroughAllAliases(NodeProps *oP, NodeProps *tP, std::set<NodeProps *> &visited)
+{
+	if (visited.count(tP) > 0)
+		return;
+	
+	visited.insert(tP);
+	std::set<NodeProps *>::iterator vec_vp_i;
+	for(vec_vp_i = tP->dataPtrs.begin(); vec_vp_i != tP->dataPtrs.end(); vec_vp_i++){
+		NodeProps *tsDP = (*vec_vp_i);
+#ifdef DEBUG_RECURSIVE_EX_CHILDREN
+		blame_info<<"Checking oP "<<oP->name<<" against tsDP(2) "<<tsDP->name<<std::endl;
+#endif
+		if (cfg->controlDep(tsDP, oP)) {
+			oP->dfChildren.insert(tsDP);
+			tsDP->dfParents.insert(oP);
+		}
+	}
+	
+	for (vec_vp_i = tP->dfAliases.begin(); vec_vp_i != tP->dfAliases.end(); vec_vp_i++) {
+		goThroughAllAliases(oP, (*vec_vp_i), visited);
+	}
+	
+	for (vec_vp_i = tP->aliases.begin(); vec_vp_i != tP->aliases.end(); vec_vp_i++) {
+		goThroughAllAliases(oP, (*vec_vp_i), visited);
+	}
+}
+
+
+void FunctionBFC::addControlFlowChildren(NodeProps * oP, NodeProps * tP)
+{		
+	NodeProps * tPSource = tP->dpUpPtr;
+	if (tPSource == NULL)
+		return;
+	
+	std::set<NodeProps *>::iterator vec_vp_i;
+	for (vec_vp_i = tPSource->dataPtrs.begin(); vec_vp_i != tPSource->dataPtrs.end(); vec_vp_i++)
+	{
+		NodeProps * tsDP = (*vec_vp_i);
+#ifdef DEBUG_RECURSIVE_EX_CHILDREN
+		blame_info<<"Checking oP "<<oP->name<<" against tsDP "<<tsDP->name<<std::endl;
+#endif
+		
+		if ( cfg->controlDep(tsDP, oP) && tP != tsDP )
+		{
+			oP->dfChildren.insert(tsDP);
+			tsDP->dfParents.insert(oP);
+		}
+	}
+}
+
+
+void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std::set<int> & visited)
+{
+	int v_index = v->number;
+	if (visited.count(v_index) > 0)
+		return;
+	
+#ifdef DEBUG_RECURSIVE_EX_CHILDREN
+	blame_info<<"Calling recursiveExamineChildren for "<<v->name<<" from "<<origVP->name<<std::endl;
+#endif
+	visited.insert(v_index);
+	
+#ifdef DEBUG_RECURSIVE_EX_CHILDREN	
+	blame_info<<"Line nums for "<<v->name<<" (B) ";
+	std::set<int>::iterator s_i = v->lineNumbers.begin();
+	for (; s_i != v->lineNumbers.end(); s_i++) {
+		blame_info<<" "<<*s_i;
+	}
+	
+	blame_info<<std::endl;
+#endif
+	
+	// No edges, just get the line numbers and get out
+	int out_d = out_degree(v_index, G);
+	if (out_d == 0) {
+		origVP->lineNumbers.insert(v->line_num);
+#ifdef DEBUG_LINE_NUMS
+		blame_info<<"Inserting line number(6) "<<v->line_num<<" to "<<origVP->name<<std::endl;
+#endif		
+		std::set<int>::iterator ln_i = v->lineNumbers.begin();
+		for (; ln_i != v->lineNumbers.end(); ln_i++) {
+#ifdef DEBUG_LINE_NUMS		
+			blame_info<<"Inserting line number(7) "<<*ln_i<<" to "<<origVP->name<<std::endl;
+#endif
+			origVP->lineNumbers.insert(*ln_i);
+		}
+	} 
+	boost::graph_traits<MyGraphType>::out_edge_iterator e_beg, e_end;
+	e_beg = boost::out_edges(v_index, G).first;		// edge iterator begin
+	e_end = boost::out_edges(v_index, G).second;  // edge iterator end
+	
+	// iterate through the edges to find matching opcode
+	for(; e_beg != e_end; ++e_beg) {
+		NodeProps *targetVP = get(get(vertex_props, G), target(*e_beg, G));
+		int opCode = get(get(edge_iore, G),*e_beg);
+		int in_deg = in_degree(targetVP->number, G);
+		
+		// We need a store that has went through our CFG parsing and has
+		//  a RESOLVED_L_S instruction as an input
+		if (opCode == Instruction::Store && (targetVP->storeLines.size() > 0 && in_deg != 1)) {	
+			// TODO: Investigate if this matters for local variables, 
+			//  it would react the same as commenting out the next line
+			//  for staticTest1
+			if (v->eStatus != EXIT_VAR_GLOBAL)																
+				continue;
+		}
+		
+#ifdef DEBUG_RECURSIVE_EX_CHILDREN
+		blame_info<<"Looking at target "<<targetVP->name<<" from "<<v->name<<std::endl;
+		blame_info<<"Node Props for "<<targetVP->name<<": ";
+		for (int a = 0; a < NODE_PROPS_SIZE; a++)
+			blame_info<<targetVP->nStatus[a]<<" ";
+		
+		blame_info<<std::endl;	
+        blame_info<<"Edge's opCode/edge_type="<<opCode<<std::endl;
+#endif 
+		
+		if ( targetVP->eStatus > 0 || targetVP->nStatus[ANY_EXIT] ) {
+#ifdef DEBUG_RECURSIVE_EX_CHILDREN
+			blame_info<<"Target "<<targetVP->name<<" "<<targetVP->exitV<<" "<<origVP->exitV;
+			blame_info<<" ";
+			if (targetVP->dpUpPtr) //dpUpPtr: Up pointer, =itself by default
+				blame_info<<targetVP->dpUpPtr->name;
+			else
+				blame_info<<targetVP->dpUpPtr;
+			
+			blame_info<<" ";
+			
+			if (origVP->dpUpPtr)
+				blame_info<<origVP->dpUpPtr->name;
+			else
+				blame_info<<origVP->dpUpPtr;
+			
+			blame_info<<std::endl;
+			
+			if (targetVP->exitV)
+				blame_info<<"TargetV->exitV - "<<targetVP->exitV->name<<std::endl;
+			if (origVP->exitV)
+				blame_info<<"OrigVP->exitV - "<<origVP->exitV->name<<std::endl;
+#endif 			
+			
+			if ((targetVP->pointsTo != origVP->pointsTo || 
+					(targetVP->pointsTo == NULL && origVP->pointsTo == NULL)) && 
+                    targetVP->dpUpPtr != origVP->dpUpPtr) {
+#ifdef DEBUG_RECURSIVE_EX_CHILDREN			
+				blame_info<<"Adding Child/Parent relation between "<<targetVP->name<<" and "<<origVP->name<<std::endl;
+#endif
+                //////added by Hui///////////////
+#ifdef REVERSE_CP_REL1
+                bool existed;
+                graph_traits <MyGraphType>::edge_descriptor Edge;
+                tie(Edge, existed) = edge(origVP->number, v->number, G);
+
+                if(existed && get(get(edge_iore, G), Edge)==GEP_BASE_OP) {
+                    blame_info<<"GEP_BASE relation between base: "<<v->name<<" and field: "<<origVP->name<<endl;
+                    origVP->parents.insert(targetVP);
+                    targetVP->children.insert(origVP);
+                }
+                
+                else {
+#endif              
+				    origVP->children.insert(targetVP);
+				    targetVP->parents.insert(origVP);
+#ifdef REVERSE_CP_REL1
+                }
+#endif
+                ///////////////////////////////////
+				if ((origVP->nStatus[EXIT_VAR_PTR] || origVP->nStatus[LOCAL_VAR_PTR]) && (targetVP->nStatus[EXIT_VAR_PTR] || targetVP->nStatus[LOCAL_VAR_PTR])) {
+					//addControlFlowChildren(origVP, targetVP);
+					std::set<NodeProps *> visited;
+					//visited.insert(targetVP->dpUpPtr);
+					
+					// If statement added 7/7/2010, don't think we really need to care about the data writes data flow ancestors
+					if (targetVP->isWritten == false)
+						goThroughAllAliases(origVP, targetVP->dpUpPtr, visited);	
+				}
+			}
+		}
+		else if (targetVP->eStatus == EXIT_VAR_UNWRITTEN) {
+			//std::cout<<"UNWRITTEN EV "<<targetVP->name<<" is sucked in by "<<origVP->name<<std::endl;
+#ifdef DEBUG_SIDE_EFFECTS
+			blame_info<<"UNWRITTEN EV "<<targetVP->name<<" is sucked in by "<<origVP->name<<std::endl;
+#endif
+			origVP->suckedInEVs.insert(targetVP);
+		}
+		else {
+			visited.insert(v_index);
+			origVP->lineNumbers.insert(targetVP->line_num);
+#ifdef DEBUG_LINE_NUMS			
+			blame_info<<"Inserting line number(8) "<<targetVP->line_num<<" to "<<origVP->name<<std::endl;
+#endif 			
+			std::set<int>::iterator ln_i = targetVP->lineNumbers.begin();
+			for (; ln_i != targetVP->lineNumbers.end(); ln_i++) {
+#ifdef DEBUG_LINE_NUMS			
+				blame_info<<"Inserting line number(9) "<<*ln_i<<" to "<<origVP->name<<std::endl;
+#endif 				
+				origVP->lineNumbers.insert(*ln_i);
+			}
+			
+			recursiveExamineChildren(targetVP, origVP, visited);
+		}
+	}
+	
+#ifdef DEBUG_RECURSIVE_EX_CHILDREN	
+	blame_info<<"Line nums for "<<v->name<<" (E) ";
+	s_i = v->lineNumbers.begin();
+	for (; s_i != v->lineNumbers.end(); s_i++) {
+		blame_info<<" "<<*s_i;
+	}
+	
+	blame_info<<std::endl;
+#endif
+	
+}
+
+
+
+void FunctionBFC::resolveIVCalls()
+{
+	set<NodeProps *>::iterator ivh_i;
+	
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+		
+		//clearAfter.clear();
+		if (ivp->nStatus[CALL_NODE]) {
+#ifdef DEBUG_IMPORTANT_VERTICES
+			blame_info<<"For CALL_NODE "<<ivp->name<<std::endl;
+#endif		
+			std::set<NodeProps *>::iterator ivp_i;
+			for(ivp_i = ivp->parents.begin(); ivp_i != ivp->parents.end(); ivp_i++){
+                NodeProps *ivpParent = (*ivp_i);
+				//NodeProps * vp = ivpParent->vp;
+				if (ivpParent == NULL) {// || ivpParent->name.find("GLOBAL") != std::string::npos)
+					continue;
+				}
+#ifdef DEBUG_IMPORTANT_VERTICES				
+				blame_info<<"Parent "<<ivpParent->name<<std::endl;
+#endif
+				set<FuncCall *>::iterator vfc_i;
+				for (vfc_i = ivpParent->funcCalls.begin(); vfc_i != ivpParent->funcCalls.end(); vfc_i++) {
+#ifdef DEBUG_IMPORTANT_VERTICES
+					blame_info<<"Func name "<<(*vfc_i)->funcName<<", pn "<<(*vfc_i)->paramNumber<<std::endl;
+#endif
+					if ((*vfc_i)->funcName == ivp->name) {
+						ImpFuncCall *ifcCN = new ImpFuncCall((*vfc_i)->paramNumber, ivpParent);
+						ivp->calls.insert(ifcCN);
+						ImpFuncCall *ifcCR = new ImpFuncCall((*vfc_i)->paramNumber, ivp);
+						ivpParent->calls.insert(ifcCR);
+						//clearAfter.push_back(ivpParent);
+					}
+				}
+			}
+		}
+	}
+}
+
+
+
+void FunctionBFC::populateImportantVertices()
+{
+	property_map<MyGraphType, vertex_props_t>::type props = get(vertex_props, G);	
+	graph_traits<MyGraphType>::vertex_iterator i, v_end;
+	
+	for(tie(i,v_end) = vertices(G); i != v_end; ++i) {
+		NodeProps * targetVP = get(get(vertex_props, G),*i);
+		//std::string na("GLOBAL");
+		//ImpNodeProps * ivpParent = new ImpNodeProps(na);
+		
+		short anyImp = 0;
+		for (int a = 0; a < NODE_PROPS_SIZE; a++) {
+			anyImp += targetVP->nStatus[a];
+		}
+		
+		if (anyImp) 
+			targetVP->nStatus[ANY_EXIT] = true;
+		else
+			targetVP->nStatus[ANY_EXIT] = false;
+		
+	}
+	
+    for(tie(i,v_end) = vertices(G); i != v_end; ++i) {
+		//int v_index = get(get(vertex_index, G),*i);
+		NodeProps *targetVP = get(get(vertex_props, G),*i);
+		if (targetVP->nStatus[ANY_EXIT] || targetVP->eStatus > NO_EXIT) {
+			//populateImportantVertex(targetVP);
+			std::set<int> visited;
+#ifdef DEBUG_IMPORTANT_VERTICES
+			blame_info<<"In populateImportantVertices for "<<targetVP->name<<std::endl;
+#endif
+			
+			recursiveExamineChildren(targetVP, targetVP, visited);
+			
+#ifdef DEBUG_IMPORTANT_VERTICES
+			blame_info<<"Finished Calling recursiveExamineChildren for "<<targetVP->name<<std::endl;
+#endif
+			impVertices.insert(targetVP);
+		}
+	}
+	
+	impVertCount = impVertices.size();
+}
+
+
+//Destructor
+FunctionBFC::~FunctionBFC()
+{
+	std::vector<ExitVariable *>::iterator vec_ev_i;
+	for (vec_ev_i = exitVariables.begin();  vec_ev_i != exitVariables.end(); 
+        vec_ev_i++)
+	    delete (*vec_ev_i);
+	
+	std::vector<ExitProgram *>::iterator vec_ep_i;
+	for (vec_ep_i = exitPrograms.begin(); vec_ep_i != exitPrograms.end(); vec_ep_i++)
+		delete (*vec_ep_i);
+	
+	delete exitOutput;
+	
+	pointers.clear();
+
+	std::vector<LocalVar *>::iterator vec_lv_i;
+	for (vec_lv_i = localVars.begin(); vec_lv_i != localVars.end(); vec_lv_i++)
+		delete (*vec_lv_i);
+	
+	localVars.clear();
+	
+	impVertices.clear();
+	//std::set<NodeProps *> vprops;
+	graph_traits<MyGraphType>::vertex_iterator i, v_end;
+    for(tie(i,v_end) = vertices(G); i != v_end; ++i) {
+		NodeProps *v = get(get(vertex_props, G),*i);
+		if (v == NULL)
+			continue;
+		
+		delete v;
+	}
+	
+	std::set<FuncCall *>::iterator vec_fc_i;
+	for (vec_fc_i = funcCalls.begin(); vec_fc_i != funcCalls.end(); vec_fc_i++) 
+		delete (*vec_fc_i);
+
+	funcCalls.clear();
+	variables.clear();
+	iReg.clear();
+	G.clear();
+	G_trunc.clear();
+}
+
+
+bool FunctionBFC::isTargetNode(NodeProps * ivp)
+{
+	if (ivp->nStatus[EXIT_VAR] || 
+			ivp->eStatus >= EXIT_VAR_GLOBAL || ivp->eStatus == EXIT_OUTP ||
+			(ivp->nStatus[LOCAL_VAR]) || 
+			ivp->nStatus[EXIT_VAR_FIELD] || ivp->nStatus[LOCAL_VAR_FIELD] ||
+			ivp->nStatus[EXIT_VAR_FIELD_ALIAS] || ivp->nStatus[LOCAL_VAR_FIELD_ALIAS] ||
+			ivp->nStatus[CALL_PARAM] || 
+			ivp->nStatus[CALL_RETURN] || ivp->nStatus[CALL_NODE] )
+	{
+		return true;
+	}
+
+	else
+		return false;
+}
+
+
+
+
+void FunctionBFC::makeNewTruncGraph()
+{
+#ifdef DEBUG_GRAPH_TRUNC
+	blame_info<<"Making trunc graph for "<<getSourceFuncName()<<" "<<impVertices.size()<<std::endl;
+#endif
+	MyTruncGraphType G_new(impVertCount);
+	G_trunc.swap(G_new);
+	
+	MyTruncGraphType G_new2(impVertCount);
+	G_abbr.swap(G_new2);
+	
+	bool inserted;
+    graph_traits < MyTruncGraphType >::edge_descriptor ed;
+	
+	// Create property map for vertex properies for each register
+    property_map<MyTruncGraphType, vertex_props_t>::type props = get(vertex_props, G_trunc);	
+	property_map<MyTruncGraphType, vertex_props_t>::type props2 = get(vertex_props, G_abbr);	
+	
+  
+    // Create property map for edge properties for each blame relationship
+    property_map<MyTruncGraphType, edge_iore_t>::type edge_type = get(edge_iore, G_trunc);
+	property_map<MyTruncGraphType, edge_iore_t>::type edge_type2 = get(edge_iore, G_abbr);
+	
+	//ImpVertexHash::iterator ivh_i;	
+	std::set<NodeProps *>::iterator ivh_i;
+	int num = 0;
+	// Populate Nodes
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+		if (ivp->isExported) {
+			put(props, num, ivp);
+			put(props2, num, ivp);
+			ivp->impNumber = num;
+#ifdef DEBUG_GRAPH_TRUNC			
+			blame_info<<"Putting IVP node "<<ivp->impNumber<<" ("<<ivp->name<<") into graph "<<ivp->eStatus<<std::endl;
+#endif			
+			num++;
+		}
+	}
+	// Populate Edges for G_trunc
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+		if (!ivp->isExported)
+			continue;
+		
+		std::set<NodeProps *>::iterator ivp_i;
+		std::set<NodeProps *>::iterator set_ivp_i;
+			
+		// PARENTS
+		for (set_ivp_i = ivp->parents.begin(); set_ivp_i != ivp->parents.end(); set_ivp_i++) {
+			NodeProps *ivpParent = (*set_ivp_i);
+			if (!ivpParent->isExported)
+				continue;
+			//if (ivpParent->name.find("GLOBAL") != std::string::npos)
+			//	continue;
+			
+			if (ivp->name.find("--") != std::string::npos)
+				continue;
+			
+			if (ivp->eStatus > EXIT_VAR_GLOBAL)
+				continue;
+#ifdef DEBUG_GRAPH_TRUNC			
+			blame_info<<"Adding IVP P edge name "<<ivpParent->name<<" to "<<ivp->name<<std::endl;
+			blame_info<<"Adding IVP P edge "<<ivpParent->impNumber<<" to "<<ivp->impNumber<<std::endl;
+#endif
+			tie(ed, inserted) = add_edge(ivpParent->impNumber, ivp->impNumber, G_trunc);
+			if (inserted)
+				edge_type[ed] = PARENT_EDGE;
+		}
+		// ALIASES
+		for (ivp_i = (*ivh_i)->aliases.begin(); ivp_i != (*ivh_i)->aliases.end(); ivp_i++) {
+			NodeProps *ivpAlias = (*ivp_i);
+			
+			if (!ivpAlias->isExported)
+				continue;
+			
+			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) {
+				//std::cerr<<"-1 Val A for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+#ifdef DEBUG_GRAPH_TRUNC				
+				blame_info<<"-1 Val A for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<std::endl;
+#endif				
+				continue;
+			}
+			
+#ifdef DEBUG_GRAPH_TRUNC			
+			blame_info<<"Adding IVP A edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+#endif
+			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_trunc);
+			if (inserted)
+				edge_type[ed] = ALIAS_EDGE;
+		}
+		// DATA
+		for (ivp_i = (*ivh_i)->dataPtrs.begin(); ivp_i != (*ivh_i)->dataPtrs.end(); ivp_i++) {
+			NodeProps *ivpAlias = (*ivp_i);
+			
+			if (!ivpAlias->isExported)
+				continue;			
+			
+			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) {
+				//std::cerr<<"-1 Val D for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+#ifdef DEBUG_GRAPH_TRUNC				
+				blame_info<<"-1 Val D for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<std::endl;
+#endif				
+				continue;
+			}	
+			
+#ifdef DEBUG_GRAPH_TRUNC			
+			blame_info<<"Adding IVP D edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+#endif
+			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_trunc);
+			if (inserted)
+				edge_type[ed] = DATA_EDGE;
+		}
+		
+		// DATA FLOW ALIAS
+		for (ivp_i = (*ivh_i)->dfAliases.begin(); ivp_i != (*ivh_i)->dfAliases.end(); ivp_i++) {
+			NodeProps *ivpAlias = (*ivp_i);
+			if (!ivpAlias->isExported)
+				continue;			
+			
+			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) {
+				//std::cerr<<"-1 Val DFA for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+#ifdef DEBUG_GRAPH_TRUNC
+				blame_info<<"-1 Val DFA for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<std::endl;
+#endif				
+				continue;
+			}	
+			
+#ifdef DEBUG_GRAPH_TRUNC
+			blame_info<<"Adding IVP DFA edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+#endif
+			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_trunc);
+			if (inserted)
+				edge_type[ed] = DF_ALIAS_EDGE;
+		}
+		
+		// DATA FLOW ALIAS
+		for (set_ivp_i = (*ivh_i)->dfChildren.begin(); set_ivp_i != (*ivh_i)->dfChildren.end(); set_ivp_i++) {
+			NodeProps *ivpAlias = (*set_ivp_i);
+			
+			if (!ivpAlias->isExported)
+				continue;			
+			
+			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) {
+				//std::cerr<<"-1 Val DFC for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+#ifdef DEBUG_GRAPH_TRUNC				
+				blame_info<<"-1 Val DFC for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<std::endl;
+#endif			
+				continue;
+			}
+#ifdef DEBUG_GRAPH_TRUNC
+			blame_info<<"Adding IVP DFC edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+#endif
+			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_trunc);
+			if (inserted)
+				edge_type[ed] = DF_CHILD_EDGE;
+		}
+		// DATA FLOW INSTANTIATION
+		for (set_ivp_i = (*ivh_i)->storesTo.begin(); set_ivp_i != (*ivh_i)->storesTo.end(); set_ivp_i++) {
+			NodeProps *ivpAlias = (*set_ivp_i);
+			
+			if (!ivpAlias->isExported)
+				continue;			
+			
+			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) {
+				//std::cerr<<"-1 Val DFI for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+#ifdef DEBUG_GRAPH_TRUNC
+				blame_info<<"-1 Val DFI for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<std::endl;
+#endif				
+				continue;
+			}		
+			
+			if (ivpAlias->impNumber == -1 || ivp->impNumber == -1)
+				continue;
+#ifdef DEBUG_GRAPH_TRUNC			
+			blame_info<<"Adding IVP DFI edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+#endif
+			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_trunc);
+			if (inserted)
+				edge_type[ed] = DF_INST_EDGE;
+		}
+				
+		// FIELDS
+		for (ivp_i = (*ivh_i)->fields.begin(); ivp_i != (*ivh_i)->fields.end(); ivp_i++) {
+			NodeProps *ivpAlias = (*ivp_i);
+			
+			if (!ivpAlias->isExported)
+				continue;			
+			
+			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) {
+				//std::cerr<<"-1 Val F for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+#ifdef DEBUG_GRAPH_TRUNC
+				blame_info<<"-1 Val F for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<std::endl;
+#endif				
+				continue;
+			}
+			
+#ifdef DEBUG_GRAPH_TRUNC			
+			blame_info<<"Adding IVP F edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+#endif
+			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_trunc);
+			if (inserted)
+				edge_type[ed] = FIELD_EDGE;
+		}
+			
+		if (ivp->nStatus[CALL_NODE])
+			continue;
+		
+		// CALLS
+		std::set<ImpFuncCall *>::iterator ifc_i;
+		for (ifc_i = (*ivh_i)->calls.begin(); ifc_i != (*ivh_i)->calls.end(); ifc_i++) {
+			ImpFuncCall *iFunc = (*ifc_i);
+#ifdef DEBUG_GRAPH_TRUNC
+			blame_info<<"Adding IVP C edge "<<ivp->impNumber<<" to "<<iFunc->callNode->impNumber<<std::endl;
+#endif
+			tie(ed, inserted) = add_edge(ivp->impNumber, iFunc->callNode->impNumber, G_trunc);
+			if (inserted)
+				edge_type[ed] = CALL_EDGE + iFunc->paramNumber;						
+		}
+	}
+	
+	// Populate Edges for G_abbr
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+#ifdef DEBUG_GRAPH_TRUNC
+		blame_info<<"G_abbr populate edges for "<<*ivh_i<<std::endl;
+#endif		
+		if (!ivp->isExported)
+			continue;
+		
+		if (!isTargetNode(ivp))
+			continue;
+		
+#ifdef DEBUG_GRAPH_TRUNC		
+		blame_info<<"G_abbr STILL populate edges for "<<*ivh_i<<std::endl;
+#endif		
+		
+		std::set<NodeProps *>::iterator ivp_i;
+		std::set<NodeProps *>::iterator set_ivp_i;
+		// FIELDS
+		for (ivp_i = (*ivh_i)->fields.begin(); ivp_i != (*ivh_i)->fields.end(); ivp_i++) {
+			NodeProps *ivpAlias = (*ivp_i);
+			if (!ivpAlias->isExported)
+				continue;			
+			
+			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) {
+				continue;
+			}
+			
+#ifdef DEBUG_GRAPH_TRUNC			
+			blame_info<<"Adding IVP F edge(2) "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+#endif	
+			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_abbr);
+			if (inserted)
+				edge_type2[ed] = FIELD_EDGE;
+		}
+			
+		if (ivp->nStatus[CALL_NODE])
+			continue;
+	
+		// CALLS
+		
+		std::set<ImpFuncCall *>::iterator ifc_i;
+		for (ifc_i = (*ivh_i)->calls.begin(); ifc_i != (*ivh_i)->calls.end(); ifc_i++) {
+			ImpFuncCall *iFunc = (*ifc_i);
+#ifdef DEBUG_GRAPH_TRUNC					
+			blame_info<<"Adding IVP C edge(2) "<<ivp->impNumber<<" to "<<iFunc->callNode->impNumber<<std::endl;
+#endif
+			tie(ed, inserted) = add_edge(ivp->impNumber, iFunc->callNode->impNumber, G_abbr);
+			if (inserted)
+				edge_type2[ed] = CALL_EDGE + iFunc->paramNumber;						
+		}
+	
+		// PARAMS
+		for (set_ivp_i = ivp->descParams.begin(); set_ivp_i != ivp->descParams.end(); set_ivp_i++) {
+			NodeProps *ivpAlias = (*set_ivp_i);
+			if (!ivpAlias->isExported)
+				continue;			
+			
+			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) 
+				continue;
+			
+			if (ivpAlias == ivp)
+				continue;
+			
+#ifdef DEBUG_GRAPH_TRUNC			
+			blame_info<<"Adding IVP CP edge(2) "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+#endif
+			
+			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_abbr);
+			if (inserted)
+				edge_type2[ed] = CALL_PARAM_EDGE;
+			
+		}
+	}
+	
+	std::string ext("_REG");
+	printFinalDot(true, ext);
+	printFinalDotPretty(true, ext);
+	printFinalDotAbbr(ext);
+}
+
+void FunctionBFC::calcAggCallRecursive(NodeProps *ivp)
+{
+
+#ifdef DEBUG_CALC_RECURSIVE
+	blame_info<<"Entering calcAggCallRecursive for "<<ivp->name<<std::endl;
+#endif
+
+	if (ivp->calcAggCall) {
+#ifdef DEBUG_CALC_RECURSIVE	
+		blame_info<<"Exiting calcAggCallRecursive(1) for "<<ivp->name<<std::endl;
+#endif		
+		return;
+	}
+	
+	ivp->calcAggCall = true;
+
+	if (ivp->nStatus[CALL_NODE]) {
+#ifdef DEBUG_CALC_RECURSIVE	
+			blame_info<<"Exiting calcAggCallRecursive(2) for "<<ivp->name<<std::endl;
+#endif
+		return;
+	}
+	//ivp->descCalls.insert(ivp->calls.begin(), ivp->calls.end());
+	
+	
+	if (ivp->nStatus[CALL_PARAM]) {	
+		ivp->descParams.insert(ivp);
+		ivp->aliasParams.insert(ivp);
+#ifdef DEBUG_CALC_RECURSIVE		
+		blame_info<<"Exiting calcAggCallRecursive(3) for "<<ivp->name<<std::endl;
+#endif
+		//return;
+	}
+	
+	if ( ivp->nStatus[CALL_RETURN]) {
+		ivp->descParams.insert(ivp);
+		ivp->aliasParams.insert(ivp);
+#ifdef DEBUG_CALC_RECURSIVE		
+		blame_info<<"Exiting calcAggCallRecursive(4) for "<<ivp->name<<std::endl;
+#endif 		
+		//return;
+	}
+
+	std::set<NodeProps *>::iterator s_vp_i;
+	std::set<NodeProps *>::iterator v_vp_i;
+	
+	for (s_vp_i = ivp->children.begin(); s_vp_i != ivp->children.end(); s_vp_i++) {
+		NodeProps * child = *s_vp_i;
+		if (child->calcAggCall == false)
+			calcAggCallRecursive(child);
+		
+#ifdef DEBUG_CALC_RECURSIVE		
+		blame_info<<"Inserting descParams(1) for "<<ivp->name<<" from "<<child->name<<std::endl;
+#endif 		
+		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());	
+		//ivp->descCalls.insert(child->descCalls.begin(), child->descCalls.end());
+	}
+	
+	for (s_vp_i = ivp->storesTo.begin(); s_vp_i != ivp->storesTo.end(); s_vp_i++) {
+		NodeProps *child = *s_vp_i;
+		if (child->calcAggCall == false)
+			calcAggCallRecursive(child);
+		
+		if (child->nStatus[CALL_RETURN]) {			
+#ifdef DEBUG_CALC_RECURSIVE		
+			blame_info<<"Inserting descParams(2) for "<<ivp->name<<" from "<<child->name<<std::endl;
+#endif 				
+			ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
+		}	
+		//ivp->descCalls.insert(child->descCalls.begin(), child->descCalls.end());
+	}
+	
+	for (v_vp_i = ivp->dataPtrs.begin(); v_vp_i != ivp->dataPtrs.end(); v_vp_i++) {
+		NodeProps *child = *v_vp_i;
+		if (child->calcAggCall == false)
+			calcAggCallRecursive(child);
+		
+#ifdef DEBUG_CALC_RECURSIVE		
+		blame_info<<"Inserting descParams(3) for "<<ivp->name<<" from "<<child->name<<std::endl;
+#endif 	
+		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
+		ivp->aliasParams.insert(child->descParams.begin(), child->descParams.end());	
+		//ivp->descCalls.insert(child->descCalls.begin(), child->descCalls.end());
+	}
+	
+	for (v_vp_i = ivp->aliases.begin(); v_vp_i != ivp->aliases.end(); v_vp_i++) {
+		NodeProps *child = *v_vp_i;
+		if (child->calcAggCall == false)
+			calcAggCallRecursive(child);
+#ifdef DEBUG_CALC_RECURSIVE		
+		blame_info<<"Inserting descParams(4) for "<<ivp->name<<" from "<<child->name<<std::endl;
+#endif 				
+		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
+		ivp->aliasParams.insert(child->descParams.begin(), child->descParams.end());
+		//ivp->descCalls.insert(child->descCalls.begin(), child->descCalls.end());
+	}
+	
+	for (v_vp_i = ivp->dfAliases.begin(); v_vp_i != ivp->dfAliases.end(); v_vp_i++) {
+		NodeProps *child = *v_vp_i;
+		if (child->calcAggCall == false)
+			calcAggCallRecursive(child);
+#ifdef DEBUG_CALC_RECURSIVE		
+		blame_info<<"Inserting descParams(5) for "<<ivp->name<<" from "<<child->name<<std::endl;
+#endif 				
+		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
+		ivp->aliasParams.insert(child->descParams.begin(), child->descParams.end());
+	}
+
+#ifdef PARAMS_CONTRIBUTOR_FIELDS
+    for (v_vp_i = ivp->fields.begin(); v_vp_i != ivp->fields.end(); v_vp_i++) {
+        NodeProps *child = *v_vp_i;
+        if (child->calcAggCall == false)
+            calcAggCallRecursive(child);
+#ifdef DEBUG_CALC_RECURSIVE		
+		blame_info<<"Inserting descParams(6) for "<<ivp->name<<" from "<<child->name<<std::endl;
+#endif 				
+		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
+		ivp->aliasParams.insert(child->descParams.begin(), child->descParams.end());
+	}
+#endif
+
+#ifdef DEBUG_CALC_RECURSIVE
+		blame_info<<"Exiting calcAggCallRecursive(N) for "<<ivp->name<<std::endl;
+#endif 		
+
+}
+
+
+void FunctionBFC::debugPrintLineNumbers(NodeProps *ivp, NodeProps *target,int locale)
+{
+#ifdef DEBUG_PRINT_LINE_NUMS
+	blame_info<<"Inserting Line Numbers("<<locale<<") from "<<target->name<<" to "<<ivp->name<<std::endl;
+	std::set<int>::iterator set_i_i;
+	
+	for (set_i_i = target->descLineNumbers.begin(); set_i_i != target->descLineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+	
+	blame_info<<std::endl;
+#endif
+}
+
+
+
+void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *> &vStack, std::set<NodeProps *> &vRevisit)
+{
+	if (ivp->calcAgg)
+		return;
+	
+	ivp->calcAgg = true;
+	vStack.insert(ivp);
+	std::set<int>::iterator set_i_i;
+
+#ifdef DEBUG_PRINT_LINE_NUMS
+	blame_info<<std::endl;
+	blame_info<<"Entering calcAggregateLNRecursive for "<<ivp->name<<std::endl;
+	blame_info<<"Starting line number tally for "<<ivp->name<<std::endl;
+	
+	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+    blame_info<<std::endl;
+#endif
+	
+#ifdef DEBUG_PRINT_LINE_NUMS
+	blame_info<<"Inserting lineNumbers(0) from baseline for "<<ivp->name<<std::endl;
+	for (set_i_i = ivp->lineNumbers.begin(); set_i_i != ivp->lineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+	blame_info<<std::endl;
+#endif
+	
+	ivp->descLineNumbers.insert(ivp->lineNumbers.begin(), ivp->lineNumbers.end());
+	ivp->descLineNumbers.insert(ivp->line_num);
+
+#ifdef DEBUG_PRINT_LINE_NUMS
+	blame_info<<"After insert line_num of "<<ivp->name<<std::endl;
+	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+	blame_info<<std::endl;
+#endif 
+	
+	// TODO: DETAILS BELOW
+	//7/12/2010  INVESTIGATE FURTHER, do we need this still and why
+	
+    if (ivp->storeFrom != NULL){//changed by Hui on 08/03/15
+		//ivp->descLineNumbers.insert(ivp->storeFrom->line_num);
+        blame_info<<"ivp->eStatus="<<ivp->eStatus<<std::endl;
+        blame_info<<"ivp->nStatus:  ";
+        for(int a=0; a< NODE_PROPS_SIZE; a++)
+            blame_info<<ivp->nStatus[a]<<" ";
+        blame_info<<std::endl;
+        NodeProps *storeFrom = ivp->storeFrom;
+        ivp->descLineNumbers.insert(storeFrom->descLineNumbers.begin(), storeFrom->descLineNumbers.end());
+#ifdef DEBUG_PRINT_LINE_NUMS
+	    blame_info<<"After storeFrom: "<<ivp->name<<std::endl;
+	    for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		    blame_info<<*set_i_i<<" ";
+	    }
+	
+	    blame_info<<std::endl;
+#endif 
+    }
+    
+	std::set<NodeProps *>::iterator s_vp_i;
+	std::set<NodeProps *>::iterator s_vp_i2;
+	
+	std::set<NodeProps *>::iterator v_vp_i;
+	std::set<NodeProps *>::iterator v_vp_i2;
+	
+	if ((ivp->nStatus[LOCAL_VAR_PTR] || ivp->nStatus[EXIT_VAR_PTR]) && ivp->isWritten == false) {		
+		if (ivp->dpUpPtr != ivp && ivp->dpUpPtr != NULL) {
+			for (s_vp_i = ivp->dpUpPtr->dataPtrs.begin(); s_vp_i != ivp->dpUpPtr->dataPtrs.end(); s_vp_i++) {
+				NodeProps *cand = *s_vp_i;
+				if (cand == NULL) {
+				#ifdef DEBUG_ERROR
+					blame_info<<"Why is this NULL?"<<std::endl;
+				#endif
+					continue;
+				}
+				
+				if (cand == ivp)
+					continue;
+				
+				if (cfg->controlDep(cand, ivp)) {
+					//if (cand->storePTR_Lines.count(ivp->line_num))
+#ifdef DEBUG_LINE_NUMS
+					blame_info<<"Adding lines from the dominating data write for "<<cand->name<<std::endl;
+#endif
+					ivp->dataWritesFrom.insert(cand);				
+					NodeProps *child = cand;
+					if (child->calcAgg == false)
+						calcAggregateLNRecursive(child, vStack, vRevisit);
+					
+					if (vStack.count(child)) {
+#ifdef DEBUG_LINE_NUMS
+
+						blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+						#endif 
+						vRevisit.insert(child);
+						vRevisit.insert(ivp);
+					}
+					
+					if (child->isWritten) {
+						ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+						debugPrintLineNumbers(ivp, child, 1);
+					}
+				}
+			}
+			
+			for (v_vp_i = ivp->dpUpPtr->aliasesIn.begin(); v_vp_i != ivp->dpUpPtr->aliasesIn.end(); v_vp_i++) {			
+                NodeProps *alias = *v_vp_i;
+#ifdef DEBUG_LINE_NUMS
+				blame_info<<"Examining DPs for alias "<<alias->name<<std::endl;
+#endif
+				for (s_vp_i = alias->dataPtrs.begin(); s_vp_i != alias->dataPtrs.end(); s_vp_i++) {
+					NodeProps *cand = *s_vp_i;
+				#ifdef DEBUG_LINE_NUMS
+					blame_info<<"Examining candidate "<<cand->name<<std::endl;
+				#endif
+				   	if (cand == NULL) {
+					#ifdef DEBUG_ERROR
+						blame_info<<"Why is this NULL?"<<std::endl;
+					#endif
+						continue;
+					}
+					
+					if (cand == ivp)
+						continue;
+					
+					if (cfg->controlDep(cand, ivp)) {
+						//if (cand->storePTR_Lines.count(ivp->line_num))
+					#ifdef DEBUG_LINE_NUMS
+						blame_info<<"Adding lines from the dominating data write for(2) "<<cand->name<<std::endl;
+					#endif
+
+						ivp->dataWritesFrom.insert(cand);
+						NodeProps *child = cand;
+						if (child->calcAgg == false)
+							calcAggregateLNRecursive(child, vStack, vRevisit);
+						
+						if (vStack.count(child)) {
+						#ifdef DEBUG_LINE_NUMS
+							blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+						#endif
+							vRevisit.insert(child);
+							vRevisit.insert(ivp);
+						}
+						
+						if (child->isWritten) {
+							ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+							debugPrintLineNumbers(ivp, child, 1);
+							
+						}
+					}
+				}
+			}
+			
+			for (s_vp_i2 = ivp->dpUpPtr->aliases.begin(); s_vp_i2 != ivp->dpUpPtr->aliases.end(); s_vp_i2++) {
+				NodeProps *alias = *s_vp_i2;
+				
+            #ifdef DEBUG_LINE_NUMS
+				blame_info<<"Examining DPs(2) for alias "<<alias->name<<std::endl;
+			#endif
+    			for (s_vp_i = alias->dataPtrs.begin(); s_vp_i != alias->dataPtrs.end(); s_vp_i++) {
+					NodeProps *cand = *s_vp_i;
+				#ifdef DEBUG_LINE_NUMS
+					blame_info<<"Examining(2) candidate "<<cand->name<<std::endl;
+				#endif
+					if (cand == NULL) {
+					#ifdef DEBUG_ERROR
+						blame_info<<"Why is this NULL?"<<std::endl;
+					#endif
+						continue;
+					}
+					
+					if (cand == ivp)
+						continue;
+					
+					if (cfg->controlDep(cand, ivp )) {
+						//if (cand->storePTR_Lines.count(ivp->line_num))
+					#ifdef DEBUG_LINE_NUMS
+						blame_info<<"Adding lines from the dominating data write for(3) "<<cand->name<<std::endl;
+					#endif
+						ivp->dataWritesFrom.insert(cand);
+						NodeProps *child = cand;
+						if (child->calcAgg == false)
+							calcAggregateLNRecursive(child, vStack, vRevisit);
+						
+						if (vStack.count(child)) {
+						#ifdef DEBUG_LINE_NUMS
+							blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+						#endif
+							vRevisit.insert(child);
+							vRevisit.insert(ivp);
+						}						
+						if (child->isWritten) {
+							ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+							debugPrintLineNumbers(ivp, child, 1);
+							
+						}
+					}
+				}
+			}
+		}
+	}
+	
+#ifdef DEBUG_LINE_NUMS
+	blame_info<<"After DF Children "<<ivp->name<<std::endl;
+	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+
+	blame_info<<std::endl;
+#endif
+
+	for (s_vp_i = ivp->children.begin(); s_vp_i != ivp->children.end(); s_vp_i++) {
+		NodeProps *child = *s_vp_i;
+		if (child->calcAgg == false)
+			calcAggregateLNRecursive(child, vStack, vRevisit);
+		
+		if (vStack.count(child)) {
+		#ifdef DEBUG_LINE_NUMS
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+		#endif
+			vRevisit.insert(child);
+			vRevisit.insert(ivp);
+		}
+
+		/////////////////////added by Hui/////////////////////////
+#ifdef REVERSE_CP_REL2
+        bool existed;
+        graph_traits < MyGraphType >::edge_descriptor Edge;
+#endif
+        /////////////////////////////////////////////////////////
+
+		if (!(child->nStatus[LOCAL_VAR] && child->storesTo.size() > 1) && 
+                !(child->nStatus[CALL_NODE]) && !(child->nStatus[LOCAL_VAR] && 
+                child->nStatus[CALL_PARAM])) {
+            ////////added by Hui///////////////////////
+#ifdef REVERSE_CP_REL2
+            tie(Edge, existed) = edge(ivp->number, child->number, G);
+            if(existed && get(get(edge_iore, G),Edge)==GEP_BASE_OP){
+                ivp->line_num=child->line_num;
+                ivp->descLineNumbers.insert(child->line_num);
+                blame_info<<"child "<<child->name<<" is actually the parent";
+                blame_info<<", and it's line_num="<<child->line_num<<std::endl;
+                continue; //field only blamed for struct's declaration line
+            }
+#endif
+            //////////////////////////////////////////////////////
+			ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+			debugPrintLineNumbers(ivp, child, 2);
+		}
+	}
+	
+#ifdef DEBUG_LINE_NUMS
+	blame_info<<"After Children "<<ivp->name<<std::endl;
+	
+	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+	
+	blame_info<<std::endl;
+#endif
+		
+	for (v_vp_i = ivp->dataPtrs.begin(); v_vp_i != ivp->dataPtrs.end(); v_vp_i++) {
+		NodeProps *child = *v_vp_i;
+		if (child->calcAgg == false)
+			calcAggregateLNRecursive(child, vStack, vRevisit);
+		
+		if (vStack.count(child)) {
+		#ifdef DEBUG_LINE_NUMS
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+		#endif
+			vRevisit.insert(child);
+			vRevisit.insert(ivp);
+		}
+		
+		if (child->isWritten) {
+			ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+			debugPrintLineNumbers(ivp, child, 3);
+		}
+	}
+
+#ifdef DEBUG_LINE_NUMS
+	blame_info<<"After Data Ptrs "<<ivp->name<<std::endl;
+	
+	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+
+	blame_info<<std::endl;
+#endif
+
+	for (v_vp_i = ivp->aliases.begin(); v_vp_i != ivp->aliases.end(); v_vp_i++) {
+		NodeProps *child = *v_vp_i;
+		 
+		NodeProps *childFieldParent = child->fieldUpPtr;
+		if (childFieldParent != NULL) { //"parm" only used for Fortran
+			if (childFieldParent->name.find("parm") != std::string::npos) {
+				ivp->descLineNumbers.insert(childFieldParent->externCallLineNumbers.begin(), childFieldParent->externCallLineNumbers.end());
+				
+			#ifdef DEBUG_LINE_NUMS
+			    blame_info<<"Inserting some line numbers.  Booyah!"<<std::endl;
+            #endif									
+			}
+		}
+
+        //Added by Hui on 12/12/15: aliases should all have the same blamed lines
+        ////////////////////////////////////////////////////////////////////////
+		/*
+        if (child->calcAgg == false)
+			calcAggregateLNRecursive(child, vStack, vRevisit);
+		
+		if (vStack.count(child)) {
+		#ifdef DEBUG_LINE_NUMS
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+		#endif
+			vRevisit.insert(child);
+			vRevisit.insert(ivp);
+		}
+		
+		if (child->isWritten) {
+			ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+			debugPrintLineNumbers(ivp, child, 7);
+		}*/
+        ////////////////////////////////////////////////////////////////////////
+		  
+		for (v_vp_i2 = child->dataPtrs.begin(); v_vp_i2 != child->dataPtrs.end(); v_vp_i2++) {
+			NodeProps *child2 = *v_vp_i2;
+			if (child2->calcAgg == false)
+				calcAggregateLNRecursive(child2, vStack, vRevisit);
+			
+			if (vStack.count(child2)) {
+			#ifdef DEBUG_LINE_NUMS
+				blame_info<<"Conflict in LNRecursive. Need to revisit "<<child2->name<<" and "<<ivp->name<<std::endl;
+			#endif
+				vRevisit.insert(child2);
+				vRevisit.insert(ivp);
+			}
+			
+			if (child2->isWritten && child2 != ivp) {
+				ivp->descLineNumbers.insert(child2->descLineNumbers.begin(), child2->descLineNumbers.end());
+				debugPrintLineNumbers(ivp, child2, 4);
+			}
+		}
+	}
+
+#ifdef DEBUG_LINE_NUMS
+	blame_info<<"After aliases "<<ivp->name<<std::endl;
+	
+	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}	
+	blame_info<<std::endl;
+#endif
+
+	for (v_vp_i = ivp->dfAliases.begin(); v_vp_i != ivp->dfAliases.end(); v_vp_i++){
+		NodeProps *child = *v_vp_i;
+		if (child->calcAgg == false)
+			calcAggregateLNRecursive(child, vStack, vRevisit);
+		
+		if (vStack.count(child)) {
+		#ifdef DEBUG_LINE_NUMS
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+		#endif
+			vRevisit.insert(child);
+			vRevisit.insert(ivp);
+		}
+		
+		ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+		debugPrintLineNumbers(ivp, child, 5);
+	}
+	
+#ifdef DEBUG_LINE_NUMS
+	blame_info<<"After DF Aliases "<<ivp->name<<std::endl;
+	
+	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+	blame_info<<std::endl;
+
+#endif
+
+	for (v_vp_i = ivp->resolvedLSFrom.begin(); v_vp_i != ivp->resolvedLSFrom.end(); v_vp_i++) {
+		NodeProps *child = *v_vp_i;
+		if (child->calcAgg == false)
+			calcAggregateLNRecursive(child, vStack, vRevisit);
+		
+		if (vStack.count(child)) {
+		#ifdef DEBUG_LINE_NUMS
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+		#endif
+			vRevisit.insert(child);
+			vRevisit.insert(ivp);
+		}
+		
+		for (v_vp_i2 = child->resolvedLSSideEffects.begin(); 
+				 v_vp_i2 != child->resolvedLSSideEffects.end(); v_vp_i2++) {
+			NodeProps *sECause = *v_vp_i2;
+			if (sECause->calcAgg == false)
+				calcAggregateLNRecursive(sECause, vStack,  vRevisit);
+			
+#ifdef DEBUG_IMPORTANT_VERTICES
+			blame_info<<"ivp - "<<ivp->name<<" adding RLSE lines from "<<sECause->name<<std::endl;	
+#endif 			
+			// TODO:  This technically only happens if sECause dominates ivp
+			ivp->descLineNumbers.insert(sECause->descLineNumbers.begin(), sECause->descLineNumbers.end());
+			debugPrintLineNumbers(ivp, child, 6);
+		}
+	}
+	
+#ifdef DEBUG_LINE_NUMS
+	blame_info<<"After Resolved LS From "<<ivp->name<<std::endl;
+	
+	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+	blame_info<<std::endl;
+	blame_info<<"Exiting calcAggregateLNRecursive for "<<ivp->name<<std::endl;
+#endif
+	
+	vStack.erase(ivp);
+	
+}
+
+void FunctionBFC::calcAggregateLN()
+{
+	std::set<NodeProps *>::iterator ivh_i;
+	std::set<NodeProps *> vStack;
+	std::set<NodeProps *> vRevisit;
+	// Populate Edges
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+		if (ivp->calcAgg == false)
+			calcAggregateLNRecursive(ivp, vStack, vRevisit);
+		
+		if (ivp->calcAggCall == false)
+			calcAggCallRecursive(ivp);
+	}
+	
+	// Revisit the ones that had conflicts
+	#ifdef DEBUG_LINE_NUMS
+	blame_info<<"Revisiting some of the conflicted agg LN values."<<std::endl;
+	#endif
+	std::set<NodeProps *>::iterator set_vp_i;
+	for (set_vp_i = vRevisit.begin(); set_vp_i != vRevisit.end(); set_vp_i++)
+		(*set_vp_i)->calcAgg = false;
+		
+	for (set_vp_i = vRevisit.begin(); set_vp_i != vRevisit.end(); set_vp_i++)
+		calcAggregateLNRecursive(*set_vp_i, vStack, vRevisit);
+		
+		// Revisit them all to take care of scragglers		
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++)
+		(*ivh_i)->calcAgg = false;
+		
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+		if (ivp->calcAgg == false)
+			calcAggregateLNRecursive(ivp, vStack, vRevisit);
+	}
+
+}
+
+
+void FunctionBFC::trimLocalVarPointers()
+{
+	std::set<NodeProps *>::iterator ivh_i;
+	
+	
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++)
+	{
+		NodeProps * ivp = (*ivh_i);
+		//int sizeParents;
+		
+		
+		
+		// if it's a data pointer and no parents access it then we fold it into
+		//   it's container
+		if (( ivp->nStatus[LOCAL_VAR_PTR] || ivp->nStatus[EXIT_VAR_PTR] )
+				&& (ivp->isWritten == false && ivp->children.size() == 0) &&
+				!ivp->nStatus[CALL_PARAM]  && !ivp->nStatus[CALL_RETURN])
+		{
+			
+			//NodeProps * ivpPT = ivp->pointsTo;;
+			
+			//if (ivpPT == NULL)
+			//continue;
+			
+			//if (ivpPT->arrayAccess.size() == 0)
+			//continue;		
+			
+#ifdef DEBUG_IMPORTANT_VERTICES		
+			blame_info<<"Trimming "<<ivp->name<<std::endl;
+#endif
+			ivp->isExported = false;
+			impVertCount--;
+			
+			//if (ivp->pointsTo == NULL)
+			//{
+			//std::cerr<<"Why does data ptr have NULL points to?"<<std::endl;
+			//continue;
+			//	}
+			
+			
+			std::set<NodeProps *>::iterator set_vp_i;
+			std::set<int>::iterator set_int_i;
+			
+#ifdef DEBUG_IMPORTANT_VERTICES		
+			blame_info<<"DF up ptr is "<<ivp->dpUpPtr->name<<std::endl;
+#endif
+#ifdef DEBUG_LINE_NUMS
+			blame_info<<"Inserting line number(10) "<<ivp->line_num<<" to "<<ivp->dpUpPtr->name<<std::endl;
+			#endif
+			
+			ivp->dpUpPtr->lineNumbers.insert(ivp->lineNumbers.begin(), ivp->lineNumbers.end());
+			ivp->dpUpPtr->lineNumbers.insert(ivp->line_num);
+			
+			
+		}
+	}
+}
+
+int FunctionBFC::checkCompleteness()
+{
+	std::set<NodeProps *>::iterator ivh_i;
+	
+	std::set<int> firstCheck;
+	std::set<int> secondCheck;
+	
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+		firstCheck.insert(ivp->descLineNumbers.begin(), ivp->descLineNumbers.end());
+		firstCheck.insert(ivp->line_num);
+		
+		if (ivp->eStatus > NO_EXIT || ivp->nStatus[EXIT_VAR_FIELD]) {
+			secondCheck.insert(ivp->descLineNumbers.begin(), ivp->descLineNumbers.end());
+			secondCheck.insert(ivp->line_num);	
+			
+			std::set<NodeProps *>::iterator s_vp_i;
+			for(s_vp_i = ivp->descParams.begin(); s_vp_i != ivp->descParams.end(); s_vp_i++) {
+				NodeProps *param = *s_vp_i;
+#ifdef DEBUG_COMPLETENESS			
+				blame_info<<"Param(1) "<<param->name<<" from IVP "<<ivp->name<<std::endl;
+#endif			
+				std::set<ImpFuncCall *>::iterator v_ifc_i;
+				for (v_ifc_i = param->calls.begin(); v_ifc_i != param->calls.end(); v_ifc_i++) {
+					ImpFuncCall *ifc = *v_ifc_i;
+					NodeProps *cNode = ifc->callNode;
+#ifdef DEBUG_COMPLETENESS								
+					blame_info<<"Call Node(1) "<<cNode->name<<" from Param "<<param->name<<std::endl;
+#endif				
+					secondCheck.insert(cNode->line_num);
+					std::set<ImpFuncCall *>::iterator v_ifc_i2;
+					
+					for (v_ifc_i2 = cNode->calls.begin(); v_ifc_i2 != cNode->calls.end(); v_ifc_i2++) {
+						ImpFuncCall *ifc2 = *v_ifc_i2;
+						NodeProps *cNode2 = ifc2->callNode;
+#ifdef DEBUG_COMPLETENESS									
+						blame_info<<"Param Node(2) "<<cNode2->name<<" from Call Node "<<cNode->name<<std::endl;
+#endif
+						secondCheck.insert(cNode2->line_num);
+						secondCheck.insert(cNode2->descLineNumbers.begin(), cNode2->descLineNumbers.end());
+					}						
+				}
+			}
+		}
+		// We don't care what line the variable was defined on for line num totals
+		if (ivp->nStatus[LOCAL_VAR])
+			secondCheck.insert(ivp->line_num);
+		
+		if (isBFCPoint && (ivp->nStatus[LOCAL_VAR] || ivp->nStatus[LOCAL_VAR_FIELD])) {
+			secondCheck.insert(ivp->descLineNumbers.begin(), ivp->descLineNumbers.end());
+			secondCheck.insert(ivp->line_num);	
+			
+			std::set<NodeProps *>::iterator s_vp_i;
+			for(s_vp_i = ivp->descParams.begin(); s_vp_i != ivp->descParams.end(); s_vp_i++) {
+				NodeProps *param = *s_vp_i;
+#ifdef DEBUG_COMPLETENESS													
+				blame_info<<"Param(2) "<<param->name<<" from IVP "<<ivp->name<<std::endl;
+#endif			
+				std::set<ImpFuncCall *>::iterator v_ifc_i;
+				
+				for (v_ifc_i = param->calls.begin(); v_ifc_i != param->calls.end(); v_ifc_i++) {
+					ImpFuncCall *ifc = *v_ifc_i;
+					NodeProps *cNode = ifc->callNode;
+#ifdef DEBUG_COMPLETENESS									
+					blame_info<<"Call Node(2) "<<cNode->name<<" from Param "<<param->name<<std::endl;
+#endif 
+					secondCheck.insert(cNode->line_num);
+				}
+			}
+		}
+	}
+	
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+		if (ivp->nStatus[CALL_NODE]) {
+			secondCheck.insert(ivp->line_num);
+			secondCheck.insert(ivp->descLineNumbers.begin(), ivp->descLineNumbers.end());
+			std::set<ImpFuncCall *>::iterator v_ifc_i;
+			
+			for (v_ifc_i = ivp->calls.begin(); v_ifc_i != ivp->calls.end(); v_ifc_i++) {
+				ImpFuncCall *ifc = *v_ifc_i;
+				NodeProps *cNode = ifc->callNode;
+#ifdef DEBUG_COMPLETENESS									
+				blame_info<<"Param Node(1) "<<cNode->name<<" from Call Node "<<ivp->name<<std::endl;
+#endif
+				secondCheck.insert(cNode->line_num);
+				secondCheck.insert(cNode->descLineNumbers.begin(), cNode->descLineNumbers.end());
+			}
+		}
+	}
+	
+	firstCheck.erase(0);
+	secondCheck.erase(0);
+	
+	int isMissing = 0;
+#ifdef DEBUG_COMPLETENESS									
+	blame_info<<"All line Nums"<<std::endl;
+	std::set<int>::iterator s_i_i;
+	
+	for (s_i_i = allLineNums.begin(); s_i_i != allLineNums.end(); s_i_i++)
+		blame_info<<*s_i_i<<" ";
+	blame_info<<std::endl;
+	
+	blame_info<<"First Check"<<std::endl;
+	for (s_i_i = firstCheck.begin(); s_i_i != firstCheck.end(); s_i_i++)
+		blame_info<<*s_i_i<<" ";
+	blame_info<<std::endl;
+	
+	blame_info<<"Second Check"<<std::endl;
+	for (s_i_i = secondCheck.begin(); s_i_i != secondCheck.end(); s_i_i++)
+		blame_info<<*s_i_i<<" ";
+	blame_info<<std::endl;
+	
+	if (firstCheck == allLineNums)
+		blame_info<<"FC_All line numbers accounted for "<<std::endl;
+	else
+		blame_info<<"FC_MISSING a line number"<<std::endl;
+#endif	
+	if (secondCheck == firstCheck) {
+#ifdef DEBUG_COMPLETENESS									
+		blame_info<<"SC_All line numbers accounted for "<<std::endl;
+#endif
+	}
+	else {
+		isMissing = 1;
+#ifdef DEBUG_SUMMARY									
+		std::cout<<"SC_MISSING a line number"<<std::endl;
+		blame_info<<"SC_MISSING a line number"<<std::endl;
+#endif
+	}	
+	
+#ifdef DEBUG_SUMMARY
+	std::set<int> setDiff;
+	if (isMissing) {
+		std::cout<<"Set Diff is "<<std::endl;
+		set_difference(firstCheck.begin(), firstCheck.end(),//It's a std template func
+	    secondCheck.begin(), secondCheck.end(), ostream_iterator<int>(std::cout, " "));
+		
+		std::cout<<std::endl<<std::endl;		
+	}
+#endif
+	return isMissing;
+}
+
+
+void FunctionBFC::moreThanOneEV(int &numMultipleEV, int &afterOp1, int &afterOp2)
+{
+	std::vector<ExitVariable *>::iterator v_ev_i;
+	
+	int numEV = 0;
+	int numEV2 = 0;
+	int numEV3 = 0;
+	
+	for (v_ev_i = exitVariables.begin(); v_ev_i != exitVariables.end(); v_ev_i++) {
+		ExitVariable *ev = *v_ev_i;
+		if (ev->whichParam > 0 && (ev->vertex != NULL && ev->vertex->eStatus != EXIT_VAR_UNWRITTEN)) {
+			numEV++;
+			if (ev->vertex->descLineNumbers.size() > 1) {
+				numEV2++;
+				numEV3++;
+			}
+			else if (ev->vertex->aliasParams.size() > 1) {
+				numEV3++;
+			}
+		}
+	}
+	
+	if(numEV > 1)
+		numMultipleEV++;
+	
+	if (numEV2 > 1)
+		afterOp1++;
+	
+	if (numEV3 > 1)
+		afterOp2++;
+}
+
+
+NodeProps *FunctionBFC::resolveSideEffectsCheckParentEV(NodeProps *vp, std::set<NodeProps *> &visited)
+{
+#ifdef DEBUG_SIDE_EFFECTS
+	blame_info<<"In resolveSideEffectsCheckParentEV for "<<vp->name<<" "<<vp->name<<std::endl;
+#endif
+	if (visited.count(vp) > 0)
+		return NULL;
+	
+	visited.insert(vp);
+	
+	if (vp->eStatus > EXIT_VAR_PARAM || vp->nStatus[EXIT_VAR_FIELD])
+		return vp;
+	
+	if (vp->dpUpPtr != NULL || vp->dpUpPtr != vp)
+		return resolveSideEffectsCheckParentEV(vp->dpUpPtr, visited);
+	
+	if (vp->dfaUpPtr != NULL || vp->dfaUpPtr != vp)
+		return resolveSideEffectsCheckParentEV(vp->dfaUpPtr, visited);
+	
+	return NULL;
+}
+
+
+NodeProps * FunctionBFC::resolveSideEffectsCheckParentLV(NodeProps * vp, std::set<NodeProps *> & visited)
+{
+#ifdef DEBUG_SIDE_EFFECTS
+	blame_info<<"In resolveSideEffectsCheckParentLV for "<<vp->name<<" "<<vp->name<<std::endl;
+#endif
+	if (visited.count(vp) > 0)
+		return NULL;
+	
+	visited.insert(vp);
+	
+	if (vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD])
+		return vp;
+	
+	if (vp->dpUpPtr != NULL || vp->dpUpPtr != vp)
+		return resolveSideEffectsCheckParentLV(vp->dpUpPtr, visited);
+	
+	if (vp->dfaUpPtr != NULL || vp->dfaUpPtr != vp)
+		return resolveSideEffectsCheckParentLV(vp->dfaUpPtr, visited);
+	
+	return NULL;
+}
+
+
+
+// TODO: We need to cover side effect relations where the EVs that are "sucked in" are 
+// written to as well
+void FunctionBFC::resolveSideEffectsHelper(NodeProps *rootVP, NodeProps *vp, std::set<NodeProps *> &visited)
+{
+#ifdef DEBUG_SIDE_EFFECTS
+	blame_info<<"Entering resolveSideEffectsHelper for "<<rootVP->name<<" "<<vp->name<<std::endl;
+#endif
+	
+	if (visited.count(vp) > 0) {
+#ifdef DEBUG_SIDE_EFFECTS	
+		blame_info<<"Exiting(V) resolveSideEffectsHelper for "<<rootVP->name<<" "<<vp->name<<std::endl;
+#endif		
+		return;
+	}
+	
+	visited.insert(vp);
+	std::set<NodeProps *>::iterator set_ivp_i;
+	if (vp->suckedInEVs.size() > 0) {
+#ifdef DEBUG_SIDE_EFFECTS		
+		blame_info<<"Sucked in EV match(0) for "<<rootVP->name<<" and "<<vp->name<<std::endl;
+#endif			
+		std::set<NodeProps *>::iterator set_ivp_i2;
+		for (set_ivp_i2 = vp->suckedInEVs.begin(); set_ivp_i2 != vp->suckedInEVs.end();
+				 set_ivp_i2++) {
+#ifdef DEBUG_SIDE_EFFECTS
+			blame_info<<"Match(0) between "<<rootVP->name<<" and "<<(*set_ivp_i2)->name<<std::endl;
+#endif
+			addSERelation(rootVP, (*set_ivp_i2));	
+		}
+	}		
+	
+	for (set_ivp_i = vp->dataPtrs.begin(); set_ivp_i != vp->dataPtrs.end(); set_ivp_i++) {
+#ifdef DEBUG_SIDE_EFFECTS
+		blame_info<<"rSEH - DP "<<(*set_ivp_i)->name<<" for "<<vp->name<<std::endl;
+#endif
+		if ((*set_ivp_i)->isWritten)
+			resolveSideEffectsHelper(rootVP, *set_ivp_i, visited);
+	}	
+	
+	for (set_ivp_i = vp->children.begin(); set_ivp_i != vp->children.end(); set_ivp_i++) {
+#ifdef DEBUG_SIDE_EFFECTS
+		blame_info<<"rSEH - Child "<<(*set_ivp_i)->name<<" for "<<vp->name<<std::endl;
+#endif
+		if ((*set_ivp_i)->suckedInEVs.size() > 0) {
+#ifdef DEBUG_SIDE_EFFECTS
+			blame_info<<"Sucked in EV match(1) for "<<rootVP->name<<" and "<<(*set_ivp_i)->name<<std::endl;
+#endif
+			std::set<NodeProps *>::iterator set_ivp_i2;
+			for (set_ivp_i2 = (*set_ivp_i)->suckedInEVs.begin(); set_ivp_i2 != (*set_ivp_i)->suckedInEVs.end();
+					 set_ivp_i2++) {
+#ifdef DEBUG_SIDE_EFFECTS
+				blame_info<<"Match(1) between "<<rootVP->name<<" and "<<(*set_ivp_i2)->name<<std::endl;
+#endif
+				addSERelation(rootVP, (*set_ivp_i2));
+			}
+		}		
+		//recursively call itself
+		resolveSideEffectsHelper(rootVP, *set_ivp_i, visited);
+	
+		std::set<NodeProps *> visited2;
+		NodeProps *match = resolveSideEffectsCheckParentEV(*set_ivp_i, visited2);
+		
+		if (match == NULL)
+			continue;
+		
+		if (match != NULL && match != rootVP) {
+#ifdef DEBUG_SIDE_EFFECTS
+			blame_info<<"Match(2) between "<<rootVP->name<<" and "<<match->name<<std::endl;
+#endif
+			addSERelation(rootVP, match);
+		}
+	} 
+	
+	for (set_ivp_i = vp->dfChildren.begin(); set_ivp_i != vp->dfChildren.end(); set_ivp_i++) {
+#ifdef DEBUG_SIDE_EFFECTS
+		blame_info<<"rSEH - dfChild "<<(*set_ivp_i)->name<<" for "<<vp->name<<std::endl;
+#endif
+		
+		if ((*set_ivp_i)->suckedInEVs.size() > 0) {
+#ifdef DEBUG_SIDE_EFFECTS
+			blame_info<<"Sucked in EV match (3) for "<<rootVP->name<<" and "<<(*set_ivp_i)->name<<std::endl;
+#endif
+			std::set<NodeProps *>::iterator set_ivp_i2;
+			for (set_ivp_i2 = (*set_ivp_i)->suckedInEVs.begin(); set_ivp_i2 != (*set_ivp_i)->suckedInEVs.end();
+					 set_ivp_i2++) {
+#ifdef DEBUG_SIDE_EFFECTS
+				blame_info<<"Match(3) between "<<rootVP->name<<" and "<<(*set_ivp_i2)->name<<std::endl;
+#endif
+				addSERelation(rootVP, (*set_ivp_i2));
+			}
+		}		
+		
+		resolveSideEffectsHelper(rootVP, *set_ivp_i, visited);
+		
+		std::set<NodeProps *> visited2;
+		NodeProps *match = resolveSideEffectsCheckParentEV(*set_ivp_i, visited2);//TC
+		
+		if (match == NULL)
+			continue;
+		
+		if (match != NULL && rootVP != match) {
+#ifdef DEBUG_SIDE_EFFECTS
+			blame_info<<"Match(4) between "<<rootVP->name<<" and "<<match->name<<std::endl;
+#endif
+			addSERelation(rootVP, match);
+		}
+	}
+#ifdef DEBUG_SIDE_EFFECTS
+	blame_info<<"Exiting resolveSideEffectsHelper for "<<rootVP->name<<" "<<vp->name<<std::endl;
+#endif
+}
+
+void FunctionBFC::addSEAlias(NodeProps *source, NodeProps *target)
+{
+	std::vector< std::pair<NodeProps *, NodeProps *> >::iterator vec_pair_i;
+	
+	if (source == target)
+		return;
+	
+	if (source->getFullName().compare(target->getFullName()) == 0)
+		return;
+	
+	for (vec_pair_i = seAliases.begin(); vec_pair_i != seAliases.end(); vec_pair_i++) {
+		NodeProps *fir = (*vec_pair_i).first;
+		NodeProps *sec = (*vec_pair_i).second;
+		
+		if (fir == source && sec == target)
+			return;
+		
+		if (fir->getFullName().compare(source->getFullName()) == 0 &&
+				sec->getFullName().compare(target->getFullName()) == 0)
+			return;
+		
+	}
+	std::pair<NodeProps *, NodeProps *> newOne(source, target);
+	seAliases.push_back(newOne);
+}
+
+
+void NodeProps::getStructName(std::string & structName, std::set<NodeProps *> & visited)
+{
+	//std::cout<<"Entering getStructName"<<std::endl;
+	//std::cout<<"Here "<<structName<<std::endl;
+	
+	if (visited.count(this) > 0)
+	{
+		structName.insert(0, name);
+		return;
+	}
+	
+	visited.insert(this);
+	
+	if (fieldUpPtr == NULL)
+	{
+		//std::cout<<"Here 2 "<<structName<<std::endl;
+		structName.insert(0, name);
+		//structName.insert(0,".");
+		return;
+	}
+	else
+	{
+		if (sField == NULL)
+		{
+			//std::cout<<"Here 3 "<<structName<<std::endl;
+			structName.insert(0, name);
+			structName.insert(0,"NFP_");
+			structName.insert(0,".");
+			
+		}
+		else
+		{
+			//std::cout<<"Here 4 "<<structName<<std::endl;
+			structName.insert(0,sField->fieldName);
+			structName.insert(0,".");
+			
+		}				
+		//std::cout<<"Here 5 "<<structName<<std::endl;
+		fieldUpPtr->getStructName(structName, visited); 
+	}
+	//std::cout<<"Exiting getStructName"<<std::endl;
+}
+
+
+
+std::string & NodeProps::getFullName()
+{
+	//std::cout<<"Entering getStructName"<<std::endl;
+	//std::cout<<"Here "<<structName<<std::endl;
+	
+	if (calcName) {
+		//std::cout<<"Exiting(1) getFullName"<<std::endl;
+		return fullName;
+	}
+	
+	std::set<NodeProps *> visited;
+	
+	if (nStatus[EXIT_VAR_FIELD])
+		getStructName(fullName, visited);
+	else
+		fullName = name;
+	
+	calcName = true;
+	//std::cout<<"Exiting getFullName"<<std::endl;
+	return fullName;
+}
+
+int NodeProps::getParamNum(std::set<NodeProps *> & visited)
+{
+	//std::cout<<"Entering getStructName"<<std::endl;
+	//std::cout<<"Here "<<structName<<std::endl;
+	
+	if (paramNum)
+		return paramNum;
+	
+	if (visited.count(this) > 0) {
+		return 0;
+	}
+	
+	visited.insert(this);
+	
+	if (fieldUpPtr != NULL) {
+		paramNum = fieldUpPtr->getParamNum(visited);
+		return paramNum;
+	}
+	
+	return 0;
+}
+
+void FunctionBFC::addSERelation(NodeProps *source, NodeProps *target)
+{
+	//blame_info<<"Entering addSERelation for "<<source->name<<" to "<<target->name<<std::endl;
+	//std::cout<<"Entering addSERelation for "<<source->name<<" to "<<target->name<<std::endl;
+	
+	std::vector< std::pair<NodeProps *, NodeProps *> >::iterator vec_pair_i;
+	
+	//blame_info<<"asr(1)"<<std::endl;
+	//std::cout<<"asr(1) "<<getSourceFuncName()<<std::endl;
+	
+	if (source == target)
+		return;
+	
+	if (source->getFullName().compare(target->getFullName()) == 0)
+		return;
+	
+	//blame_info<<"asr(2)"<<std::endl;
+	//std::cout<<"asr(2) "<<getSourceFuncName()<<std::endl;
+	for (vec_pair_i = seRelations.begin(); vec_pair_i != seRelations.end(); vec_pair_i++) {
+		//blame_info<<"asr(3)"<<std::endl;
+		//std::cout<<"asr(3) "<<getSourceFuncName()<<std::endl;
+		NodeProps *fir = (*vec_pair_i).first;
+		NodeProps *sec = (*vec_pair_i).second;
+		
+		if (fir == source && sec == target)
+			return;
+		
+		//blame_info<<"asr(4)"<<std::endl;
+		//std::cout<<"asr(4) "<<getSourceFuncName()<<std::endl;
+		
+		if (fir->getFullName().compare(source->getFullName()) == 0 &&
+				sec->getFullName().compare(target->getFullName()) == 0)
+			return;
+		//blame_info<<"asr(5)"<<std::endl;
+		//std::cout<<"asr(5) "<<getSourceFuncName()<<std::endl;
+	}
+	
+	std::pair<NodeProps *, NodeProps *> newOne(source, target);
+	seRelations.push_back(newOne);
+	//blame_info<<"Exiting addSERelation for "<<source->name<<" to "<<target->name<<std::endl;
+}
+
+
+// We go until we hit a field or an exit variable
+void FunctionBFC::recursiveSEAliasHelper(std::set<NodeProps *> &visited, NodeProps *orig, NodeProps *target)
+{
+	if (target == NULL)
+		return;
+
+	//blame_info<<"Examining rSEAH for "<<orig->name<<" and "<<target->name<<std::endl;
+	if (visited.count(target))
+		return;
+	
+	visited.insert(target);
+
+	std::set<NodeProps*>::iterator set_vp_i;
+	
+	if (target->eStatus >= EXIT_VAR_PARAM || target->nStatus[EXIT_VAR_FIELD]) {
+	#ifdef DEBUG_SIDE_EFFECTS
+		blame_info<<"Adding alias(19) between "<<orig->name<<" and "<<target->name<<std::endl;
+	#endif 
+		addSEAlias(orig, target);
+		return;
+	}	
+	
+	for (set_vp_i = target->aliasesIn.begin(); set_vp_i != target->aliasesIn.end(); set_vp_i++) {
+		recursiveSEAliasHelper(visited, orig, *set_vp_i);
+	}
+	
+	for (set_vp_i = target->aliasesOut.begin(); set_vp_i != target->aliasesOut.end(); set_vp_i++) {
+		recursiveSEAliasHelper(visited, orig, *set_vp_i);
+	}
+	recursiveSEAliasHelper(visited, orig, target->dfaUpPtr);
+}
+
+void FunctionBFC::resolveSideEffects()
+{
+#ifdef DEBUG_SIDE_EFFECTS
+	blame_info<<"In resolveSideEffects "<<std::endl;
+#endif
+	set<NodeProps *>::iterator ivh_i;
+	
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+		//clearAfter.clear();
+		if (ivp->eStatus >= EXIT_VAR_PARAM || ivp->nStatus[EXIT_VAR_FIELD] || ivp->nStatus[EXIT_VAR_PTR]) {
+			#ifdef DEBUG_SIDE_EFFECTS
+			blame_info<<"Creating SE Info for "<<ivp->name<<std::endl;
+			#endif 
+		
+			std::set<NodeProps *>::iterator vec_vp_i;
+			std::set<NodeProps *> visited;
+			for (vec_vp_i = ivp->dfAliases.begin(); vec_vp_i != ivp->dfAliases.end(); vec_vp_i++) {
+				resolveSideEffectsHelper(ivp, *vec_vp_i, visited);
+				if ((*vec_vp_i)->eStatus > EXIT_VAR_PARAM || (*vec_vp_i)->nStatus[EXIT_VAR_FIELD]) {
+#ifdef DEBUG_SIDE_EFFECTS		 
+					blame_info<<"Match(DFA) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<std::endl;
+#endif
+					addSEAlias(ivp, (*vec_vp_i));
+				}
+				else {
+#ifdef DEBUG_SIDE_EFFECTS
+					blame_info<<"Match(DFA)(N/A) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<std::endl;			 
+#endif
+				}
+			}
+			
+			for (vec_vp_i = ivp->aliases.begin(); vec_vp_i != ivp->aliases.end(); vec_vp_i++) {
+				if ((*vec_vp_i)->eStatus > EXIT_VAR_PARAM || (*vec_vp_i)->nStatus[EXIT_VAR_FIELD]  ||(*vec_vp_i)->nStatus[EXIT_VAR_PTR]) {
+#ifdef DEBUG_SIDE_EFFECTS
+					blame_info<<"Match(A) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<std::endl;
+#endif
+					addSEAlias(ivp, (*vec_vp_i));
+				}
+				else {
+#ifdef DEBUG_SIDE_EFFECTS
+					blame_info<<"Match(A)(N/A) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<std::endl;
+					blame_info<<"Node Props for matched node "<<(*vec_vp_i)->name<<": ";
+					for (int a = 0; a < NODE_PROPS_SIZE; a++)
+						blame_info<<(*vec_vp_i)->nStatus[a]<<" ";
+					blame_info<<std::endl;
+#endif
+					
+					if ((*vec_vp_i)->nStatus[EXIT_VAR_FIELD_ALIAS] || (*vec_vp_i)->nStatus[EXIT_VAR_ALIAS]) {
+						std::set<NodeProps *> visited;
+						visited.insert(ivp);
+						recursiveSEAliasHelper(visited, ivp, (*vec_vp_i));
+					}
+				}
+			}
+			
+			for (vec_vp_i = ivp->dataPtrs.begin(); vec_vp_i != ivp->dataPtrs.end(); vec_vp_i++) {
+				resolveSideEffectsHelper(ivp, *vec_vp_i, visited);
+			}	
+		}
+	}
+}
+
+
+
+void FunctionBFC::resolveSideEffectCalls()
+{
+#ifdef DEBUG_SIDE_EFFECTS
+	blame_info<<"In resolveSideEffectCalls "<<std::endl;
+#endif
+	
+	std::set<NodeProps *>::iterator ivh_i;
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+		if (ivp->nStatus[CALL_NODE]) {
+			std::set<ImpFuncCall *>::iterator v_ifc_i;
+	
+			std::set<NodeProps *> parameters;
+			std::set<NodeProps *> LVparameters;
+			
+			FuncCallSEElement *fcseElement = NULL;
+			FuncCallSE *fcse = new FuncCallSE();
+			fcse->callNode = ivp;
+			
+			for (v_ifc_i = ivp->calls.begin(); v_ifc_i != ivp->calls.end(); v_ifc_i++) {
+				ImpFuncCall *ifc = *v_ifc_i;
+				NodeProps *cNode = ifc->callNode;
+				std::set<NodeProps *> visited2;
+				NodeProps *match = resolveSideEffectsCheckParentEV(cNode, visited2);	
+				
+				if (match != NULL) {
+					pair<set<NodeProps *>::iterator,bool> ret;
+					ret = parameters.insert(match);
+					
+					if (ret.second== true) {
+						fcseElement = new FuncCallSEElement();
+						fcseElement->ifc = ifc;
+						fcseElement->paramEVNode = match;
+						fcse->parameters.push_back(fcseElement);
+					}
+				}
+				else {
+					visited2.clear();
+					match = resolveSideEffectsCheckParentLV(cNode, visited2);
+					if (match != NULL) {
+						pair<set<NodeProps *>::iterator,bool> ret;
+						ret = LVparameters.insert(match);
+						if (ret.second== true) {
+							fcseElement = new FuncCallSEElement();
+							fcseElement->ifc = ifc;
+							fcseElement->paramEVNode = match;
+							fcse->NEVparams.push_back(fcseElement);
+						}
+					}					
+				}
+			}
+			
+			if (parameters.size() > 1) {
+#ifdef DEBUG_SIDE_EFFECTS
+				blame_info<<"Call has more than 1 EVs as parameters :"<<std::endl;
+				std::set<NodeProps *>::iterator set_vp_i;
+				for (set_vp_i = parameters.begin(); set_vp_i != parameters.end(); set_vp_i++) {
+					blame_info<<(*set_vp_i)->name<<std::endl;
+				}	
+#endif
+	    		seCalls.push_back(fcse);
+			}
+			else {
+				if (fcseElement != NULL)
+					delete fcseElement;
+				delete fcse;
+			}
+		}
+	}
+}
+
+
+void FunctionBFC::resolveCallsDomLines()
+{
+	set<NodeProps *>::iterator ivh_i;
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+		//clearAfter.clear();
+		if (ivp->nStatus[CALL_NODE]) {
+			cfg->setDomLines(ivp);
+		}
+	}
+}
+
+
+void FunctionBFC::resolveLooseStructs()
+{
+	set<NodeProps *>::iterator ivh_i;
+	
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+	
+	#ifdef DEBUG_STRUCTS
+		blame_info<<"Looking at IVP "<<ivp->name<<" in resolveLooseStructs. "<<ivp->llvm_inst<<std::endl;
+	#endif 			
+		//clearAfter.clear();
+		if (ivp->llvm_inst != NULL) {
+			if (isa<Instruction>(ivp->llvm_inst)) {
+				const llvm::Type * origT = 0;		
+				Instruction *pi = cast<Instruction>(ivp->llvm_inst);	
+				origT = pi->getType();	
+				//newPtrLevel = pointerLevel(origT,0);
+				
+				std::string origTStr = returnTypeName(origT, std::string(" "));
+			#ifdef DEBUG_STRUCTS
+					blame_info<<"Type name (resolveLooseStructs) "<<origTStr<<std::endl;
+			#endif 
+								
+				if (origTStr.find("Struct") != std::string::npos) {
+				#ifdef DEBUG_STRUCTS
+					blame_info<<"ivp->sBFC (resolveLooseStructs)"<<ivp->sBFC<<std::endl;
+				#endif 
+					//if (ivp->sBFC == NULL && ivp->nStatus[LOCAL_VAR] )
+                    if (ivp->sBFC == NULL) {
+#ifdef DEBUG_STRUCTS
+						blame_info<<"Struct "<<ivp->name<<" has no sBFC"<<std::endl;
+#endif
+						Value *v = cast<Value>(ivp->llvm_inst);	
+						const llvm::Type *pointT = v->getType();
+						unsigned typeVal = pointT->getTypeID();
+#ifdef DEBUG_STRUCTS
+                        blame_info<<"Before while, typeVal="<<typeVal<<std::endl;
+#endif
+						while (typeVal == Type::PointerTyID) {		
+							pointT = cast<PointerType>(pointT)->getElementType();
+							//std::string origTStr = returnTypeName(pointT, std::string(" "));
+							typeVal = pointT->getTypeID();
+						}
+#ifdef DEBUG_STRUCTS
+                        blame_info<<"After while, typeVal="<<typeVal<<std::endl;
+#endif
+						if (typeVal == Type::StructTyID) {
+							const llvm::StructType *type = cast<StructType>(pointT);
+							string structNameFull = type->getName().str();
+							//TO CONTINUE: 08/19/15
+#ifdef USE_LLVM25
+                            if (structNameFull.find("struct.") == std::string::npos){
+#ifdef DEBUG_ERROR
+								blame_info<<"Error: structName(2) is incomplete -- "<<structNameFull<<std::endl;
+#endif 
+								continue;
+							}
+							// need to get rid of preceding "struct." and trailing NULL character
+							string justStructName = structNameFull.substr(7, structNameFull.length() - 7 );
+                            StructBFC * sb = mb->structLookUp(justStructName);
+#else
+                            StructBFC *sb = mb->structLookUp(structNameFull);
+#endif
+
+							if (sb == NULL) {
+#ifdef DEBUG_STRUCTS
+								blame_info<<"SB is NULL for "<<structNameFull<<" for IVP "<<ivp->name<<std::endl;
+#endif
+								continue;
+							}
+#ifdef DEBUG_STRUCTS
+							blame_info<<"Found sb for "<<structNameFull<<" assiging sBFC to "<<ivp->name<<std::endl;
+#endif
+							ivp->sBFC = sb;
+							
+						}
+					}
+					else {
+#ifdef DEBUG_STRUCTS
+						blame_info<<"Struct  "<<ivp->name<<" already has sBFC "<<std::endl;
+#endif
+					}
+				}
+			}
+		}
+	}	
+}
+
+//This func is Moved here from FunctionBFCGraph.cpp
+int FunctionBFC::pointerLevel(const llvm::Type *t, int counter)
+{
+	unsigned typeVal = t->getTypeID();
+	if (typeVal == Type::PointerTyID)
+		return pointerLevel(cast<PointerType>(t)->getElementType(), counter +1);
+	else
+		return counter;
+}
+
+void FunctionBFC::setModuleName(std::string rawName)
+{
+	moduleName = rawName.substr(0, rawName.length() - 1);
+}
+
+void FunctionBFC::setModulePathName(std::string rawName)
+{
+	modulePathName = rawName.substr(0, rawName.length() - 1);
+}
+
+
+// Constructor for function blame //
+FunctionBFC::FunctionBFC(Function * F, std::set<const char *> & kFN)
+{
+    func = F;
+    //funcT = V_PARAM_V_RET;
+	
+	voidReturn = false;
+	numPointerParams = 0;
+	numParams = 0;
+	isBFCPoint = false;
+	
+    moduleSet = false;
+	//nStatus = UNKNOWN_CALL;
+    //fullyEvaluated = false;
+	
+	exitOutput = new ExitOutput();
+	
+	//outputFunc = false;
+	//callCount = invokeCount = 0;
+	
+    startLineNum = 9999999;
+    endLineNum =   0;
+	
+	knownFuncNames = kFN;
+	
+	cfg = new FunctionBFCCFG();
+	
+}
+
+/* LLVM pass that is ran on each function, calculates explicit/implicit relationships
+ and generates transfer function for each */
+void FunctionBFC::firstPass(Function *F, std::vector<NodeProps *> &globalVars,
+        ExternFuncBFCHash &efInfo, std::ostream &blame_file, std::ostream &blame_se_file,
+		std::ostream &call_file, int &numMissing) 
+{
+    std::string infoO("OUTPUT/");
+	infoO += getSourceFuncName(); //llvm func name
+	blame_info.open(infoO.c_str());
+	time_t start, end;
+	double dif;
+	time(&start);
+	//std::cout<<"Starting first pass for "<<getSourceFuncName()<<std::endl;
+	
+	std::string cInfo("CALLS/");
+	cInfo += getSourceFuncName();
+	std::ofstream call_info;
+	call_info.open(cInfo.c_str());
+	
+	
+    parseLLVM(globalVars);
+#ifdef DEBUG_P
+    cout<<"parseLLVM in firstPass finished"<<endl;
+#endif 
+	
+    genGraph(efInfo);
+	
+	// calls recursiveExamineChildren and populates parent/child dependencies and
+	// the line numbers
+	populateImportantVertices();
+	
+	// For local vars we want to get rid of redundant information we'll never use
+	//trimLocalVarPointers();
+	
+	// changes the parent/child relationship between calls and parameters into explicit
+	//   call relationships
+	resolveIVCalls();
+	
+	resolveLooseStructs();
+	
+	// Calc aggregate line numbers (and calls)
+	calcAggregateLN(); //TOCHECK: why it's called before makeNewTruncGraph ?
+	
+	makeNewTruncGraph();
+	//calcAggregateLN();
+
+	resolveSideEffects();
+	resolveSideEffectCalls();
+	
+	resolveCallsDomLines();
+	
+	
+	int ccValue = 0;
+	ccValue = checkCompleteness();
+	
+	exportEverything(blame_file, false);
+#ifdef DEBUG_SUMMARY
+	exportEverything(blame_info, false);
+#endif
+	
+	exportSideEffects(blame_se_file);
+#ifdef DEBUG_SUMMARY
+	exportSideEffects(blame_info);
+#endif
+	//exportCalls(call_info);
+	exportCalls(call_file, efInfo);
+	//exportParams(param_file);
+	numMissing += ccValue;
+	
+	time(&end);
+	dif = difftime(end,start);
+	int dif_i = (int) dif;
+	
+	std::cout<<getSourceFuncName()<<" -- "<<dif_i<<std::endl;
+	//printf("  -- %d\n", dif);
+	std::cout<<"End of firstPass on "<<getSourceFuncName()<<std::endl;
+	//if (moreThanOneEV())
+	//numMultipleEV++;
+}

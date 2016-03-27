@@ -110,10 +110,10 @@ void Instance::secondTrim(ModuleHash &modules)
           }
         }
         // we only need to check middle frames mapped to "coforall_fn/wrapcoforall_fn"
-        if (matchingCalls.size() > 1) { //exclude frame that maps to "forall/coforall" loop lines
-          callNode = NULL;
-          stack_info<<"More than one call node at that line number"<<std::endl;
-            // figure out which call is appropriate
+        if (matchingCalls.size() >= 1) { //exclude frame that maps to "forall/coforall" loop lines
+          callNode = NULL;              //changed >1 to >=1 by Hui 03/24/16: as long as the callnode doesn't match the ...
+          stack_info<<">= one call node at that line number"<<std::endl;    //previous frame, we need to remove it ..
+            // figure out which call is appropriate                         //usually it's a Chapel inner func call
           vector<StackFrame>::iterator minusOne = vec_SF_i - 1;
           BlameModule *bmCheck = modules[(*minusOne).moduleName.c_str()];
           if (bmCheck == NULL) {
@@ -562,6 +562,7 @@ int main(int argc, char** argv)
   */
 
   //added by Hui 12/25/15: trim pre_instances frames first
+  int validInstances = 0;
   InstanceHash::iterator pre_i;
   for (pre_i = pre_instances.begin(); pre_i != pre_instances.end(); pre_i++) {
     if((*pre_i).first == 1)
@@ -580,11 +581,17 @@ int main(int argc, char** argv)
       glueTwoStackTrace(pre_instances, iCounter, (*vec_I_i));
     (*vec_I_i).handleInstance(bp.blameModules, gOut, verbose);
     
-    gOut<<"$$$INSTANCE "<<iCounter<<"  $$$"<<std::endl;
-    
+    gOut<<"$$$INSTANCE "<<iCounter<<"  $$$"<<std::endl; 
     iCounter++;
+
+    ////for testing////////
+    if((*vec_I_i).frames.size() !=0)
+      validInstances++;
+    ///////////////////////
+
   }
   
+  fprintf(stderr, "#total instances = %d, #validInstances = %d\n",iCounter,validInstances);
   fprintf(stderr,"DONE - ");
   my_timestamp();
   

@@ -452,7 +452,7 @@ private:
 
 	void calcAggregateLN();
 	void calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *> &vStack, std::set<NodeProps *> &vRevisit);
-	void calcAggCallRecursive(NodeProps *ivp);
+	void calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vStack_call, std::set<NodeProps *> &vRevisit_call);
 	bool isTargetNode(NodeProps *ivp);
 	
 	///////////////////////////////////////////////////////////////////////////////
@@ -502,7 +502,7 @@ private:
     
     void ieGen_LHS(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGen_LHS_Alloca(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
-    void ieGen_Operands(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
+    void ieGen_Operands(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGen_OperandsStore(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGen_OperandsAtomic(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);

@@ -70,6 +70,8 @@ namespace std
 #define CALL_PARAM 17
 #define CALL_RETURN 18
 
+//we need to keep important registers like %1,%2 in `store %1, %2`
+#define IMP_REG 19 //added by Hui 03/22/16
 
 //#define EXIT_VAR_GLOBAL      19
 //#define EXIT_VAR_RETURN     20
@@ -81,8 +83,8 @@ namespace std
 //#define EXIT_OUTP        2
 #define EXIT_VAR_GLOBAL  3
 #define EXIT_VAR_RETURN  4
-#define EXIT_VAR_PARAM  EXIT_VAR_RETURN
-
+//#define EXIT_VAR_PARAM  EXIT_VAR_RETURN
+#define EXIT_VAR_PARAM 5
 
 //#define EXIT_VAR 99  // Temporary, will be overwritten
 
@@ -270,7 +272,7 @@ public:
 	
 	// Important Vertex Vectors
 	set<NodeProps *> parents; //if store a @b, then b is a parent of a, a is a child of b
-	set<NodeProps *> children; //TC: not sure what's the diff against fields
+	set<NodeProps *> children; //if b->a(a is blamed for b), then a is b's child
 
 	// DF_CHILD_EDGE
 	set<NodeProps *> dfChildren; 

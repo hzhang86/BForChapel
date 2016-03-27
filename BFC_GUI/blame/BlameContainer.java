@@ -24,6 +24,11 @@ public class BlameContainer {
 	private HashMap<String, BlameStruct> allStructs;
 	
 	private Vector<ExitSuper> allLocalVariables;
+    //changed by Hui 02/16/16 global variables should be name distinguishable 
+    //we want to aggregete all gv nodes with the same name from different funcs 
+    //into a single node, therefore HashMap shall be used
+    private HashMap<String, ExitSuper> allGlobalVariablesHash;
+    //we still use allGlobalVariables later as it's easier than HashMap
 	private Vector<ExitSuper> allGlobalVariables;
 	private HashSet<String> allTypes;
 	
@@ -124,12 +129,13 @@ public class BlameContainer {
                             continue;
                     }*/
                    
-                    /*if(ep.getName().contains("_chpl")){ //will show 'call_tmp2'
-                        String realName;
-                        realName = ep.getName().replaceAll("_chpl","");
-                        ep.setName(realName);
-                    }*/
+                    
+                    if(ep.getName().contains("_tmp") || ep.getName().contains("tmp_")
+                            || ep.getName().contains("ret_") || ep.getName().contains("sum_")) //we don't want to see temp vars just for now 03/22/16
+                        continue;
+                    
                     ////////////////////////////////////////////
+				    System.out.println("Adding LocalVar " + ep.getName());
 					allLocalVariables.add(ep);
 				}
 			}
@@ -139,14 +145,15 @@ public class BlameContainer {
 		
 	}
 	
+    //changed by Hui 02/16/16: compute allGVsHash first, then feed values to allGVs
 	public Vector<ExitSuper> getAllGlobalVariables() {
 		
 		// we calculate this on demand
 		if (allGlobalVariables.size() > 0)
 			return allGlobalVariables;
 		
-		
-    		Iterator<BlameFunction> it = getAllFunctions().values().iterator();
+        //first we fill in the allGlobalVariablesHash
+    	Iterator<BlameFunction> it = getAllFunctions().values().iterator();
 		while (it.hasNext())
 		{
 			BlameFunction bf = (BlameFunction) it.next();
@@ -156,26 +163,47 @@ public class BlameContainer {
 			while (it2.hasNext())
 			{
 				ExitVariable ev = (ExitVariable) it2.next();
+                String evName = ev.getName();
 				
-				System.out.println("Examining globalVar " + ev.getName() + " " + ev.getHierName());
+				System.out.println("Examining globalVar " + evName + " " + ev.getHierName());
 				
-				String truncName = ev.getName().substring(ev.getName().lastIndexOf('.')+1);
+				String truncName = evName.substring(evName.lastIndexOf('.')+1);
 				
-				if (ev.isGlobal && !ev.getName().contains("_tmp")) //2nd Cond is uncertain
+				if (ev.isGlobal && !evName.contains("_tmp")) //2nd Cond is uncertain
 				{
-					System.out.println("Adding " + ev.getName() + " to allGlobalVariables.");
-                    /////////////added by Hui///////////////////
-                    /*if(ev.getName().contains("_chpl")){
-                        String realName;
-                        realName = ev.getName().replaceAll("_chpl","");
-                        ev.setName(realName);
-                    }*/
-                    ////////////////////////////////////////////
-
-					allGlobalVariables.add(ev);				
+					System.out.println("Adding " + evName + " to allGlobalVariablesHash.");
+                    //added by Hui 02/16/16
+                    ExitSuper gv = allGlobalVariablesHash.get(evName);
+                    if (gv == null) 
+                        allGlobalVariablesHash.put(evName, ev);
+                    else 
+                    {
+                        //first update the aggregateBlame
+                        double preAggBlame = gv.getAggregateBlame();
+                        preAggBlame = preAggBlame + ev.getAggregateBlame();
+                        gv.setAggregateBlame(preAggBlame);
+                        //second update the parentBF if it's not main
+                        BlameFunction pbf = gv.getParentBF();
+                        if (pbf == null) {
+                            System.out.println("Weird, egv("+evName+") didn't have a parentBF.");
+                            pbf = getAllFunctions().get("main");
+                            gv.setParentBF(pbf);
+                        }
+                        else if(pbf != null && pbf.getName().compareTo("main") !=0)
+                        {
+                            pbf = getAllFunctions().get("main");
+                            gv.setParentBF(pbf);
+                        }
+                    }
 				}
 			}
 		}
+
+        //Now we can put all GVs in the HashMap to Vector
+        for (ExitSuper esh: allGlobalVariablesHash.values()) 
+        {
+			allGlobalVariables.add(esh);
+        }
 		
 		if (allGlobalVariables.size() == 0)
 		{
@@ -226,6 +254,7 @@ public class BlameContainer {
 		allStructs = new HashMap<String, BlameStruct>();
 		
 		allLocalVariables = new Vector<ExitSuper>();
+        allGlobalVariablesHash = new HashMap<String, ExitSuper>();//added by Hui 02/16/16
 		allGlobalVariables = new Vector<ExitSuper>();
 		allTypes = new HashSet<String>();
 	}

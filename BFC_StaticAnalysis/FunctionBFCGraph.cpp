@@ -95,7 +95,7 @@ void FunctionBFC::determineBFCForVertexLite(NodeProps *v)
     for (std::vector<ExitVariable *>::iterator ev_i = exitVariables.begin(); 
         ev_i != exitVariables.end();  ev_i++) {
 		// compare()==0 means two strings are equal
-		if (v->name.compare( (*ev_i)->realName ) == 0  && v->isWritten) {
+		if (v->name.compare((*ev_i)->realName)==0 && v->isWritten) {
 			(*ev_i)->addVertex(v);
 			(*ev_i)->vertex = v;
 #ifdef DEBUG_EXIT 
@@ -678,6 +678,13 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, \
 #endif
 				origV->isWritten = true;
 				targetV->isWritten = true;
+
+                //added by Hui 03/22/16 for cases: %1 = load a;  store %2, %1  ///
+                //then %2 should be counted to a's child
+                NodeProps *storeValue = get(get(vertex_props,G), target(*o_beg,G));
+                origV->children.insert(storeValue);
+                storeValue->parents.insert(origV);
+                //////////////////////////////////////////////////////////////////////
 			}
 		}
 	}
@@ -1682,8 +1689,10 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 		
 	}
 	
-	if (currNode->nStatus[EXIT_VAR] || currNode->nStatus[EXIT_VAR_FIELD] ||
+//	if (currNode->nStatus[EXIT_VAR] || currNode->nStatus[EXIT_VAR_FIELD] || \
 			currNode->nStatus[EXIT_VAR_FIELD_ALIAS])
+	if (currNode->nStatus[EXIT_VAR] || currNode->nStatus[EXIT_VAR_ALIAS] ||   //cond EXIT_VAR_ALIAS is added by Hui
+            currNode->nStatus[EXIT_VAR_FIELD] || currNode->nStatus[EXIT_VAR_FIELD_ALIAS])  //02/08/16
 	{
 		for (vec_vp_i = currNode->fields.begin(); vec_vp_i != currNode->fields.end(); vec_vp_i++)
 		{
@@ -2422,7 +2431,113 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 	}// origTstr.find("Struct")
 	else if (origTStr.find("Array") != std::string::npos) {
 		resolveArrays(v, v, tempPointers);
-	}	
+	}
+    //added by Hui :currently doesn't give much help, so delete it, TO CHECK later
+    /*
+    else if(origPointerLevel ==1) { //we take care of the basic 1-level ptr
+#ifdef DEBUG_RP
+		blame_info<<"Inserting pointer(new) "<<v->name<<std::endl;
+#endif 
+		//pointers.insert(v);
+		tempPointers.insert(v);
+		
+		boost::graph_traits<MyGraphType>::in_edge_iterator e_beg, e_end;
+		
+		e_beg = boost::in_edges(v->number, G).first;	// edge iterator begin
+		e_end = boost::in_edges(v->number, G).second;   // edge iterator end
+		
+		std::set<int> visited; // don't know if the way we're traversing the graph,
+		// a loop is even possible, but just in case
+		visited.insert(v->number);
+		
+		// iterate through the edges trying to find a Store between pointers
+		for(; e_beg != e_end; ++e_beg) {
+			int opCode = get(get(edge_iore, G),*e_beg);
+#ifdef DEBUG_RP
+		    blame_info<<"in_edge opCode = "<<opCode<<std::endl;
+#endif 
+			NodeProps *targetV = get(get(vertex_props,G), source(*e_beg,G));
+			if (opCode == Instruction::Store) {	
+#ifdef DEBUG_RP
+				blame_info<<"STORE operation(new) between "<<v->name<<" and "<<targetV->name<<std::endl;
+#endif 
+			}
+			else if (opCode == GEP_BASE_OP){
+#ifdef DEBUG_RP
+				blame_info<<"GEPB operation(new) between "<<v->name<<" and "<<targetV->name<<std::endl;
+#endif          //here, targetV is the field ptr,e.g. a = GEP b, 0, 1 then a=targetV
+				boost::graph_traits<MyGraphType>::out_edge_iterator o_beg, o_end;
+				o_beg = boost::out_edges(targetV->number, G).first;//edge iter begin
+				o_end = boost::out_edges(targetV->number, G).second;//edge iter end
+				
+				bool circumVent = true;
+				// iterate through the edges trying to find a Store between pointers
+				for(; o_beg != o_end; ++o_beg) {
+					int opCode = get(get(edge_iore, G),*o_beg);
+					if (opCode == RESOLVED_L_S_OP)
+						circumVent = false;
+				}	
+				
+				if (circumVent) {
+					v->GEPs.insert(targetV); //a = GEP b, then b.GEPs.insert(a)
+#ifdef DEBUG_RP
+					blame_info<<"Adding GEP(new) "<<targetV->name<<" to load "<<v->name<<std::endl;
+#endif 
+					//resolvePointersHelper2(v, origPointerLevel, targetV, visited, tempPointers, NULL);
+				}	
+				else {
+#ifdef DEBUG_ERROR
+					std::cerr<<"Was this supposed to happen(new)?!"<<std::endl;
+#endif 
+				}
+			}
+			else if (opCode == Instruction::Load ) {
+#ifdef DEBUG_RP
+				blame_info<<"LOAD operation(new) between "<<v->name<<" and "<<targetV->name<<std::endl;
+#endif
+				boost::graph_traits<MyGraphType>::out_edge_iterator o_beg, o_end;
+				o_beg = boost::out_edges(targetV->number, G).first;//edge iter begin
+				o_end = boost::out_edges(targetV->number, G).second;//edge iter end
+				
+				bool circumVent = true;
+				NodeProps *lsTarget = NULL;
+				
+				for(; o_beg != o_end; ++o_beg) {
+					int opCode = get(get(edge_iore, G),*o_beg);
+					if (opCode == RESOLVED_L_S_OP) {
+						circumVent = false;
+						lsTarget = get(get(vertex_props,G), target(*o_beg,G));
+					}
+				}	
+				
+				if (circumVent) {
+					v->loads.insert(targetV);
+					//resolvePointersHelper2(v, origPointerLevel, targetV, visited, tempPointers, NULL);
+				}
+				else {
+#ifdef DEBUG_RP
+					blame_info<<"Load not put in(new) because there was a R_L_S from targetV "<<targetV->name<<std::endl;
+#endif 
+					if (lsTarget) {
+#ifdef DEBUG_RP
+						blame_info<<"R_L_S op(new) between "<<lsTarget->name<<" and "<<targetV->name<<std::endl;
+#endif 
+						lsTarget->resolvedLS.insert(targetV);
+						targetV->resolvedLSFrom.insert(lsTarget);
+						//resolvePointersHelper2(v, origPointerLevel, targetV, visited, tempPointers, lsTarget);
+					}
+				}
+			}
+			else if (opCode == RESOLVED_L_S_OP) {
+#ifdef DEBUG_RP
+				blame_info<<"RLS operation(new) between "<<v->name<<" and "<<targetV->name<<std::endl;
+#endif 
+				v->resolvedLS.insert(targetV);
+				targetV->resolvedLSFrom.insert(v);
+				//resolvePointersHelper2(v, origPointerLevel, targetV, visited, tempPointers, NULL);
+			}
+		}
+    }*/
 	
 #ifdef DEBUG_RP_SUMMARY
 	
@@ -2525,7 +2640,27 @@ void FunctionBFC::resolvePointers2()
 				|| v->isGlobal) {
 			resolvePointersForNode2(v, tempPointers);
 		}
-	}
+
+        //added by Hui 03/22/16
+        //we need to take care of registers that are the recipients of a STORE, 
+        //it's rare but important, like %12 in: store %11, %12
+        /*else { 
+            bool isImpReg = false;
+            int v_index = get(get(vertex_index, G),*i);
+            boost::graph_traits<MyGraphType>::out_edge_iterator e_beg, e_end;
+            e_beg = boost::out_edges(v_index, G).first;		// edge iterator begin
+            e_end = boost::out_edges(v_index, G).second;    // edge iterator end	
+            for(; e_beg != e_end; ++e_beg) {
+                int opCode = get(get(edge_iore, G), *e_beg);
+                if(opCode == Instruction::Store) { //when the register is 
+                    isImpReg = true;
+                    break;
+                }
+            }
+            if(isImpReg)
+			    resolvePointersForNode2(v, tempPointers);
+        }*/ 
+	}//end of for loop
 	
 	std::set<NodeProps *>::iterator set_vp_i;	
 	
@@ -2788,6 +2923,8 @@ void FunctionBFC::resolveFieldAliases()
 			#endif 
 				return;
 			}
+
+            blame_info<<"In resolveFieldAliases for EVFA: "<<v->name<<endl;
 			
 			std::set<NodeProps *>::iterator set_vp_i, set_vp_i2;
 		
@@ -2820,7 +2957,9 @@ void FunctionBFC::resolveFieldAliases()
 				return;
 			}
 			
-			std::set<NodeProps *>::iterator set_vp_i, set_vp_i2;
+            blame_info<<"In resolveFieldAliases for LVFA: "<<v->name<<endl;
+			
+            std::set<NodeProps *>::iterator set_vp_i, set_vp_i2;
 		    for (set_vp_i = v->aliases.begin(); set_vp_i != v->aliases.end(); set_vp_i++) {
 				NodeProps *al = *set_vp_i;
 	// we might be our own alias ... probably should make it so that never happens
@@ -3139,14 +3278,25 @@ void FunctionBFC::adjustMainGraph()
 									newPtrLevel = pointerLevel(origT, 0);
 								}
 								
-								if (newPtrLevel == 0)
+								//if (newPtrLevel == 0) 
+                                //example:store C, b; a = load b;
+                                //changed by Hui 03/24/16:we shouldn't remove a->b if C is a constant, since it could be just an initialization of b
+                                if(newPtrLevel ==0 && storeVP->name.find("Constant+")==std::string::npos){
 									deleteMe.insert(sourceVP->number);
+#ifdef DEBUG_GRAPH_COLLAPSE
+            			            blame_info<<"Remove edge(hui) from "<<sourceVP->name<<" to "<<vp->name<<" [8]"<<std::endl;
+#endif 
+                                }
 							}
 							
 							tie(ed, inserted) = add_edge(sourceVP->number, storeVP->number, G);
 							if (inserted){
                                 blame_info<<"RESOLVED_L_S_OP added between "<<sourceVP->name<<" and "<<storeVP->name<<endl;
 								edge_type[ed] = RESOLVED_L_S_OP;//load_store op
+                                //TOCHECK: added by Hui 03/24/16: if sourceVP's Ptrlevel==0, we still want to keep the RLS relation
+                                //However, later resolvePointers won't add them to resolvedLSFrom/resolvedLS, so we add it here in advance
+                                storeVP->resolvedLS.insert(sourceVP);
+                                sourceVP->resolvedLSFrom.insert(storeVP);
                             }
 						}
 					}
@@ -3839,7 +3989,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                         collapsePairs.push_back(cp);
  	
 #ifdef DEBUG_GRAPH_COLLAPSE
-            			blame_info<<"Deleting edge from "<<instName<<" to "<<v->getName().data()<<std::endl;
+            			blame_info<<"Remove edge(hui) from "<<instName<<" to "<<v->getName().data()<<" [3]"<<std::endl;
 #endif 
 						remove_edge(variables[instName.c_str()]->number,variables[v->getName().data()]->number,G);//TOCHECK: whether we need to remove_edge
                      }
@@ -3969,9 +4119,9 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 						cp->destVertex = cpHash[strAlloc];
 						collapsePairs.push_back(cp);
 						
-					    #ifdef DEBUG_GRAPH_COLLAPSE
-						blame_info<<"Deleting edge from "<<instName<<" to "<<vName<<std::endl;
-						#endif 
+#ifdef DEBUG_GRAPH_COLLAPSE
+            			blame_info<<"Remove edge(hui) from "<<instName<<" to "<<vName<<" [4]"<<std::endl;
+#endif 
 						remove_edge(variables[instName.c_str()]->number,variables[vName]->number,G);
 					}
 					else {
@@ -4066,7 +4216,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                             cp->destVertex = cpHash[strAlloc];
                             collapsePairs.push_back(cp);
 #ifdef DEBUG_GRAPH_COLLAPSE
-            			    blame_info<<"Deleting edge from "<<instName<<" to "<<opName<<std::endl;
+            			    blame_info<<"Remove edge(hui) from "<<instName<<" to "<<opName<<" [5]"<<std::endl;
 #endif 
 						    remove_edge(variables[instName.c_str()]->number,variables[opName.c_str()]->number,G);//TOCHECK:whether we need to remove_edge
                           }
@@ -4117,7 +4267,8 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
     /////added by Hui,trying to get the called function///////////
     llvm::CallInst *cpi = cast<CallInst>(pi);
     llvm::Function *calledFunc = cpi->getCalledFunction();
-    blame_info<<"In geCall, calledFunc's name = "<<calledFunc->getName().data();
+    if(calledFunc != NULL && calledFunc->hasName())
+        blame_info<<"In geCall, calledFunc's name = "<<calledFunc->getName().data();
     blame_info<<"  pi->getNumOperands()="<<pi->getNumOperands()<<std::endl;
     //////////////////////////////////////////////////////////
     int callNameIdx = pi->getNumOperands()-1; //called func is the last operand of this inst
@@ -5413,7 +5564,9 @@ void FunctionBFC::collapseIO()
 					}
 					
 					std::pair<int, int> tmpPair(sourceV->number, targetV->number);
-	//std::cout<<"Source "<<sourceV->number<<" Target "<<targetV->number<<std::endl;
+#ifdef DEBUG_GRAPH_COLLAPSE
+					blame_info<<"Remove edge(hui) from "<<sourceV->name<<" to "<<targetV->name<<" [6]"<<std::endl;
+#endif
 					deleteEdges.push_back(tmpPair);
 				}
 
@@ -5441,8 +5594,10 @@ void FunctionBFC::collapseIO()
 					}
 					
 					std::pair<int, int> tmpPair(sourceV->number, targetV->number);
-					//std::cout<<"Source "<<sourceV->number<<" Target "<<targetV->number<<std::endl;
-					deleteEdges.push_back(tmpPair);
+#ifdef DEBUG_GRAPH_COLLAPSE
+					blame_info<<"Remove edge(hui) from "<<sourceV->name<<" to "<<targetV->name<<" [7]"<<std::endl;
+#endif
+                    deleteEdges.push_back(tmpPair);
 				}
 			}
 		}
@@ -5815,6 +5970,10 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
 #endif 
 			}
 		}
+
+#ifdef DEBUG_GRAPH_COLLAPSE
+        blame_info<<"Remove edge(hui) from "<<dN->name<<" to "<<outTargetV->name<<" [1]"<<std::endl;
+#endif 
 	}
 	
 	std::vector<int>::iterator v_i, v_e = destNodes.end();
@@ -5862,6 +6021,10 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
 #endif
 			}
 		}
+
+#ifdef DEBUG_GRAPH_COLLAPSE
+        blame_info<<"Remove edge(hui) from "<<inTargetV->name<<" to "<<dN->name<<" [2]"<<std::endl;
+#endif 
 	}
 	
 	v_e = sourceNodes.end();

@@ -113,7 +113,9 @@ void VertexProps::findSEExits(std::set<VertexProps *> & blamees)
 			continue;
 			
 		sep->vpValue->addedFromWhere = 81;
+#ifdef DEBUG_BLAMEES
 		std::cout<<"Blamees insert "<<sep->vpValue->name<<" in findSEExits(1)"<<std::endl;
+#endif
 		blamees.insert(sep->vpValue);
 		
 		if (sep->vpValue->nStatus[EXIT_VAR_FIELD] || sep->vpValue->nStatus[LOCAL_VAR_FIELD])
@@ -122,8 +124,10 @@ void VertexProps::findSEExits(std::set<VertexProps *> & blamees)
 			while (upPtr != NULL)
 			{
 				upPtr->addedFromWhere = 91;
+#ifdef DEBUG_BLAMEES
                 std::cout<<"Blamees insert "<<upPtr->name<<" in findSEExits(2)"<<std::endl;
-				blamees.insert(upPtr);
+#endif
+                blamees.insert(upPtr);
 				upPtr = upPtr->fieldUpPtr;
 			}
 		}
@@ -151,8 +155,10 @@ void VertexProps::populateSERBlamees(std::set<VertexProps *> & visited, std::set
 		{
 		  //std::cout<<"Blamees insert(13) "<<trp->name<<std::endl;
 			trp->addedFromWhere = 82;
+#ifdef DEBUG_BLAMEES
             cout<<"Blamees insert "<<trp->name<<" in populateSERBlamees(1)"<<endl;
-			blamees.insert(trp);
+#endif
+            blamees.insert(trp);
 			
 			if (trp->nStatus[EXIT_VAR_FIELD] || trp->nStatus[LOCAL_VAR_FIELD])
 			{
@@ -160,8 +166,10 @@ void VertexProps::populateSERBlamees(std::set<VertexProps *> & visited, std::set
 				while (upPtr != NULL)
 				{
 					upPtr->addedFromWhere = 92;
+#ifdef DEBUG_BLAMEES
                     cout<<"Blamees insert "<<upPtr->name<<" in populateSERBlamees(2)"<<endl;
-					blamees.insert(upPtr);
+#endif
+                    blamees.insert(upPtr);
 					upPtr = upPtr->fieldUpPtr;
 				}
 			}
@@ -246,19 +254,25 @@ int VertexProps::findBlamedExits(std::set<VertexProps *> & visited, int lineNum)
 	//   that represent the EVs when passed into function ... unfortunately
 	//   if we don't represent the params correctly then we lose the link
 	//   to the EVs which is a bad thing
+#ifdef DEBUG_BLAMED_EXITS
 	cout<<"Before params, total="<<total<<" for "<<this->name<<endl;
+#endif
     for (set_vp_i = params.begin(); set_vp_i != params.end(); set_vp_i++)
 	{
 		VertexProps * vp = (*set_vp_i);
-		std::cout<<vp->name<<" is of params of "<<name<<std::endl;
-		//std::cout<<"Total before - "<<total<<std::endl;
+#ifdef DEBUG_BLAMED_EXITS
+        std::cout<<vp->name<<" is of params of "<<name<<std::endl;
+#endif
+        //std::cout<<"Total before - "<<total<<std::endl;
 		//std::cout<<"Temp Parents size - "<<vp->tempParents.size()<<std::endl;
 		if (vp->tempParents.size() == 0)
 			total += vp->findBlamedExits(visited, lineNum);
 			//std::cout<<"Total after - "<<total<<std::endl;
-	}		
+	}
+#ifdef DEBUG_BLAMED_EXITS
 	cout<<"After params, total="<<total<<" for "<<this->name<<endl;
-	/*
+#endif
+    /*
 	for (vec_vp_i = calls.begin(); vec_vp_i != calls.end(); vec_vp_i++)
 	{
 			FuncCall * fc = *vec_vp_i;
@@ -267,20 +281,26 @@ int VertexProps::findBlamedExits(std::set<VertexProps *> & visited, int lineNum)
 	for (set_vp_i = fields.begin(); set_vp_i != fields.end(); set_vp_i++)
 	{
 		VertexProps * vp = (*set_vp_i);
+#ifdef DEBUG_BLAMED_EXITS
 		std::cout<<vp->name<<" is of fields of "<<name<<std::endl;
-		if (vp->tempParents.size() == 0)
+#endif
+        if (vp->tempParents.size() == 0)
 			total += vp->findBlamedExits(visited, lineNum);
 	}
+#ifdef DEBUG_BLAMED_EXITS
 	cout<<"After fields, total="<<total<<" for "<<this->name<<endl;
-
+#endif
 	for (set_vp_i = tempChildren.begin(); set_vp_i != tempChildren.end(); set_vp_i++)
 	{
 			VertexProps * vp = (*set_vp_i);
+#ifdef DEBUG_BLAMED_EXITS
             std::cout<<vp->name<<" is of tempChildren of "<<name<<std::endl;
-			total += vp->findBlamedExits(visited, lineNum);
-	}		
+#endif
+            total += vp->findBlamedExits(visited, lineNum);
+	}
+#ifdef DEBUG_BLAMED_EXITS
 	cout<<"After tempChildren, total="<<total<<" for "<<this->name<<endl;
-
+#endif
 	return total;
 	
 }

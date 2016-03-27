@@ -622,20 +622,26 @@ void FunctionBFCCFG::calcStoreLines()
 			NodeProps *vp = (*set_vp_i);
 			
 			// TODO: Make it so it has statement granularity for this (instead of line nums)
+#ifdef DEBUG_CFG_STORELINES
 			cerr<<"In inBB, "<<vp->name<<"->storeLines.insert("<<vp->line_num<<") in pos1"<<endl;
+#endif
             vp->storeLines.insert(vp->line_num);
 			
 			// the variable is in IN and OUT set, it doesn't get killed, we can safely 
 			// add all the line numbers for this basic block to the valid CF lines
 			if (fbb->outBB.count(vp) > 0) {
+#ifdef DEBUG_CFG_STORELINES
                 cerr<<vp->name<<"->storeLines.insert in pos2"<<endl;
-				vp->storeLines.insert(fbb->lineNumbers.begin(), fbb->lineNumbers.end());
+#endif
+                vp->storeLines.insert(fbb->lineNumbers.begin(), fbb->lineNumbers.end());
 			}
 			//the variable is not in the out set, must get killed along the way, all of
 			//the line numbers leading up to being killed are relevant
 			//Changed by Hui 02/03/16: we can have multiple killers in the same fbb
             else {
+#ifdef DEBUG_CFG_STORELINES
                 cerr<<vp->name<<" isn't alive out of this BB"<<endl;
+#endif
                 std::set<NodeProps *> killers;
                 std::set<int> borders;//line_num of killers
 			    std::vector<NodeProps *>::iterator vec_vp_i2;
@@ -669,24 +675,37 @@ void FunctionBFCCFG::calcStoreLines()
                     if (realBorder != 0) {
                         //insert to borderLines first
                         vp->borderLines.insert(realBorder);
+#ifdef DEBUG_CFG_STORELINES
                         cerr<<vp->name<<"->borderLines.inert("<<*set_i_i<<") in pos1"<<endl;
+#endif
                         //insert all lines from the startline of fbb(that's larger than vp->line_num) to vp's closet killer to vp->storeLines
                         int realBegin = *(fbb->lineNumbers.begin());
                         for(int i = realBegin; i != realBorder; i++){
                             if(vp->line_num <= i){
                                 vp->storeLines.insert(i);
+#ifdef DEBUG_CFG_STORELINES
                                 cerr<<vp->name<<"->storeLines.insert("<<i<<") in pos3"<<endl;
+#endif
                             }
-                            else
+                            else {
+#ifdef DEBUG_CFG_STORELINES
                                 cerr<<vp->name<<"'s sl failed in Cond2"<<endl;
+#endif
+                            }
                         }
                     }
-                    else
+                    else {
+#ifdef DEBUG_CFG_STORELINES
                         cerr<<"Weird: no border line comes after vp->line_num"<<endl;
-				}
-                else
+#endif
+                    }
+                }
+                else {
+#ifdef DEBUG_CFG_STORELINES
                     cerr<<"Weird in calcStoreLines:"<<vp->name<<"was killed but can't find a killer 1"<<endl;
-			}
+#endif
+                }
+            }
 		}
 		
 		// Now we need to look at those variables that were genned in this basic block
@@ -696,8 +715,9 @@ void FunctionBFCCFG::calcStoreLines()
 			
             NodeProps *vp = (*vec_vp_i);
 			vp->storeLines.insert(vp->line_num);
-			cerr<<"In genBB, "<<vp->name<<"->storeLines.insert("<<vp->line_num<<") in pos8"<<endl;
-
+#ifdef DEBUG_CFG_STORELINES
+            cerr<<"In genBB, "<<vp->name<<"->storeLines.insert("<<vp->line_num<<") in pos8"<<endl;
+#endif
             std::vector<NodeProps *>::iterator vec_vp_i2 = fbb->relevantInstructions.begin();
 	        std::set<NodeProps *> killers;
             std::set<int> borders;//line_num of killers
@@ -714,12 +734,17 @@ void FunctionBFCCFG::calcStoreLines()
 			if (killers.size() == 0) {
 				for (set_i_i = fbb->lineNumbers.begin(); set_i_i != fbb->lineNumbers.end(); set_i_i++) {
 					if (vp->line_num <= *set_i_i){
+#ifdef DEBUG_CFG_STORELINES
                         cerr<<vp->name<<"->storeLines.insert("<<*set_i_i<<") in pos4"<<endl;
-						vp->storeLines.insert(*set_i_i);
+#endif
+                        vp->storeLines.insert(*set_i_i);
                     }
-                    else
+                    else {
+#ifdef DEBUG_CFG_STORELINES
                         cerr<<vp->name<<"'s sl failed in Cond3"<<endl;
-				}
+#endif				
+                    }
+                }
 			}
             //if there is a killer then we take all line number up to (and including) that line num
             //line number ties are resolved later on a case by case
@@ -743,16 +768,23 @@ void FunctionBFCCFG::calcStoreLines()
                 if (realBorder != 0) {
                     //insert to borderLines first
                     vp->borderLines.insert(realBorder);
+#ifdef DEBUG_CFG_STORELINES
                     cerr<<vp->name<<"->borderLines.inert("<<*set_i_i<<") in pos2"<<endl;
+#endif
                     //insert all lines from the startline of fbb(that's larger than vp->line_num) to vp's closet killer to vp->storeLines
                     int realBegin = *(fbb->lineNumbers.begin());
                     for(int i = realBegin; i != realBorder; i++){
                         if(vp->line_num <= i){
                             vp->storeLines.insert(i);
+#ifdef DEBUG_CFG_STORELINES
                             cerr<<vp->name<<"->storeLines.insert("<<i<<") in pos5"<<endl;
+#endif
                         }
-                        else
+                        else {
+#ifdef DEBUG_CFG_STORELINES
                             cerr<<vp->name<<"'s sl failed in Cond4"<<endl;
+#endif
+                        }
                     }
                 }
                 else { // we try to find the killer that has the line_num <= vp's
@@ -770,22 +802,34 @@ void FunctionBFCCFG::calcStoreLines()
                         for(set_i_i = fbb->lineNumbers.begin(); set_i_i != fbb->lineNumbers.end(); set_i_i++){
                             if(vp->line_num <= *set_i_i){
                                 vp->storeLines.insert(*set_i_i);
+#ifdef DEBUG_CFG_STORELINES
                                 cerr<<vp->name<<"->storeLines.insert("<<*set_i_i<<") in pos6"<<endl;
+#endif
                             }
-                            else
+                            else {
+#ifdef DEBUG_CFG_STORELINES
                                 cerr<<vp->name<<"'s sl failed in Cond5"<<endl;
+#endif
+                            }
                         }
                       }
                     }
                     else { //the only killers are all before vp
+#ifdef DEBUG_CFG_STORELINES
                         cerr<<"Guess we only have killers that are before the vp, so we safely add all ln from vp"<<endl;
+#endif
                         for(set_i_i = fbb->lineNumbers.begin(); set_i_i != fbb->lineNumbers.end(); set_i_i++){
                             if(vp->line_num <= *set_i_i){
                                 vp->storeLines.insert(*set_i_i);
+#ifdef DEBUG_CFG_STORELINES
                                 cerr<<vp->name<<"->storeLines.insert("<<*set_i_i<<") in pos7"<<endl;
+#endif
                             }
-                            else
+                            else {
+#ifdef DEBUG_CFG_STORELINES
                                 cerr<<vp->name<<"'s sl failed in Cond6"<<endl;
+#endif
+                            }
                         }
                     }//killers < vp
                 }//killer <= vp

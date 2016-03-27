@@ -56,8 +56,8 @@ namespace std
 #define EXIT_OUTP        2
 #define EXIT_VAR_GLOBAL  3
 #define EXIT_VAR_RETURN  4
-#define EXIT_VAR_PARAM  EXIT_VAR_RETURN
-
+//#define EXIT_VAR_PARAM  EXIT_VAR_RETURN
+#define EXIT_VAR_PARAM  5 //changed by Hui 03/15/16`
 
 using namespace std;
 class BlameFunction;

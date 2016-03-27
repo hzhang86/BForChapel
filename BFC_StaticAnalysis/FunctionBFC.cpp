@@ -153,7 +153,7 @@ void FunctionBFC::addControlFlowChildren(NodeProps * oP, NodeProps * tP)
 }
 
 
-void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, 															 std::set<int> & visited)
+void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std::set<int> & visited)
 {
 	int v_index = v->number;
 	if (visited.count(v_index) > 0)
@@ -251,13 +251,18 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, 				
 #endif
                 //////added by Hui///////////////
 #ifdef REVERSE_CP_REL1
-                if(opCode==GEP_BASE_OP) {
+                bool existed;
+                graph_traits <MyGraphType>::edge_descriptor Edge;
+                tie(Edge, existed) = edge(origVP->number, v->number, G);
+
+                if(existed && get(get(edge_iore, G), Edge)==GEP_BASE_OP) {
+                    blame_info<<"GEP_BASE relation between base: "<<v->name<<" and field: "<<origVP->name<<endl;
                     origVP->parents.insert(targetVP);
                     targetVP->children.insert(origVP);
-                 }
+                }
                 
                 else {
-#endif
+#endif              
 				    origVP->children.insert(targetVP);
 				    targetVP->parents.insert(origVP);
 #ifdef REVERSE_CP_REL1
@@ -365,7 +370,8 @@ void FunctionBFC::populateImportantVertices()
 		NodeProps * targetVP = get(get(vertex_props, G),*i);
 		//std::string na("GLOBAL");
 		//ImpNodeProps * ivpParent = new ImpNodeProps(na);
-		
+		targetVP->nStatus[ANY_EXIT] = false; //added by Hui 03/22/16: initialize
+
 		short anyImp = 0;
 		for (int a = 0; a < NODE_PROPS_SIZE; a++) {
 			anyImp += targetVP->nStatus[a];
@@ -373,9 +379,23 @@ void FunctionBFC::populateImportantVertices()
 		
 		if (anyImp) 
 			targetVP->nStatus[ANY_EXIT] = true;
-		else
-			targetVP->nStatus[ANY_EXIT] = false;
-		
+		else { //added by Hui 03/22/16: we need to keep regs like %2 in 'store %1, %2'
+		    int v_index = get(get(vertex_index, G),*i);
+            boost::graph_traits<MyGraphType>::out_edge_iterator e_beg, e_end;
+            e_beg = boost::out_edges(v_index, G).first;		// edge iterator begin
+            e_end = boost::out_edges(v_index, G).second;    // edge iterator end	
+            for(; e_beg != e_end; ++e_beg) {
+                int opCode = get(get(edge_iore, G), *e_beg);
+                if(opCode == Instruction::Store) { //when the register is 
+	                NodeProps *storeValue = get(get(vertex_props,G), target(*e_beg,G));
+                    targetVP->nStatus[ANY_EXIT] = true;
+                    storeValue->nStatus[ANY_EXIT] = true;
+
+                    targetVP->nStatus[IMP_REG] = true;
+                    storeValue->nStatus[IMP_REG] = true;
+                }
+            }
+        }
 	}
 	
     for(tie(i,v_end) = vertices(G); i != v_end; ++i) {
@@ -774,7 +794,7 @@ void FunctionBFC::makeNewTruncGraph()
 	printFinalDotAbbr(ext);
 }
 
-void FunctionBFC::calcAggCallRecursive(NodeProps *ivp)
+void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vStack_call, std::set<NodeProps *> &vRevisit_call)
 {
 
 #ifdef DEBUG_CALC_RECURSIVE
@@ -789,6 +809,7 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp)
 	}
 	
 	ivp->calcAggCall = true;
+    vStack_call.insert(ivp); //added by Hui 03/15/16
 
 	if (ivp->nStatus[CALL_NODE]) {
 #ifdef DEBUG_CALC_RECURSIVE	
@@ -823,10 +844,14 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp)
 	for (s_vp_i = ivp->children.begin(); s_vp_i != ivp->children.end(); s_vp_i++) {
 		NodeProps * child = *s_vp_i;
 		if (child->calcAggCall == false)
-			calcAggCallRecursive(child);
+			calcAggCallRecursive(child, vStack_call, vRevisit_call);
 		
+		if (vStack_call.count(child)) {
+			vRevisit_call.insert(child);
+			vRevisit_call.insert(ivp);
+		}
 #ifdef DEBUG_CALC_RECURSIVE		
-		blame_info<<"Inserting descCalls(1) for "<<ivp->name<<" from "<<child->name<<std::endl;
+		blame_info<<"Inserting descParams(1) for "<<ivp->name<<" from "<<child->name<<std::endl;
 #endif 		
 		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());	
 		//ivp->descCalls.insert(child->descCalls.begin(), child->descCalls.end());
@@ -835,11 +860,15 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp)
 	for (s_vp_i = ivp->storesTo.begin(); s_vp_i != ivp->storesTo.end(); s_vp_i++) {
 		NodeProps *child = *s_vp_i;
 		if (child->calcAggCall == false)
-			calcAggCallRecursive(child);
+			calcAggCallRecursive(child, vStack_call, vRevisit_call);
 		
+		if (vStack_call.count(child)) {
+			vRevisit_call.insert(child);
+			vRevisit_call.insert(ivp);
+		}
 		if (child->nStatus[CALL_RETURN]) {			
 #ifdef DEBUG_CALC_RECURSIVE		
-			blame_info<<"Inserting descCalls(2) for "<<ivp->name<<" from "<<child->name<<std::endl;
+			blame_info<<"Inserting descParams(2) for "<<ivp->name<<" from "<<child->name<<std::endl;
 #endif 				
 			ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
 		}	
@@ -849,10 +878,14 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp)
 	for (v_vp_i = ivp->dataPtrs.begin(); v_vp_i != ivp->dataPtrs.end(); v_vp_i++) {
 		NodeProps *child = *v_vp_i;
 		if (child->calcAggCall == false)
-			calcAggCallRecursive(child);
+			calcAggCallRecursive(child, vStack_call, vRevisit_call);
 		
+		if (vStack_call.count(child)) {
+			vRevisit_call.insert(child);
+			vRevisit_call.insert(ivp);
+		}
 #ifdef DEBUG_CALC_RECURSIVE		
-			blame_info<<"Inserting descCalls(3) for "<<ivp->name<<" from "<<child->name<<std::endl;
+		blame_info<<"Inserting descParams(3) for "<<ivp->name<<" from "<<child->name<<std::endl;
 #endif 	
 		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
 		ivp->aliasParams.insert(child->descParams.begin(), child->descParams.end());	
@@ -862,9 +895,14 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp)
 	for (v_vp_i = ivp->aliases.begin(); v_vp_i != ivp->aliases.end(); v_vp_i++) {
 		NodeProps *child = *v_vp_i;
 		if (child->calcAggCall == false)
-			calcAggCallRecursive(child);
+			calcAggCallRecursive(child, vStack_call, vRevisit_call);
+
+		if (vStack_call.count(child)) {
+			vRevisit_call.insert(child);
+			vRevisit_call.insert(ivp);
+		}
 #ifdef DEBUG_CALC_RECURSIVE		
-			blame_info<<"Inserting descCalls(4) for "<<ivp->name<<" from "<<child->name<<std::endl;
+		blame_info<<"Inserting descParams(4) for "<<ivp->name<<" from "<<child->name<<std::endl;
 #endif 				
 		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
 		ivp->aliasParams.insert(child->descParams.begin(), child->descParams.end());
@@ -874,16 +912,42 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp)
 	for (v_vp_i = ivp->dfAliases.begin(); v_vp_i != ivp->dfAliases.end(); v_vp_i++) {
 		NodeProps *child = *v_vp_i;
 		if (child->calcAggCall == false)
-			calcAggCallRecursive(child);
+			calcAggCallRecursive(child, vStack_call, vRevisit_call);
+
+		if (vStack_call.count(child)) {
+			vRevisit_call.insert(child);
+			vRevisit_call.insert(ivp);
+		}
 #ifdef DEBUG_CALC_RECURSIVE		
-			blame_info<<"Inserting descCalls(5) for "<<ivp->name<<" from "<<child->name<<std::endl;
+		blame_info<<"Inserting descParams(5) for "<<ivp->name<<" from "<<child->name<<std::endl;
 #endif 				
 		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
 		ivp->aliasParams.insert(child->descParams.begin(), child->descParams.end());
 	}
+
+#ifdef PARAMS_CONTRIBUTOR_FIELDS
+    for (v_vp_i = ivp->fields.begin(); v_vp_i != ivp->fields.end(); v_vp_i++) {
+        NodeProps *child = *v_vp_i;
+        if (child->calcAggCall == false)
+            calcAggCallRecursive(child, vStack_call, vRevisit_call);
+
+		if (vStack_call.count(child)) {
+			vRevisit_call.insert(child);
+			vRevisit_call.insert(ivp);
+		}
+#ifdef DEBUG_CALC_RECURSIVE		
+		blame_info<<"Inserting descParams(6) for "<<ivp->name<<" from "<<child->name<<std::endl;
+#endif 				
+		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
+		ivp->aliasParams.insert(child->descParams.begin(), child->descParams.end());
+	}
+#endif
+
 #ifdef DEBUG_CALC_RECURSIVE
-		blame_info<<"Exiting calcAggCallRecursive(N) for "<<ivp->name<<std::endl;
+	blame_info<<"Exiting calcAggCallRecursive(N) for "<<ivp->name<<std::endl;
 #endif 		
+
+    vStack_call.erase(ivp);
 
 }
 
@@ -953,8 +1017,20 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         for(int a=0; a< NODE_PROPS_SIZE; a++)
             blame_info<<ivp->nStatus[a]<<" ";
         blame_info<<std::endl;
-        NodeProps *storeFrom = ivp->storeFrom;
-        ivp->descLineNumbers.insert(storeFrom->descLineNumbers.begin(), storeFrom->descLineNumbers.end());
+        NodeProps *child = ivp->storeFrom;
+		
+        if (child->calcAgg == false)
+			calcAggregateLNRecursive(child, vStack, vRevisit);
+		
+		if (vStack.count(child)) {
+		#ifdef DEBUG_LINE_NUMS
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+		#endif
+			vRevisit.insert(child);
+			vRevisit.insert(ivp);
+		}
+        
+        ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
 #ifdef DEBUG_PRINT_LINE_NUMS
 	    blame_info<<"After storeFrom: "<<ivp->name<<std::endl;
 	    for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
@@ -1333,6 +1409,9 @@ void FunctionBFC::calcAggregateLN()
 	std::set<NodeProps *>::iterator ivh_i;
 	std::set<NodeProps *> vStack;
 	std::set<NodeProps *> vRevisit;
+
+	std::set<NodeProps *> vStack_call;
+	std::set<NodeProps *> vRevisit_call;
 	// Populate Edges
 	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
 		NodeProps *ivp = (*ivh_i);
@@ -1340,10 +1419,10 @@ void FunctionBFC::calcAggregateLN()
 			calcAggregateLNRecursive(ivp, vStack, vRevisit);
 		
 		if (ivp->calcAggCall == false)
-			calcAggCallRecursive(ivp);
+			calcAggCallRecursive(ivp, vStack_call, vRevisit_call);
 	}
 	
-	// Revisit the ones that had conflicts
+	// Revisit the ones that had conflicts for calcAggregateLNRecursive
 	#ifdef DEBUG_LINE_NUMS
 	blame_info<<"Revisiting some of the conflicted agg LN values."<<std::endl;
 	#endif
@@ -1362,6 +1441,26 @@ void FunctionBFC::calcAggregateLN()
 		NodeProps *ivp = (*ivh_i);
 		if (ivp->calcAgg == false)
 			calcAggregateLNRecursive(ivp, vStack, vRevisit);
+	}
+
+	// Revisit the ones that had conflicts for calcAggCallRecursive, added by Hui
+	#ifdef DEBUG_LINE_NUMS
+	blame_info<<"Revisiting some of the conflicted agg Call values."<<std::endl;
+	#endif
+	for (set_vp_i = vRevisit_call.begin(); set_vp_i != vRevisit_call.end(); set_vp_i++)
+		(*set_vp_i)->calcAggCall = false;
+		
+	for (set_vp_i = vRevisit_call.begin(); set_vp_i != vRevisit_call.end(); set_vp_i++)
+		calcAggCallRecursive(*set_vp_i, vStack_call, vRevisit_call);
+		
+	// Revisit them all to take care of scragglers		
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++)
+		(*ivh_i)->calcAggCall = false;
+		
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+		if (ivp->calcAggCall == false)
+			calcAggCallRecursive(ivp, vStack_call, vRevisit_call);
 	}
 
 }
@@ -1580,7 +1679,7 @@ void FunctionBFC::moreThanOneEV(int &numMultipleEV, int &afterOp1, int &afterOp2
 	
 	for (v_ev_i = exitVariables.begin(); v_ev_i != exitVariables.end(); v_ev_i++) {
 		ExitVariable *ev = *v_ev_i;
-		if (ev->whichParam > 0 && (ev->vertex != NULL && ev->vertex->eStatus != EXIT_VAR_UNWRITTEN)) {
+		if (ev->whichParam >= 0 && (ev->vertex != NULL && ev->vertex->eStatus != EXIT_VAR_UNWRITTEN)) { //changed by Hui from >0 to >=0
 			numEV++;
 			if (ev->vertex->descLineNumbers.size() > 1) {
 				numEV2++;
@@ -1613,8 +1712,8 @@ NodeProps *FunctionBFC::resolveSideEffectsCheckParentEV(NodeProps *vp, std::set<
 	
 	visited.insert(vp);
 	
-	if (vp->eStatus > EXIT_VAR_PARAM || vp->nStatus[EXIT_VAR_FIELD])
-		return vp;
+	if (vp->eStatus >= EXIT_VAR_PARAM || vp->nStatus[EXIT_VAR_FIELD]) //changed by Hui 03/15/16
+		return vp;                                                  //from >EXIT_VAR_PARAM to >=...
 	
 	if (vp->dpUpPtr != NULL || vp->dpUpPtr != vp)
 		return resolveSideEffectsCheckParentEV(vp->dpUpPtr, visited);
@@ -1972,8 +2071,8 @@ void FunctionBFC::resolveSideEffects()
 			std::set<NodeProps *> visited;
 			for (vec_vp_i = ivp->dfAliases.begin(); vec_vp_i != ivp->dfAliases.end(); vec_vp_i++) {
 				resolveSideEffectsHelper(ivp, *vec_vp_i, visited);
-				if ((*vec_vp_i)->eStatus > EXIT_VAR_PARAM || (*vec_vp_i)->nStatus[EXIT_VAR_FIELD]) {
-#ifdef DEBUG_SIDE_EFFECTS		 
+				if ((*vec_vp_i)->eStatus >= EXIT_VAR_PARAM || (*vec_vp_i)->nStatus[EXIT_VAR_FIELD]) {//changed by Hui 03/15/16
+#ifdef DEBUG_SIDE_EFFECTS		                                                                    //from >EXIT_VAR_PARAM to >=...
 					blame_info<<"Match(DFA) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<std::endl;
 #endif
 					addSEAlias(ivp, (*vec_vp_i));
@@ -1986,8 +2085,8 @@ void FunctionBFC::resolveSideEffects()
 			}
 			
 			for (vec_vp_i = ivp->aliases.begin(); vec_vp_i != ivp->aliases.end(); vec_vp_i++) {
-				if ((*vec_vp_i)->eStatus > EXIT_VAR_PARAM || (*vec_vp_i)->nStatus[EXIT_VAR_FIELD]  ||(*vec_vp_i)->nStatus[EXIT_VAR_PTR]) {
-#ifdef DEBUG_SIDE_EFFECTS
+				if ((*vec_vp_i)->eStatus >= EXIT_VAR_PARAM || (*vec_vp_i)->nStatus[EXIT_VAR_FIELD]  ||(*vec_vp_i)->nStatus[EXIT_VAR_PTR]) {
+#ifdef DEBUG_SIDE_EFFECTS                                                               //changed by Hui 03/15/16 from >EXIT_VAR_PARAM to >=...
 					blame_info<<"Match(A) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<std::endl;
 #endif
 					addSEAlias(ivp, (*vec_vp_i));

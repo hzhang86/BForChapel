@@ -88,8 +88,9 @@ void FunctionBFC::adjustLocalVars()
                     v->isFakeLocal = true; //no use later
                 }
             }
-            else
 #ifdef DEBUG_LOCALS
+            else
+
                 blame_info<<"Local Var Not Found: begin = "<<begin->first<< \
                     ", lv_i = "<<(*lv_i)->varName.c_str()<<std::endl;
 #endif
@@ -116,8 +117,8 @@ void FunctionBFC::populateGlobals(std::vector<NodeProps *> &gvs)
 #endif
 		variables[np->name.c_str()] = np; //RegHashProps variables: char* --> NodeProps*
 		//addGlobalExitVar(new ExitVariable(vp->name.c_str(), GLOBAL, -1));
-		addExitVar(new ExitVariable(np->name, GLOBAL, -1, false));
-		
+		addExitVar(new ExitVariable(np->name, GLOBAL, -2, false)); //changed by Hui 03/15/16: whichParam from -1 to -2
+		                                                        //because we set retVal to -1 now
 	}
 }
 
@@ -675,7 +676,7 @@ void FunctionBFC::determineFunctionExitStatus()
 		voidReturn = true;
 	}
     else {
-		ExitVariable *ev = new ExitVariable(std::string("DEFAULT_RET"), RET, 0, false); //{realName, ExitType, whichParam, isStructPtr}
+		ExitVariable *ev = new ExitVariable(std::string("DEFAULT_RET"), RET, -1, false); //{realName, ExitType, whichParam, isStructPtr}, changed by Hui from 0 to -1
 		addExitVar(ev); //exitVariables.push_back(ev)
 	}
 	
@@ -688,7 +689,7 @@ void FunctionBFC::determineFunctionExitStatus()
 	
     // Iterates through all parameters for a function 
     for(Function::arg_iterator af_i = func->arg_begin(); af_i != func->arg_end(); af_i++) {
-		whichParam++;
+		//whichParam++; //commented out by Hui 03/15/16, now real params of func starts from #0
 		Value * v = af_i;
 		
 		// EXIT VAR HERE
@@ -780,7 +781,8 @@ void FunctionBFC::determineFunctionExitStatus()
 					}
 				}
 			}	
-		}	
+        }	
+        whichParam++; //added by Hui 03/15/16, moved from the beginning
 	}	
 	
 	if (numPointerParams == 0 && voidReturn == true) {
@@ -1379,8 +1381,8 @@ bool FunctionBFC::parseDeclareIntrinsic(Instruction *pi, int &currentLineNum, Fu
     }
     
     Function *calledFunc = ci->getCalledFunction();	
-
-	if(calledFunc->getName().str().find("llvm.dbg.declare") != std::string::npos) {
+    if(calledFunc != NULL && calledFunc->hasName()){
+	  if(calledFunc->getName().str().find("llvm.dbg.declare") != std::string::npos) {
 		//Value * varDeclare = pi->getOperand(2); //TO CHECK: if it doesn't work, then need calledFunc::arg_iterator
         //Function::arg_iterator arg_i = calledFunc->arg_begin();
         //arg_i++;
@@ -1389,6 +1391,7 @@ bool FunctionBFC::parseDeclareIntrinsic(Instruction *pi, int &currentLineNum, Fu
 		Value *varDeclare = ci->getArgOperand(1);//Only this work, aboves NOT
         grabVarInformation(varDeclare);
 	    return true;
+      }
 	}
 
     return false;
@@ -1498,7 +1501,8 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
     /////added by Hui,trying to get the called function///////////
     llvm::CallInst *cpi = cast<CallInst>(pi);
     llvm::Function *calledFunc = cpi->getCalledFunction();
-    blame_info<<"In ieCall, calledFunc's name = "<<calledFunc->getName().data();
+    if(calledFunc != NULL && calledFunc->hasName())
+        blame_info<<"In ieCall, calledFunc's name = "<<calledFunc->getName().data();
     blame_info<<"  pi->getNumOperands()="<<pi->getNumOperands()<<std::endl;
     //////////////////////////////////////////////////////////
     //added by Hui 12/31/15: get the callName from the last operand first
@@ -1608,7 +1612,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 			addFuncCalls(fp);
 			vp->nStatus[CALL_NODE] = true; //CALL_NODE = 16, NODE_PROPS_SIZE = 20
 			
-	//We need to assign a funcCall object to the return and treat it as "parameter"0
+//We need to assign a funcCall object to the return and treat it as "parameter"-1
 			if (pi->hasName()) {
 				if (variables.count(pi->getName().data())) {
 					NodeProps *retVP = variables[pi->getName().data()];
@@ -1721,8 +1725,11 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 				addFuncCalls(fp);
 				vp->nStatus[CALL_PARAM] = true;
 			}
-
-			else if (v->getValueID() != Value::ConstantIntVal) {//v has no name and not a constant int
+            
+			else { 
+              unsigned valueID = v->getValueID(); //added by Hui 03/15/16
+              if (valueID != Value::ConstantIntVal && valueID != Value::ConstantFPVal \
+                     && valueID != Value::UndefValueVal && valueID != Value::ConstantPointerNullVal) {//v has no name and not a constant value 03/15/16
 				char tempBuf2[18];
 				sprintf(tempBuf2, "0x%x", /*(unsigned)*/v);
 				std::string name(tempBuf2);
@@ -1752,7 +1759,8 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 				vp->addFuncCall(fp);
 				addFuncCalls(fp);
 				vp->nStatus[CALL_PARAM] = true;
-			}
+			  }
+            }
 		}
 
 		opNum++;
@@ -1879,7 +1887,7 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
 }
 
 
-void FunctionBFC::ieGen_Operands(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
+void FunctionBFC::ieGen_Operands(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
 {
 	int opNum = 0;
 	// Add operands to list of symbols
@@ -1927,6 +1935,66 @@ void FunctionBFC::ieGen_Operands(User *pi, int &varCount, int &currentLineNum, F
 				createNPFromConstantExpr(ce, varCount, currentLineNum, fbb); 
 			}
 		}
+        /*else { //added by Hui 03/22/16, we need to create nodes for constants
+            //added by Hui : deal with constant operands
+            string opName;
+	        if (v->getValueID() == Value::ConstantIntVal) {
+		        ConstantInt *cv = (ConstantInt *)v;
+		        int number = cv->getSExtValue();
+		
+		        char tempBuf[64];
+		        sprintf(tempBuf, "Constant+%i+%i+%i+%i", number, currentLineNum, 0, pi->getOpcode());		
+		        char *vN = (char *) malloc(sizeof(char)*(strlen(tempBuf)+1));
+	
+		        strcpy(vN,tempBuf);
+		        vN[strlen(tempBuf)]='\0';
+		        const char *vName = vN;
+		
+		        opName.insert(0, vName);
+	        } 
+	        else if (v->getValueID() == Value::ConstantFPVal) {
+		        char tempBuf[70];
+		        ConstantFP *cfp = (ConstantFP *)v;
+		        const APFloat apf = cfp->getValueAPF();
+	
+		        if(APFloat::semanticsPrecision(apf.getSemantics()) == 24) {
+			      float floatNum = apf.convertToFloat();
+			      sprintf (tempBuf, "Constant+%g+%i+%i+%i", floatNum, currentLineNum, 0, pi->getOpcode());		
+		        }
+		        else if(APFloat::semanticsPrecision(apf.getSemantics()) == 53) {
+			      double floatNum = apf.convertToDouble();
+			      sprintf (tempBuf, "Constant+%g2.2+%i+%i+%i", floatNum, currentLineNum, 0, pi->getOpcode());		
+		        }
+		        else {
+#ifdef DEBUG_ERROR
+			      std::cerr<<"Not a float or a double FPVal"<<std::endl;
+			      blame_info<<"Not a float or a double FPVal"<<std::endl;
+#endif 
+		        }
+		
+		        char *vN = (char *) malloc(sizeof(char)*(strlen(tempBuf)+1));
+		        strcpy(vN,tempBuf);
+		        vN[strlen(tempBuf)]='\0';
+		        const char * vName = vN;
+		
+		        opName.insert(0, vName);
+	        }
+#ifdef DEBUG_VP_CREATE
+			blame_info<<"Adding NodeProps(hui2) for "<<opName<<std::endl;
+#endif 
+			NodeProps *vp = new NodeProps(varCount,opName,currentLineNum,pi);
+			vp->fbb = fbb;
+			  	
+			if (currentLineNum != 0) {
+			    int lnm_cln = lnm[currentLineNum];
+			    vp->lineNumOrder = lnm_cln;
+				lnm_cln++;
+				lnm[currentLineNum] = lnm_cln;
+			}
+
+			variables[v->getName().data()] = vp;					
+			varCount++;
+        }*/
 		opNum++;
 	}
 }
@@ -2167,7 +2235,11 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
                     User::op_iterator op_i2 = pi->op_begin();
                     Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
 #ifdef DEBUG_LLVM
-                    blame_info<<"STORE to(4) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+/*                    if (secondStr->hasName())
+                        blame_info<<"STORE to(4) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+                    else 
+                        blame_info<<"STORE to(4b) no-name from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+*/
 #endif 
                     FuncStores *fs = new FuncStores();
                 
@@ -2533,7 +2605,7 @@ void FunctionBFC::ieSelect(Instruction *pi, int &varCount, int &currentLineNum, 
 void FunctionBFC::ieBlank(Instruction * pi, int & currentLineNum)
 {
 #ifdef DEBUG_LLVM
-	blame_info<<"In ieBlank for opcode "<<pi->getOpcode()<<" "<<currentLineNum<<std::endl;
+	blame_info<<"In ieBlank for opcode "<<pi->getOpcodeName()<<" "<<currentLineNum<<std::endl;
 #endif
 	
 }
@@ -2574,10 +2646,13 @@ void FunctionBFC::ieBitCast(Instruction *pi, int &varCount, int &currentLineNum,
 		if (Instruction *usesBit = dyn_cast<Instruction>(*use_i)) {
 			if ((usesBit->getOpcode() == usesBit->Call) && isa<CallInst>(usesBit)) {
                 CallInst *ci = cast<CallInst>(usesBit);
-                Function *calledFunc = ci->getCalledFunction();
-				
-                if(calledFunc->getName().str().find("llvm.dbg") != std::string::npos)
-					return;
+                if(ci != NULL){
+                    Function *calledFunc = ci->getCalledFunction();
+				    if(calledFunc != NULL)
+                      if(calledFunc->hasName())
+                        if(calledFunc->getName().str().find("llvm.dbg") != std::string::npos)
+				          return;
+                }
 			}						
 		}
 	}

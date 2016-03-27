@@ -19,15 +19,17 @@
 //////////////////////////
 #define ENABLE_FORTRAN 
 #define HUI_CHPL
+//#define DEBUG_CFG_STORELINES
 //#define HUI_C
 //#define REVERSE_CP_REL1
 #define REVERSE_CP_REL2
+#define PARAMS_CONTRIBUTOR_FIELDS
 //#define USE_LLVM25 //shall never be turned on for llvm newer than 2.5
 //////////////////////////
 
 #define DEBUG_GRAPH_BUILD
 #define DEBUG_GRAPH_BUILD_EDGES
-#define DEBUG_GRAPH_COLLAPSE
+//#define DEBUG_GRAPH_COLLAPSE
 
 
 #define DEBUG_GRAPH_IMPLICIT
@@ -46,7 +48,7 @@
 #define DEBUG_LLVM_IMPLICIT
 
 #define DEBUG_GLOBALS
-#define DEBUG_LOCALS
+//#define DEBUG_LOCALS
 
 #define DEBUG_CFG
 

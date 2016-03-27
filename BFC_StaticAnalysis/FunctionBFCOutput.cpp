@@ -503,7 +503,7 @@ void FunctionBFC::exportParams(std::ostream &O)
 	for (v_ev_i = exitVariables.begin(); v_ev_i != exitVariables.end(); v_ev_i++)
 	{
 		ExitVariable * ev = *v_ev_i;
-		if (ev->whichParam > 0 && ev->vertex != NULL)
+		if (ev->whichParam >= 0 && ev->vertex != NULL)//changed by Hui '>0'-->'>=0'
 		{
 			O<<ev->whichParam<<" "<<ev->realName<<" "<<ev->isStructPtr<<" "<<ev->vertex->descLineNumbers.size()<<std::endl;
 			if (ev->vertex->descLineNumbers.size() > 0 && ev->vertex->descLineNumbers.size() < 20)
@@ -628,8 +628,8 @@ void FunctionBFC::printFinalDot(bool printAllLines, std::string ext)
 		//	lineNum = v->vp->line_num;
 		
 		// Print out the nodes
-		if (v->eStatus > EXIT_VAR_PARAM)
-		{
+		if (v->eStatus >= EXIT_VAR_PARAM) //changed by Hui 03/15/16, from > to >=, 
+		{                               //same changes to other EXIT_VAR_PARAM
 			O<<get(get(vertex_index, G_trunc),*i)<<"[label=\""<<v->name;
 			O<<":("<<lineNum<<")"<<"P# "<<v->eStatus - EXIT_VAR_PARAM;
 			O<<"\",shape=invtriangle, style=filled, fillcolor=green]\n";		
@@ -888,6 +888,19 @@ void FunctionBFC::printFinalDot(bool printAllLines, std::string ext)
 			O<<":("<<lineNum<<":"<<lineNumOrder<<")";
 			O<<"\",shape=octagon, style=filled, fillcolor=red]\n";
 		}
+        //added by Hui 03/22/16 to take care of important registers
+        else if (v->nStatus[IMP_REG])
+        {
+			if (v->storeFrom == NULL)
+				O<<get(get(vertex_index, G_trunc),*i)<<"[label=\""<<v->name;
+			else
+			{
+				O<<get(get(vertex_index, G_trunc),*i)<<"[label=\""<<v->name;
+				O<<"("<<v->storeFrom->name<<")";			
+				O<<":("<<lineNum<<":"<<lineNumOrder<<")";
+			}
+			O<<"\",shape=square, style=filled, fillcolor=brown]\n";	
+        }
 		else
 		{
 		#ifdef DEBUG_ERROR
@@ -1020,7 +1033,7 @@ void FunctionBFC::printFinalDotPretty(bool printAllLines, std::string ext)
 		//	lineNum = v->vp->line_num;
 		
 		// Print out the nodes
-		if (v->eStatus > EXIT_VAR_PARAM)
+		if (v->eStatus >= EXIT_VAR_PARAM)
 		{
 			O<<get(get(vertex_index, G_trunc),*i)<<"[label=\""<<v->name;
 			O<<"P# "<<v->eStatus - EXIT_VAR_PARAM;
@@ -1271,6 +1284,12 @@ void FunctionBFC::printFinalDotPretty(bool printAllLines, std::string ext)
 			//O<<":("<<lineNum<<":"<<lineNumOrder<<")";
 			O<<"\",shape=octagon, style=filled, fillcolor=red]\n";
 		}
+        //added by Hui 03/22/16 to take care of important registers
+        else if (v->nStatus[IMP_REG])
+        {
+			O<<get(get(vertex_index, G_trunc),*i)<<"[label=\""<<v->name;
+			O<<"\",shape=square, style=filled, fillcolor=brown]\n";	
+        }
 		else
 		{
 		#ifdef DEBUG_ERROR
@@ -1397,7 +1416,7 @@ void FunctionBFC::printFinalDotAbbr(std::string ext)
 		//	lineNum = v->vp->line_num;
 		
 		// Print out the nodes
-		if (v->eStatus > EXIT_VAR_PARAM)
+		if (v->eStatus >= EXIT_VAR_PARAM)
 		{
 			O<<get(get(vertex_index, G_abbr),*i)<<"[label=\""<<v->name;
 			O<<":("<<lineNum<<")"<<"P# "<<v->eStatus - EXIT_VAR_PARAM;
@@ -1904,7 +1923,7 @@ void FunctionBFC::printToDotTrunc(std::ostream &O)
 		blame_info<<" "<<v->nStatus[CALL_RETURN]<<std::endl;
 #endif
 
-		if (v->eStatus > EXIT_VAR_PARAM)
+		if (v->eStatus >= EXIT_VAR_PARAM)
 		{
 			O<<get(get(vertex_index, G),*i)<<"[label=\""<<v->name;
 				if (v->fbb != NULL)

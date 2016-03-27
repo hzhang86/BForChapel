@@ -56,8 +56,15 @@ namespace std
 #define EXIT_OUTP        2
 #define EXIT_VAR_GLOBAL  3
 #define EXIT_VAR_RETURN  4
-#define EXIT_VAR_PARAM  EXIT_VAR_RETURN
+//#define EXIT_VAR_PARAM  EXIT_VAR_RETURN
+#define EXIT_VAR_PARAM  5 //changed by Hui 03/15/16
 
+//added for debug purpose//
+#define DEBUG_BLAMEES
+#define DEBUG_BLAMED_EXITS
+#define DEBUG_DETER_BH
+#define DEBUG_RESOLVE_LN
+//#define DEBUG_DETER_BH
 
 using namespace std;
 class BlameFunction;
