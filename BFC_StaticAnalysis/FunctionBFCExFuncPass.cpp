@@ -13,6 +13,9 @@
 #include <iostream>
 #include <map>
 
+#include <ctype.h>
+#include <string.h>
+
 using namespace std;
 
 void FunctionBFC::transferExternCallEdges(std::vector< std::pair<int, int> > &blamedNodes, int callNode, std::vector< std::pair<int, int> > & blameeNodes)
@@ -27,7 +30,7 @@ void FunctionBFC::transferExternCallEdges(std::vector< std::pair<int, int> > &bl
 		std::pair<int, int> blamee = *v_pair_i;
 		tie(ed, inserted) = add_edge(callNode, blamee.second, G);
 		
-		//std::cout<<"Adding ERCALL(1) edge for param "<<blamee.first<<"("<<blamee.second<<") of "<<callNode<<" call"<<std::endl;
+		blame_info<<"Adding ERCALL(1) edge for blamee param "<<blamee.first<<"("<<blamee.second<<") of "<<callNode<<" call"<<std::endl;
 		
 		if (inserted) {
 			// We need to have as much info in the graph as possible,
@@ -69,6 +72,10 @@ void FunctionBFC::transferExternCallEdges(std::vector< std::pair<int, int> > &bl
 				blameeV->nStatus[CALL_PARAM] = false;
 				blameeV->nStatus[CALL_RETURN] = false;
 				blameeV->nStatus[CALL_NODE] = false;
+
+#ifdef ONLY_FOR_PARAM1 // we still want all call-related nodes to be important
+                blameeV->nStatus[IMP_REG] = true;
+#endif
 			}
 		}
 	}
@@ -79,7 +86,7 @@ void FunctionBFC::transferExternCallEdges(std::vector< std::pair<int, int> > &bl
 		remove_edge(blamed.second, callNode, G);
 		tie(ed, inserted) = add_edge(blamed.second, callNode, G);
         #ifdef DEBUG_EXTERN_CALLS
-		blame_info<<"Adding ERCALL(2) edge for param "<<blamed.first<<"("<<blamed.second<<") of "<<callNode<<" call"<<std::endl;
+		blame_info<<"Adding ERCALL(2) edge for blamed param "<<blamed.first<<"("<<blamed.second<<") of "<<callNode<<" call"<<std::endl;
 		#endif
 		
 		if (inserted) {
@@ -115,14 +122,34 @@ void FunctionBFC::transferExternCallEdges(std::vector< std::pair<int, int> > &bl
 				blamedV->nStatus[CALL_PARAM] = false;
 				blamedV->nStatus[CALL_RETURN] = false;
 				blamedV->nStatus[CALL_NODE] = false;
-			}
+	
+#ifdef ONLY_FOR_PARAM1  //we still want all call-related nodes to be important
+                blamedV->nStatus[IMP_REG] = true;
+#endif
+            }
 		}
 	}
 }
 
+const char* FunctionBFC::trimTruncStr(const char *truncStr)
+{
+  int last = (int)strlen(truncStr);
+  if (!last) //last==0
+    return NULL;
 
+  while (isdigit(truncStr[last-1])) {
+    last--;
+  }
 
-const char *FunctionBFC::getTruncStr(const char *fullStr)
+  const char *startPtr = truncStr;
+  char *tempStr = new char[last + 1];
+  strncpy(tempStr, startPtr, last);
+  tempStr[last] = '\0';
+  const char *trimedStr = tempStr;
+  return trimedStr;
+}
+
+const char* FunctionBFC::getTruncStr(const char *fullStr)
 {
   const char *endPtr = strstr( fullStr, "--" );
   const char *startPtr = fullStr;

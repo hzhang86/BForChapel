@@ -245,7 +245,16 @@ int VertexProps::findBlamedExits(std::set<VertexProps *> & visited, int lineNum)
 		visited.insert(this->fieldUpPtr);
 	
 	if (lineNumbers.count(lineNum) || declaredLine == lineNum)
-		return 1;
+#ifdef CHECK_PARAM_WRITTEN_IN_CALL
+    {
+      if(paramIsBlamedForTheCall) {   //added by Hui 04/18/16: param is only blamed for this call when it's written in the call
+        cout<<this->name<<"'s paramIsBlamedForTheCall=1 and lineNumbers includes "<<lineNum<<endl;
+#endif
+        return 1;
+#ifdef CHECK_PARAM_WRITTEN_IN_CALL
+      }
+    }
+#endif
 
 	std::set<VertexProps *>::iterator set_vp_i;
 	std::vector<FuncCall *>::iterator vec_vp_i;

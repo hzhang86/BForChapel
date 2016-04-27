@@ -240,7 +240,13 @@ public:
 	//e.g we have: *a=load **b; store *a **c; then
     set<NodeProps *> aliasesIn; // c.aliasesIn.insert(b);
 	set<NodeProps *> aliasesOut;// b.aliasesOut.insert(c);
-	
+	/*
+       difference between fields and GEP, if 'this' node is a struct, then a GEP_BASE
+       edge generates a field; otherwise a GEP_BASE edge generates a GEP; besides, if:
+       a = load/GEP/RLS this;
+       b = GEP a;
+       and if this is NOT a struct and b's ptrLevel>0, then: this.GEPs.insert(b), a.GEPs.insert(b)
+    */
     set<NodeProps *> fields; // for structures, shouldn't include itself
 	set<NodeProps *> GEPs;  //a=GEP array, .... Then a is a GEP of array
 	set<NodeProps *> loads; //%val = load i32* %ptr, then ptr.loads.insert(val)
@@ -279,7 +285,8 @@ public:
 	set<NodeProps *> dfParents;
 	
 	set<NodeProps *> aliases; // taken care of with pointer analysis, can include itself
-	set<NodeProps *> dfAliases; // aliases dictated by data flow
+	set<NodeProps *> dfAliases; //aliases dictated by data flow, e.g its storesTo
+                                //as long as it's a localVar
 	set<NodeProps *> dataPtrs; //if this node is int** array, and we have 
 	set<ImpFuncCall *> calls;  // store int* a int** array
 	                           // int* b = load int** array

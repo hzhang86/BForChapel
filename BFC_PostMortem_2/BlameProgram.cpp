@@ -218,7 +218,7 @@ void BlameProgram::addFunction(BlameFunction * bf)
 
     BlameModule * bm = findOrCreateModule(bf->getModuleName().c_str());
     bm->addFunction(bf); //add to FunctionHash blameFunctions in this bm
-	bm->addFunctionSet(bf);
+	//bm->addFunctionSet(bf); //removed by Hui 03/29/16, not using funcBySet anymore
 	
 	blameFunctions[bf->getName().c_str()] = bf; //add to blameFunctions in this bp
 	

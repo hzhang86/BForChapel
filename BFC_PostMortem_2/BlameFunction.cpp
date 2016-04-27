@@ -492,28 +492,48 @@ void BlameFunction::calcAggregateLN_SE_Recursive(VertexProps * ivp)
 
 void BlameFunction::calcAggregateLN_SE_Recursive(VertexProps * ivp)
 {
-  //std::cout<<"Entering calcAggregateLN_SE_Recursive for "<<ivp->name<<std::endl;
-  
+#ifdef DEBUG_SELINES
+  std::cout<<"Entering calcAggregateLN_SE_Recursive for "<<ivp->name<<std::endl;
+#endif 
   if (ivp->calcAggSE)
   {
-    //std::cout<<"Exiting calcAggregateLN_SE_Recursive(1) for "<<ivp->name<<std::endl;
     return;
   }
   
-  
+#ifdef DEBUG_SELINES
+  set<int>::iterator si;
+#endif
+
   ivp->calcAggSE = true;
   
   ivp->seLineNumbers.insert(ivp->lineNumbers.begin(), ivp->lineNumbers.end());
   ivp->seLineNumbers.insert(ivp->declaredLine);
+#ifdef DEBUG_SELINES
+  cout<<"After inserting its own lineNumbers and declaredLine:"<<endl;
+  for(si=ivp->seLineNumbers.begin(); si !=ivp->seLineNumbers.end(); si++)
+    cout<<*si<<" ";
+  cout<<endl;
+#endif
+
   ivp->seLineNumbers.insert(ivp->tempSELines.begin(), ivp->tempSELines.end());
-  
+#ifdef DEBUG_SELINES
+  cout<<"After inserting its tempSELines:"<<endl;
+  for(si=ivp->seLineNumbers.begin(); si !=ivp->seLineNumbers.end(); si++)
+    cout<<*si<<" ";
+  cout<<endl;
+#endif
+
   if (ivp->storeFrom != NULL)
     ivp->seLineNumbers.insert(ivp->storeFrom->declaredLine);
-  
+#ifdef DEBUG_SELINES
+  cout<<"After inserting from its storeFrom's declaredLine:"<<endl;
+  for(si=ivp->seLineNumbers.begin(); si !=ivp->seLineNumbers.end(); si++)
+    cout<<*si<<" ";
+  cout<<endl;
+#endif
   
   std::set<VertexProps *>::iterator s_vp_i;
   std::set<VertexProps *>::iterator s_vp_i2;
-  
 
   
   for (s_vp_i = ivp->tempRelations.begin(); s_vp_i != ivp->tempRelations.end(); s_vp_i++)
@@ -527,6 +547,12 @@ void BlameFunction::calcAggregateLN_SE_Recursive(VertexProps * ivp)
     ivp->seLineNumbers.insert(child->seLineNumbers.begin(), child->seLineNumbers.end());
   }
   
+#ifdef DEBUG_SELINES
+  cout<<"After inserting from its tempRelations:"<<endl;
+  for(si=ivp->seLineNumbers.begin(); si !=ivp->seLineNumbers.end(); si++)
+    cout<<*si<<" ";
+  cout<<endl;
+#endif
   
   for (s_vp_i = ivp->tempChildren.begin(); s_vp_i != ivp->tempChildren.end(); s_vp_i++)
   {
@@ -539,6 +565,16 @@ void BlameFunction::calcAggregateLN_SE_Recursive(VertexProps * ivp)
     ivp->seLineNumbers.insert(child->seLineNumbers.begin(), child->seLineNumbers.end());
     ivp->seLineNumbers.insert(child->declaredLine);
   }
+
+#ifdef DEBUG_SELINES
+  cout<<"After inserting from its tempChildren:"<<endl;
+  for(si=ivp->seLineNumbers.begin(); si !=ivp->seLineNumbers.end(); si++)
+    cout<<*si<<" ";
+  cout<<endl;
+#endif
+#ifdef DEBUG_SELINES
+  std::cout<<"Exiting calcAggregateLN_SE_Recursive(1) for "<<ivp->name<<std::endl;
+#endif
 }
 
 
@@ -812,7 +848,7 @@ BlameFunction * BlameFunction::parseBlameFunction(ifstream & bI)
   //BEGIN F_BPOINT
   getline(bI, line);
   
-  // End Line Num
+  // function blame point
   getline(bI, line);
   int bPoint = atoi(line.c_str());
   setBlamePoint(bPoint);
@@ -820,6 +856,21 @@ BlameFunction * BlameFunction::parseBlameFunction(ifstream & bI)
   //END F_BPOINT
   getline(bI, line);
   
+  //----
+  //BEGIN ALL_LINES
+  getline(bI, line);
+  
+  //record function allLines
+  getline(bI, line);
+  stringstream ss(line);
+  int LN;
+  while (ss >> LN) {
+    allLineNums.insert(LN);
+  }
+
+  //END ALL_LINES
+  getline(bI, line);
+
   //----
   bool proceed = true;
   while (proceed)
@@ -1000,10 +1051,6 @@ bool BlameFunction::notARepeat(VertexProps * vp, std::set<VertexProps *> & blame
 }
 
 
-
-
-
-
 void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std::set<VertexProps *> & oldBlamees,VertexProps * callNode,int lineNum, short isBlamePoint, std::set<VertexProps *> & localBlamees,std::set<VertexProps *> & DQblamees)
 {
   std::set<VertexProps *> visited;
@@ -1026,7 +1073,7 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
   {
     VertexProps * vp = it->second;
 #ifdef DEBUG_DETER_BH
-    cout<<"Key = "<<it->first<<"    Value = "<<it->second->name<<endl;
+    //cout<<"Key = "<<it->first<<"    Value = "<<it->second->name<<endl;
 #endif
     if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD])
     {
@@ -1119,12 +1166,13 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
   cout<<"Temp lines count "<<tempLines.count(lineNum)<<std::endl;
 #endif
   ////////////////////////////////////////////////////////////////////
+  //tempLines is always empty here since it's cleared in the begining clearData(), so
+  //why we bother examing it again here after allLines ? 04/18/16
   ii = tempLines.equal_range(lineNum); //We get the first and last entry in ii;
   //cout<<"\n\nPrinting all Joe and then erasing them"<<endl;
   
   for(it = ii.first; it != ii.second; ++it)
   {
-    
     VertexProps * vp = it->second;
     if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD])
     {
@@ -1399,7 +1447,6 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
           addBlameToFieldParents(vp, localBlamees, 52);
         }
       }
-      
     }  
   }
   
@@ -1776,7 +1823,6 @@ void BlameFunction::handleTransferFunction(VertexProps * callNode, std::set<Vert
 {
   std::cout<<"Need to do transfer function for "<<callNode->name<<std::endl;
   
-  
   std::set<VertexProps *>::iterator vec_int_i;
   
   std::set<int> blamers; // the values feeding into the blame
@@ -1788,7 +1834,7 @@ void BlameFunction::handleTransferFunction(VertexProps * callNode, std::set<Vert
   for (vec_int_i = blamedParams.begin(); vec_int_i != blamedParams.end(); vec_int_i++)
   {
     VertexProps * vp = (*vec_int_i);
-    std::cout<<"blamedParams: "<<vp->name<<",eStatus="<<vp->eStatus<<" ";
+    std::cout<<"blamedParams: "<<vp->name<<",eStatus="<<vp->eStatus<<" "<<std::endl;
     
     if (vp->eStatus >= EXIT_VAR_GLOBAL)//search blamed params in pre frames, 
     {                                 //if they are global variables/param/retval
@@ -1803,7 +1849,6 @@ void BlameFunction::handleTransferFunction(VertexProps * callNode, std::set<Vert
   
   std::cout<<std::endl;
   
-  
   std::vector<FuncCall *>::iterator vec_fc_i;
   for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++)
   {
@@ -1812,6 +1857,8 @@ void BlameFunction::handleTransferFunction(VertexProps * callNode, std::set<Vert
     {
       std::cout<<"Param Num "<<fc->paramNumber<<" is blamed "<<fc->callNode->name<<std::endl;
       blamedVP.insert(fc->callNode);
+      fc->callNode->paramIsBlamedForTheCall = true; //added by Hui 04/18/16: we need to know which acutal param is blamed for this func call
+      
       fc->callNode->tempLine = callNode->declaredLine;
       tempLines.insert(pair<int, VertexProps *>( fc->callNode->tempLine, fc->callNode));
 
@@ -1912,10 +1959,10 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
   // Already been calculated
   if (vp->fsName.size() > 0)
     return vp->fsName;
-  
+#ifdef DEBUG_GFSN
   std::cout<<"In GFSN for "<<vp->name<<std::endl;
   //std::cout<<"vp->sField is "<<vp->sField<<std::endl;
-  
+#endif
   
   std::string fName;
   std::string aName;
@@ -1927,7 +1974,9 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
       
     if (vp->fieldAlias->sField != NULL)
     {
+#ifdef DEBUG_GFSN
       std::cout<<"  7a - "<<vp->fieldAlias->sField->fieldName<<std::endl;
+#endif
       aName.insert(0, vp->fieldAlias->sField->fieldName);
     }
     else
@@ -1940,16 +1989,18 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
         pos++;
         
       std::string modName = vp->fieldAlias->name.substr(pos);
-        
+#ifdef DEBUG_GFSN  
       std::cout<<"  7b - "<<modName<<std::endl;
+#endif
       aName.insert(0, modName);
     }
   }
     
   if (vp->sField == NULL)
   {
+#ifdef DEBUG_GFSN
     std::cout<<"1a - vp->sField is NULL"<<std::endl;
-    
+#endif    
     // Uncomment these two lines to return behavior to old
     //fName = vp->name;
     //return fName;
@@ -1975,9 +2026,10 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
   }
   else
   {
+#ifdef DEBUG_GFSN
     std::cout<<"1b - vp->fsName is "<<vp->fsName<<std::endl;
     //fName = vp->sField->fieldName;
-    
+#endif
     if (aName.size() > 0 && aName != vp->sField->fieldName)
     {
       fName.insert(0,")");
@@ -2016,11 +2068,11 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
           pos++;
         
         std::string modName = upPtr->fieldAlias->name.substr(pos);
-        
+#ifdef DEBUG_GFSN  
         std::cout<<"  5b - "<<modName<<std::endl;
+#endif
         aName.insert(0, modName);
       }
-      
       
     }
     
@@ -2082,8 +2134,9 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
           //calcSEDWritesRecursive(ev, child, visited);
           if (vpAlias != oldVP)
           {
-            std::cout<<"21a - Alias "<<vpAlias->name<<std::endl;
-            
+#ifdef DEBUG_GFSN
+              std::cout<<"21a - Alias "<<vpAlias->name<<std::endl;
+#endif
             if (vpAlias->fieldUpPtr != NULL)
             {
               upPtr = vpAlias->fieldUpPtr;
@@ -2096,8 +2149,10 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
         {
           if (oldVP->aliasUpPtr != NULL)
           {
-            std::cout<<"22a - AliasUpPtr "<<oldVP->aliasUpPtr->name<<std::endl;
-            upPtr = oldVP->aliasUpPtr;
+#ifdef DEBUG_GFSN
+              std::cout<<"22a - AliasUpPtr "<<oldVP->aliasUpPtr->name<<std::endl;
+#endif
+              upPtr = oldVP->aliasUpPtr;
           }
         }
       }
@@ -2317,7 +2372,7 @@ void BlameFunction::populateTempSideEffectsRelations()
       
       if (bf == NULL)
       {
-        if (callTrunc.find("tmp") == std::string::npos )
+        if (callTrunc.find("tmp") == std::string::npos ) //function pointers
         {
           //TODO: Look into this
           //std::cerr<<"Call "<<callTrunc<<" not found!"<<std::endl;
@@ -2327,8 +2382,6 @@ void BlameFunction::populateTempSideEffectsRelations()
       else
       {      
         //std::cout<<"Found SE info(2) for "<<bf->realName<<std::endl;
-        
-        
         if (callNode == NULL)
           continue;          
         
@@ -2426,9 +2479,10 @@ void BlameFunction::populateTempSideEffectsRelations()
                         tempSEs.insert(evAnc2);
                         tempSEParents.insert(evAnc);
                         
-                        //std::cout<<"Adding relation(from SE) from "<<evAnc2->name<<" to "<<evAnc->name;
-                        //std::cout<<" "<<callNode->declaredLine<<std::endl;
-                        
+#ifdef DEBUG_SELINES
+                        std::cout<<"Adding relation(from SE) from "<<evAnc2->name<<" to "<<evAnc->name;
+                        std::cout<<" evAnc2's tempSELines insert "<<callNode->declaredLine<<std::endl;
+#endif                       
                       }
                     }
                   }                    
@@ -2644,7 +2698,7 @@ void BlameFunction::calcParamInfo(std::set<VertexProps *> & blamees, VertexProps
     if (vp->isDerived)
       continue;
     
-    if (vp->calleePar < 0)
+    if (vp->calleePar < -1) //changed by Hui 04/18/16: from 0 to -1 as aligned to static analysis
     {
       vp->calleePar = 99;
       
@@ -2655,9 +2709,9 @@ void BlameFunction::calcParamInfo(std::set<VertexProps *> & blamees, VertexProps
       }*/
 
       if(vp->eStatus == EXIT_VAR_RETURN){
-        vp->calleePar = 0;
+        vp->calleePar = -1; //changed by Hui 04/18/16: from 0 to -1 as aligned to static analysis
       }
-      else if(vp->eStatus >= EXIT_VAR_PARAM){
+      else if(vp->eStatus >= EXIT_VAR_PARAM){//all blamed 'chpl_macro_tmp*' nodes
         vp->calleePar = vp->eStatus - EXIT_VAR_PARAM;
       } 
       
@@ -2676,7 +2730,7 @@ void BlameFunction::calcParamInfo(std::set<VertexProps *> & blamees, VertexProps
             break;
           }*/
           if(upPtr->eStatus == EXIT_VAR_RETURN){
-            vp->calleePar = 0;
+            vp->calleePar = -1;//changed by Hui 04/18/16: from 0 to -1 as aligned to static analysis
             break;
           }
           else if(upPtr->eStatus >= EXIT_VAR_PARAM){
@@ -2688,7 +2742,6 @@ void BlameFunction::calcParamInfo(std::set<VertexProps *> & blamees, VertexProps
         }
       }
     }
-    
     
     if (callNode != NULL)
     {
@@ -3259,7 +3312,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
   std::set<VertexProps *> DQblamees;
   
   O<<"FRAME# "<<(*vec_SF_i).frameNumber<<" ";
-  O<<getFullContextName(frames, modules, vec_SF_i);
+  O<<getFullContextName(frames, modules, vec_SF_i); //getFullContextName will call findLineRange
   O<<" "<<getModuleName()<<" "<<getModulePathName()<<" ";
   O<<(*vec_SF_i).lineNumber<<" "<<isBlamePoint<<" ";
   O<<beginLineNum<<" "<<endLineNum<<std::endl;

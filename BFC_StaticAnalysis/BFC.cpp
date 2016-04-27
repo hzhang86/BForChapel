@@ -129,9 +129,12 @@ bool BFC::runOnModule(Module &M)
 //  Make records of the information of external library functions  //
     ExternFuncBFCHash externFuncInformation;
     
+    importSharedBFC("/export/home/hzhang86/BForChapel/BFC_StaticAnalysis/SHARED/chapel_internal.bs", externFuncInformation);
+    /*
     importSharedBFC("/export/home/hzhang86/BForChapel/BFC_StaticAnalysis/SHARED/mpi.bs", externFuncInformation);
     importSharedBFC("/export/home/hzhang86/BForChapel/BFC_StaticAnalysis/SHARED/fortran.bs", externFuncInformation);
     importSharedBFC("/export/home/hzhang86/BForChapel/BFC_StaticAnalysis/SHARED/cblas.bs", externFuncInformation);
+    */
 //  NOT SURE THE ABOVE IS NEEDED FOR Chapel Program //
 
     // SETUP all the exports files 

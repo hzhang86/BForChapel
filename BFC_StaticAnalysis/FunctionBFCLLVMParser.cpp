@@ -90,7 +90,6 @@ void FunctionBFC::adjustLocalVars()
             }
 #ifdef DEBUG_LOCALS
             else
-
                 blame_info<<"Local Var Not Found: begin = "<<begin->first<< \
                     ", lv_i = "<<(*lv_i)->varName.c_str()<<std::endl;
 #endif
@@ -2688,9 +2687,10 @@ void FunctionBFC::examineInstruction(Instruction *pi, int &varCount, int &curren
 	// - Load/Store
 	
 #ifdef ENABLE_FORTRAN
-	if (firstGEPCheck(pi) == false) //only useful for fortran
-		return;
-    //    blame_info<<"firstGEPCheck return false !"<<std::endl;
+	if (firstGEPCheck(pi) == false) {//only useful for fortran
+        blame_info<<"firstGEPCheck return false !"<<std::endl;
+        return;
+    }
 #endif
 
 	genDILocationInfo(pi, currentLineNum, fbb); //generate location info of the current instruction

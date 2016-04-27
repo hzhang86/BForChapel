@@ -290,34 +290,51 @@ void FunctionBFCCFG::reachingPTRDefs()
 
 // Does the first Vertex come before it in the CFG
 // Auxiliary Function
-bool FunctionBFCCFG::controlDep(NodeProps *target, NodeProps *anchor)
+bool FunctionBFCCFG::controlDep(NodeProps *target, NodeProps *anchor, std::ofstream &blame_info)
 {
 	FunctionBFCBB *tBB = target->fbb;
 	FunctionBFCBB *aBB = anchor->fbb;
 	
 	if (tBB == NULL) {
-#ifdef DEBUG_CFG_ERROR			
-		std::cerr<<"TBB is NULL for "<<target->name<<std::endl;
+#ifdef DEBUG_CFG_CONTROLDEP			
+		blame_info<<"TBB is NULL for "<<target->name<<std::endl;
 #endif
 		return false;
 	}
 	
 	if (aBB == NULL) {
-#ifdef DEBUG_CFG_ERROR			
-		std::cerr<<"ABB is NULL for "<<anchor->name<<std::endl;
+#ifdef DEBUG_CFG_CONTROLDEP			
+		blame_info<<"ABB is NULL for "<<anchor->name<<std::endl;
 #endif
 		return false;
 	}
 	
-	// the target came before
+	// the definition of target came before, not necessary the block they are in
+    //Needs to be improved
 	if (aBB->ancestors.count(tBB) > 0) {
-		return true;
+#ifdef DEBUG_CFG_CONTROLDEP			
+    blame_info<<anchor->name<<"'s ancestors has tBB:"<<tBB->getName()<<std::endl;
+#endif
+#ifdef TEMP_WORKROUND_CFG
+      if (tBB->getName().compare("entry") != 0)
+#endif
+        return true;
 	}
 	else if (tBB == aBB) {
-		if (anchor->line_num > target->line_num)
+		if (anchor->line_num > target->line_num) {
+#ifdef DEBUG_CFG_CONTROLDEP			
+		    blame_info<<anchor->name<<"'s line_num: "<<anchor->line_num<<" > "<<
+             target->name<<"'s line_num: "<<target->line_num<<std::endl;
+#endif
 			return true;
-		else
+        }
+		else {
+#ifdef DEBUG_CFG_CONTROLDEP		
+		    blame_info<<anchor->name<<"'s line_num: "<<anchor->line_num<<" <= "<<
+             target->name<<"'s line_num: "<<target->line_num<<std::endl;
+#endif
 			return false;
+        }
 	}
 	
 	return false;

@@ -218,7 +218,7 @@ private:
     MyTruncGraphType G_trunc; // only important nodes
     MyTruncGraphType G_abbr; // only exit variables and calls
     //map from source lineNum to how many statements appeared in this line
-    LineNumHash lnm; //doesn't work at all now
+    LineNumHash lnm; //#nodes that are in the same certain line, for vp->lineNumOrder
     
     std::vector<FuncStores *> allStores;
     std::set<const char*> funcCallNames; //different called func names
@@ -300,8 +300,8 @@ public:
 
 
 private:
-    const char *getTruncStr(const char *fullStr);
-
+    const char* getTruncStr(const char *fullStr);
+    const char* trimTruncStr(const char *truncStr);
   //////////////////// Important Vertices ////////////////////////////////////////
 	void populateImportantVertices();
 	void recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std::set<int> &visited);
@@ -419,7 +419,8 @@ private:
 
 	// Sub functions that do the work
 	bool shouldTransferLineNums(NodeProps *v);
-	int transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN,  bool transferLineNumbers=true);
+    bool shouldKeepEdge(int movedOpCode, NodeProps *inTargetV);
+	int transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN,  bool transferLineNumbers=true, bool fromGEP=false);
 
     //It's for when multiple GEP point to one field, we don't need all the references
 	void collapseRedundantFields();
@@ -434,7 +435,7 @@ private:
 	
     ///////////// Graph Analysi(Pointers) ////////////////////////////////////////
 	void resolvePointers2();
-	void resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeProps *targetV, std::set<int> &visited, std::set<NodeProps *> &tempPointers, NodeProps *alias);
+	void resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeProps *targetV, std::set<int> &visited, std::set<NodeProps *> &tempPointers, NodeProps *alias, NodeProps *previousTV);
 	void resolveLocalAliases2(NodeProps *exitCand, NodeProps *currNode, std::set<int> &visited, NodeProps *exitV);
 																			
 	void resolveAliases2(NodeProps *exitCand, NodeProps *currNode, std::set<int> &visited, NodeProps *exitV);
@@ -449,6 +450,7 @@ private:
 	void resolveDataReads();
 
 	int pointerLevel(const llvm::Type *t, int counter);
+    unsigned getPointedTypeID(const llvm::Type *t);
 
 	void calcAggregateLN();
 	void calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *> &vStack, std::set<NodeProps *> &vRevisit);

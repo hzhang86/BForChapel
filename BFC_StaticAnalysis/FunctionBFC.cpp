@@ -114,7 +114,7 @@ void FunctionBFC::goThroughAllAliases(NodeProps *oP, NodeProps *tP, std::set<Nod
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN
 		blame_info<<"Checking oP "<<oP->name<<" against tsDP(2) "<<tsDP->name<<std::endl;
 #endif
-		if (cfg->controlDep(tsDP, oP)) {
+		if (cfg->controlDep(tsDP, oP, blame_info)) {
 			oP->dfChildren.insert(tsDP);
 			tsDP->dfParents.insert(oP);
 		}
@@ -144,7 +144,7 @@ void FunctionBFC::addControlFlowChildren(NodeProps * oP, NodeProps * tP)
 		blame_info<<"Checking oP "<<oP->name<<" against tsDP "<<tsDP->name<<std::endl;
 #endif
 		
-		if ( cfg->controlDep(tsDP, oP) && tP != tsDP )
+		if ( cfg->controlDep(tsDP, oP, blame_info) && tP != tsDP )
 		{
 			oP->dfChildren.insert(tsDP);
 			tsDP->dfParents.insert(oP);
@@ -201,13 +201,15 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std:
 		
 		// We need a store that has went through our CFG parsing and has
 		//  a RESOLVED_L_S instruction as an input
-		if (opCode == Instruction::Store && (targetVP->storeLines.size() > 0 && in_deg != 1)) {	
+		/*if (opCode == Instruction::Store && (targetVP->storeLines.size() > 0 && in_deg != 1)) {	
 			// TODO: Investigate if this matters for local variables, 
 			//  it would react the same as commenting out the next line
 			//  for staticTest1
 			if (v->eStatus != EXIT_VAR_GLOBAL)																
 				continue;
-		}
+		}*/ 
+        //above deleted by Hui 04/12/16: Not sure why we need to skip these kinda nodes
+        //since it'll matter local vars like: store %1, a; %2=load a; then 'a' will lose child %1 in this case
 		
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN
 		blame_info<<"Looking at target "<<targetVP->name<<" from "<<v->name<<std::endl;
@@ -625,7 +627,7 @@ void FunctionBFC::makeNewTruncGraph()
 				edge_type[ed] = DF_ALIAS_EDGE;
 		}
 		
-		// DATA FLOW ALIAS
+		// DATA FLOW CHILDREN
 		for (set_ivp_i = (*ivh_i)->dfChildren.begin(); set_ivp_i != (*ivh_i)->dfChildren.end(); set_ivp_i++) {
 			NodeProps *ivpAlias = (*set_ivp_i);
 			
@@ -973,6 +975,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	if (ivp->calcAgg)
 		return;
 	
+
 	ivp->calcAgg = true;
 	vStack.insert(ivp);
 	std::set<int>::iterator set_i_i;
@@ -980,7 +983,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 #ifdef DEBUG_PRINT_LINE_NUMS
 	blame_info<<std::endl;
 	blame_info<<"Entering calcAggregateLNRecursive for "<<ivp->name<<std::endl;
-	blame_info<<"Starting line number tally for "<<ivp->name<<std::endl;
+	blame_info<<"Starting line number tally for "<<ivp->name<<" originally:"<<std::endl;
 	
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
@@ -988,17 +991,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
     blame_info<<std::endl;
 #endif
 	
-#ifdef DEBUG_PRINT_LINE_NUMS
-	blame_info<<"Inserting lineNumbers(0) from baseline for "<<ivp->name<<std::endl;
-	for (set_i_i = ivp->lineNumbers.begin(); set_i_i != ivp->lineNumbers.end(); set_i_i++) {
-		blame_info<<*set_i_i<<" ";
-	}
-	blame_info<<std::endl;
-#endif
-	
-	ivp->descLineNumbers.insert(ivp->lineNumbers.begin(), ivp->lineNumbers.end());
 	ivp->descLineNumbers.insert(ivp->line_num);
-
 #ifdef DEBUG_PRINT_LINE_NUMS
 	blame_info<<"After insert line_num of "<<ivp->name<<std::endl;
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
@@ -1006,11 +999,26 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	}
 	blame_info<<std::endl;
 #endif 
+
+    //added by Hui 04/02/16: Constants shouldn't have extra lines from its 'related nodes'
+    if (ivp->name.find("Constant+") != std::string::npos) {
+        blame_info<<ivp->name<<" is not needed in calcAggregateLNRecursive"<<std::endl;
+        return;
+    }
+
+	ivp->descLineNumbers.insert(ivp->lineNumbers.begin(), ivp->lineNumbers.end());
+#ifdef DEBUG_PRINT_LINE_NUMS
+	blame_info<<"After insert lineNumbers(-1) from baseline for "<<ivp->name<<std::endl;
+	for (set_i_i = ivp->lineNumbers.begin(); set_i_i != ivp->lineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+	blame_info<<std::endl;
+#endif
 	
 	// TODO: DETAILS BELOW
 	//7/12/2010  INVESTIGATE FURTHER, do we need this still and why
-	
-    if (ivp->storeFrom != NULL){//changed by Hui on 08/03/15
+#ifdef ONLY_FOR_PARAM1
+    if (ivp->storeFrom != NULL && (ivp->isPtr || ivp->nStatus[LOCAL_VAR_PTR] || ivp->nStatus[EXIT_VAR_PTR])) {//changed by Hui on 08/03/15
 		//ivp->descLineNumbers.insert(ivp->storeFrom->line_num);
         blame_info<<"ivp->eStatus="<<ivp->eStatus<<std::endl;
         blame_info<<"ivp->nStatus:  ";
@@ -1023,30 +1031,56 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 			calcAggregateLNRecursive(child, vStack, vRevisit);
 		
 		if (vStack.count(child)) {
-		#ifdef DEBUG_LINE_NUMS
+	#ifdef DEBUG_LINE_NUMS
 			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
-		#endif
+	#endif
 			vRevisit.insert(child);
 			vRevisit.insert(ivp);
 		}
         
         ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
-#ifdef DEBUG_PRINT_LINE_NUMS
+    #ifdef DEBUG_PRINT_LINE_NUMS
 	    blame_info<<"After storeFrom: "<<ivp->name<<std::endl;
 	    for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		    blame_info<<*set_i_i<<" ";
 	    }
 	
 	    blame_info<<std::endl;
-#endif 
+    #endif 
     }
-    
+#endif
+
 	std::set<NodeProps *>::iterator s_vp_i;
 	std::set<NodeProps *>::iterator s_vp_i2;
 	
 	std::set<NodeProps *>::iterator v_vp_i;
 	std::set<NodeProps *>::iterator v_vp_i2;
-	
+
+    //added by Hui 04/04/16: intuitively, we should add-in storesTo, not storeFrom
+    for (s_vp_i = ivp->storesTo.begin(); s_vp_i != ivp->storesTo.end(); s_vp_i++) {
+        NodeProps *child = *s_vp_i;
+        if (child->calcAgg == false)
+			calcAggregateLNRecursive(child, vStack, vRevisit);
+		
+		if (vStack.count(child)) {
+		#ifdef DEBUG_LINE_NUMS
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+		#endif
+			vRevisit.insert(child);
+			vRevisit.insert(ivp);
+		}
+
+		ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+		debugPrintLineNumbers(ivp, child, 0);
+	}
+#ifdef DEBUG_PRINT_LINE_NUMS
+    blame_info<<"After storesTo: "<<ivp->name<<std::endl;
+    for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+        blame_info<<*set_i_i<<" ";
+    }
+    blame_info<<std::endl;
+#endif 
+
 	if ((ivp->nStatus[LOCAL_VAR_PTR] || ivp->nStatus[EXIT_VAR_PTR]) && ivp->isWritten == false) {		
 		if (ivp->dpUpPtr != ivp && ivp->dpUpPtr != NULL) {
 			for (s_vp_i = ivp->dpUpPtr->dataPtrs.begin(); s_vp_i != ivp->dpUpPtr->dataPtrs.end(); s_vp_i++) {
@@ -1061,7 +1095,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 				if (cand == ivp)
 					continue;
 				
-				if (cfg->controlDep(cand, ivp)) {
+				if (cfg->controlDep(cand, ivp, blame_info)) {
 					//if (cand->storePTR_Lines.count(ivp->line_num))
 #ifdef DEBUG_LINE_NUMS
 					blame_info<<"Adding lines from the dominating data write for "<<cand->name<<std::endl;
@@ -1107,7 +1141,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 					if (cand == ivp)
 						continue;
 					
-					if (cfg->controlDep(cand, ivp)) {
+					if (cfg->controlDep(cand, ivp, blame_info)) {
 						//if (cand->storePTR_Lines.count(ivp->line_num))
 					#ifdef DEBUG_LINE_NUMS
 						blame_info<<"Adding lines from the dominating data write for(2) "<<cand->name<<std::endl;
@@ -1156,7 +1190,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 					if (cand == ivp)
 						continue;
 					
-					if (cfg->controlDep(cand, ivp )) {
+					if (cfg->controlDep(cand, ivp, blame_info)) {
 						//if (cand->storePTR_Lines.count(ivp->line_num))
 					#ifdef DEBUG_LINE_NUMS
 						blame_info<<"Adding lines from the dominating data write for(3) "<<cand->name<<std::endl;
@@ -1219,8 +1253,8 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
             ////////added by Hui///////////////////////
 #ifdef REVERSE_CP_REL2
             tie(Edge, existed) = edge(ivp->number, child->number, G);
-            if(existed && get(get(edge_iore, G),Edge)==GEP_BASE_OP){
-                ivp->line_num=child->line_num;
+            if(existed && get(get(edge_iore, G),Edge)==GEP_BASE_OP && ivp->isWritten) {
+                //ivp->line_num=child->line_num;
                 ivp->descLineNumbers.insert(child->line_num);
                 blame_info<<"child "<<child->name<<" is actually the parent";
                 blame_info<<", and it's line_num="<<child->line_num<<std::endl;
@@ -1257,7 +1291,28 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 		}
 		
 		if (child->isWritten) {
-			ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+#ifdef ONLY_FOR_PARAM1
+            //added by Hui 04/12/16: for miss added cases like:
+            //a = GEP b..; store a, c; then c is a DP of b
+            //but if !a->isWritten, then b shouldn't include line#s of c
+            set<NodeProps *>::iterator set_np_i;
+            bool skipThisDP = false;
+            bool existed;
+            graph_traits < MyGraphType >::edge_descriptor Edge;
+            for (set_np_i = child->storesTo.begin(); set_np_i != child->storesTo.end(); set_np_i++) {
+                NodeProps *c_st = (*set_np_i);
+                tie(Edge, existed) = edge(c_st->number, ivp->number, G);
+                if(existed && get(get(edge_iore, G),Edge)==GEP_BASE_OP && !(c_st->isWritten)) { 
+			        skipThisDP = true;
+                    break;
+                }
+            }
+            
+            if(skipThisDP)
+                continue;
+#endif
+                    
+            ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
 			debugPrintLineNumbers(ivp, child, 3);
 		}
 	}
@@ -1286,25 +1341,6 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 			}
 		}
 
-        //Added by Hui on 12/12/15: aliases should all have the same blamed lines
-        ////////////////////////////////////////////////////////////////////////
-		/*
-        if (child->calcAgg == false)
-			calcAggregateLNRecursive(child, vStack, vRevisit);
-		
-		if (vStack.count(child)) {
-		#ifdef DEBUG_LINE_NUMS
-			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
-		#endif
-			vRevisit.insert(child);
-			vRevisit.insert(ivp);
-		}
-		
-		if (child->isWritten) {
-			ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
-			debugPrintLineNumbers(ivp, child, 7);
-		}*/
-        ////////////////////////////////////////////////////////////////////////
 		  
 		for (v_vp_i2 = child->dataPtrs.begin(); v_vp_i2 != child->dataPtrs.end(); v_vp_i2++) {
 			NodeProps *child2 = *v_vp_i2;
@@ -1335,7 +1371,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	blame_info<<std::endl;
 #endif
 
-	for (v_vp_i = ivp->dfAliases.begin(); v_vp_i != ivp->dfAliases.end(); v_vp_i++){
+	for (v_vp_i = ivp->dfAliases.begin(); v_vp_i != ivp->dfAliases.end(); v_vp_i++) {
 		NodeProps *child = *v_vp_i;
 		if (child->calcAgg == false)
 			calcAggregateLNRecursive(child, vStack, vRevisit);
@@ -1649,13 +1685,13 @@ int FunctionBFC::checkCompleteness()
 	}
 	else {
 		isMissing = 1;
-#ifdef DEBUG_SUMMARY									
+#ifdef DEBUG_SUMMARY_CC									
 		std::cout<<"SC_MISSING a line number"<<std::endl;
 		blame_info<<"SC_MISSING a line number"<<std::endl;
 #endif
 	}	
 	
-#ifdef DEBUG_SUMMARY
+#ifdef DEBUG_SUMMARY_CC
 	std::set<int> setDiff;
 	if (isMissing) {
 		std::cout<<"Set Diff is "<<std::endl;

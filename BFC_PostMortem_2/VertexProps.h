@@ -47,9 +47,6 @@ namespace std
 #define CALL_RETURN 18
 
 
-//#define EXIT_VAR_GLOBAL      19
-//#define EXIT_VAR_RETURN     20
-//#define EXIT_VAR_PARAM  EXIT_VAR_RETURN
 
 #define NO_EXIT          0
 #define EXIT_PROG        1
@@ -64,7 +61,11 @@ namespace std
 #define DEBUG_BLAMED_EXITS
 #define DEBUG_DETER_BH
 #define DEBUG_RESOLVE_LN
-//#define DEBUG_DETER_BH
+//#define DEBUG_SELINES
+//#define DEBUG_GFSN
+//newly added by Hui---//
+#define CHECK_PARAM_WRITTEN_IN_CALL
+//---------------------//
 
 using namespace std;
 class BlameFunction;
@@ -76,8 +77,21 @@ struct SideEffectParam;
 
 class VertexProps;
 
- typedef std::hash_map<int, int> LineReadHash;
+typedef std::hash_map<int, int> LineReadHash;
 
+/*
+  For "this" node: set<FuncCall*> calls are all nodes that are related to "this" in
+  function calls, e.g, a function call: a = call myfunc(b,c,d), then:
+  if "this" == a/b/c/d:
+    "calls" includes all the function callnodes that uses "this" as their params or
+    return values, like here, calls={myfunc,..}
+  else if "this" == myfunc(which is a function callnode):
+    "calls" includes all the params and return value of this func call, like here,
+    calls={a,b,c,d}
+
+  the members of a FuncCall (paramNumber, callNode) are corresponding attributes of
+  what the FuncCall refers to as described above :))
+*/
 
 struct FuncCall 
 {
@@ -194,9 +208,9 @@ class VertexProps {
 	bool calcAggCall;
 	
 	
-	int calleePar;
-	set<int> callerPars;
-	
+	int calleePar; //the paramNum of "this" when dealt as callee func
+	set<int> callerPars;//the paramNums of "this" when seen as from caller func
+	 
 	
 	
 	
@@ -224,6 +238,9 @@ class VertexProps {
 	// through read only data values, if we say it's written (which it is somewhere
 	// in the call) then we allow the line number of the statement to be propagated up
 	bool tempIsWritten;
+    //added by Hui 04/18/16: not sure if it's duplicate with the above
+    //but currently we need it to know whether this param is blamed for the call
+    bool paramIsBlamedForTheCall;
 	
 	
 	std::set<int> tempSELines;  // for the line numbers of calls involving side effects
@@ -300,7 +317,8 @@ class VertexProps {
 		storeFrom = NULL;
 		isWritten = false;
 		tempIsWritten = false;
-		
+		paramIsBlamedForTheCall = false; //added by Hui 04/18/16
+
 		fieldUpPtr = NULL;
 		dpUpPtr = NULL;
 		dfaUpPtr = NULL;

@@ -257,6 +257,9 @@ class BlameFunction
 	int beginLineNum;
 	int endLineNum;
 
+    //added by Hui 03/29/16
+    std::set<int> allLineNums; //all valid line# within this function
+
 	bool isFull;  /// meaning we have full parsed information for the func
 	bool hasSE;   /// some kind of sideffect
 	

@@ -55,11 +55,11 @@ class BlameModule
   BlameFunction *getFunction(const char *bfName){
       return blameFunctions[bfName];
   }
-  set<BlameFunction *, ltFunc> funcsBySet;
+  set<BlameFunction *, ltFunc> funcsBySet;//not used anymore 03/29/16
+  FunctionHash blameFunctions;
  
  private:
   std::string realName;
-  FunctionHash blameFunctions;
   //set<BlameFunction *, ltFunc> funcsBySet;
   BlameFunction * dummyFunc;
   

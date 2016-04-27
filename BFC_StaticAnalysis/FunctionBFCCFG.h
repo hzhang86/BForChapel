@@ -34,6 +34,7 @@
 #include "FunctionBFC.h"
 
 #include <iostream>
+#include <fstream>
 
 namespace std
 {
@@ -153,7 +154,7 @@ public:
 	void calcPTRStoreLines();
 	void assignPTRBBGenKill();
 	
-    bool controlDep(NodeProps * target, NodeProps * anchor);
+    bool controlDep(NodeProps * target, NodeProps * anchor, std::ofstream &blame_info);
 };
 
 #endif

@@ -331,28 +331,12 @@ void Instance::handleInstance(ModuleHash &modules, std::ostream &O, bool verbose
     if ((*vec_SF_i).lineNumber > 0 && (*vec_SF_i).toRemove == false) {
     // Get the module from the debugging information
     BlameModule *bm = modules[(*vec_SF_i).moduleName.c_str()];   //return the pointer to a BlameModule object
-    
-      ////////Hui test funcBySet 12/07/15/////////////////
-      /*cout<<"In funcsBySet: ";
-      set<BlameFunction *>::iterator sbi;
-      for(sbi=bm->funcsBySet.begin();sbi!=bm->funcsBySet.end();sbi++)
-           cout<<(*sbi)->getName()<<" ";
-      cout<<endl;*/
-      ////////////////////////////////////////////////////
 
       if (bm != NULL) {
         // Use the combination of the module and the line number to determine the function
         BlameFunction *bf = bm->findLineRange((*vec_SF_i).lineNumber);
         
         if (bf) {
-          //Added by Hui 12/20/15 /////////////////////////////////
-          /*
-          if (bf->getName().compare("chpl_user_main")==0 && bf->getBLineNum()==(*vec_SF_i).lineNumber) {
-            cout<<"Bottom frame can't be main when the lineNum is BegLine, Ignore it"<<endl;
-            continue;
-          }
-          */
-          //////////////////////////////////////////////////////
         //O<<"##PATH "<<bf->getModulePathName()<<std::endl;
         //cout<<"<--ALL_INFO-- At Frame "<<(*vec_SF_i).frameNumber<<endl;
         //cout<<" At line num "<<(*vec_SF_i).lineNumber<<endl;
@@ -575,7 +559,7 @@ int main(int argc, char** argv)
   {
     gOut<<"---INSTANCE "<<iCounter<<"  ---"<<std::endl;
 
-    cout<<"Instance "<<iCounter<<" originally has "<<(*vec_I_i).frames.size()<<" frames"<<endl;
+    stack_info<<"Instance "<<iCounter<<" originally has "<<(*vec_I_i).frames.size()<<" frames"<<endl;
     (*vec_I_i).trimFrames(bp.blameModules, iCounter, 1);
     if ((*vec_I_i).isMainThread == false) //we don't glue stacktraces from main trd
       glueTwoStackTrace(pre_instances, iCounter, (*vec_I_i));

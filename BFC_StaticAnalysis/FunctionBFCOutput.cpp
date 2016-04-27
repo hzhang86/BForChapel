@@ -123,11 +123,11 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 	O<<getModuleName()<<std::endl;
 	O<<"END M_NAME"<<std::endl;
 	
-	O<<"BEGIN F_B_LINENUM"<<std::endl;
+	O<<"BEGIN F_B_LINENUM"<<std::endl;//will not be useful anymore 03/28/16
 	O<<getStartLineNum()<<std::endl;
 	O<<"END F_B_LINENUM"<<std::endl;
 			
-	O<<"BEGIN F_E_LINENUM"<<std::endl;
+	O<<"BEGIN F_E_LINENUM"<<std::endl;//will not be useful anymore 03/28/16
 	O<<getEndLineNum()<<std::endl;
 	O<<"END F_E_LINENUM"<<std::endl;
 
@@ -135,6 +135,13 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 	O<<isBFCPoint<<std::endl;
 	O<<"END F_BPOINT"<<std::endl;
 
+    //Added by Hui 03/28/16, keep record of all line#s in this func
+    std::set<int>::iterator s_int_i;
+    O<<"BEGIN ALL_LINES"<<std::endl;
+    for (s_int_i = allLineNums.begin(); s_int_i != allLineNums.end(); s_int_i++)
+        O<<*s_int_i<<" ";
+    O<<std::endl;
+    O<<"END ALL_LINES"<<std::endl;
 
 	//ImpVertexHash::iterator ivh_i;
 	std::set<NodeProps *>::iterator ivh_i;
@@ -266,7 +273,7 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 		O<<"BEGIN STORES_TO" <<std::endl;
 		for (s_i_i = ivp->storesTo.begin(); s_i_i != ivp->storesTo.end(); s_i_i++)
 		{
-			NodeProps * child = *s_i_i;
+			NodeProps *child = *s_i_i;
 			O<<child->name<<endl;
 		}
 		O<<"END STORES_TO"<<std::endl;

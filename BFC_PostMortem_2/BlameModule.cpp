@@ -1,9 +1,9 @@
 /*
- *  Module.cpp
+ *  BlameModule.cpp
  *  
  *
- *  Created by Nick Rutar on 4/13/09.
- *  Copyright 2009 Nick Rutar All rights reserved.
+ *  Created by Hui Zhang on 03/28/16.
+ *  Copyright 2016 Hui Zhang All rights reserved.
  *
  */
 
@@ -17,11 +17,11 @@ using namespace std;
 
 void BlameModule::printParsed(std::ostream &O)
 {
-  O<<"##Module "<<realName<<std::endl;
-  //std::vector<BlameFunction *>::iterator bf_i;
-  FunctionHash::iterator bf_i;
+    O<<"##Module "<<realName<<std::endl;
+    //std::vector<BlameFunction *>::iterator bf_i;
+    FunctionHash::iterator bf_i;
 	
-  for (bf_i = blameFunctions.begin();  bf_i != blameFunctions.end(); bf_i++)
+    for (bf_i = blameFunctions.begin();  bf_i != blameFunctions.end(); bf_i++)
 	{
 		BlameFunction * bf = (*bf_i).second;
 		bf->printParsed(O);
@@ -80,65 +80,32 @@ void BlameModule::addFunctionSet(BlameFunction * bf)
 }
 
 
-BlameFunction * BlameModule::findLineRange(int lineNum)
+BlameFunction *BlameModule::findLineRange(int lineNum)
 {
-	//cout<<"Line Number -- "<<lineNum<<"  M: "<<getName()<<" -- ";
-
-  //FunctionHash::iterator bf_i;
+    BlameFunction *topCand = NULL;
+    FunctionHash::iterator bf_i;
 	
-  // Because of line number issues in FORTRAN modules, we may have
-  // more than one match, we take the best one
-  BlameFunction * topCand = NULL;
-
-  dummyFunc->setBLineNum(lineNum);  //in dummyFunc, set beginLineNum = lineNum
-  dummyFunc->setELineNum(lineNum);  //in dummtFunc, set endLineNum = lineNum
-	
-/*	
-  for (bf_i = blameFunctions.begin();  bf_i != blameFunctions.end(); bf_i++)
-	{
-		BlameFunction * bf = (*bf_i).second;
-		if (lineNum >= bf->getBLineNum() && lineNum <= bf->getELineNum())
-		{
-			if (topCand == NULL)
-			{
+    for (bf_i = blameFunctions.begin();  bf_i != blameFunctions.end(); bf_i++) {
+		BlameFunction *bf = (*bf_i).second;
+        if (bf->allLineNums.count(lineNum)) {
+			if (topCand == NULL) {
 				topCand = bf;
 			}
-			else
-			{
+			else {
 				int tcDiff = topCand->getELineNum() - lineNum;
 				int currDiff = bf->getELineNum() - lineNum;
 				
-				if (currDiff < tcDiff)
-					topCand = bf;
-				
+                cout<<"Another function has this line("<<lineNum<<"), tcDiff="<<tcDiff<<" currDiff="<<currDiff<<endl;
+				if (currDiff > tcDiff) //TOCHECK: to avoid matching the generated wrapcoforall/coforall func, we need '>'
+				    topCand = bf;
 			}
 		}
-	}
-	*/
+    }
 	
-	set<BlameFunction *>::iterator set_bf_i;
-	
-	if (funcsBySet.count(dummyFunc))
-	{
-		set_bf_i = funcsBySet.find(dummyFunc);//get the iterator to dummyFunc
-		topCand = *set_bf_i;  // wouldn't topCan=dummyFunc ??? yes,same
-        
-        //switch coforall_fn_chpl to chpl_user_main  added by Hui 12/0715
-        //For multi-thread case in chapel, only useful when forall is only in main
-        //if(topCand->getName().find("coforall_fn_chpl")!=std::string::npos)
-        //    topCand = getFunction("chpl_user_main");
-	}
+	if (topCand == NULL)
+	    cout<<"Top Cand is NULL -- oh noes!!!"<<endl;
 	else
-	{
-		cout<<"Top Cand is NULL(2) -- oh noes!!!"<<endl;
-		return NULL;
-	}
-	
-	
-	//if (topCand == NULL)
-	//	cout<<"Top Cand is NULL -- oh noes!!!"<<endl;
-	//else
-	//	cout <<topCand->getName()<<"("<<topCand->getBLineNum()<<"-"<<topCand->getELineNum()<<")"<<endl;
+	    ;//cout<<"Find func: "<<topCand->getName()<<" for lineNum: "<<lineNum<<endl;
 	
 	return topCand;
 }
