@@ -37,7 +37,7 @@ void FunctionBFC::parseLLVM(std::vector<NodeProps *> &globalVars)
 		
 		FunctionBFCBB *fbb = new FunctionBFCBB(b); //FunctionBFCBB is defined in FunctionBFCCFG.h
 		
-		cfg->LLVM_BBs[b->getName().data()] = fbb;
+		cfg->LLVM_BBs[b->getName().str()] = fbb;
 		
         for (BasicBlock::iterator i = b->begin(), ie = b->end(); i != ie; ++i) {
             examineInstruction(i, varCount, currentLineNum, variables, fbb);			
@@ -46,7 +46,10 @@ void FunctionBFC::parseLLVM(std::vector<NodeProps *> &globalVars)
 	
 	cfg->genEdges(); //gen pred/succ edges between FunctionBFCBBs
 	cfg->genAD();   //gen ancestors & descendants of a FunctionBFCBB
-  
+
+    //for test Hui
+    //printCurrentVariables();
+
 	adjustLocalVars();
     generateImplicits();  
 }
@@ -61,6 +64,7 @@ void FunctionBFC::adjustLocalVars()
     //std::string chplName = NULL;
     //std::string realName = NULL;
 
+    blame_info<<"#in variables="<<variables.size()<<", #in localVars= "<<localVars.size()<<endl;
     for (begin = variables.begin(), end = variables.end(); begin != end; begin++) {
 		std::vector<LocalVar *>::iterator lv_i;
 		for (lv_i = localVars.begin();  lv_i != localVars.end(); lv_i++) {
@@ -93,7 +97,7 @@ void FunctionBFC::adjustLocalVars()
                 blame_info<<"Local Var Not Found: begin = "<<begin->first<< \
                     ", lv_i = "<<(*lv_i)->varName.c_str()<<std::endl;
 #endif
-		}
+        }
 	}
 }
 
@@ -114,7 +118,7 @@ void FunctionBFC::populateGlobals(std::vector<NodeProps *> &gvs)
 #ifdef DEBUG_GLOBALS
 		blame_info<<"Globals__(populateGlobals)--creating global NP for "<<np->name.c_str()<<std::endl;
 #endif
-		variables[np->name.c_str()] = np; //RegHashProps variables: char* --> NodeProps*
+		variables[np->name] = np; //RegHashProps variables: string --> NodeProps*
 		//addGlobalExitVar(new ExitVariable(vp->name.c_str(), GLOBAL, -1));
 		addExitVar(new ExitVariable(np->name, GLOBAL, -2, false)); //changed by Hui 03/15/16: whichParam from -1 to -2
 		                                                        //because we set retVal to -1 now
@@ -133,9 +137,9 @@ void FunctionBFC::propagateConditional(DominatorTreeBase<BasicBlock> *DT, const 
 		std::set<const char*, ltstr> t;
 		ImpRegSet::iterator irs_i;
 		
-		irs_i = iReg.find(rootBlock->getName().data());
+		irs_i = iReg.find(rootBlock->getName().str());
 		if (irs_i != iReg.end()) {
-			t = iReg[rootBlock->getName().data()];
+			t = iReg[rootBlock->getName().str()];
 		}
 		
 		if (condName != NULL) {
@@ -145,7 +149,7 @@ void FunctionBFC::propagateConditional(DominatorTreeBase<BasicBlock> *DT, const 
 #endif
 		}
 		
-		iReg[rootBlock->getName().data()] = t; //after update t, update t in iReg
+		iReg[rootBlock->getName().str()] = t; //after update t, update t in iReg
 		//blame_info<<"New iReg (2)"<<(unsigned) &(iReg[rootBlock->getNameStart()])<<std::endl;
 	}
   
@@ -307,8 +311,8 @@ void FunctionBFC::handleOneConditional(DominatorTreeBase<BasicBlock> *DT, \
 			sprintf(tempBuf2, "0x%x", /*(unsigned)*/br->getCondition());
 			std::string name(tempBuf2);
 			
-			if (variables.count(name.c_str())) {
-				NodeProps *vp = variables[name.c_str()];
+			if (variables.count(name)) {
+				NodeProps *vp = variables[name];
 				propagateConditional(DT, dbb, vp->name.c_str(), termBB);	
 			}							
 		}
@@ -509,16 +513,16 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 								blame_info<<std::hex<</*(unsigned)*/ bCondVal<<std::dec<<std::endl;
 #endif
 							if (bCondVal->hasName()) {
-								if (variables.count(bCondVal->getName().data()))
-									blamedConditions.insert(variables[bCondVal->getName().data()]);
+								if (variables.count(bCondVal->getName().str()))
+									blamedConditions.insert(variables[bCondVal->getName().str()]);
 							}
 							else {
 								char tempBuf2[18];
 								sprintf(tempBuf2, "0x%x", /*(unsigned)*/bBr->getCondition());
 								std::string name(tempBuf2);
 								
-								if (variables.count(name.c_str())) {
-									blamedConditions.insert(variables[name.c_str()]);
+								if (variables.count(name)) {
+									blamedConditions.insert(variables[name]);
 								}							
 							}// end else for having a name
 						}// end if (bbMatch == bbSucc)
@@ -566,16 +570,16 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 									blame_info<<std::hex<</*(unsigned)*/ v<<std::dec<<std::endl;
 #endif 								
 								if (v->hasName()) {
-									if (variables.count(v->getName().data()))
-										blamedConditions.insert(variables[v->getName().data()]);
+									if (variables.count(v->getName().str()))
+										blamedConditions.insert(variables[v->getName().str()]);
 								}
 								else {
 									char tempBuf2[18];
 									sprintf(tempBuf2, "0x%x", /*(unsigned)*/bBr->getCondition());
 									std::string name(tempBuf2);
 									
-									if (variables.count(name.c_str())) {
-										blamedConditions.insert(variables[name.c_str()]);
+									if (variables.count(name)) {
+										blamedConditions.insert(variables[name]);
 									}							
 								}// end else for having a name
 							}// end if (bbMatch == bbSucc)
@@ -600,9 +604,9 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 #endif
 		
 		if (bb->hasName()) {
-			irs_i = iReg.find(bb->getName().data());
+			irs_i = iReg.find(bb->getName().str());
 			if (irs_i != iReg.end())
-				t = iReg[bb->getName().data()];
+				t = iReg[bb->getName().str()];
 			
 			std::set<NodeProps *>::iterator set_vp_i, set_vp_e;
 			for (set_vp_i = blamedConditions.begin(), set_vp_e = blamedConditions.end(); set_vp_i != set_vp_e; set_vp_i++) {
@@ -613,7 +617,7 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 				t.insert(vp->name.c_str());
 			}
 			
-			iReg[bb->getName().data()] = t;
+			iReg[bb->getName().str()] = t;
 			
 		}
 	}
@@ -1207,7 +1211,7 @@ void FunctionBFC::printValueIDName(Value *v)
 	
 }
 
-const char *FunctionBFC::calcMetaFuncName(RegHashProps &variables, Value *v, bool isTradName, std::string nonTradName, int currentLineNum)
+std::string FunctionBFC::calcMetaFuncName(RegHashProps &variables, Value *v, bool isTradName, std::string nonTradName, int currentLineNum)
 {
 	
 	std::string newName;
@@ -1220,11 +1224,10 @@ const char *FunctionBFC::calcMetaFuncName(RegHashProps &variables, Value *v, boo
 	
 	newName.insert(0, tempBuf);
 	
-	while (variables.count(newName.c_str()))
+	while (variables.count(newName))
 		newName.push_back('a'); //same as append, but with only one char
 	
-	//std::cout<<"Returning new name of "<<newName<<std::endl;
-	return newName.c_str();
+	return newName;
 }
 
 
@@ -1236,8 +1239,8 @@ void FunctionBFC::printCurrentVariables()
 	 -> first is const char * associated with their name
 	 -> second is NodeProps * for node
 	 */
-  for (begin = variables.begin(), end = variables.end(); begin != end; begin++)
-	{
+    for (begin = variables.begin(), end = variables.end(); begin != end; begin++)
+    {
 		std::string name(begin->first);
 		NodeProps * v = begin->second;
 		blame_info<<"Node "<<v->number<<" ("<<v->name<<")"<<std::endl;
@@ -1412,7 +1415,7 @@ void FunctionBFC::ieInvoke(Instruction *pi, int &varCount, int &currentLineNum, 
 	 cout<<"No name\n";
 	 */
 	
-	if (pi->hasName() && variables.count(pi->getName().data()) == 0) {
+	if (pi->hasName() && variables.count(pi->getName().str()) == 0) {
 		std::string name = pi->getName().str();
 		
 #ifdef DEBUG_VP_CREATE
@@ -1428,7 +1431,7 @@ void FunctionBFC::ieInvoke(Instruction *pi, int &varCount, int &currentLineNum, 
 			lnm[currentLineNum] = lnm_cln;
 		}
 		
-		variables[pi->getName().data()] = vp;
+		variables[pi->getName().str()] = vp;
 		varCount++;				
 		////printCurrentVariables();
 	}	
@@ -1438,7 +1441,7 @@ void FunctionBFC::ieInvoke(Instruction *pi, int &varCount, int &currentLineNum, 
 		Value *v = *op_i;
 		
 		if (v->hasName() &&  v->getValueID() != Value::BasicBlockVal) {			
-			if (variables.count(v->getName().data()) == 0) {
+			if (variables.count(v->getName().str()) == 0) {
 				std::string name = v->getName().str();
 #ifdef DEBUG_VP_CREATE
 				blame_info<<"Adding NodeProps(11) for "<<name<<std::endl;
@@ -1453,7 +1456,7 @@ void FunctionBFC::ieInvoke(Instruction *pi, int &varCount, int &currentLineNum, 
 					lnm[currentLineNum] = lnm_cln;
 				}
 				
-				variables[v->getName().data()] = vp;					
+				variables[v->getName().str()] = vp;					
 				varCount++;
 				//printCurrentVariables();
 			}
@@ -1472,7 +1475,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 	blame_info<<"LLVM__(examineInstruction)(Call) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<std::endl;
 #endif 
 	// Add the Node Props for the return value
-	if (pi->hasName() && variables.count(pi->getName().data()) == 0) {
+	if (pi->hasName() && variables.count(pi->getName().str()) == 0) {
 		std::string name = pi->getName().str();
 #ifdef DEBUG_VP_CREATE
 		blame_info<<"Adding NodeProps(12) for "<<name<<std::endl;
@@ -1487,7 +1490,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 			lnm[currentLineNum] = lnm_cln;
 		}
 		
-		variables[pi->getName().data()] = vp;
+		variables[pi->getName().str()] = vp;
 		varCount++;				
 		
 	}
@@ -1533,21 +1536,9 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
             }
         }
     }
-    
-    const char *vName = NULL;
-    const char *tempName = calcMetaFuncName(variables, lastOp, isTradName, nonTradName, currentLineNum);
-    char tempBuf[1024];
-    sprintf(tempBuf, "%s", tempName);
-    
-    char * vN = (char *)malloc(sizeof(char)*(strlen(tempBuf)+1));
-    if (!vN) {
-        printf("Uh oh, malloc vN failed\n");
-        exit(0);
-    }
-    strcpy(vN,tempBuf);
-    vN[strlen(tempBuf)]='\0';
-    vName = vN;
-    std::string callName(vName); //name for each callnode: bar--51a, bar--51aa..
+ 
+    //name for each callnode: bar--51a, bar--51aa..
+    std::string callName = calcMetaFuncName(variables, lastOp, isTradName, nonTradName, currentLineNum);
     blame_info<<"After calcMetaFuncName, callName="<<callName<<std::endl;
   
     // Assigning function name VP and VPs for all the parameters
@@ -1586,7 +1577,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 		}
 		
 		// We add the VP for the actual call
-		if (variables.count(vName) == 0 && opNum == callNameIdx) { 
+		if (variables.count(callName) == 0 && opNum == callNameIdx) { 
 #ifdef DEBUG_VP_CREATE
 			blame_info<<"Adding NodeProps(13) for "<<callName<<std::endl;
 #endif
@@ -1600,7 +1591,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 				lnm[currentLineNum] = lnm_cln;
 			}
 			
-			variables[vName] = vp;
+			variables[callName] = vp;
 			varCount++;
 			//printCurrentVariables();
 			
@@ -1613,8 +1604,8 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 			
 //We need to assign a funcCall object to the return and treat it as "parameter"-1
 			if (pi->hasName()) {
-				if (variables.count(pi->getName().data())) {
-					NodeProps *retVP = variables[pi->getName().data()];
+				if (variables.count(pi->getName().str())) {
+					NodeProps *retVP = variables[pi->getName().str()];
 					
 					if (retVP) {
 					// Adding a funcCall object for the return value ("parameter" 0)
@@ -1637,7 +1628,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 				std::string name(tempBuf2);
 				
 				NodeProps *retVP;	
-				if (variables.count(name.c_str()) == 0) {
+				if (variables.count(name) == 0) {
 #ifdef DEBUG_VP_CREATE
 					blame_info<<"Adding NodeProps(F5) for "<<name<<std::endl;
 #endif
@@ -1651,7 +1642,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 						lnm[currentLineNum] = lnm_cln;
 					}
 					
-					variables[name.c_str()] = retVP;
+					variables[name] = retVP;
 					varCount++;
 					
 					FuncCall *fp = new FuncCall(-1, callName); //CHANGEd 0=>-1
@@ -1680,9 +1671,9 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 			if (v->hasName()) {
 				NodeProps *vp;
 				
-				if (variables.count(v->getName().data())) {
+				if (variables.count(v->getName().str())) {
 					// Param might already exist ... in fact, it's likely since they are also local vars
-					vp = variables[v->getName().data()];
+					vp = variables[v->getName().str()];
 					// If param doesn't exist, we add it to list of variables in the program
 					if (!vp) {				
 #ifdef DEBUG_VP_CREATE
@@ -1697,7 +1688,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 							lnm_cln++;
 							lnm[currentLineNum] = lnm_cln;
 						}
-						variables[v->getName().data()] = vp;
+						variables[v->getName().str()] = vp;
 						varCount++;						
 					}
 				}
@@ -1715,7 +1706,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 						lnm_cln++;
 						lnm[currentLineNum] = lnm_cln;
 					}
-					variables[v->getName().data()] = vp;
+					variables[v->getName().str()] = vp;
 					varCount++;
 					//printCurrentVariables();
 				}
@@ -1734,7 +1725,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 				std::string name(tempBuf2);
 				
 				NodeProps *vp;
-				if (variables.count(name.c_str()) == 0){
+				if (variables.count(name) == 0){
 #ifdef DEBUG_VP_CREATE
 					blame_info<<"Adding NodeProps(F2) for "<<name<<std::endl;
 #endif
@@ -1747,12 +1738,12 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 						lnm[currentLineNum] = lnm_cln;
 					}
 					
-					variables[name.c_str()] = vp;
+					variables[name] = vp;
 					varCount++;
 					//printCurrentVariables();
 				}
 				else {
-					vp = variables[name.c_str()];
+					vp = variables[name];
 				}
 				
 				vp->addFuncCall(fp);
@@ -1767,7 +1758,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 }
 
 
-void FunctionBFC::ieGen_LHS_Alloca(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
+void FunctionBFC::ieGen_LHS_Alloca(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
 {
 	std::string name;
 	// Add LHS variable to list of symbols
@@ -1792,8 +1783,8 @@ void FunctionBFC::ieGen_LHS_Alloca(User *pi, int &varCount, int &currentLineNum,
 		lnm[currentLineNum] = lnm_cln;
 	}
 	
-	if (variables.count(name.c_str()) == 0) {
-		variables[name.c_str()] = vp;
+	if (variables.count(name) == 0) {
+		variables[name] = vp;
 		varCount++;
 	}
 	
@@ -1809,9 +1800,17 @@ void FunctionBFC::ieGen_LHS_Alloca(User *pi, int &varCount, int &currentLineNum,
 }
 
 void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb) 
-{
-	// Add LHS variable to list of symbols
-	if (pi->hasName() && variables.count(pi->getName().data()) == 0) {
+{        
+    //added by Hui 05/10/16: to get the opCode
+    Instruction *pii;
+    int opCode;
+    if(isa<Instruction>(pi)) {
+        pii = dyn_cast<Instruction>(pi);
+        opCode = pii->getOpcode();
+    }
+
+    // Add LHS variable to list of symbols
+	if (pi->hasName() && variables.count(pi->getName().str()) == 0) {
 		std::string name = pi->getName().str();
 		
 #ifdef DEBUG_VP_CREATE
@@ -1825,16 +1824,26 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
 #endif 
 		NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
 		vp->fbb = fbb;
+        bool lnmChanged = false; //added by Hui 05/10/16
 		if (currentLineNum != 0) {
 			int lnm_cln = lnm[currentLineNum];
 			vp->lineNumOrder = lnm_cln;
 			lnm_cln++;
 			lnm[currentLineNum] = lnm_cln;
+            lnmChanged = true;  //added by Hui 05/10/16
 		}
 		
-		variables[pi->getName().data()] = vp;
+		variables[pi->getName().str()] = vp;
 		varCount++;				
 		//printCurrentVariables();
+
+	    //added by Hui 05/10/16: for loadLineNumOrder
+        if(opCode == Instruction::Load){
+            if(lnmChanged)
+                (vp->loadLineNumOrder)[currentLineNum]=lnm[currentLineNum]-1;
+            else
+                (vp->loadLineNumOrder)[currentLineNum]=lnm[currentLineNum];
+        }       
 	}
 	else { //if the instruction has NO name or it's already in "variables"
 		char tempBuf[18];
@@ -1863,6 +1872,7 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
 		
 		vp->fbb = fbb;
 		
+        bool lnmChanged = false; //added by hui 05/10/16
 		if (currentLineNum != 0) {
 			int lnm_cln = lnm[currentLineNum];
 			vp->lineNumOrder = lnm_cln;
@@ -1870,17 +1880,26 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
             blame_info<<"vp->lineNumOrder="<<lnm[currentLineNum]<<endl;
 			lnm_cln++;
 			lnm[currentLineNum] = lnm_cln;
+            lnmChanged = true;
             //for temp test
-            blame_info<<"now lnm[currentLineNum]="<<lnm[currentLineNum]<<endl;
+            //blame_info<<"now lnm[currentLineNum]="<<lnm[currentLineNum]<<endl;
 		}
 
-		if (variables.count(name.c_str()) == 0) {
-			variables[name.c_str()] = vp;
+		if (variables.count(name) == 0) {
+			variables[name] = vp;
 			varCount++;
 #ifdef DEBUG_VP_CREATE
 		blame_info<<"New added variable:  "<<name<<std::endl;
 #endif 
 	    }
+
+	    //added by Hui 05/10/16: for loadLineNumOrder
+        if(opCode == Instruction::Load){
+            if(lnmChanged)
+                (vp->loadLineNumOrder)[currentLineNum]=lnm[currentLineNum]-1;
+            else
+                (vp->loadLineNumOrder)[currentLineNum]=lnm[currentLineNum];
+        }       
 		//printCurrentVariables();
 	}
 }
@@ -1902,10 +1921,10 @@ void FunctionBFC::ieGen_Operands(Instruction *pi, int &varCount, int &currentLin
 #endif			
 		
 		if (v->hasName() && v->getValueID() != Value::BasicBlockVal) {
-			if (variables.count(v->getName().data()) == 0) {
+			if (variables.count(v->getName().str()) == 0) {
 				std::string name = v->getName().str();
 #ifdef DEBUG_VP_CREATE
-				blame_info<<"Adding NodeProps(2) for "<<name<<std::endl;
+				blame_info<<"Adding NodeProps(2-Operands) for "<<name<<std::endl;
 #endif 
 				NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
@@ -1917,7 +1936,7 @@ void FunctionBFC::ieGen_Operands(Instruction *pi, int &varCount, int &currentLin
 					lnm[currentLineNum] = lnm_cln;
 				}
 
-				variables[v->getName().data()] = vp;					
+				variables[v->getName().str()] = vp;					
 				varCount++;
 				//printCurrentVariables();
 			}
@@ -1999,7 +2018,7 @@ void FunctionBFC::ieGen_Operands(Instruction *pi, int &varCount, int &currentLin
 }
 
 
-void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
+void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
 {
 	int opNum = 0;
 	// Add operands to list of symbols
@@ -2015,10 +2034,10 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 		if (v->hasName() && v->getValueID() != Value::BasicBlockVal) {
             bool lnmChanged = false;
             NodeProps *vp = NULL;
-			if (variables.count(v->getName().data()) == 0) { //Usually the operands in store are pre-declared
+			if (variables.count(v->getName().str()) == 0) { //Usually the operands in store are pre-declared
 				std::string name = v->getName().str();              //so it should've been in variables already
 #ifdef DEBUG_VP_CREATE
-				blame_info<<"Adding NodeProps(2) for "<<name<<std::endl;
+				blame_info<<"Adding NodeProps(2-Store) for "<<name<<std::endl;
 #endif 
 				vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
@@ -2030,11 +2049,11 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 				  lnm[currentLineNum] = lnm_cln;
 				  lnmChanged = true;
                 }
-				variables[v->getName().data()] = vp;					
+				variables[v->getName().str()] = vp;					
 				varCount++;
 			}
             else 
-                vp = variables[v->getName().data()];
+                vp = variables[v->getName().str()];
 
             //we create a FuncStore only when we met the content  
             if(opNum==0) {
@@ -2045,8 +2064,8 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 #endif 
                 FuncStores *fs = new FuncStores();
                 
-                if (secondStr->hasName() && variables.count(secondStr->getName().data()))
-                    fs->receiver = variables[secondStr->getName().data()];
+                if (secondStr->hasName() && variables.count(secondStr->getName().str()))
+                    fs->receiver = variables[secondStr->getName().str()];
                 else
                     fs->receiver = NULL;
                 fs->contents = vp;
@@ -2058,6 +2077,9 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
                 blame_info<<"STORE to(1) fs->lineNumOrder="<<fs->lineNumOrder<<" in line# "<<currentLineNum<<endl;
 
                 allStores.push_back(fs);
+
+                //added by Hui 05/10/16: for storeLineNumOrder
+                (vp->storeLineNumOrder)[currentLineNum] = fs->lineNumOrder;
             }	
 		}
 		// This is for dealing with Constants 
@@ -2075,7 +2097,8 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
             bool lnmChanged = false;
             NodeProps *vp = NULL;
 
-            if (variables.count(vName) == 0) {
+            std::string vNameStr(vName);
+            if (variables.count(vNameStr) == 0) {
 				std::string name(vName);
 				//std::cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<std::endl;
 #ifdef DEBUG_VP_CREATE
@@ -2092,11 +2115,11 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 				  lnmChanged = true;
                 }
 				
-				variables[vName] = vp;
+				variables[vNameStr] = vp;
 				varCount++;
 			}
             else
-                vp = variables[vName];
+                vp = variables[vNameStr];
 
             //we create a FuncStore only when we met the content  
             if(opNum==0) {
@@ -2107,8 +2130,8 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 #endif 
                 FuncStores *fs = new FuncStores();
                 
-                if (secondStr->hasName() && variables.count(secondStr->getName().data()))
-                    fs->receiver = variables[secondStr->getName().data()];
+                if (secondStr->hasName() && variables.count(secondStr->getName().str()))
+                    fs->receiver = variables[secondStr->getName().str()];
                 else
                     fs->receiver = NULL;
                 fs->contents = vp;
@@ -2120,6 +2143,9 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 
                 blame_info<<"STORE to(2) fs->lineNumOrder="<<fs->lineNumOrder<<" in line# "<<currentLineNum<<endl;
                 allStores.push_back(fs);
+                
+                //added by Hui 05/10/16: for storeLineNumOrder
+                //(vp->storeLineNumOrder)[currentLineNum] = fs->lineNumOrder;
             }
 		}
 		else if (v->getValueID() == Value::ConstantFPVal) {
@@ -2141,7 +2167,8 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
                 bool lnmChanged = false;
 				NodeProps *vp = NULL;
 
-				if (variables.count(vName) == 0) {
+                std::string vNameStr(vName);
+				if (variables.count(vNameStr) == 0) {
 					std::string name(vName);
 					//std::cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<std::endl;
 #ifdef DEBUG_VP_CREATE
@@ -2158,11 +2185,11 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 					    lnmChanged = true;
                     }
 					
-					variables[vName] = vp;
+					variables[vNameStr] = vp;
 					varCount++;
 				}
                 else
-                    vp = variables[vName];
+                    vp = variables[vNameStr];
 
                 //we create a FuncStore only when we met the content  
                 if(opNum==0) {
@@ -2173,8 +2200,8 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 #endif 
                     FuncStores *fs = new FuncStores();
                 
-                    if (secondStr->hasName() && variables.count(secondStr->getName().data()))
-                        fs->receiver = variables[secondStr->getName().data()];
+                    if (secondStr->hasName() && variables.count(secondStr->getName().str()))
+                        fs->receiver = variables[secondStr->getName().str()];
                     else
                         fs->receiver = NULL;
                     fs->contents = vp;
@@ -2186,6 +2213,9 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 
                     blame_info<<"STORE to(3) fs->lineNumOrder="<<fs->lineNumOrder<<" in line# "<<currentLineNum<<endl;
                     allStores.push_back(fs);
+                
+                    //added by Hui 05/10/16: for storeLineNumOrder
+                    //(vp->storeLineNumOrder)[currentLineNum] = fs->lineNumOrder;
                 }
 			}
 			else if(APFloat::semanticsPrecision(apf.getSemantics()) == 53) {
@@ -2204,7 +2234,8 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
                 bool lnmChanged = false;
                 NodeProps *vp = NULL;
 				
-				if (variables.count(vName) == 0) {
+                std::string vNameStr(vName);
+				if (variables.count(vNameStr) == 0) {
 					std::string name(vName);
 					//std::cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<std::endl;
 #ifdef DEBUG_VP_CREATE
@@ -2223,18 +2254,18 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
                       lnmChanged = true;
 					}
 					
-					variables[vName] = vp;
+					variables[vNameStr] = vp;
 					varCount++;
 				}
                 else 
-                    vp = variables[vName];
+                    vp = variables[vNameStr];
     
                 //we create a FuncStore only when we met the content  
                 if(opNum==0) {
                     User::op_iterator op_i2 = pi->op_begin();
                     Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
 #ifdef DEBUG_LLVM
-/*                    if (secondStr->hasName())
+/*                  if (secondStr->hasName())
                         blame_info<<"STORE to(4) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
                     else 
                         blame_info<<"STORE to(4b) no-name from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
@@ -2242,8 +2273,8 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 #endif 
                     FuncStores *fs = new FuncStores();
                 
-                    if (secondStr->hasName() && variables.count(secondStr->getName().data()))
-                        fs->receiver = variables[secondStr->getName().data()];
+                    if (secondStr->hasName() && variables.count(secondStr->getName().str()))
+                        fs->receiver = variables[secondStr->getName().str()];
                     else
                         fs->receiver = NULL;
                     fs->contents = vp;
@@ -2255,20 +2286,23 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 
                     blame_info<<"STORE to(4) fs->lineNumOrder="<<fs->lineNumOrder<<" in line# "<<currentLineNum<<endl;
                     allStores.push_back(fs);
+                
+                    //added by Hui 05/10/16: for storeLineNumOrder
+                    //(vp->storeLineNumOrder)[currentLineNum] = fs->lineNumOrder;
                 }
 			}
 		}
         //added cases when the "content" is a register
-        else if(!v->hasName() && v->getValueID() != Value::ConstantFPVal && 
-                v->getValueID() != Value::ConstantIntVal && v->getValueID() != Value::ConstantPointerNullVal) {
-        //else if(!v->hasName() && !isa<Constant>(v)) { 
+        else if(!v->hasName() && v->getValueID() != Value::ConstantFPVal && v->getValueID() != Value::ConstantIntVal 
+                && v->getValueID() != Value::ConstantPointerNullVal && v->getValueID() != Value::ConstantExprVal) {
+        //else if(!v->hasName() && !isa<Constant>(v))  
  			char tempBuf2[18];
 			sprintf(tempBuf2, "0x%x", /*(unsigned)*/v);
 			std::string name(tempBuf2);
 			bool lnmChanged = false;
             NodeProps *vp = NULL;
 
-			if (variables.count(name.c_str()) == 0){
+			if (variables.count(name) == 0){
 #ifdef DEBUG_VP_CREATE
 				blame_info<<"Adding NodeProps(Store Reg Operand) for "<<name<<std::endl;
 #endif
@@ -2282,11 +2316,11 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
                   lnmChanged = true;
 				}
 					
-				variables[name.c_str()] = vp;
+				variables[name] = vp;
 				varCount++;
 			}
             else
-                vp = variables[name.c_str()];
+                vp = variables[name];
 
             //we create a FuncStore only when we met the content  
             if(opNum==0) {
@@ -2297,8 +2331,8 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 #endif 
                 FuncStores *fs = new FuncStores();
                 
-                if (secondStr->hasName() && variables.count(secondStr->getName().data()))
-                    fs->receiver = variables[secondStr->getName().data()];
+                if (secondStr->hasName() && variables.count(secondStr->getName().str()))
+                    fs->receiver = variables[secondStr->getName().str()];
                 else
                     fs->receiver = NULL;
                 fs->contents = vp;
@@ -2310,6 +2344,9 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 
                 blame_info<<"STORE to(5) fs->lineNumOrder="<<fs->lineNumOrder<<" in line# "<<currentLineNum<<endl;
                 allStores.push_back(fs);
+            
+                //added by Hui 05/10/16: for storeLineNumOrder
+                (vp->storeLineNumOrder)[currentLineNum] = fs->lineNumOrder;
             }
         }
 
@@ -2321,12 +2358,70 @@ void FunctionBFC::ieGen_OperandsStore(User *pi, int &varCount, int &currentLineN
 #ifdef DEBUG_LLVM
 				blame_info<<"Value is ConstantExpr"<<std::endl;
 #endif 
-				
 				ConstantExpr *ce = cast<ConstantExpr>(v);	
 				createNPFromConstantExpr(ce, varCount, currentLineNum, fbb);
-			}
-			
+                
+                //---------------------------------------------------------------------------//
+                char tempBuf[18];
+                sprintf(tempBuf, "0x%x", /*(unsigned)*/pi);
+                std::string name(tempBuf); // Use the address of the instruction as its name ??
+                name += ".CE";
+                
+                char tempBuf2[10];
+                sprintf(tempBuf2, ".%d", currentLineNum);
+                name.append(tempBuf2);
+
+			    bool lnmChanged = false;
+                NodeProps *vp = NULL;
+                
+                if (variables.count(name) == 0){
+#ifdef DEBUG_VP_CREATE
+                    blame_info<<"Adding NodeProps(Store ConstantExpr Operand) for "<<name<<std::endl;
+#endif
+                    vp = new NodeProps(varCount,name,currentLineNum,pi);
+                    vp->fbb = fbb;					
+                    if (currentLineNum != 0) {
+                        int lnm_cln = lnm[currentLineNum];
+                        vp->lineNumOrder = lnm_cln;
+                        lnm_cln++;
+                        lnm[currentLineNum] = lnm_cln;
+                        lnmChanged = true;
+                    }
+                        
+                    variables[name] = vp;
+                    varCount++;
+                }
+                else
+                    vp = variables[name];
+
+                if(opNum==0) {
+                    User::op_iterator op_i2 = pi->op_begin();
+                    Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
+#ifdef DEBUG_LLVM
+                    blame_info<<"STORE to(6) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+#endif 
+                    FuncStores *fs = new FuncStores();
+                    
+                    if (secondStr->hasName() && variables.count(secondStr->getName().str()))
+                        fs->receiver = variables[secondStr->getName().str()];
+                    else
+                        fs->receiver = NULL;
+                    fs->contents = vp;
+                    fs->line_num = currentLineNum;
+                    if(lnmChanged)
+                        fs->lineNumOrder = lnm[currentLineNum]-1;
+                    else
+                        fs->lineNumOrder = lnm[currentLineNum];
+
+                    blame_info<<"STORE to(6) fs->lineNumOrder="<<fs->lineNumOrder<<" in line# "<<currentLineNum<<endl;
+                    allStores.push_back(fs);
+                
+                    //added by Hui 05/10/16: for storeLineNumOrder
+                    (vp->storeLineNumOrder)[currentLineNum] = fs->lineNumOrder;
+                }
+            }
 		}
+
 		else { //TC: ConstantExpr->getValueID != ConstantExprVal ??
 #ifdef DEBUG_LLVM
 			blame_info<<"ValueID is "<<v->getValueID()<<std::endl;
@@ -2372,10 +2467,10 @@ void FunctionBFC::ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum
 		}
 #endif		
 		if (v->hasName() &&  v->getValueID() != Value::BasicBlockVal) {
-			if (variables.count(v->getName().data()) == 0) {
+			if (variables.count(v->getName().str()) == 0) {
 				std::string name = v->getName().str();
 #ifdef DEBUG_VP_CREATE
-				blame_info<<"Adding NodeProps(2) for "<<name<<std::endl;
+				blame_info<<"Adding NodeProps(2-GEP) for "<<name<<std::endl;
 #endif 
 				NodeProps * vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
@@ -2388,7 +2483,7 @@ void FunctionBFC::ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum
 					lnm[currentLineNum] = lnm_cln;
 				}
 
-				variables[v->getName().data()] = vp;					
+				variables[v->getName().str()] = vp;					
 				varCount++;
 			}
 		}
@@ -2411,7 +2506,8 @@ void FunctionBFC::ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum
 			vN[strlen(tempBuf)]='\0';
 			const char * vName = vN;
 			
-			if (variables.count(vName) == 0 && opNum == 2) { //TC: why opNum has to be 2 ?
+            std::string vNameStr(vName);
+			if (variables.count(vNameStr) == 0 && opNum == 2) { //TC: why opNum has to be 2 ?
 				std::string name(vName);
 				//std::cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<std::endl;
 #ifdef DEBUG_VP_CREATE
@@ -2427,7 +2523,7 @@ void FunctionBFC::ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum
 					lnm[currentLineNum] = lnm_cln;
 				}
 				
-				variables[vName] = vp;
+				variables[vNameStr] = vp;
 				varCount++;
 				//printCurrentVariables();
 			}
@@ -2450,7 +2546,7 @@ void FunctionBFC::ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum
 
 //Almost same as ieGen_Operands() except we start from the second operand
 //Because the first operand is the "operation" to be executed
-void FunctionBFC::ieGen_OperandsAtomic(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
+void FunctionBFC::ieGen_OperandsAtomic(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
 {
 	int opNum = 0;
 	// Add operands to list of symbols
@@ -2468,10 +2564,10 @@ void FunctionBFC::ieGen_OperandsAtomic(User *pi, int &varCount, int &currentLine
 #endif			
 		
 		if (v->hasName() && v->getValueID() != Value::BasicBlockVal) {
-			if (variables.count(v->getName().data()) == 0) {
+			if (variables.count(v->getName().str()) == 0) {
 				std::string name = v->getName().str();
 #ifdef DEBUG_VP_CREATE
-				blame_info<<"Adding NodeProps(2) for "<<name<<std::endl;
+				blame_info<<"Adding NodeProps(2-Atomic) for "<<name<<std::endl;
 #endif 
 				NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
@@ -2483,7 +2579,7 @@ void FunctionBFC::ieGen_OperandsAtomic(User *pi, int &varCount, int &currentLine
 					lnm[currentLineNum] = lnm_cln;
 				}
 
-				variables[v->getName().data()] = vp;					
+				variables[v->getName().str()] = vp;					
 				varCount++;
 				//printCurrentVariables();
 			}
@@ -2554,7 +2650,7 @@ void FunctionBFC::ieSelect(Instruction *pi, int &varCount, int &currentLineNum, 
 	blame_info<<"LLVM__(examineInstruction)(Select) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<std::endl;
 #endif	 	
 	// Add LHS variable to list of symbols
-	if (pi->hasName() && variables.count(pi->getName().data()) == 0) {
+	if (pi->hasName() && variables.count(pi->getName().str()) == 0) {
 		std::string name = pi->getName().str();
 #ifdef DEBUG_VP_CREATE
 		blame_info<<"Adding NodeProps(7) for "<<name<<std::endl;
@@ -2568,7 +2664,7 @@ void FunctionBFC::ieSelect(Instruction *pi, int &varCount, int &currentLineNum, 
 			lnm[currentLineNum] = lnm_cln;
 		}
 		
-		variables[pi->getName().data()] = vp;
+		variables[pi->getName().str()] = vp;
 		varCount++;				
 	}	
 	
@@ -2578,7 +2674,7 @@ void FunctionBFC::ieSelect(Instruction *pi, int &varCount, int &currentLineNum, 
 	for (User::op_iterator op_i = pi->op_begin(), op_e = pi->op_end(); op_i != op_e; ++op_i) {
 		Value *v = *op_i;
 		if (v->hasName() &&  v->getValueID() != Value::BasicBlockVal) {
-			if (variables.count(v->getName().data()) == 0) {
+			if (variables.count(v->getName().str()) == 0) {
 				std::string name = v->getName().str();
 #ifdef DEBUG_VP_CREATE
 				blame_info<<"Adding NodeProps(8) for "<<name<<std::endl;
@@ -2592,7 +2688,7 @@ void FunctionBFC::ieSelect(Instruction *pi, int &varCount, int &currentLineNum, 
 					lnm_cln++;
 					lnm[currentLineNum] = lnm_cln;
 				}
-				variables[v->getName().data()] = vp;					
+				variables[v->getName().str()] = vp;					
 				varCount++;
             }
 		}

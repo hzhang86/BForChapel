@@ -410,14 +410,14 @@ void FunctionBFCCFG::genAD()
 // Auxiliary Function
 void FunctionBFCCFG::genEdges()
 {
-	BBHash::iterator bbh_i, bbh_e; //hash_map iterator: iterates over all hash elements
+	BBHash::iterator bbh_i, bbh_e; //unordered_map iterator: iterates over all hash elements
 	for (bbh_i = LLVM_BBs.begin(), bbh_e = LLVM_BBs.end(); bbh_i != bbh_e; bbh_i++) {
 		FunctionBFCBB *fbb = bbh_i->second;
 		BasicBlock *b =  fbb->llvmBB;
 		// Successors
 		for (succ_iterator Iter = succ_begin(b), En = succ_end(b); Iter != En; ++Iter) {
 			BasicBlock *succB = *Iter;
-			FunctionBFCBB *succBFCBB = LLVM_BBs[succB->getName().data()];
+			FunctionBFCBB *succBFCBB = LLVM_BBs[succB->getName().str()];
 				
 			if (succBFCBB == NULL) {
 #ifdef DEBUG_CFG_ERROR			
@@ -433,7 +433,7 @@ void FunctionBFCCFG::genEdges()
 		// Predecessors
 		for (pred_iterator Iter = pred_begin(b), En = pred_end(b); Iter != En; ++Iter) {
 			BasicBlock * predB = *Iter;
-			FunctionBFCBB * predBFCBB = LLVM_BBs[predB->getName().data()];
+			FunctionBFCBB * predBFCBB = LLVM_BBs[predB->getName().str()];
 				
 			if (predBFCBB == NULL) {
 #ifdef DEBUG_CFG_ERROR			

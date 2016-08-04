@@ -23,6 +23,7 @@
 
 using namespace std;
 
+//populate blame relationship from externFuncions
 void importSharedBFC(const char *path, ExternFuncBFCHash &externFuncInformation)
 {
     ifstream bI(path);
@@ -41,7 +42,15 @@ void importSharedBFC(const char *path, ExternFuncBFCHash &externFuncInformation)
         while (ss >> buf) {
             ef->paramNums.insert(atoi(buf.c_str()));
         }
-        externFuncInformation[name.c_str()] = ef;
+        externFuncInformation[name] = ef;
+#ifdef DEBUG_EXTERNFUNC
+        cerr<<"Importing externFunc: "<<name<<", paramNums:"<<endl;
+        set<int>::iterator pn_i;
+        for(pn_i = ef->paramNums.begin(); pn_i != ef->paramNums.end(); pn_i++)
+            cerr<<*pn_i<<" ";
+        cerr<<endl;
+#endif
+    
     }
 }
 
@@ -129,7 +138,7 @@ bool BFC::runOnModule(Module &M)
 //  Make records of the information of external library functions  //
     ExternFuncBFCHash externFuncInformation;
     
-    importSharedBFC("/export/home/hzhang86/BForChapel/BFC_StaticAnalysis/SHARED/chapel_internal.bs", externFuncInformation);
+    importSharedBFC("/export/home/hzhang86/chapel/chapel/third-party/llvm/build/linux64-gnu/lib/Transforms/BFC/SHARED/chapel_internal.bs", externFuncInformation);
     /*
     importSharedBFC("/export/home/hzhang86/BForChapel/BFC_StaticAnalysis/SHARED/mpi.bs", externFuncInformation);
     importSharedBFC("/export/home/hzhang86/BForChapel/BFC_StaticAnalysis/SHARED/fortran.bs", externFuncInformation);
@@ -179,7 +188,7 @@ bool BFC::runOnModule(Module &M)
    
     cout<<"Static Analyzing DISubprograms"<<endl;
     /////////////////// PRE PASS ////////////////////////////////////
-    set<const char*> knownFuncNames;
+    set<const char*, ltstr> knownFuncNames;
 
     for (DebugInfoFinder::iterator I = Finder.subprogram_begin(),
 	    E = Finder.subprogram_end(); I != E; I++) {
@@ -190,7 +199,7 @@ bool BFC::runOnModule(Module &M)
             if (dspName.find("chpl") == std::string::npos && dspName.compare("=") != 0) { //no chpl in user funcNm
                 if (!dspName.empty() && (*(dspName.begin()) != '_')) { //no '_XXX'
                 //if (dspName.compare("main")==0 || dspName.compare("sayhello")==0 ||\
-                    dspName.compare("factorial")==0) {
+                    dspName.compare("factorial")==0) 
                     Function *F = dsp->getFunction();
 #ifdef DEBUG_P
                     cout<<"Same directory of DISP: "<<dsp->getName().str()<< \
@@ -200,7 +209,7 @@ bool BFC::runOnModule(Module &M)
                     if (F->isDeclaration())//GlobalValue->isDeclaration
                         continue;
                     else 
-                        knownFuncNames.insert(F->getName().str().c_str());
+                        knownFuncNames.insert(F->getName().data());
                 }
             }
         }

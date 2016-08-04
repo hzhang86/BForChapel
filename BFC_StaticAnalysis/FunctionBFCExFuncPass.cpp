@@ -48,8 +48,7 @@ void FunctionBFC::transferExternCallEdges(std::vector< std::pair<int, int> > &bl
 			blameeV->line_num = 0;
 			
 			int remainingCalls = 0;
-			// We can reassign call statuses since these \
-               calls have now been resolved
+			// We can reassign call statuses since these calls have now been resolved
 			boost::graph_traits<MyGraphType>::out_edge_iterator oe_beg, oe_end;
 			oe_beg = boost::out_edges(blamee.second, G).first;//edge iter begin
 			oe_end = boost::out_edges(blamee.second, G).second;//edge iter end
@@ -131,7 +130,7 @@ void FunctionBFC::transferExternCallEdges(std::vector< std::pair<int, int> > &bl
 	}
 }
 
-const char* FunctionBFC::trimTruncStr(const char *truncStr)
+char* FunctionBFC::trimTruncStr(const char *truncStr)
 {
   int last = (int)strlen(truncStr);
   if (!last) //last==0
@@ -145,7 +144,7 @@ const char* FunctionBFC::trimTruncStr(const char *truncStr)
   char *tempStr = new char[last + 1];
   strncpy(tempStr, startPtr, last);
   tempStr[last] = '\0';
-  const char *trimedStr = tempStr;
+  char *trimedStr = tempStr;
   return trimedStr;
 }
 
@@ -196,7 +195,7 @@ void FunctionBFC::handleOneExternCall(ExternFunctionBFC *efb, NodeProps *v)
 	            blamedNodes.push_back(tmpPair);
 				inTargetV->isExternCallParam = true;
 				#ifdef DEBUG_EXTERN_CALLS
-				blame_info<<inTargetV->name<<"receives blame for extern call to "<<v->name<<std::endl;
+				blame_info<<inTargetV->name<<" receives blame for extern call to "<<v->name<<std::endl;
 				#endif
 				
 				inTargetV->externCallLineNumbers.insert(v->line_num);

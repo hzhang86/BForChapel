@@ -1,3 +1,6 @@
-this    0
+this3    0
 cbrt    -1
 atomic_fetch_add_explicit__real  -1 0
+chpl__autoDestroy   0
+chpl_here_alloc -1
+advance 0

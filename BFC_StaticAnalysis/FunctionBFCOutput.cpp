@@ -529,13 +529,14 @@ void FunctionBFC::exportParams(std::ostream &O)
 void FunctionBFC::exportCalls(std::ostream &O, ExternFuncBFCHash & efInfo)
 {
 	//std::cout<<"Entering exportCalls"<<std::endl;
-	std::set<const char *>::iterator s_ch_i;
+	std::set<const char *, ltstr>::iterator s_ch_i;
 	for (s_ch_i = funcCallNames.begin(); s_ch_i != funcCallNames.end(); s_ch_i++)
 	{
 		O<<*s_ch_i;
+        std::string ss(*s_ch_i);
 		if (knownFuncNames.count(*s_ch_i))
 			O<<" K ";
-		else if (efInfo[*s_ch_i])
+		else if (efInfo[ss])
 			O<<" E ";
 		else if (isLibraryOutput(*s_ch_i))
 			O<<" O ";
@@ -1034,8 +1035,8 @@ void FunctionBFC::printFinalDotPretty(bool printAllLines, std::string ext)
 		
 		//int v_index = v->number;
 		
-		int lineNum = v->line_num;
-		int lineNumOrder = v->lineNumOrder;
+		//int lineNum = v->line_num;
+		//int lineNumOrder = v->lineNumOrder;
 		//if (v->vp != NULL)
 		//	lineNum = v->vp->line_num;
 		
@@ -2431,23 +2432,23 @@ void FunctionBFC::printToDot(std::ostream &O, bool printImplicit, bool printInst
     int opCode = get(get(edge_iore, G),*ei);
 		
     if (opSetSize)
+	{
+	    for (int a = 0; a < opSetSize; a++)
 		{
-			for (int a = 0; a < opSetSize; a++)
-			{
-				if (opSet[a] == opCode)
-	      {
-					O<< get(get(vertex_index, G), source(*ei, G)) << "->" << get(get(vertex_index, G), target(*ei, G));
+			if (opSet[a] == opCode) 
+            {
+				O<< get(get(vertex_index, G), source(*ei, G)) << "->" << get(get(vertex_index, G), target(*ei, G));
 					
-					if ( opCode && printInstType)
-						if (opCode != ALIAS_OP)
-							O<< "[label=\""<<Instruction::getOpcodeName(get(get(edge_iore, G),*ei))<<"\"]";
-						else
-							O<< "[label=\""<<"ALIAS"<<"\"]";
-					
-					O<<" ;"<<std::endl;	
-	      }
-			}
+				if ( opCode && printInstType) {
+					if (opCode != ALIAS_OP)
+						O<< "[label=\""<<Instruction::getOpcodeName(get(get(edge_iore, G),*ei))<<"\"]";
+					else
+						O<< "[label=\""<<"ALIAS"<<"\"]";
+                }
+				O<<" ;"<<std::endl;	
+	        }
 		}
+	}
 		
     else
 		{
@@ -2644,7 +2645,7 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
 				else
 				{
 					std::string constNum;
-					unsigned plusPos = v->name.find("+");
+                    std::size_t plusPos = v->name.find("+");
 					if (plusPos != string::npos)
 					{
 						unsigned plusPos2 = v->name.find("+",plusPos+1);
@@ -2688,24 +2689,23 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
 		
     int opCode = get(get(edge_iore, G),*ei);
 		
-    if (opSetSize)
-		{
-			for (int a = 0; a < opSetSize; a++)
-			{
-				if (opSet[a] == opCode)
-	      {
-					O<< get(get(vertex_index, G), source(*ei, G)) << "->" << get(get(vertex_index, G), target(*ei, G));
+    if (opSetSize) {
+	  for (int a = 0; a < opSetSize; a++) {
+		if (opSet[a] == opCode)
+	    {
+		  O<< get(get(vertex_index, G), source(*ei, G)) << "->" << get(get(vertex_index, G), target(*ei, G));
 					
-					if ( opCode && printInstType)
-						if (opCode != ALIAS_OP)
-							O<< "[label=\""<<Instruction::getOpcodeName(get(get(edge_iore, G),*ei))<<"\"]";
-						else
-							O<< "[label=\""<<"ALIAS"<<"\"]";
+		  if ( opCode && printInstType) {
+			if (opCode != ALIAS_OP)
+				O<< "[label=\""<<Instruction::getOpcodeName(get(get(edge_iore, G),*ei))<<"\"]";
+			else
+			    O<< "[label=\""<<"ALIAS"<<"\"]";
 					
-					O<<" ;"<<std::endl;	
-	      }
-			}
-		}
+          }
+		  O<<" ;"<<std::endl;	
+	    }
+	  }
+	}
 		
     else
 		{

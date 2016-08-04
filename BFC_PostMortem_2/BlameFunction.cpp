@@ -896,12 +896,13 @@ BlameFunction * BlameFunction::parseBlameFunction(ifstream & bI)
       proceed = false;
   }
   //added by Hui 12/30/15 for testing callNodes
-  std::vector<VertexProps*>::iterator vp_i;
+/*  std::vector<VertexProps*>::iterator vp_i;
   cout<<"The callNodes of function "<<this->getName()<<" are:"<<endl;
   for(vp_i = this->callNodes.begin(); vp_i != this->callNodes.end(); vp_i++){
     VertexProps *node = *vp_i;
     cout<<node->name<<" declaredLine="<<node->declaredLine<<endl;
   }
+*/
   /////////////////////////////////////////////
 
   return this;

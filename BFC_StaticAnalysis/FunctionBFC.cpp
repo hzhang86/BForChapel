@@ -974,7 +974,6 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 {
 	if (ivp->calcAgg)
 		return;
-	
 
 	ivp->calcAgg = true;
 	vStack.insert(ivp);
@@ -1327,7 +1326,38 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	blame_info<<std::endl;
 #endif
 
-	for (v_vp_i = ivp->aliases.begin(); v_vp_i != ivp->aliases.end(); v_vp_i++) {
+#ifdef ONLY_FOR_MINIMD_LINE_FROM_FIELDS2
+    for (v_vp_i = ivp->fields.begin(); v_vp_i != ivp->fields.end(); v_vp_i++) {
+        NodeProps *child = *v_vp_i;
+        if (child->calcAgg == false)
+            calcAggregateLNRecursive(child, vStack, vRevisit);
+        
+        if (vStack.count(child)) {
+        #ifdef DEBUG_LINE_NUMS
+            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+        #endif
+            vRevisit.insert(child);
+            vRevisit.insert(ivp);
+        }
+        
+        if (child->isWritten && child != ivp) {
+            ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+            debugPrintLineNumbers(ivp, child, 33);
+        }
+    }
+
+#ifdef DEBUG_LINE_NUMS
+	blame_info<<"After fields "<<ivp->name<<std::endl;
+	
+	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+
+	blame_info<<std::endl;
+#endif
+#endif
+	
+    for (v_vp_i = ivp->aliases.begin(); v_vp_i != ivp->aliases.end(); v_vp_i++) {
 		NodeProps *child = *v_vp_i;
 		 
 		NodeProps *childFieldParent = child->fieldUpPtr;
@@ -1360,11 +1390,31 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 				debugPrintLineNumbers(ivp, child2, 4);
 			}
 		}
+
+#ifdef ONLY_FOR_MINIMD_LINE_FROM_FIELDS
+		for (v_vp_i2 = child->fields.begin(); v_vp_i2 != child->fields.end(); v_vp_i2++) {
+			NodeProps *child3 = *v_vp_i2;
+			if (child3->calcAgg == false)
+				calcAggregateLNRecursive(child3, vStack, vRevisit);
+			
+			if (vStack.count(child3)) {
+			#ifdef DEBUG_LINE_NUMS
+				blame_info<<"Conflict in LNRecursive. Need to revisit "<<child3->name<<" and "<<ivp->name<<std::endl;
+			#endif
+				vRevisit.insert(child3);
+				vRevisit.insert(ivp);
+			}
+			
+			if (child3->isWritten && child3 != ivp) {
+				ivp->descLineNumbers.insert(child3->descLineNumbers.begin(), child3->descLineNumbers.end());
+				debugPrintLineNumbers(ivp, child3, 44);
+			}
+		}
+#endif
 	}
 
 #ifdef DEBUG_LINE_NUMS
 	blame_info<<"After aliases "<<ivp->name<<std::endl;
-	
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}	
@@ -1428,11 +1478,70 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	
 #ifdef DEBUG_LINE_NUMS
 	blame_info<<"After Resolved LS From "<<ivp->name<<std::endl;
-	
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
 	blame_info<<std::endl;
+#endif
+
+#ifdef ONLY_FOR_MINIMD_LINE_FROM_LOADFORCALLS
+    for (v_vp_i = ivp->loadForCalls.begin(); v_vp_i != ivp->loadForCalls.end(); v_vp_i++) {
+        NodeProps *child = *v_vp_i;
+        if (child->calcAgg == false)
+            calcAggregateLNRecursive(child, vStack, vRevisit);
+        
+        if (vStack.count(child)) {
+        #ifdef DEBUG_LINE_NUMS
+            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+        #endif
+            vRevisit.insert(child);
+            vRevisit.insert(ivp);
+        }
+        
+        if (child->isWritten && child != ivp) {
+            ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+            debugPrintLineNumbers(ivp, child, 7);
+        }
+    }
+#ifdef DEBUG_LINE_NUMS
+	blame_info<<"After loadForCalls "<<ivp->name<<std::endl;
+	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+	blame_info<<std::endl;
+#endif
+#endif
+
+#ifdef ONLY_FOR_MINIMD_LINE_FROM_ALIASESOUT
+    for (v_vp_i = ivp->aliasesOut.begin(); v_vp_i != ivp->aliasesOut.end(); v_vp_i++) {
+        NodeProps *child = *v_vp_i;
+        if (child->calcAgg == false)
+            calcAggregateLNRecursive(child, vStack, vRevisit);
+        
+        if (vStack.count(child)) {
+        #ifdef DEBUG_LINE_NUMS
+            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+        #endif
+            vRevisit.insert(child);
+            vRevisit.insert(ivp);
+        }
+        
+        if (child->isWritten && ivp->isWritten && child != ivp) {
+            ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+            debugPrintLineNumbers(ivp, child, 8);
+        }
+    }
+#endif
+
+#ifdef DEBUG_LINE_NUMS
+	blame_info<<"After aliasesOut "<<ivp->name<<std::endl;
+	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+	blame_info<<std::endl;
+#endif
+
+#ifdef DEBUG_LINE_NUMS
 	blame_info<<"Exiting calcAggregateLNRecursive for "<<ivp->name<<std::endl;
 #endif
 	
@@ -1469,6 +1578,31 @@ void FunctionBFC::calcAggregateLN()
 	for (set_vp_i = vRevisit.begin(); set_vp_i != vRevisit.end(); set_vp_i++)
 		calcAggregateLNRecursive(*set_vp_i, vStack, vRevisit);
 		
+	// Reverse-visit them again to take care of cases when "early nodes" needs "later" nodes' blame lines		
+    std::set<NodeProps *>::reverse_iterator r_si;
+    for (r_si = impVertices.rbegin(); r_si != impVertices.rend(); ++r_si)
+		(*r_si)->calcAgg = false;
+		
+	for (r_si = impVertices.rbegin(); r_si != impVertices.rend(); ++r_si) {
+		NodeProps *ivp = (*r_si);
+		if (ivp->calcAgg == false)
+			calcAggregateLNRecursive(ivp, vStack, vRevisit);
+	}
+
+//mainly because of the aliasesOut line# insertion, it'll have to wait for the later nodes
+//to finish before the earlier nodes to be complete
+#ifdef TEMP_FOR_MINIMD
+/*    std::set<NodeProps *>::reverse_iterator r_si;
+    cerr<<"\nReverse order:"<<endl;
+    for (r_si = impVertices.rbegin(); r_si != impVertices.rend(); ++r_si)
+		cerr<<(*r_si)->name<<" ";
+    cerr<<"\nNormal order:"<<endl;
+		
+	// Revisit them all to take care of scragglers		
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++)
+		cerr<<(*ivh_i)->name<<" ";
+    cerr<<endl;
+*/
 		// Revisit them all to take care of scragglers		
 	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++)
 		(*ivh_i)->calcAgg = false;
@@ -1479,6 +1613,28 @@ void FunctionBFC::calcAggregateLN()
 			calcAggregateLNRecursive(ivp, vStack, vRevisit);
 	}
 
+		// Revisit them all to take care of scragglers		
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++)
+		(*ivh_i)->calcAgg = false;
+		
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+		if (ivp->calcAgg == false)
+			calcAggregateLNRecursive(ivp, vStack, vRevisit);
+	}
+/*
+		// Revisit them all to take care of scragglers		
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++)
+		(*ivh_i)->calcAgg = false;
+		
+	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
+		NodeProps *ivp = (*ivh_i);
+		if (ivp->calcAgg == false)
+			calcAggregateLNRecursive(ivp, vStack, vRevisit);
+	}
+*/
+
+#endif
 	// Revisit the ones that had conflicts for calcAggCallRecursive, added by Hui
 	#ifdef DEBUG_LINE_NUMS
 	blame_info<<"Revisiting some of the conflicted agg Call values."<<std::endl;
@@ -2285,8 +2441,9 @@ void FunctionBFC::resolveLooseStructs()
                         blame_info<<"After while, typeVal="<<typeVal<<std::endl;
 #endif
 						if (typeVal == Type::StructTyID) {
-							const llvm::StructType *type = cast<StructType>(pointT);
-							string structNameFull = type->getName().str();
+						  const llvm::StructType *type = cast<StructType>(pointT);
+						  if(!type->isLiteral()) {//literal structs do not have names	
+                            string structNameFull = type->getName().str();
 							//TO CONTINUE: 08/19/15
 #ifdef USE_LLVM25
                             if (structNameFull.find("struct.") == std::string::npos){
@@ -2312,7 +2469,7 @@ void FunctionBFC::resolveLooseStructs()
 							blame_info<<"Found sb for "<<structNameFull<<" assiging sBFC to "<<ivp->name<<std::endl;
 #endif
 							ivp->sBFC = sb;
-							
+                          }
 						}
 					}
 					else {
@@ -2348,7 +2505,7 @@ void FunctionBFC::setModulePathName(std::string rawName)
 
 
 // Constructor for function blame //
-FunctionBFC::FunctionBFC(Function * F, std::set<const char *> & kFN)
+FunctionBFC::FunctionBFC(Function * F, std::set<const char *, ltstr> & kFN)
 {
     func = F;
     //funcT = V_PARAM_V_RET;

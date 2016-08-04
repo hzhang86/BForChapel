@@ -20,6 +20,8 @@
 #define ENABLE_FORTRAN 
 #define HUI_CHPL
 #define DEBUG_CFG_CONTROLDEP
+#define DEBUG_AGAINCHECK
+#define DEBUG_EXTERNFUNC
 //#define HUI_C
 //#define REVERSE_CP_REL1
 #define REVERSE_CP_REL2
@@ -27,6 +29,11 @@
 #define ONLY_FOR_PARAM1
 #define TRIM_NUMBERED_STR
 #define TEMP_WORKROUND_CFG
+#define ONLY_FOR_MINIMD_LINE_FROM_FIELDS2
+#define ONLY_FOR_MINIMD_LINE_FROM_FIELDS
+#define ONLY_FOR_MINIMD_LINE_FROM_LOADFORCALLS
+#define ONLY_FOR_MINIMD_LINE_FROM_ALIASESOUT 
+#define TEMP_FOR_MINIMD
 //#define DATAPTRS_FROM_FIELDS
 //#define DATAPTRS_FROM_FIELDS2
 //#define USE_LLVM25 //shall never be turned on for llvm newer than 2.5
@@ -121,7 +128,7 @@
 #define GEP_S_FIELD_OFFSET_OP  1003
 
 extern const char* PRJ_HOME_DIR;
-extern char *PARAM_REC;
+extern const char *PARAM_REC;
 
 
 

@@ -129,11 +129,11 @@ public class BlameContainer {
                             continue;
                     }*/
                    
-                    
+                    /* 
                     if(ep.getName().contains("_tmp") || ep.getName().contains("tmp_")
                             || ep.getName().contains("ret_") || ep.getName().contains("sum_")) //we don't want to see temp vars just for now 03/22/16
                         continue;
-                    
+                    */
                     ////////////////////////////////////////////
 				    System.out.println("Adding LocalVar " + ep.getName());
 					allLocalVariables.add(ep);
@@ -169,7 +169,7 @@ public class BlameContainer {
 				
 				String truncName = evName.substring(evName.lastIndexOf('.')+1);
 				
-				if (ev.isGlobal && !evName.contains("_tmp")) //2nd Cond is uncertain
+				if (ev.isGlobal /*&& !evName.contains("_tmp")*/) //2nd Cond is uncertain
 				{
 					System.out.println("Adding " + evName + " to allGlobalVariablesHash.");
                     //added by Hui 02/16/16

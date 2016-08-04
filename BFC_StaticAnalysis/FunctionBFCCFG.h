@@ -24,22 +24,24 @@
 
 #include <set>
 
+#include "NodeProps.h"
+#include "FunctionBFC.h"
+
+#include <iostream>
+#include <fstream>
+#include <unordered_map> //substitute for hash_map
+/*
 #ifdef __GNUC__
 #include <ext/hash_map>
 #else
 #include <hash_map>
 #endif
 
-#include "NodeProps.h"
-#include "FunctionBFC.h"
-
-#include <iostream>
-#include <fstream>
-
 namespace std
 {
   using namespace __gnu_cxx;
 }
+*/
 
 /* namespace explanation
 std::__gnu_cxx::list
@@ -56,11 +58,11 @@ using namespace std::__gnuy_cxx;
 list mylist;
 */
 
-struct eqstr2
+struct eqstr2 //used for unordered_map, key type should be string
 {
-  bool operator()(const char* s1, const char* s2) const
+  bool operator()(std::string s1, std::string s2) const
   {
-    return strcmp(s1, s2) == 0;
+    return s1 == s2;
   }
 };
 
@@ -126,7 +128,7 @@ public:
 };
 
 
-typedef std::hash_map<const char*, FunctionBFCBB*,std::hash<const char*>, eqstr2> BBHash;
+typedef std::unordered_map<std::string, FunctionBFCBB*, std::hash<std::string>, eqstr2> BBHash;
 
 class FunctionBFCCFG {
 

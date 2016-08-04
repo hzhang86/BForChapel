@@ -51,11 +51,8 @@
 #include <boost/graph/depth_first_search.hpp>
 #include <boost/graph/iteration_macros.hpp>
 
-#ifdef __GNUC__
-#include <ext/hash_map>
-#else
-#include <hash_map>
-#endif
+//Added by Hui to substitute hash_map
+#include <unordered_map>
 
 #include "NodeProps.h"
 #include "ModuleBFC.h"
@@ -63,11 +60,18 @@
 #include "Parameters.h"
 #include "ExitVars.h"
 
+/*
+#ifdef __GNUC__
+#include <ext/hash_map>
+#else
+#include <hash_map>
+#endif
+
 namespace std
 {
     using namespace __gnu_cxx;
 }
-
+*/
 //TC: the way to use boost
 enum vertex_var_name_t { vertex_var_name };
 enum vertex_props_t {vertex_props};
@@ -171,13 +175,13 @@ struct FuncStores {
 
 
 // Comparators //
-struct eqstr {
-    bool operator()(const char *s1, const char *s2) const {
-        return strcmp(s1, s2) == 0;
+struct eqstr { //used in unordered_map, key type should be string
+    bool operator()(std::string s1, std::string s2) const {
+        return s1 == s2;
     }
 };
 
-struct ltstr {
+struct ltstr { //used in set, key type can be const char*
     bool operator()(const char *s1, const char *s2) const {
         return strcmp(s1, s2) < 0;
     }
@@ -188,24 +192,24 @@ typedef adjacency_list<hash_setS, vecS, bidirectionalS, property<vertex_props_t,
 // needed a new graph type to support multiple edges coming from a node
 typedef adjacency_list<vecS, vecS, bidirectionalS, property<vertex_props_t, NodeProps *>, property<edge_iore_t, int> > MyTruncGraphType;
 
-typedef std::hash_map<const char*, ExternFunctionBFC*, std::hash<const char*>, eqstr> ExternFuncBFCHash;
+typedef std::unordered_map<std::string, ExternFunctionBFC*, std::hash<std::string>, eqstr> ExternFuncBFCHash;
 
-typedef std::hash_map<const char*, FunctionBFC*, std::hash<const char*>, eqstr> FuncBFCHash;
+typedef std::unordered_map<std::string, FunctionBFC*, std::hash<std::string>, eqstr> FuncBFCHash;
 
-typedef std::hash_map<const char*, NodeProps*, std::hash<const char*>, eqstr> RegHashProps;
+typedef std::unordered_map<std::string, NodeProps*, std::hash<std::string>, eqstr> RegHashProps;
+//typedef std::unordered_map<const char*, NodeProps*> RegHashProps;
 
-typedef std::hash_map<int, int> LineNumHash;
+typedef std::unordered_map<int, int> LineNumHash;
 
-typedef std::hash_map<const char*, std::set<const char*, ltstr>, std::hash<const char*>, eqstr> ImpRegSet; 
+typedef std::unordered_map<std::string, std::set<const char*, ltstr>, std::hash<std::string>, eqstr> ImpRegSet; 
 
-typedef std::hash_map<const char*, NodeProps*, std::hash<const char*>, eqstr> CollapsePairHash;
-typedef std::hash_map<const char*, ExternFunctionBFC*, std::hash<const char*>, eqstr> ExternFuncBFCHash;
+typedef std::unordered_map<std::string, NodeProps*, std::hash<std::string>, eqstr> CollapsePairHash;
 
 
 class FunctionBFC {
 ///////////////////////// Constructors/Destructor ///////////////////////////
 public:
-    FunctionBFC(Function *F, std::set<const char*> &kFN); //kFN=knownFuncNames
+    FunctionBFC(Function *F, std::set<const char*, ltstr> &kFN); //kFN=knownFuncNames
 
     ~FunctionBFC();
 ////////////////////////// Variables ////////////////////////////////////////
@@ -221,12 +225,13 @@ private:
     LineNumHash lnm; //#nodes that are in the same certain line, for vp->lineNumOrder
     
     std::vector<FuncStores *> allStores;
-    std::set<const char*> funcCallNames; //different called func names
+    std::set<const char*, ltstr> funcCallNames; //different called func names
                                          //if "bar" called twice in foo,only one
                                          // "bar" kept here
     // These two are tied together
 	//std::set<std::string> collapsableFields;
 	std::vector<CollapsePair *> collapsePairs;
+    std::vector<CollapsePair *> autoCopyCollapsePairs;
 	CollapsePairHash cpHash; //each pair is nameFieldCombo <-> Instance NodeProps*
 
     //Underlying LLVM Objects
@@ -273,7 +278,7 @@ private:
     //Set of all valid line numbers in program
     std::set<int> allLineNums;
     //All other function names in this module
-    std::set<const char*> knownFuncNames;
+    std::set<const char*, ltstr> knownFuncNames;
 
 	std::vector< std::pair<NodeProps *, NodeProps *> > seAliases;
 	std::vector< std::pair<NodeProps *, NodeProps *> > seRelations;
@@ -301,7 +306,7 @@ public:
 
 private:
     const char* getTruncStr(const char *fullStr);
-    const char* trimTruncStr(const char *truncStr);
+    char* trimTruncStr(const char *truncStr);
   //////////////////// Important Vertices ////////////////////////////////////////
 	void populateImportantVertices();
 	void recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std::set<int> &visited);
@@ -424,6 +429,9 @@ private:
 
     //It's for when multiple GEP point to one field, we don't need all the references
 	void collapseRedundantFields();
+    //added by Hui 05/09/16 to move in-param of a chpl__autoCopy func call, use
+    //the return value as the in-param
+    void collapseAutoCopyPairs();
 
 	// Need some work
 	void collapseEH();
@@ -435,6 +443,7 @@ private:
 	
     ///////////// Graph Analysi(Pointers) ////////////////////////////////////////
 	void resolvePointers2();
+    void againCheckIfWrittenForAllNodes();
 	void resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeProps *targetV, std::set<int> &visited, std::set<NodeProps *> &tempPointers, NodeProps *alias, NodeProps *previousTV);
 	void resolveLocalAliases2(NodeProps *exitCand, NodeProps *currNode, std::set<int> &visited, NodeProps *exitV);
 																			
@@ -479,7 +488,7 @@ private:
     void adjustLocalVars();
     bool varLengthParams();
     void printValueIDName(Value *v);
-    const char * calcMetaFuncName(RegHashProps &variables, Value *v, bool isTradName, std::string nonTradName, int currentLineNum);
+    std::string calcMetaFuncName(RegHashProps &variables, Value *v, bool isTradName, std::string nonTradName, int currentLineNum);
     void printCurrentVariables();
 
     // IMPLICIT
@@ -503,11 +512,11 @@ private:
     void grabVarInformation(llvm::Value *varDeclare);    
     
     void ieGen_LHS(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
-    void ieGen_LHS_Alloca(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
+    void ieGen_LHS_Alloca(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGen_Operands(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
-    void ieGen_OperandsStore(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
+    void ieGen_OperandsStore(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
-    void ieGen_OperandsAtomic(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
+    void ieGen_OperandsAtomic(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieDefault(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieBlank(Instruction *pi, int &currentLineNum);
     void ieMemAtomic(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);

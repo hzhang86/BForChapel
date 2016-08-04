@@ -21,7 +21,7 @@
 
 using namespace llvm;
 using namespace std;
-
+/*
 #ifdef __GNUC__
 #include <ext/hash_map>
 #else
@@ -32,7 +32,8 @@ namespace std
 {
   using namespace __gnu_cxx;
 }
-
+*/
+#include <unordered_map> //sub for hash_map
 
 
 #define NOT_RESOLVED 0
@@ -109,7 +110,7 @@ namespace std
 
  
  
- typedef std::hash_map<int, int> LineReadHash;
+typedef std::unordered_map<int, int> LineReadHash;
 
  
 class ExitSuper;
@@ -293,6 +294,10 @@ public:
 	                        // int* c = GEP b, 4
                             //then to array: a is child, b is load, c is dataPtr
 
+    //added by Hui 05/10/16 for cases: store %6,a; %1=load a; call %myfunc(%1,..);
+    //if %1 is written inside myfunc, then a shall get blamed as well. %1 was not put
+    //into a's loads because there's a RLS between %6 and %1, so we made a new set to hold these
+    set<NodeProps *> loadForCalls; 
     // Field info          if we have a = GEP b, 0, 1...    then	
     StructField * sField;  //b.sBFC = a.sField.parentStruct    	
     StructBFC * sBFC;
@@ -347,8 +352,11 @@ public:
 	
 	set<NodeProps *>  dataWritesFrom;
 	/////////////////////////////////////////////
-	
-	
+	//added by Hui 05/10/16: help variables's lineNumOrder since that's not reliable
+	//It maps line# to the order of this node appeared in that line
+    //We hope there won't be multiple stores/loads to a single node on the same line#
+    LineReadHash storeLineNumOrder; //case: store a, xx
+    LineReadHash loadLineNumOrder;  //case: a = load xx
 	///////// For Alias only operations /////
 	LineReadHash readLines;
 	//////////////////////////////////////////////
@@ -388,7 +396,9 @@ public:
 	
 	
 	// For each line number, the order at which the statement appeared
-	int lineNumOrder;
+	int lineNumOrder; //only effect for registers(instructions), not reliable 
+                      //for variables, since they were all declared in the first
+                      //line of the function with "alloca"
   
     NodeProps(int nu, string na, int ln, Value *pi)
     {

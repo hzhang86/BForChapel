@@ -64,9 +64,6 @@ public class BlameDataTrunc extends BlameData {
 			bc.addBlamedFunction(funcName,bf);
 		
 		//SourceFiles sourceF = bc.getOrCreateSourceFile();
-		
-	
-		
 		if (SourceContainer.sourceFiles.get(moduleName) == null)
 		{
 			SourceFile sourceF = new SourceFile();
