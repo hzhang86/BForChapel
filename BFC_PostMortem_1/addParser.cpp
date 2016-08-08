@@ -7,10 +7,11 @@
 #include <fstream>
 #include <iostream>
 #include <dirent.h> // for interating the directory
-
+/*
 #include "BlameProgram.h"
 #include "BlameFunction.h"
 #include "BlameModule.h"
+*/
 #include "Instances.h"
 
 #include "BPatch.h"

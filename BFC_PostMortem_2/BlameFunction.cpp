@@ -26,16 +26,16 @@ VertexProps *BlameFunction::findOrCreateVP(std::string & name)
   
   VertexProps * vp = NULL;
   
-  if ( allVertices.count(name.c_str()))
+  if (allVertices.count(name))
   {
-    return allVertices[name.c_str() ];
+    return allVertices[name];
   }
   else
   {
     std::string s(name);
     vp = new VertexProps(s);
     vp->BF = this;
-    allVertices[s.c_str()] = vp;
+    allVertices[s] = vp;
   }
   
   return vp;
@@ -960,7 +960,6 @@ void BlameFunction::addBlameToFieldParents(VertexProps * vp, std::set<VertexProp
     while (upPtr != NULL && visited.count(upPtr) == 0) //Here visited is new for each call of this func
     {                                               //TOCHECK: shall we make it global for each frame???
       visited.insert(upPtr);
-      
       
       //std::cout<<"Adding field parent "<<upPtr->name<<std::endl;
       upPtr->addedFromWhere = fromWhere;
@@ -2365,10 +2364,10 @@ void BlameFunction::populateTempSideEffectsRelations()
       
       BlameFunction * bf = NULL;
       FunctionHash::iterator fh_i_check;  // blameFunctions;
-      fh_i_check = BP->blameFunctions.find(callTrunc.c_str());
+      fh_i_check = BP->blameFunctions.find(callTrunc);
       if (fh_i_check != BP->blameFunctions.end())
       {
-        bf = BP->blameFunctions[callTrunc.c_str()];
+        bf = BP->blameFunctions[callTrunc];
       }
       
       if (bf == NULL)
@@ -2558,10 +2557,10 @@ void BlameFunction::populateTempSideEffects(int lineNum, std::set<VertexProps *>
         
         BlameFunction * bf = NULL;
         FunctionHash::iterator fh_i_check;  // blameFunctions;
-        fh_i_check = BP->blameFunctions.find(callTrunc.c_str());
+        fh_i_check = BP->blameFunctions.find(callTrunc);
         if (fh_i_check != BP->blameFunctions.end())
         {
-          bf = BP->blameFunctions[callTrunc.c_str()];
+          bf = BP->blameFunctions[callTrunc];
         }
         
         if (bf == NULL)
@@ -3277,9 +3276,9 @@ std::string BlameFunction::getFullContextName(vector<StackFrame> & frames, Modul
   for (;plusOne != frames.end(); plusOne++)
   {    
     ++x;
-    if (modules.count((*plusOne).moduleName.c_str()))
+    if (modules.count((*plusOne).moduleName))
     {
-      BlameModule * bmCheck = modules[(*plusOne).moduleName.c_str()];
+      BlameModule * bmCheck = modules[(*plusOne).moduleName];
 
       if (bmCheck == NULL)
         return fullName;
@@ -3407,7 +3406,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
         cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 #endif
         // Get the module from the debugging information
-        BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
+        BlameModule * bm = modules[(*vec_SF_i).moduleName];
         
         if (bm != NULL)
         {
@@ -3439,7 +3438,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
       
       vector<StackFrame>::iterator minusOne = vec_SF_i - 1;
       //StackFrame * sfCheck = minusOne;
-      BlameModule * bmCheck = modules[(*minusOne).moduleName.c_str()];
+      BlameModule * bmCheck = modules[(*minusOne).moduleName];
       
       if (bmCheck == NULL)
       {
@@ -3526,7 +3525,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
         cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 #endif
         // Get the module from the debugging information
-        BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
+        BlameModule * bm = modules[(*vec_SF_i).moduleName];
         
         if (bm != NULL)
         {
@@ -3596,7 +3595,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
 //      cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 ///////////////////////////////////////////////////////////////////////////////////      
       // Get the module from the debugging information
-      BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
+      BlameModule * bm = modules[(*vec_SF_i).moduleName];
       
       if (bm != NULL)
       {
@@ -3675,7 +3674,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
       // figure out which call is appropriate, then apply transfer function
       vector<StackFrame>::iterator minusOne = vec_SF_i - 1;
       //StackFrame * sfCheck = minusOne;
-      BlameModule * bmCheck = modules[(*minusOne).moduleName.c_str()];
+      BlameModule * bmCheck = modules[(*minusOne).moduleName];
       
       if (bmCheck == NULL)
       {
@@ -3765,7 +3764,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
       cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 #endif
       // Get the module from the debugging information
-      BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
+      BlameModule * bm = modules[(*vec_SF_i).moduleName];
       
       if (bm != NULL)
       {

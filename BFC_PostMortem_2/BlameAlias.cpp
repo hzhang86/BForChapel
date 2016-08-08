@@ -621,7 +621,7 @@ void VertexProps::parseVertex_OA(ifstream & bI, BlameFunction * bf)
 			}
 			else
 			{
-				sType = BF->BP->blameStructs[line.c_str()];
+				sType = BF->BP->blameStructs[line];
 			}
 		}
 	}
@@ -656,7 +656,7 @@ void VertexProps::parseVertex_OA(ifstream & bI, BlameFunction * bf)
 			}
 			else
 			{
-				bs = BF->BP->blameStructs[line.c_str()];
+				bs = BF->BP->blameStructs[line];
 			}
 		}
 	}
@@ -912,7 +912,7 @@ void BlameFunction::resolveLineNum_OA(vector<StackFrame> & frames, ModuleHash & 
 				cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 				
 				// Get the module from the debugging information
-				BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
+				BlameModule * bm = modules[(*vec_SF_i).moduleName];
 				
 				if (bm != NULL)
 				{
@@ -936,7 +936,7 @@ void BlameFunction::resolveLineNum_OA(vector<StackFrame> & frames, ModuleHash & 
 			
 			vector<StackFrame>::iterator minusOne = vec_SF_i - 1;
 			//StackFrame * sfCheck = minusOne;
-			BlameModule * bmCheck = modules[(*minusOne).moduleName.c_str()];
+			BlameModule * bmCheck = modules[(*minusOne).moduleName];
 			
 			if (bmCheck == NULL)
 			{
@@ -1022,7 +1022,7 @@ void BlameFunction::resolveLineNum_OA(vector<StackFrame> & frames, ModuleHash & 
 				cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 				
 				// Get the module from the debugging information
-				BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
+				BlameModule * bm = modules[(*vec_SF_i).moduleName];
 				
 				if (bm != NULL)
 				{
@@ -1066,7 +1066,7 @@ void BlameFunction::resolveLineNum_OA(vector<StackFrame> & frames, ModuleHash & 
 			cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 			
 			// Get the module from the debugging information
-			BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
+			BlameModule * bm = modules[(*vec_SF_i).moduleName];
 			
 			if (bm != NULL)
 			{
@@ -1133,7 +1133,7 @@ void BlameFunction::resolveLineNum_OA(vector<StackFrame> & frames, ModuleHash & 
 			
 			vector<StackFrame>::iterator minusOne = vec_SF_i - 1;
 			//StackFrame * sfCheck = minusOne;
-			BlameModule * bmCheck = modules[(*minusOne).moduleName.c_str()];
+			BlameModule * bmCheck = modules[(*minusOne).moduleName];
 			
 			if (bmCheck == NULL)
 			{
@@ -1223,7 +1223,7 @@ void BlameFunction::resolveLineNum_OA(vector<StackFrame> & frames, ModuleHash & 
 			cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 			
 			// Get the module from the debugging information
-			BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
+			BlameModule * bm = modules[(*vec_SF_i).moduleName];
 			
 			if (bm != NULL)
 			{

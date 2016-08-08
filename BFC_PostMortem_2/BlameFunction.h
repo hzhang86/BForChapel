@@ -28,13 +28,14 @@
 //#include "ExitVariable.h"
 //#include "ExitProgram.h"
 #include "VertexProps.h"
-
+/*
 #ifdef __GNUC__
 #include <ext/hash_map>
 #else
 #include <hash_map>
 #endif
-
+*/
+#include <unordered_map>
 
 #define NO_BLAME 0
 #define EXPLICIT 1
@@ -49,7 +50,7 @@ class BlameModule;  // Temporary object
 class StackFrame;
 class BlameProgram;
 
-typedef std::hash_map<const char *, VertexProps *, std::hash<const char *>, eqstr> VertexHash;
+typedef std::unordered_map<std::string, VertexProps *, std::hash<std::string>, eqstr> VertexHash;
 typedef std::multimap<int, VertexProps *> VertexMap;
 
 struct SideEffectParam

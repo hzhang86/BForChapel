@@ -22,13 +22,14 @@
 #include <iostream>
 
 #include <set>
-
+/*
 #ifdef __GNUC__
 #include <ext/hash_map>
 #else
 #include <hash_map>
 #endif
-
+*/
+#include <unordered_map>
 #include "BlameStruct.h"
 
 namespace std
@@ -56,7 +57,7 @@ struct StructField {
 
 };
 
-typedef std::hash_map<int, StructField *> FieldHash;
+typedef std::unordered_map<int, StructField *> FieldHash;
 
 
 struct StructBlame {

@@ -25,16 +25,16 @@ BlameModule *  BlameProgram::findOrCreateModule(const char * modName)
 	
   //bm = blameModules[modName];
 	
-	
-  if (blameModules.count(modName) == 0){
+  std::string modNameStr(modName);
+  if (blameModules.count(modNameStr) == 0){
 	//std::cout<<"Creating new blame module for "<<modName<<std::endl;
 	bm = new BlameModule();
 	std::string s(modName);
 	bm->setName(s);
-	blameModules[bm->getName().c_str()] = bm;
+	blameModules[bm->getName()] = bm;
   }
   else {
-	bm = blameModules[modName];
+	bm = blameModules[modNameStr];
 		//std::cout<<bm->getName()<<" already created "<<std::endl;
   }
 	
@@ -47,11 +47,12 @@ void BlameProgram::addImplicitBlamePoint(const char * checkName)
 {
 	BlameFunction * bf = NULL;
 	FunctionHash::iterator fh_i_check;  // blameFunctions;
-	fh_i_check = blameFunctions.find(checkName);
+    std::string checkNameStr(checkName);
+    fh_i_check = blameFunctions.find(checkNameStr);
 	
 	if (fh_i_check != blameFunctions.end())
 	{
-		 bf = blameFunctions[checkName];
+		 bf = blameFunctions[checkNameStr];
 		 bf->setBlamePoint(IMPLICIT);
 	}
 }
@@ -220,7 +221,7 @@ void BlameProgram::addFunction(BlameFunction * bf)
     bm->addFunction(bf); //add to FunctionHash blameFunctions in this bm
 	//bm->addFunctionSet(bf); //removed by Hui 03/29/16, not using funcBySet anymore
 	
-	blameFunctions[bf->getName().c_str()] = bf; //add to blameFunctions in this bp
+	blameFunctions[bf->getName()] = bf; //add to blameFunctions in this bp
 	
 }
 
@@ -253,7 +254,7 @@ void BlameProgram::parseStructs()
 		{
 			StructBlame * sb = new StructBlame();
 			sb->parseStruct(bI);
-			blameStructs[sb->structName.c_str()] = sb;
+			blameStructs[sb->structName] = sb;
 			
 			// BEGIN STRUCT (or END STRUCTS)
 			getline(bI, line);
@@ -440,10 +441,10 @@ void BlameFunction::calcRecursiveSEAliasesRecursive(std::set<BlameFunction *> & 
 				
 				BlameFunction * bf = NULL;
 				FunctionHash::iterator fh_i_check;  // blameFunctions;
-				fh_i_check = BP->blameFunctions.find(callTrunc.c_str());
+				fh_i_check = BP->blameFunctions.find(callTrunc);
 				if (fh_i_check != BP->blameFunctions.end())
 				{
-					bf = BP->blameFunctions[callTrunc.c_str()];
+					bf = BP->blameFunctions[callTrunc];
 				}
 				
 		
@@ -910,10 +911,10 @@ BlameFunction * BlameProgram::getOrCreateBlameFunction(std::string funcName, std
 	BlameFunction * bf = NULL;
 	//bf = blameFunctions[funcName.c_str()];
 	FunctionHash::iterator fh_i_check;  // blameFunctions;
-	fh_i_check = blameFunctions.find(funcName.c_str());
+	fh_i_check = blameFunctions.find(funcName);
 	if (fh_i_check != blameFunctions.end())
 	{
-		bf = blameFunctions[funcName.c_str()];
+		bf = blameFunctions[funcName];
 	}
 	
 	
@@ -1053,7 +1054,7 @@ void BlameProgram::printParsed(std::ostream &O)
   //cout<<"For module "<<realName<<std::endl<<std::endl;
   //std::vector<BlameModule *>::iterator bm_i;
   
-  std::hash_map<const char *, BlameModule *, std::hash<const char *>, eqstr>::iterator bm_i;
+  ModuleHash::iterator bm_i;
 	
   for (bm_i = blameModules.begin();  bm_i != blameModules.end(); bm_i++)
 	{

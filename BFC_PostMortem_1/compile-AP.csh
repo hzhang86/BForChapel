@@ -3,5 +3,5 @@
 
 #g++ -L${DYNINST_ROOT}/i386-unknown-linux2.4/lib -ldyninstAPI -lsymtabAPI -linstructionAPI -lcommon -ldl  -o addParser addParser.o
 
-g++ -c -g -I/export/home/hzhang86/packages/dyninst-head/include -I/fs/mashie/hzhang86/myBlame/include addParser.C
+g++ -c -g -I/export/home/hzhang86/packages/dyninst-head/include -I/fs/mashie/hzhang86/myBlame/include addParser.cpp
 g++ -L/export/home/hzhang86/packages/dyninst-head/lib -L/fs/mashie/hzhang86/myBlame/lib -ldyninstAPI -lsymtabAPI -linstructionAPI -lparseAPI -lcommon -ldl -ldwarf -o addParser addParser.o -ldyninstAPI -lsymtabAPI -linstructionAPI -lparseAPI -lcommon -ldl -ldwarf

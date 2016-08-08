@@ -84,8 +84,7 @@ void Instance::secondTrim(ModuleHash &modules)
   
   for (vec_SF_i=newFrames.begin(); vec_SF_i!=newFrames.end(); vec_SF_i++) {
     BlameModule *bm = NULL;
-    const char* tmpptr = (*vec_SF_i).moduleName.c_str();
-    bm = modules[tmpptr];
+    bm = modules[(*vec_SF_i).moduleName];
     BlameFunction *bf = bm->findLineRange((*vec_SF_i).lineNumber);
     if (bf==NULL) {
       stack_info<<"Weird: bf should exist!"<<endl;
@@ -115,7 +114,7 @@ void Instance::secondTrim(ModuleHash &modules)
           stack_info<<">= one call node at that line number"<<std::endl;    //previous frame, we need to remove it ..
             // figure out which call is appropriate                         //usually it's a Chapel inner func call
           vector<StackFrame>::iterator minusOne = vec_SF_i - 1;
-          BlameModule *bmCheck = modules[(*minusOne).moduleName.c_str()];
+          BlameModule *bmCheck = modules[(*minusOne).moduleName];
           if (bmCheck == NULL) {
             stack_info<<"BM of previous frame is null ! delete frame "<<(*vec_SF_i).frameNumber<<endl;
             (*vec_SF_i).toRemove = true;
@@ -171,7 +170,7 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, int whichStack)
   vector<StackFrame>::iterator vec_SF_i;
   vector<StackFrame> newFrames(frames);
   bool isBottomParsed = true;
-  frames.clear();
+  frames.clear(); //clear up this::frames after we copy everything to newFrames
   
   for (vec_SF_i=newFrames.begin(); vec_SF_i!=newFrames.end(); vec_SF_i++) {
     if ((*vec_SF_i).lineNumber <= 0) {
@@ -180,9 +179,8 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, int whichStack)
     }
     else {
       BlameModule *bm = NULL;
-      const char* tmpptr = (*vec_SF_i).moduleName.c_str();
-      if (tmpptr)
-          bm = modules[tmpptr];
+      if((*vec_SF_i).moduleName.empty()==false);
+          bm = modules[(*vec_SF_i).moduleName];
       if (bm == NULL) {
         stack_info<<"BM is NULL, delete frame "<<(*vec_SF_i).frameNumber<<endl;
         (*vec_SF_i).toRemove = true;
@@ -210,6 +208,7 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, int whichStack)
             if (bf->getBLineNum()==(*vec_SF_i).lineNumber) {
               stack_info<<"Frame cannot be main while the ln is BLineNum, delete frame "<<(*vec_SF_i).frameNumber<<endl;
               (*vec_SF_i).toRemove = true;
+              isMainThread = true;//we don't add this frame to our stack but we do know it's from the main thread
             }
           }
           else {
@@ -264,11 +263,11 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, int whichStack)
   //check whether this instance is from the main thread
   if (!frames.empty()) {
     StackFrame &vec_SF_r = frames.back();
-    BlameModule *bmEnd = modules[vec_SF_r.moduleName.c_str()];
+    BlameModule *bmEnd = modules[vec_SF_r.moduleName];
     BlameFunction *bfEnd = bmEnd->findLineRange(vec_SF_r.lineNumber);
     if (bfEnd->getName().compare("chpl_user_main")==0)
       isMainThread = true;
-    else 
+    else //isMainThread is set to be false by default for instances, not pre_instances
       isMainThread = false;
 
     if(isMainThread && whichStack==1)
@@ -313,9 +312,15 @@ void glueTwoStackTrace(InstanceHash &pre_instances, int InstanceNum, Instance &i
         i.frames.push_back(sf);
       }
     }
+    stack_info<<"Finish glue child and parent stack traces!"<<endl;
     //print final frames(after glued)
     i.printInstance_concise();
   }
+
+  else {//added 08/06/16:if it's empty(idling thread, then we simply use the preStackTrace 
+    i.frames = parent.frames;
+    stack_info<<"For worker samples that have no invalid frames, we just copy from the parent's"<<endl;
+  } 
 }
 
 void Instance::handleInstance(ModuleHash &modules, std::ostream &O, bool verbose)
@@ -330,7 +335,7 @@ void Instance::handleInstance(ModuleHash &modules, std::ostream &O, bool verbose
   for (vec_SF_i = frames.begin(); vec_SF_i != frames.end(); vec_SF_i++) {
     if ((*vec_SF_i).lineNumber > 0 && (*vec_SF_i).toRemove == false) {
     // Get the module from the debugging information
-    BlameModule *bm = modules[(*vec_SF_i).moduleName.c_str()];   //return the pointer to a BlameModule object
+    BlameModule *bm = modules[(*vec_SF_i).moduleName];   //return the pointer to a BlameModule object
 
       if (bm != NULL) {
         // Use the combination of the module and the line number to determine the function
@@ -423,6 +428,7 @@ void populateSamples(vector<Instance> &instances, const char *traceName)
       i.frames.push_back(sf);
     }
     
+    i.isMainThread = false;//added by Hui 08/05/16: will be set to true if detected "main"
     instances.push_back(i);
   }
 }

@@ -138,7 +138,7 @@ void BlameFunction::resolveLineNum_OAR(vector<StackFrame> & frames, ModuleHash &
 				cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 				
 				// Get the module from the debugging information
-				BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
+				BlameModule * bm = modules[(*vec_SF_i).moduleName];
 				
 				if (bm != NULL)
 				{
@@ -162,7 +162,7 @@ void BlameFunction::resolveLineNum_OAR(vector<StackFrame> & frames, ModuleHash &
 			
 			vector<StackFrame>::iterator minusOne = vec_SF_i - 1;
 			//StackFrame * sfCheck = minusOne;
-			BlameModule * bmCheck = modules[(*minusOne).moduleName.c_str()];
+			BlameModule * bmCheck = modules[(*minusOne).moduleName];
 			
 			if (bmCheck == NULL)
 			{
@@ -250,7 +250,7 @@ void BlameFunction::resolveLineNum_OAR(vector<StackFrame> & frames, ModuleHash &
 				cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 				
 				// Get the module from the debugging information
-				BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
+				BlameModule * bm = modules[(*vec_SF_i).moduleName];
 				
 				if (bm != NULL)
 				{
@@ -297,7 +297,7 @@ void BlameFunction::resolveLineNum_OAR(vector<StackFrame> & frames, ModuleHash &
 			cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 			
 			// Get the module from the debugging information
-			BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
+			BlameModule * bm = modules[(*vec_SF_i).moduleName];
 			
 			if (bm != NULL)
 			{
@@ -364,7 +364,7 @@ void BlameFunction::resolveLineNum_OAR(vector<StackFrame> & frames, ModuleHash &
 			
 			vector<StackFrame>::iterator minusOne = vec_SF_i - 1;
 			//StackFrame * sfCheck = minusOne;
-			BlameModule * bmCheck = modules[(*minusOne).moduleName.c_str()];
+			BlameModule * bmCheck = modules[(*minusOne).moduleName];
 			
 			if (bmCheck == NULL)
 			{
@@ -457,7 +457,7 @@ void BlameFunction::resolveLineNum_OAR(vector<StackFrame> & frames, ModuleHash &
 			cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 			
 			// Get the module from the debugging information
-			BlameModule * bm = modules[(*vec_SF_i).moduleName.c_str()];
+			BlameModule * bm = modules[(*vec_SF_i).moduleName];
 			
 			if (bm != NULL)
 			{

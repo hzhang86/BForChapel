@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-
+/*
 #ifdef __GNUC__
 #include <ext/hash_map>
 #else
@@ -17,7 +17,8 @@ namespace std
 {
   using namespace __gnu_cxx;
 }
-
+*/
+#include <unordered_map>
 
 #define NODE_PROPS_SIZE 20
 
@@ -57,10 +58,12 @@ namespace std
 #define EXIT_VAR_PARAM  5 //changed by Hui 03/15/16
 
 //added for debug purpose//
+/*
 #define DEBUG_BLAMEES
 #define DEBUG_BLAMED_EXITS
 #define DEBUG_DETER_BH
 #define DEBUG_RESOLVE_LN
+*/
 //#define DEBUG_SELINES
 //#define DEBUG_GFSN
 //newly added by Hui---//
@@ -77,7 +80,7 @@ struct SideEffectParam;
 
 class VertexProps;
 
-typedef std::hash_map<int, int> LineReadHash;
+typedef std::unordered_map<int, int> LineReadHash;
 
 /*
   For "this" node: set<FuncCall*> calls are all nodes that are related to "this" in
@@ -164,7 +167,7 @@ class VertexProps {
 	std::set<VertexProps *> aliases;  // aliases
 	
 	
-	VertexProps * aliasUpPtr; // only used when there is an Exit Variable (which has
+	VertexProps * aliasUpPtr = NULL; // only used when there is an Exit Variable (which has
 	// slightly different alias rules) has an alias of a local variable 
 	//  local var --- aliasUpPtr---> exitVariable
 	

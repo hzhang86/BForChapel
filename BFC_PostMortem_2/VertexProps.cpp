@@ -451,7 +451,8 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 		{
 			VertexProps * alias = bf->findOrCreateVP(line);
 			aliases.insert(alias);
-			//alias->aliasUpPtr = this; //a->alias->aliasUpPtr = a ??? what's the logic
+			alias->aliasUpPtr = this; //a->alias->aliasUpPtr = a ??? what's the logic
+            //added above aliasUpPtr line back 08/06/16
 		}
 	}
 
@@ -669,7 +670,7 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 			}
 			else
 			{
-				sType = BF->BP->blameStructs[line.c_str()];
+				sType = BF->BP->blameStructs[line];
 			}
 		}
 	}
@@ -704,7 +705,7 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 			}
 			else
 			{
-				bs = BF->BP->blameStructs[line.c_str()];
+				bs = BF->BP->blameStructs[line];
 			}
 		}
 	}

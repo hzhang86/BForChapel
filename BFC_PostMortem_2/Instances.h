@@ -9,19 +9,21 @@
 #include <string.h>
 
 #include <set>
-
+/*
 #ifdef __GNUC__
 #include <ext/hash_map>
 #else
 #include <hash_map>
 #endif
 
-#include "BlameStruct.h"
-
 namespace std
 {
   using namespace __gnu_cxx;
 }
+*/
+
+#include "BlameStruct.h"
+#include <unordered_map>
 
 class BlameModule;
 //struct StructField;
@@ -29,15 +31,15 @@ class BlameModule;
 
 struct eqstr
 {
-  bool operator() (const char * s1, const char * s2) const
+  bool operator() (std::string s1, std::string s2) const
   {
-		return strcmp(s1,s2) == 0;
+		return s1 == s2;
   }
 };
 
-typedef std::hash_map<const char *, BlameModule *, std::hash<const char *>, eqstr> ModuleHash;
-typedef std::hash_map<const char *, StructBlame *, std::hash<const char *>, eqstr> StructHash;
-typedef std::hash_map<int, StructField*> FieldHash;
+typedef std::unordered_map<std::string, BlameModule *, std::hash<std::string>, eqstr> ModuleHash;
+typedef std::unordered_map<std::string, StructBlame *, std::hash<std::string>, eqstr> StructHash;
+typedef std::unordered_map<int, StructField*> FieldHash;
 
 struct StackFrame
 {
@@ -52,7 +54,7 @@ struct Instance
 {
   std::vector<StackFrame> frames;
   int processTLNum; //added by Hui 12/25/15: processTaskList called#
-  bool isMainThread; //added by Hui 12/25/15: this instance is from the main thread
+  bool isMainThread; //added by Hui 12/25/15: whether this instance is from the main thread
   void printInstance();
   void printInstance_concise();//Added by Hui 12/20/15
   void handleInstance(ModuleHash & modules, std::ostream &O, bool verbose);
@@ -72,7 +74,7 @@ struct FullSample
 	int lineNumber;
 };
 
-typedef std::hash_map<int, Instance> InstanceHash;//added by Hui 12/25/15
+typedef std::unordered_map<int, Instance> InstanceHash;//added by Hui 12/25/15
                                             //NOTE: pair.second is NOT a pointer !
 
 #endif

@@ -18,13 +18,13 @@
 #include <set>
 
 #include "Instances.h"
-
+/*
 #ifdef __GNUC__
 #include <ext/hash_map>
 #else
 #include <hash_map>
 #endif
-
+*/
 #include "BlameModule.h"
 #include "BlameStruct.h"
 
