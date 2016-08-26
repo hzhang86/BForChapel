@@ -418,7 +418,7 @@ public:
         llvm_inst = pi; // the value could be a constant(for global var) here
 		collapsed_inst = NULL;
 		
-		dpUpPtr = this;
+		dpUpPtr = this; //changed by Hui 08/11/16 from "this" to NULL
 		dfaUpPtr = NULL;
 		fieldUpPtr = NULL;
 		fieldAlias = NULL;

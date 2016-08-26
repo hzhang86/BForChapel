@@ -167,7 +167,7 @@ class VertexProps {
 	std::set<VertexProps *> aliases;  // aliases
 	
 	
-	VertexProps * aliasUpPtr = NULL; // only used when there is an Exit Variable (which has
+	VertexProps * aliasUpPtr; // only used when there is an Exit Variable (which has
 	// slightly different alias rules) has an alias of a local variable 
 	//  local var --- aliasUpPtr---> exitVariable
 	
@@ -294,7 +294,6 @@ class VertexProps {
 	
 	// General type of this vertex
 	std::string genType;
-
 	
 	VertexProps(string na)
 	{
@@ -304,6 +303,8 @@ class VertexProps {
 		bs = NULL;
 		sField = NULL;
 		eStatus = NO_EXIT;
+
+        BF = NULL; //added by Hui 08/08/16
 		
 		weight = 1.0;
 		
@@ -325,7 +326,8 @@ class VertexProps {
 		fieldUpPtr = NULL;
 		dpUpPtr = NULL;
 		dfaUpPtr = NULL;
-		
+		aliasUpPtr = NULL; //added by Hui 08/08/16
+
 		fieldAlias = NULL;
 		
 		for (int a = 0; a < NODE_PROPS_SIZE; a++)
@@ -333,7 +335,7 @@ class VertexProps {
 		
 		tempLine = 0;
 		declaredLine = 0;
-		}
+	}
 
 	void propagateTempLineUp(std::set<VertexProps *> & visited, int lineNum);
 	int findBlamedExits(std::set<VertexProps *> & visited, int lineNum);

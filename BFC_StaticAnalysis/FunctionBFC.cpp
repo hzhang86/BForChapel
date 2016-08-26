@@ -223,7 +223,7 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std:
 		
 		if ( targetVP->eStatus > 0 || targetVP->nStatus[ANY_EXIT] ) {
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN
-			blame_info<<"Target "<<targetVP->name<<" "<<targetVP->exitV<<" "<<origVP->exitV;
+	/*		blame_info<<"Target "<<targetVP->name<<" "<<targetVP->exitV<<" "<<origVP->exitV;
 			blame_info<<" ";
 			if (targetVP->dpUpPtr) //dpUpPtr: Up pointer, =itself by default
 				blame_info<<targetVP->dpUpPtr->name;
@@ -238,16 +238,39 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std:
 				blame_info<<origVP->dpUpPtr;
 			
 			blame_info<<std::endl;
-			
+	*/
+            
 			if (targetVP->exitV)
 				blame_info<<"TargetV->exitV - "<<targetVP->exitV->name<<std::endl;
+            else
+                blame_info<<"TargetV->exitV - NULL"<<std::endl;
 			if (origVP->exitV)
 				blame_info<<"OrigVP->exitV - "<<origVP->exitV->name<<std::endl;
+            else
+                blame_info<<"OrigVP->exitV - NULL"<<std::endl;
+			
+			if (targetVP->pointsTo)
+				blame_info<<"TargetV->pointsTo - "<<targetVP->pointsTo->name<<std::endl;
+            else
+                blame_info<<"TargetV->pointsTo - NULL"<<std::endl;
+			if (origVP->pointsTo)
+				blame_info<<"OrigVP->pointsTo - "<<origVP->pointsTo->name<<std::endl;
+            else
+                blame_info<<"TargetV->pointsTo - NULL"<<std::endl;
+			
+            if (targetVP->dpUpPtr)
+                blame_info<<"TargetV->dpUpPtr - "<<targetVP->dpUpPtr->name<<std::endl;
+            else
+                blame_info<<"TargetV->dpUpPtr - NULL"<<std::endl;
+			if (origVP->dpUpPtr)
+				blame_info<<"OrigVP->dpUpPtr - "<<origVP->dpUpPtr->name<<std::endl;
+            else
+                blame_info<<"TargetV->dpUpPtr - NULL"<<std::endl;
 #endif 			
 			
-			if ((targetVP->pointsTo != origVP->pointsTo || 
-					(targetVP->pointsTo == NULL && origVP->pointsTo == NULL)) && 
-                    targetVP->dpUpPtr != origVP->dpUpPtr) {
+			if ((targetVP->pointsTo != origVP->pointsTo || (targetVP->pointsTo == NULL && origVP->pointsTo == NULL)) && 
+                    targetVP->dpUpPtr != origVP->dpUpPtr) // || (targetVP->dpUpPtr == NULL && origVP->dpUpPtr == NULL))) 
+            {
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN			
 				blame_info<<"Adding Child/Parent relation between "<<targetVP->name<<" and "<<origVP->name<<std::endl;
 #endif
@@ -397,6 +420,23 @@ void FunctionBFC::populateImportantVertices()
                     storeValue->nStatus[IMP_REG] = true;
                 }
             }
+#ifdef NEW_FOR_PARAM1
+            //for cases like store %1, var; %1 is nothing, but we need this reg
+            boost::graph_traits<MyGraphType>::in_edge_iterator ei_beg, ei_end;
+            ei_beg = boost::in_edges(v_index, G).first;		
+            ei_end = boost::in_edges(v_index, G).second;    
+            for(; ei_beg != ei_end; ++ei_beg) {
+                int opCode = get(get(edge_iore, G), *ei_beg);
+                if(opCode == Instruction::Store) { //when the register is 
+	                //NodeProps *storeValue = get(get(vertex_props,G), target(*ei_beg,G));
+                    targetVP->nStatus[ANY_EXIT] = true;
+                    //storeValue->nStatus[ANY_EXIT] = true;
+
+                    targetVP->nStatus[IMP_REG] = true;
+                    //storeValue->nStatus[IMP_REG] = true;
+                }
+            }
+#endif
         }
 	}
 	
@@ -1897,7 +1937,7 @@ void FunctionBFC::moreThanOneEV(int &numMultipleEV, int &afterOp1, int &afterOp2
 NodeProps *FunctionBFC::resolveSideEffectsCheckParentEV(NodeProps *vp, std::set<NodeProps *> &visited)
 {
 #ifdef DEBUG_SIDE_EFFECTS
-	blame_info<<"In resolveSideEffectsCheckParentEV for "<<vp->name<<" "<<vp->name<<std::endl;
+	blame_info<<"In resolveSideEffectsCheckParentEV for "<<vp->name<<std::endl;
 #endif
 	if (visited.count(vp) > 0)
 		return NULL;
@@ -1907,10 +1947,10 @@ NodeProps *FunctionBFC::resolveSideEffectsCheckParentEV(NodeProps *vp, std::set<
 	if (vp->eStatus >= EXIT_VAR_PARAM || vp->nStatus[EXIT_VAR_FIELD]) //changed by Hui 03/15/16
 		return vp;                                                  //from >EXIT_VAR_PARAM to >=...
 	
-	if (vp->dpUpPtr != NULL || vp->dpUpPtr != vp)
+	if (vp->dpUpPtr != NULL || vp->dpUpPtr != vp) //changed by Hui 08/11/16: condition from || to &&
 		return resolveSideEffectsCheckParentEV(vp->dpUpPtr, visited);
 	
-	if (vp->dfaUpPtr != NULL || vp->dfaUpPtr != vp)
+	if (vp->dfaUpPtr != NULL || vp->dfaUpPtr != vp) //changed by Hui 08/11/16: condition from || to &&
 		return resolveSideEffectsCheckParentEV(vp->dfaUpPtr, visited);
 	
 	return NULL;

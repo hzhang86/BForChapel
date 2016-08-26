@@ -103,7 +103,7 @@ BlameFunction *BlameModule::findLineRange(int lineNum)
     }
 	
 	if (topCand == NULL)
-	    cout<<"Top Cand is NULL -- oh noes!!!"<<endl;
+	    cout<<"Top Cand is NULL -- oh noes!!! for line#: "<<lineNum<<" file: "<<getName()<<endl;
 	else
 	    ;//cout<<"Find func: "<<topCand->getName()<<" for lineNum: "<<lineNum<<endl;
 	

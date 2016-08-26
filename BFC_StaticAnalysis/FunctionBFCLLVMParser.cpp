@@ -82,7 +82,11 @@ void FunctionBFC::adjustLocalVars()
                 v->isLocalVar = true;
                 v->line_num = (*lv_i)->definedLine;
                 allLineNums.insert(v->line_num);
-            
+                //added by Hui 08/09/16
+                if (this->getSourceFuncName().compare("create_atoms_chpl")==0){
+                    blame_info<<"Adding line# "<<v->line_num<<" from "<<v->name<<" in aLV"<<endl;
+                }
+
                 if (((*lv_i)->varName.find(".") != std::string::npos || 
                     (*lv_i)->varName.find("0x") != std::string::npos )
                     &&  (*lv_i)->varName.find("equiv.") == std::string::npos   
@@ -1346,6 +1350,11 @@ void FunctionBFC::genDILocationInfo(Instruction *pi, int &currentLineNum, Functi
             lnm[currentLineNum] = 0;
         
         allLineNums.insert(currentLineNum);
+        //added by Hui 08/09/16
+        if (this->getSourceFuncName().compare("create_atoms_chpl")==0){
+            blame_info<<"Adding line# "<<currentLineNum<<" in gDILIf";
+            blame_info<<" from file: "<<File<<endl;
+        }
         //In FunctionBFCBB
         fbb->lineNumbers.insert(currentLineNum);
 

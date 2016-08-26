@@ -165,7 +165,7 @@ void Instance::secondTrim(ModuleHash &modules)
 void Instance::trimFrames(ModuleHash &modules, int InstanceNum, int whichStack)
 {
   if(whichStack == 0)
-    stack_info<<"For preStackTrace: ";
+    stack_info<<"For preStackTrace with pTLN="<<processTLNum<<": ";
   stack_info<<"Triming Instance "<<InstanceNum<<endl;
   vector<StackFrame>::iterator vec_SF_i;
   vector<StackFrame> newFrames(frames);
@@ -206,7 +206,7 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, int whichStack)
         else {
           if (bf->getName().compare("chpl_user_main")==0) {
             if (bf->getBLineNum()==(*vec_SF_i).lineNumber) {
-              stack_info<<"Frame cannot be main while the ln is BLineNum, delete frame "<<(*vec_SF_i).frameNumber<<endl;
+              stack_info<<"Frame cannot be main while the ln is BLineNum (main thread), delete frame "<<(*vec_SF_i).frameNumber<<endl;
               (*vec_SF_i).toRemove = true;
               isMainThread = true;//we don't add this frame to our stack but we do know it's from the main thread
             }
@@ -267,8 +267,8 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, int whichStack)
     BlameFunction *bfEnd = bmEnd->findLineRange(vec_SF_r.lineNumber);
     if (bfEnd->getName().compare("chpl_user_main")==0)
       isMainThread = true;
-    else //isMainThread is set to be false by default for instances, not pre_instances
-      isMainThread = false;
+    //else //isMainThread is set to be false by default for instances, not pre_instances
+      //isMainThread = false;
 
     if(isMainThread && whichStack==1)
       secondTrim(modules); //reomove frames 77<-77 in 79<-77<-77<-88<-91
@@ -282,7 +282,8 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, int whichStack)
 //Added by Hui 12/25/15
 void glueTwoStackTrace(InstanceHash &pre_instances, int InstanceNum, Instance &i)
 {
-  stack_info<<"In glueTwoStackTrace for instance "<<InstanceNum<<endl;
+  stack_info<<"In glueTwoStackTrace for instance "<<InstanceNum<<" with pTLN=" \
+      <<i.processTLNum<<endl;
   if (pre_instances.count(i.processTLNum) == 0) {
     stack_info<<"Error: worker thread has pTLN "<<i.processTLNum<<" not found in preStackTrace"<<endl;
     return;
@@ -462,6 +463,9 @@ void populatePreSamples(InstanceHash &pre_instances, const char *traceName)
       sf.toRemove = false;//Added by Hui 12/20/15
       i.frames.push_back(sf);
     }
+
+    i.isMainThread = false; //added by Hui 08/08/16
+    //TODO: the following logic needs to be changed for nested forall loop 08/08/16
     if(pre_instances.count(i.processTLNum) == 0)
       pre_instances[i.processTLNum] = i;
     else

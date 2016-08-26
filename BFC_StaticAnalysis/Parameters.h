@@ -1,4 +1,4 @@
-/*
+/* 
  * Parameters.h
  * Define all the MACRO or const values
  *
@@ -37,6 +37,7 @@
 //#define DATAPTRS_FROM_FIELDS
 //#define DATAPTRS_FROM_FIELDS2
 //#define USE_LLVM25 //shall never be turned on for llvm newer than 2.5
+#define NEW_FOR_PARAM1 //08/11/16
 //////////////////////////
 
 #define DEBUG_GRAPH_BUILD

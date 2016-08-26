@@ -74,17 +74,16 @@ void BlameProgram::grabUsedModules(const char * traceName)
 	std::string line;
 	
 	getline(bI, line);
-	
+
 	int numInstances = atoi(line.c_str());
 	
 	char * buffer = (char *) malloc(100*sizeof(char));
 	
 	for (int a = 0; a < numInstances; a++)
 	{
-		getline(bI, line);
+		getline(bI, line); //line would be: numFrames pTLN
 		
-		int numFrames = atoi(line.c_str());
-		
+		int numFrames = atoi(line.c_str()); //atoi will only convert the first "int" string, so pTLN will be ignored
 		
 		for (int b = 0; b < numFrames; b++)
 		{
@@ -99,7 +98,8 @@ void BlameProgram::grabUsedModules(const char * traceName)
 			if (strcmp(buffer,"NULL") != 0)
 			{
 				std::pair<set<std::string>::iterator,bool> ret;
-				ret = sampledModules.insert(buffer);//insert the module name to set
+                std::string bufferStr(buffer);
+				ret = sampledModules.insert(bufferStr);//insert the module name to set
 				if (ret.second)                     //returns true if inserted succ
 				{
 					//std::cout<<"Inserting "<<buffer<<" into list of modules. "<<strlen(buffer)<<std::endl;
