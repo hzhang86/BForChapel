@@ -16,48 +16,26 @@
 #include "frame.h"
 #include "Symtab.h"
 #include "AddrLookup.h"
-#include "local_var.h"
-#include "Function.h"
-#include "Variable.h"
 
 #include <iostream>
 #include <string>
 #include <vector>
 #include <stdio.h>
 
-#define INVESTIGATE_FORK_WRAPPER
 #define SEP_TAGS
-#define BUFSIZE 256
 using namespace Dyninst;
 using namespace Dyninst::ProcControlAPI;
 using namespace Dyninst::Stackwalker;
-using namespace Dyninst::SymtabAPI;
 using namespace std;
+#ifndef SEP_TAGS
+using namespace SymtabAPI;
+#endif
 
 static Walker *walker = NULL;
 static FILE *pFile;
 static Dyninst::Address addr;
 static Process::ptr proc; 
 static char host_name[128];
-
-/* Copied from Chapel runtime-comm, passed in as a param to fork_*_wrapper
- *
- * typedef bool chpl_bool;
- * typedef int32_t c_sublocid_t;
- * typedef int16_t chpl_fn_int_t;
- */
-#ifdef INVESTIGATE_FORK_WRAPPER
-typedef struct {
-    uint16_t    fork_num;
-    int         caller;
-    int32_t     subloc;
-    void*       ack;
-    bool        serial_state;
-    int16_t     fid;
-    int         arg_size;
-    char        arg[0];
-} fork_t;
-#endif
 
 Process::cb_ret_t on_signal(Event::const_ptr evptr)
 {
@@ -76,7 +54,6 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
     vector<Frame> stackwalk;
     bool ret;
     unsigned long ra;
-    string frameName;
 
     if (walker == NULL) { //should've been initialized in main
       cerr<<"walker wasn't created well "<<endl;
@@ -103,55 +80,8 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
     fprintf(pFile, "\n");
     for (unsigned i=0; i<stackwalk.size(); i++) {
       ra = stackwalk[i].getRA();
-      stackwalk[i].getName(frameName);
-      fprintf(pFile, "%d 0x%016lx ", i, (unsigned long) ra);
-      fprintf(pFile, "%s ", frameName.c_str());
-#ifdef INVESTIGATE_FORK_WRAPPER      
-      // if it's one of the fork_*_wrapper function, then we need to concatenate the call stack
-      // with the pre-On stmt call stack by retrieving the "info" of this frame
-      if (frameName.find("fork")!=std::string::npos && frameName.find("wrapper")!=std::string::npos) {
-        Function *func = NULL;
-        localVar *var = NULL;
-        vector<localVar *> vars;
-        int intRet;
-        char outBuf[BUFSIZE];
-        fork_t *info;
-        int caller;
-        int16_t fid;
-        uint16_t fork_num;
-
-        func = getFunctionForFrame(stackwalk[i]);
-        if (func == NULL)
-          cerr<<"Failed to get function for frame "<<frameName<<endl;
-        else {
-          ret = func->getParams(vars);
-          if (ret == false)
-            cerr<<"Failed to get parameters for frame "<<frameName<<endl;
-          else {
-            var = vars[0]; //fork_*_wrapper only has one param: fork_t *info
-            if ((var->getName()).compare("f_chpl") !=0) // TO BE CONFIRMED OF the param name (formal arg)
-              cerr<<"The param: "<<var->getName()<<" isn't what we want!"<<endl;
-            else {
-              intRet = getLocalVariableValue(var, stackwalk, i, outBuf, BUFSIZE);
-              if (intRet != glvv_Success)
-                cerr<<"Failed to get param "<<var->getName()<<" for frame "<<frameName<<endl;
-              else {
-                // Now the value of the param is stored in outBuf;
-                info = (fork_t *)outBuf; //might be incompatible
-                caller = info->caller;
-                fid = info->fid;
-                fork_num = info->fork_num;
-                fprintf(pFile, "%d %d %d ",caller, fid, fork_num);
-              }
-            }
-          }
-        }
-      } // End of for_*_wrapper frame
-#endif
-      // separate the next stack frame
-      fprintf(pFile, "\t");
+      fprintf(pFile, "%d 0x%016lx \t", i, (unsigned long) ra);
     }
-    //end of this stack trace
     fprintf(pFile, "\n");
     fprintf(pFile, "---->END\n");
   }
