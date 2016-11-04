@@ -27,7 +27,7 @@
 
 #define INVESTIGATE_FORK_WRAPPER
 #define SEP_TAGS
-#define BUFSIZE 256
+#define BUFSIZE 128
 using namespace Dyninst;
 using namespace Dyninst::ProcControlAPI;
 using namespace Dyninst::Stackwalker;
@@ -45,19 +45,19 @@ static char host_name[128];
  * typedef bool chpl_bool;
  * typedef int32_t c_sublocid_t;
  * typedef int16_t chpl_fn_int_t;
+ * typedef struct {
+     uint16_t    fork_num;
+     int         caller;
+     int32_t     subloc;
+     void*       ack;
+     bool        serial_state;
+     int16_t     fid;
+     int         arg_size;
+     char        arg[0];
+ * } fork_t;
+ *
  */
-#ifdef INVESTIGATE_FORK_WRAPPER
-typedef struct {
-    uint16_t    fork_num;
-    int         caller;
-    int32_t     subloc;
-    void*       ack;
-    bool        serial_state;
-    int16_t     fid;
-    int         arg_size;
-    char        arg[0];
-} fork_t;
-#endif
+
 
 Process::cb_ret_t on_signal(Event::const_ptr evptr)
 {
@@ -115,7 +115,6 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
         vector<localVar *> vars;
         int intRet;
         char outBuf[BUFSIZE];
-        fork_t *info;
         int caller;
         int16_t fid;
         uint16_t fork_num;
@@ -128,20 +127,68 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
           if (ret == false)
             cerr<<"Failed to get parameters for frame "<<frameName<<endl;
           else {
-            var = vars[0]; //fork_*_wrapper only has one param: fork_t *info
-            if ((var->getName()).compare("f_chpl") !=0) // TO BE CONFIRMED OF the param name (formal arg)
+            var = vars[0]; //fork_*_wrapper only has one param: fork_t *f
+            if ((var->getName()).compare("f") !=0) 
               cerr<<"The param: "<<var->getName()<<" isn't what we want!"<<endl;
             else {
+              Type *paramType = NULL;
+              typePointer *ptrParamType = NULL;
+              Type *paramConstituentType = NULL;
+              typeTypedef *paramTypeTypedef = NULL;
+              typeStruct *paramTypeStruct = NULL;
+              vector<Field *> *fields =  NULL;
+              Field *field = NULL;
+              int callerOffset, fidOffset, fnOffset;
+              unsigned long paramBaseAddr;
+                
               intRet = getLocalVariableValue(var, stackwalk, i, outBuf, BUFSIZE);
-              if (intRet != glvv_Success)
-                cerr<<"Failed to get param "<<var->getName()<<" for frame "<<frameName<<endl;
+              if (intRet != glvv_Success) 
+                cerr<<"Failed("<<intRet<<") to get param "<<var->getName()<<" for frame "<<frameName<<endl;
               else {
                 // Now the value of the param is stored in outBuf;
-                info = (fork_t *)outBuf; //might be incompatible
-                caller = info->caller;
-                fid = info->fid;
-                fork_num = info->fork_num;
-                fprintf(pFile, "%d %d %d ",caller, fid, fork_num);
+                paramBaseAddr = *((unsigned long *)outBuf);
+                paramType = var->getType();
+                if (paramType->getDataClass() != dataPointer)
+                  cerr<<"param isn't pointer"<<paramType->getDataClass()<<endl;
+                else {
+                  ptrParamType = paramType->getPointerType();
+                  paramConstituentType = ptrParamType->getConstituentType();
+                  if (paramConstituentType->getDataClass() != dataTypedef)
+                    cerr<<"param-Pointed isn't typedef, it's"<<paramConstituentType->getDataClass()<<endl;
+                  else {
+                    paramTypeTypedef = paramConstituentType->getTypedefType();
+                    paramConstituentType = paramTypeTypedef->getConstituentType();
+                    if (paramConstituentType->getDataClass() != dataStructure)
+                      cerr<<"param-Pointed isn't structure, it's"<<paramConstituentType->getDataClass()<<endl;
+                    else {
+                      paramTypeStruct = paramConstituentType->getStructType();
+                      fields = paramTypeStruct->getFields();
+                      for (unsigned j=0; j<fields->size(); j++) {
+                        field = (*fields)[j];
+                        if (strcmp(field->getName().c_str(), "caller") == 0)
+                          callerOffset = field->getOffset()/8; //shall do offset/8 ?
+                        else if (strcmp(field->getName().c_str(), "fid") == 0)
+                          fidOffset = field->getOffset()/8;
+                        else if (strcmp(field->getName().c_str(), "fork_num") == 0)
+                          fnOffset = field->getOffset()/8;
+                      }
+                      
+                      //We've have addr and offsets of each field, now we can get their values
+                      ret = proc->readMemory(&caller, paramBaseAddr+callerOffset, sizeof(int));
+                      if (ret == false)
+                        cerr<<"readMemory caller failed"<<endl;
+                      ret = proc->readMemory(&fid, paramBaseAddr+fidOffset, sizeof(int16_t));
+                      if (ret == false)
+                        cerr<<"readMemory fid failed"<<endl;
+                      ret = proc->readMemory(&fork_num, paramBaseAddr+fnOffset, sizeof(uint16_t));
+                      if (ret == false)
+                        cerr<<"readMemory fork_num failed"<<endl;
+                
+                      //Finally, we can write these data to the stack trace file
+                      fprintf(pFile, "%d %d %d ",caller, fid, fork_num);
+                    }
+                  }  
+                }
               }
             }
           }
@@ -222,7 +269,7 @@ int main(int argc, char *argv[])
   if(!err)
     cerr<<"addLookup->getAddress failed"<<endl;
 #endif
- 
+
   while (!proc->isTerminated())
     Process::handleEvents(true);
 
