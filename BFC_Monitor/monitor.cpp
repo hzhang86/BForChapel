@@ -26,7 +26,7 @@
 #include <stdio.h>
 
 #define INVESTIGATE_FORK_WRAPPER
-#define SEP_TAGS
+//#define SEP_TAGS
 #define BUFSIZE 128
 using namespace Dyninst;
 using namespace Dyninst::ProcControlAPI;
@@ -96,9 +96,9 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
     //output the callstacks to the file
     fprintf(pFile,"<----START");
 #ifndef SEP_TAGS
-    int p_buffer;
-    ret = proc->readMemory(&p_buffer, addr, 4);
-    fprintf(pFile, " %s %d",host_name, p_buffer);
+    int ptlNum;
+    ret = proc->readMemory(&ptlNum, addr, sizeof(int));
+    fprintf(pFile, " %d", ptlNum);
 #endif
     fprintf(pFile, "\n");
     for (unsigned i=0; i<stackwalk.size(); i++) {
@@ -173,7 +173,7 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
                           fnOffset = field->getOffset()/8;
                       }
                       
-                      //We've have addr and offsets of each field, now we can get their values
+                      //We've have base addr and offsets of each field, now we can get their values
                       ret = proc->readMemory(&caller, paramBaseAddr+callerOffset, sizeof(int));
                       if (ret == false)
                         cerr<<"readMemory caller failed"<<endl;
@@ -217,11 +217,11 @@ int main(int argc, char *argv[])
 
   gethostname(host_name, 64);
   sprintf(buffer, "%s%s",path,host_name);
-#ifdef SEP_TAGS
+//#ifdef SEP_TAGS
   pFile = fopen(host_name, "a"); 
-#else
-  pFile = fopen(buffer, "a"); //open the file once for all
-#endif
+//#else
+//  pFile = fopen(buffer, "a"); //open the file once for all
+//#endif
   if (pFile==NULL) {
     cerr<<"File "<<buffer<<" failed to be created"<<endl;
     return 1;
@@ -260,7 +260,8 @@ int main(int argc, char *argv[])
   if(!err)
     cerr<<"findSymbol failed"<<endl;
   Symbol *symP = syms[0];
-  
+  addr = symP->getOffset();
+/*  
   Dyninst::PID pid = proc->getPid();
   AddressLookup *addLookup = AddressLookup::createAddressLookup(pid);
   if(addLookup==NULL)
@@ -268,6 +269,7 @@ int main(int argc, char *argv[])
   err = addLookup->getAddress(obj, symP, addr);
   if(!err)
     cerr<<"addLookup->getAddress failed"<<endl;
+*/
 #endif
 
   while (!proc->isTerminated())
