@@ -26,7 +26,6 @@
 #include <stdio.h>
 
 #define INVESTIGATE_FORK_WRAPPER
-//#define SEP_TAGS
 #define BUFSIZE 128
 using namespace Dyninst;
 using namespace Dyninst::ProcControlAPI;
@@ -77,6 +76,7 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
     bool ret;
     unsigned long ra;
     string frameName;
+    int ptlNum;
 
     if (walker == NULL) { //should've been initialized in main
       cerr<<"walker wasn't created well "<<endl;
@@ -93,14 +93,12 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
       return Process::cbProcContinue;
     }
         
-    //output the callstacks to the file
+    // output the callstacks to the file
     fprintf(pFile,"<----START");
-#ifndef SEP_TAGS
-    int ptlNum;
+    // output the current processTLNum to this sample
     ret = proc->readMemory(&ptlNum, addr, sizeof(int));
-    fprintf(pFile, " %d", ptlNum);
-#endif
-    fprintf(pFile, "\n");
+    fprintf(pFile, " %d\n", ptlNum);
+    // Now start outputing the stack frames
     for (unsigned i=0; i<stackwalk.size(); i++) {
       ra = stackwalk[i].getRA();
       stackwalk[i].getName(frameName);
@@ -213,21 +211,17 @@ int main(int argc, char *argv[])
   vector<string> args;
   bool ret;
   char buffer[256];
-  char path[] = "./SSFs/";
+  Symtab *obj = NULL;
+  vector<Symbol *> syms;
 
   gethostname(host_name, 64);
-  sprintf(buffer, "%s%s",path,host_name);
-//#ifdef SEP_TAGS
   pFile = fopen(host_name, "a"); 
-//#else
-//  pFile = fopen(buffer, "a"); //open the file once for all
-//#endif
   if (pFile==NULL) {
     cerr<<"File "<<buffer<<" failed to be created"<<endl;
     return 1;
   }
 
-  //Create a new target process
+  // Create a new target process
   string exec = argv[1];
   for (unsigned i=1; i<argc; i++)
     args.push_back(std::string(argv[i]));  /* e.g monitor ./lulesh --elemsPerEdge 8
@@ -235,8 +229,18 @@ int main(int argc, char *argv[])
                                             */
   proc = Process::createProcess(exec, args);
   walker = Walker::newWalker(proc); //create a third-party walker with the target process
-  //Tell ProcControlAPI about our callback function: on_signal
+  
+  // get the address of processTLNum
+  ret = Symtab::openFile(obj, exec);
+  if(!ret)
+    cerr<<"Symtab openFile failed"<<endl;
+  ret = obj->findSymbol(syms, "processTLNum", Symbol::ST_OBJECT);
+  if(!ret)
+    cerr<<"findSymbol failed"<<endl;
+  Symbol *symP = syms[0];
+  addr = symP->getOffset();
 
+  // Tell ProcControlAPI about our callback function: on_signal
   ret = Process::registerEventCallback(EventType::Signal, on_signal);
   if (!ret) {
     cerr<<"Process::registerEventCallback Failed !"<<endl;
@@ -249,28 +253,6 @@ int main(int argc, char *argv[])
     cerr<<"Failed to continue process !"<<endl;
     return 1;
   }
-
-#ifndef SEP_TAGS
-  Symtab *obj = NULL;
-  vector<Symbol *> syms;
-  bool err = Symtab::openFile(obj, exec);
-  if(!err)
-    cerr<<"Symtab openFile failed"<<endl;
-  err = obj->findSymbol(syms, "processTLNum", Symbol::ST_OBJECT);
-  if(!err)
-    cerr<<"findSymbol failed"<<endl;
-  Symbol *symP = syms[0];
-  addr = symP->getOffset();
-/*  
-  Dyninst::PID pid = proc->getPid();
-  AddressLookup *addLookup = AddressLookup::createAddressLookup(pid);
-  if(addLookup==NULL)
-    cerr<<"createAddressLookup failed"<<endl;
-  err = addLookup->getAddress(obj, symP, addr);
-  if(!err)
-    cerr<<"addLookup->getAddress failed"<<endl;
-*/
-#endif
 
   while (!proc->isTerminated())
     Process::handleEvents(true);
