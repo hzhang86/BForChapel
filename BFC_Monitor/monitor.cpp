@@ -74,7 +74,7 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
     fprintf(pFile,"<----START");
 #ifndef SEP_TAGS
     int p_buffer;
-    ret = proc->readMemory(&p_buffer, addr, 4);
+    ret = proc->readMemory(&p_buffer, addr, sizeof(int));
     fprintf(pFile, " %s %d",host_name, p_buffer);
 #endif
     fprintf(pFile, "\n");
@@ -85,6 +85,8 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
     fprintf(pFile, "\n");
     fprintf(pFile, "---->END\n");
   }
+  else 
+    cerr<<"sigNo="<<sigNo<<endl;
 
   return Process::cbProcContinue;
 }
@@ -141,14 +143,8 @@ int main(int argc, char *argv[])
   if(!err)
     cerr<<"findSymbol failed"<<endl;
   Symbol *symP = syms[0];
-  
-  Dyninst::PID pid = proc->getPid();
-  AddressLookup *addLookup = AddressLookup::createAddressLookup(pid);
-  if(addLookup==NULL)
-    cerr<<"createAddressLookup failed"<<endl;
-  err = addLookup->getAddress(obj, symP, addr);
-  if(!err)
-    cerr<<"addLookup->getAddress failed"<<endl;
+  cout<<"symbol found: name="<<symP->getPrettyName()<<", offset="<<hex<<symP->getOffset()<<dec<<endl;
+  addr = symP->getOffset();
 #endif
  
   while (!proc->isTerminated())
