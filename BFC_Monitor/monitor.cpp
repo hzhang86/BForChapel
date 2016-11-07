@@ -120,6 +120,19 @@ int main(int argc, char *argv[])
   walker = Walker::newWalker(proc); //create a third-party walker with the target process
   //Tell ProcControlAPI about our callback function: on_signal
 
+#ifndef SEP_TAGS
+  Symtab *obj = NULL;
+  vector<Symbol *> syms;
+  bool err = Symtab::openFile(obj, exec);
+  if(!err)
+    cerr<<"Symtab openFile failed"<<endl;
+  err = obj->findSymbol(syms, "processTLNum", Symbol::ST_OBJECT);
+  if(!err)
+    cerr<<"findSymbol failed"<<endl;
+  Symbol *symP = syms[0];
+  addr = symP->getOffset();
+#endif
+
   ret = Process::registerEventCallback(EventType::Signal, on_signal);
   if (!ret) {
     cerr<<"Process::registerEventCallback Failed !"<<endl;
@@ -132,20 +145,6 @@ int main(int argc, char *argv[])
     cerr<<"Failed to continue process !"<<endl;
     return 1;
   }
-
-#ifndef SEP_TAGS
-  Symtab *obj = NULL;
-  vector<Symbol *> syms;
-  bool err = Symtab::openFile(obj, exec);
-  if(!err)
-    cerr<<"Symtab openFile failed"<<endl;
-  err = obj->findSymbol(syms, "processTLNum", Symbol::ST_OBJECT);
-  if(!err)
-    cerr<<"findSymbol failed"<<endl;
-  Symbol *symP = syms[0];
-  cout<<"symbol found: name="<<symP->getPrettyName()<<", offset="<<hex<<symP->getOffset()<<dec<<endl;
-  addr = symP->getOffset();
-#endif
  
   while (!proc->isTerminated())
     Process::handleEvents(true);
