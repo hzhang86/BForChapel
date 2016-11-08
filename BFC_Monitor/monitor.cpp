@@ -15,16 +15,17 @@
 #include "walker.h"
 #include "frame.h"
 #include "Symtab.h"
-#include "AddrLookup.h"
 #include "local_var.h"
 #include "Function.h"
 #include "Variable.h"
+#include "procstate.h"
 
 #include <iostream>
 #include <string>
 #include <vector>
 #include <stdio.h>
 
+#define SAFE_ADDR
 #define INVESTIGATE_FORK_WRAPPER
 #define BUFSIZE 128
 using namespace Dyninst;
@@ -213,6 +214,15 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
   return Process::cbProcContinue;
 }
 
+string getFileName(string &rawName) 
+{
+  size_t found = rawName.find_last_of("/");
+  if (found == string::npos)
+    return rawName;
+  else 
+    return rawName.substr(found+1);
+}
+
 int main(int argc, char *argv[])
 {
   vector<string> args;
@@ -220,6 +230,7 @@ int main(int argc, char *argv[])
   char buffer[256];
   Symtab *obj = NULL;
   vector<Symbol *> syms;
+  Dyninst::Address loadedBaseAddr = 0;
 
   gethostname(host_name, 64);
   pFile = fopen(host_name, "a"); 
@@ -236,8 +247,35 @@ int main(int argc, char *argv[])
                                             */
   proc = Process::createProcess(exec, args);
   walker = Walker::newWalker(proc); //create a third-party walker with the target process
-  
+ 
   // get the address of processTLNum
+#ifdef SAFE_ADDR 
+  LibraryState *libState = walker->getProcessState()->getLibraryTracker();
+  if (!libState) 
+    cerr<<"LibraryState could not be retrieved"<<endl;
+  else {
+    vector<LibAddrPair> libs;
+    if (!libState->getLibraries(libs))
+      cerr<<"Cannot get libraries from library state"<<endl;
+    else {
+      vector<LibAddrPair>::iterator libIter;
+      for (libIter = libs.begin(); libIter != libs.end(); libIter++) {
+        string curLibName = libIter->first;
+        //cout<<"lib name: "<<curLibName<<endl;
+        // get the real file name from the path
+        string curLibNamePretty = getFileName(curLibName);
+        string execPretty = getFileName(exec);
+        if (curLibNamePretty == execPretty) {
+          loadedBaseAddr = libIter->second;
+          cout<<"Yeah, we found loadedBaseAddr: "<<loadedBaseAddr<<endl;
+          break;
+        }
+      } //finish checking all libs (including the executable itself)
+      if (libIter == libs.end())
+        cerr<<"Naan, we could not found our executable: "<<exec<<endl;
+    }
+  }
+#endif
   ret = Symtab::openFile(obj, exec);
   if(!ret)
     cerr<<"Symtab openFile failed"<<endl;
@@ -245,7 +283,7 @@ int main(int argc, char *argv[])
   if(!ret)
     cerr<<"findSymbol failed"<<endl;
   Symbol *symP = syms[0];
-  addr = symP->getOffset();
+  addr = symP->getOffset() + loadedBaseAddr;
 
   // Tell ProcControlAPI about our callback function: on_signal
   ret = Process::registerEventCallback(EventType::Signal, on_signal);
