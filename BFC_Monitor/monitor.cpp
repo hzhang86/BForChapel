@@ -45,6 +45,7 @@ static char host_name[128];
  * typedef int32_t c_sublocid_t;
  * typedef int16_t chpl_fn_int_t;
  * typedef struct {
+     int         callee;
      uint16_t    fork_num;
      int         caller;
      int32_t     subloc;
@@ -116,6 +117,7 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
         int caller;
         int16_t fid;
         uint16_t fork_num;
+        int callee;
 
         func = getFunctionForFrame(stackwalk[i]);
         if (func == NULL)
@@ -136,7 +138,7 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
               typeStruct *paramTypeStruct = NULL;
               vector<Field *> *fields =  NULL;
               Field *field = NULL;
-              int callerOffset, fidOffset, fnOffset;
+              int callerOffset, fidOffset, fnOffset, calleeOffset;
               unsigned long paramBaseAddr;
                 
               intRet = getLocalVariableValue(var, stackwalk, i, outBuf, BUFSIZE);
@@ -164,11 +166,13 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
                       for (unsigned j=0; j<fields->size(); j++) {
                         field = (*fields)[j];
                         if (strcmp(field->getName().c_str(), "caller") == 0)
-                          callerOffset = field->getOffset()/8; //shall do offset/8 ?
+                          callerOffset = field->getOffset()/8; //getOffset returns in bits
                         else if (strcmp(field->getName().c_str(), "fid") == 0)
                           fidOffset = field->getOffset()/8;
                         else if (strcmp(field->getName().c_str(), "fork_num") == 0)
                           fnOffset = field->getOffset()/8;
+                        else if (strcmp(field->getName().c_str(), "callee") == 0)
+                          calleeOffset = field->getOffset()/8;
                       }
                       
                       //We've have base addr and offsets of each field, now we can get their values
@@ -181,9 +185,12 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
                       ret = proc->readMemory(&fork_num, paramBaseAddr+fnOffset, sizeof(uint16_t));
                       if (ret == false)
                         cerr<<"readMemory fork_num failed"<<endl;
+                      ret = proc->readMemory(&callee, paramBaseAddr+calleeOffset, sizeof(int));
+                      if (ret == false)
+                        cerr<<"readMemory callee failed"<<endl;
                 
                       //Finally, we can write these data to the stack trace file
-                      fprintf(pFile, "%d %d %d ",caller, fid, fork_num);
+                      fprintf(pFile, "%d %d %d %d ",caller, callee, fid, fork_num);
                     }
                   }  
                 }
