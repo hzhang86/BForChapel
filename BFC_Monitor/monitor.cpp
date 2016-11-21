@@ -96,7 +96,7 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
     }
         
     // output the callstacks to the file
-    fprintf(pFile,"<----START");
+    fprintf(pFile,"<----START compute ");
     // output the current processTLNum to this sample
     ret = proc->readMemory(&ptlNum, addr, sizeof(int));
     fprintf(pFile, " %d\n", ptlNum);
@@ -104,6 +104,8 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
     for (unsigned i=0; i<stackwalk.size(); i++) {
       ra = stackwalk[i].getRA();
       stackwalk[i].getName(frameName);
+      if (frameName.empty()) // sometimes it just can't get the frame name, 
+        frameName = "***";   // but we still need to hold the place
       fprintf(pFile, "%d 0x%016lx ", i, (unsigned long) ra);
       fprintf(pFile, "%s ", frameName.c_str());
 #ifdef INVESTIGATE_FORK_WRAPPER      
@@ -160,7 +162,7 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
                     paramTypeTypedef = paramConstituentType->getTypedefType();
                     paramConstituentType = paramTypeTypedef->getConstituentType();
                     if (paramConstituentType->getDataClass() != dataStructure)
-                      cerr<<"param-Pointed isn't structure, it's"<<paramConstituentType->getDataClass()<<endl;
+                      cerr<<"param-Pointed-Real isn't structure, it's"<<paramConstituentType->getDataClass()<<endl;
                     else {
                       paramTypeStruct = paramConstituentType->getStructType();
                       fields = paramTypeStruct->getFields();
