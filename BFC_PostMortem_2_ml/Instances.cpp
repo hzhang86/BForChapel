@@ -32,7 +32,11 @@ void Instance::printInstance_concise()
     stack_info<<(*vec_SF_i).frameNumber<<" "<<(*vec_SF_i).lineNumber<<" "<<
       (*vec_SF_i).moduleName<<" ";
     stack_info<<std::hex<<(*vec_SF_i).address<<std::dec;
-    stack_info<<(*vec_SF_i).frameName<<endl;
+    stack_info<<" "<<(*vec_SF_i).frameName;
+    if (isForkStarWrapper((*vec_SF_i).frameName)) 
+      stack_info<<" "<<(*vec_SF_i).info.callerNode<<" "<<(*vec_SF_i).info.calleeNode
+      <<" "<<(*vec_SF_i).info.fid<<" "<<(*vec_SF_i).info.fork_num;
+    stack_info<<endl;
   }
 }
 
@@ -76,10 +80,6 @@ void Instance::removeRedundantFrames(ModuleHash &modules, string nodeName)
   //thorougly free the memory of newFrames
   vector<StackFrame>().swap(newFrames); 
   
-  // Important: mark the instance that needs to glue fork* stacktraces
-  StackFrame &vec_SF_r = frames.back();
-  if (isForkStarWrapper(vec_SF_r.frameName))
-    needGlueFork = true;
 }
   
 
@@ -226,8 +226,8 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, string nodeName)
         }
         else { //we found bf using frameName
           if (fName == "chpl_user_main") {
-            if (bf->getBLineNum()==(*vec_SF_i).lineNumber) { //probably won't need this anymore since chpl_gen_main won't be found with bf
-              stack_info<<"Frame cannot be main while the ln is BLineNum (main thread), delete frame "<<(*vec_SF_i).frameNumber<<endl;
+            if (bf->getBLineNum()==(*vec_SF_i).lineNumber) { //probably won't need this anymore 
+              stack_info<<"Frame can't be main while the ln is BLineNum (main thread), delete frame "<<(*vec_SF_i).frameNumber<<endl;
               (*vec_SF_i).toRemove = true;
             }
             isMainThread = true;//we know it's from the main thread if this inst has a frame of chpl_user_main
@@ -274,28 +274,35 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, string nodeName)
   //thorougly free the memory of newFrames
   vector<StackFrame>().swap(newFrames); //here is why this works: 
                 //http://prateekvjoshi.com/2013/10/20/c-vector-memory-release/
-  
-  //check whether this instance is from the main thread by checking the last frame
-  if (frames.size() > 1) {
+  // return if the frames is empty
+  if (frames.size() < 1) {
+    stack_info<<"After trimFrames, Instance #"<<InstanceNum<<" on "<<nodeName<<" is Empty."<<endl;
+    return;
+  }
+
+  // modify the frames if more than 1 frame 
+  else if (frames.size() > 1) 
     removeRedundantFrames(modules, nodeName);
-    
 /*  NOT SURE WHETHER WE NEED TO DO THIS AGAIN 11/18/16
     StackFrame &vec_SF_r = frames.back();
     BlameModule *bmEnd = modules[vec_SF_r.moduleName];
     BlameFunction *bfEnd = bmEnd->getFunction(vec_SF_r.frameName);
 
+    //check whether this instance is from the main thread by checking the last frame
     if (vec_SF_r.frameName == "chpl_user_main")
       isMainThread = true;
 
     if(isMainThread && this->instType==COMPUTE_INST) //TOCHECK: whether we should secondTrim all other instances
       secondTrim(modules, nodeName); //reomove frames 77<-77 in 79<-77<-77<-88<-91
 */    
-    // print the new instance
-    stack_info<<"After trimFrames, Instance #"<<InstanceNum<<" on "<<nodeName<<endl;
-    printInstance_concise();
-  }
-  else
-    stack_info<<"After trimFrames, Instance #"<<InstanceNum<<" on "<<nodeName<<" is Empty."<<endl;
+
+  // Important: mark the instance that needs to glue fork* stacktraces
+  StackFrame &vec_SF_r = frames.back();
+  if (isForkStarWrapper(vec_SF_r.frameName))
+    needGlueFork = true;
+  // print the new instance
+  stack_info<<"After trimFrames, Instance #"<<InstanceNum<<" on "<<nodeName<<endl;
+  printInstance_concise();
 }
 
 void Instance::handleInstance(ModuleHash &modules, std::ostream &O, int InstanceNum, bool verbose)
@@ -351,7 +358,7 @@ void Instance::handleInstance(ModuleHash &modules, std::ostream &O, int Instance
         
         stack_info<<"Error: BM NULL-- At Frame "<<(*vec_SF_i).frameNumber<<" "<<
           (*vec_SF_i).lineNumber<<" "<<(*vec_SF_i).moduleName<<" "<<std::hex<<
-          (*vec_SF_i).address<<std::dec<<(*vec_SF_i).frameName<<endl;
+          (*vec_SF_i).address<<std::dec<<" "<<(*vec_SF_i).frameName<<endl;
       }
     }
     else

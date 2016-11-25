@@ -1,3 +1,10 @@
+/* Created By Hui 11/1616
+ *
+ * cmd: addParser lulesh        
+ *      argv[0]  argv[1] 
+ */
+
+
 #include <string>
 #include <string.h>
 #include <stdio.h>
@@ -28,9 +35,61 @@
 using namespace std;
 using namespace Dyninst;
 
-//cmd: addParser lulesh        
-//     argv[0]  argv[1] 
+//====================Utility Functions=========================//
+string getFileName(string &rawName) 
+{
+  size_t found = rawName.find_last_of("/");
+  if (found == string::npos)
+    return rawName;
+  else 
+    return rawName.substr(found+1);
+}
 
+bool isForkStarWrapper(std::string name)
+{
+  if (name == "fork_wrapper" || name == "fork_nb_wrapper" ||
+      name == "fork_large_wrapper" || name == "fork_nb_large_wrapper")
+    return true;
+  else
+    return false;
+}
+
+bool equalInstance(Instance instA, Instance instB)
+{
+  if (instA.frames.size() != instB.frames.size())
+    return false;
+  else {
+    vector<StackFrame>::iterator sfA = instA.frames.begin();
+    vector<StackFrame>::iterator sfB = instB.frames.begin();
+    for (;sfA != instA.frames.end(); sfA++, sfB++) {
+      if ((*sfA).lineNumber!=(*sfB).lineNumber || (*sfA).address!=(*sfB).address ||
+          (*sfA).moduleName!=(*sfB).moduleName || (*sfA).frameName!=(*sfB).frameName)
+        return false;
+    }
+    return true;
+  }
+}
+
+//==========================^^==================================//
+
+void getNeighborInfo(StackFrame &sf, vector<Instance>::iterator inst)
+{
+  vector<Instance>::iterator minusOne = inst-1, plusOne = inst+1;
+  //Check plusOne first
+  if (equalInstance(*inst, *plusOne) &&
+    ((*plusOne).frames)[sf.frameNumber].info.callerNode >=0)
+    sf.info = ((*plusOne).frames)[sf.frameNumber].info;
+  //Check minusOne then
+  else if (equalInstance(*inst, *minusOne) &&
+    ((*minusOne).frames)[sf.frameNumber].info.callerNode >=0)
+    sf.info = ((*minusOne).frames)[sf.frameNumber].info;
+  //We really have to let it be for now
+  else
+    cerr<<"Fail to getNeighborInfo for sf "<<sf.frameName<<" "
+      <<sf.info.callerNode<<" "<<sf.info.calleeNode<<" "
+      <<sf.info.fid<<" "<<sf.info.fork_num<<endl;
+}
+  
 void populateFrames(Instance &inst, ifstream &ifs, BPatch_process* proc, string inputFile)
 {    
   char linebuffer[2000];
@@ -108,8 +167,9 @@ void populateFrames(Instance &inst, ifstream &ifs, BPatch_process* proc, string 
         }*/
 
         sf.lineNumber = sLines[0].lineNumber();
-        string fileN(sLines[0].fileName());
-        sf.moduleName = fileN;
+        string fileN(sLines[0].fileName()); //contains the path
+        string cleanFileN = getFileName(fileN);
+        sf.moduleName = cleanFileN;
         sf.frameNumber = a;
         sf.address = address;
         sf.frameName = frameName;
@@ -212,9 +272,15 @@ void outputParsedSamples(vector<Instance> &instances, string inputFile, string d
             <<(*vec_sf_i).moduleName<<" "<<std::hex<<(*vec_sf_i).address
             <<std::dec<<" "<<(*vec_sf_i).frameName;
           
-          if ((*vec_sf_i).info.callerNode >= 0) //since default is -1 if not changed
+          if (isForkStarWrapper((*vec_sf_i).frameName)) {      
+            // it refers to fork*wrappers that were not discovered by libunwind
+            if ((*vec_sf_i).info.callerNode == -1) //since default is -1 if not changed
+              getNeighborInfo(*vec_sf_i, vec_I_i);
+              
             ofs<<" "<<(*vec_sf_i).info.callerNode<<" "<<(*vec_sf_i).info.calleeNode
-              <<" "<<(*vec_sf_i).info.fid<<" "<<(*vec_sf_i).info.fork_num;   
+                 <<" "<<(*vec_sf_i).info.fid<<" "<<(*vec_sf_i).info.fork_num;   
+          }
+
           ofs<<endl;
         }
         else { //when lineNumber <= 0, no module found

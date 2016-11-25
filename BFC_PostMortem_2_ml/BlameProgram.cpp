@@ -121,8 +121,8 @@ void BlameProgram::grabUsedModules(std::string traceName, std::string nodeName)
 		if (moduleName != "NULL") {
 		  std::pair<set<std::string>::iterator,bool> ret;
 		  ret = sampledModules.insert(moduleName);//insert the module name to set
-		  //if (ret.second)                     //returns true if inserted succ
-			//std::cout<<"Inserting "<<buffer<<" into list of modules. "<<strlen(buffer)<<std::endl;
+		  if (ret.second)                     //returns true if inserted succ
+			std::cout<<"Inserting "<<moduleName<<" into list of modules. "<<strlen(moduleName.c_str())<<std::endl;
 		}
       }
     }

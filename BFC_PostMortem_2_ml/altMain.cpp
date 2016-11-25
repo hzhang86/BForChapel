@@ -35,7 +35,7 @@ static void glueStackTraces(string node, int InstNum, Instance &inst,
         preInstanceHash &pre_instance_table, forkInstanceHash &fork_instance_table);
 static void glueForkTrace(Instance &inst, forkInstanceHash &fork_instance_table,
                                 preInstanceHash &pre_instance_table, string node);
-static void gluePreTrace(Instance &inst, Instance &pre_inst, string node);
+static void gluePreTrace(Instance &inst, Instance &pre_inst, string node, int PTLN);
 
 static void populateCompSamples(vector<Instance> &comp_instances, string traceName, string nodeName);
 static void populatePreSamples(InstanceHash &pre_instances, string traceName, string nodeName);
@@ -115,7 +115,7 @@ static void glueStackTraces(string node, int InstNum, Instance &inst,
       return;
     }
     Instance &pre_inst = preForNode[inst.processTLNum];
-    gluePreTrace(inst, pre_inst, node);//Non-recursive
+    gluePreTrace(inst, pre_inst, node, inst.processTLNum);//Non-recursive
   
     //Check if the inst comes to main now
     if (inst.isMainThread==true || isTopMainFrame(inst.frames.back().frameName)) {
@@ -167,7 +167,9 @@ static void glueForkTrace(Instance &inst, forkInstanceHash &fork_instance_table,
             //We need to do recursion here
             inst.needGlueFork = true;
             //IMPORTANT: the new link info(from frames.back()) should be vec_i_i's now
+            stack_info<<"Start recursively call glueForkTrace"<<endl;
             glueForkTrace(inst, fork_instance_table, pre_instance_table, node); 
+            return; // we should return
           }
           else if (isTopMainFrame(inst.frames.back().frameName)) {
             inst.isMainThread = true;
@@ -185,12 +187,26 @@ static void glueForkTrace(Instance &inst, forkInstanceHash &fork_instance_table,
             }
 
             Instance &pre_inst = preForNode[forkPTLN];
-            gluePreTrace(inst, pre_inst, node);
+            gluePreTrace(inst, pre_inst, node2, forkPTLN);
             return; 
           }
         }
-        else {//fork_inst's frames is empty 
+        else {//fork_inst's frames is empty,BUT we can still glue its pre_inst
           stack_info<<"Corresponding fork_inst is empty"<<endl;
+          // since we don't need this fork*wrapper frame, we should dump it 
+          inst.frames.pop_back();
+          //IMPORTANT: the new link info should be vec_i_i's now
+          int forkPTLN = (*vec_I_i).processTLNum;
+          string node2 = nodeIDNameMap[(*vec_I_i).info.callerNode]; 
+          InstanceHash preForNode = pre_instance_table[node2];
+          if (preForNode.count(forkPTLN) == 0) {
+            stack_info<<"Error: fork inst has pTLN "<<forkPTLN<<
+                  " not found in preSpawn on "<<node2<<endl;
+            return;
+          }
+
+          Instance &pre_inst = preForNode[forkPTLN];
+          gluePreTrace(inst, pre_inst, node2, forkPTLN);
           return;
         }
       }//We found matched fork instance, everything should return within this block
@@ -198,12 +214,13 @@ static void glueForkTrace(Instance &inst, forkInstanceHash &fork_instance_table,
   }
 
   //Shouldn't come to this point since it means we can't glue fork
+  StackFrame &lastFrame = inst.frames.back();
   stack_info<<"Error: we couldn't find matched fork_inst, we need: "<<
-    inst.info.callerNode<<" "<<inst.info.calleeNode<<" "<<inst.info.fid<<" "
-    <<inst.info.fork_num<<" for node "<<node<<endl;
+    lastFrame.info.callerNode<<" "<<lastFrame.info.calleeNode<<" "<<lastFrame.info.fid<<" "
+    <<lastFrame.info.fork_num<<" for "<<lastFrame.frameName<<" on "<<node<<endl;
 }
 
-static void gluePreTrace(Instance &inst, Instance &pre_inst, string node)
+static void gluePreTrace(Instance &inst, Instance &pre_inst, string node, int PTLN)
 {
     //The following condition may not hold since we've removed all frames that 
     //coorespond to coforall/wrapcoforall functions, need to check safety !
@@ -230,7 +247,7 @@ static void gluePreTrace(Instance &inst, Instance &pre_inst, string node)
       }
     }
 */ 
-  stack_info<<"Glueing inst&pre_inst PTLN: "<<inst.processTLNum<<" on "<<node<<endl;
+  stack_info<<"Glueing inst&pre_inst PTLN: "<<PTLN<<" on "<<node<<endl;
   if (!pre_inst.frames.empty()) {
     inst.frames.insert(inst.frames.end(), pre_inst.frames.begin(), 
                                             pre_inst.frames.end());
@@ -253,7 +270,7 @@ static void populateCompSamples(vector<Instance> &comp_instances, string traceNa
   if (ifs_comp.is_open()) {
     getline(ifs_comp, line);
     int numInstances = atoi(line.c_str());
-    cout<<"Number of instances on "<<nodeName<<" is "<<numInstances<<endl;
+    cout<<"Number of instances from "<<traceName<<" is "<<numInstances<<endl;
  
     for (int i = 0; i < numInstances; i++) {
       Instance inst;
@@ -302,7 +319,7 @@ static void populatePreSamples(InstanceHash &pre_instances, string traceName, st
   if (ifs_pre.is_open()) {
     getline(ifs_pre, line);
     int numInstances = atoi(line.c_str());
-    cout<<"Number of pre_instances on "<<nodeName<<" is "<<numInstances<<endl;
+    cout<<"Number of pre_instances from "<<traceName<<" is "<<numInstances<<endl;
  
     for (int i = 0; i < numInstances; i++) {
       Instance inst;
@@ -352,7 +369,8 @@ static void populateForkSamples(vector<Instance> &fork_instances, string traceNa
   ifstream ifs_fork(traceName);
   string line;
   int IT;
-  if (traceName.find("fork_nb") != string::npos)
+
+  if (traceName.find("fork_nb") != string::npos) 
     IT = FORK_NB_INST;
   else if (traceName.find("fork_fast") != string::npos)
     IT = FORK_FAST_INST;
@@ -362,7 +380,7 @@ static void populateForkSamples(vector<Instance> &fork_instances, string traceNa
   if (ifs_fork.is_open()) {
     getline(ifs_fork, line);
     int numInstances = atoi(line.c_str());
-    cout<<"Number of pre_instances on "<<nodeName<<" is "<<numInstances<<endl;
+    cout<<"Number of fork*_instances from "<<traceName<<" is "<<numInstances<<endl;
  
     for (int i = 0; i < numInstances; i++) {
       Instance inst;
@@ -444,8 +462,9 @@ static void populateSamplesFromDirs(compInstanceHash &comp_instance_table,
         else
           cerr<<"Error: This file was populated before: "<<traceName<<endl;
       }
-      else 
-        cerr<<"Error: there is a unmatching file in "<<dirName<<endl;
+      else if ((ent->d_type == DT_REG) && 
+          (strstr(ent->d_name, "Input-compute") == NULL)) //avoid dir entries: .&..
+        cerr<<"Error: there is a unmatching file "<<ent->d_name<<" in "<<dirName<<endl;
     }
     closedir(dir);
   } 
@@ -469,8 +488,9 @@ static void populateSamplesFromDirs(compInstanceHash &comp_instance_table,
         else
           cerr<<"Error: This file was populated before: "<<traceName<<endl;
       }
-      else 
-        cerr<<"Error: there is a unmatching file in "<<dirName<<endl;
+      else if ((ent->d_type == DT_REG) && 
+          (strstr(ent->d_name, "Input-compute") == NULL)) //avoid dir entries: .&..
+        cerr<<"Error: there is a unmatching file "<<ent->d_name<<" in "<<dirName<<endl;
     }
     closedir(dir);
   } 
@@ -485,17 +505,20 @@ static void populateSamplesFromDirs(compInstanceHash &comp_instance_table,
         traceName = dirName + "/" + std::string(ent->d_name);
         pos = traceName.find("compute");
         nodeName = traceName.substr(pos);
-        
-        vector<Instance> fork_instances;
-        populateForkSamples(fork_instances, traceName, nodeName);
-        if (fork_instance_table.count(nodeName) == 0)
-          fork_instance_table[nodeName] = fork_instances; //push this node's sample
-                                                        //info to the table
-        else
-          cerr<<"Error: This file was populated before: "<<traceName<<endl;
+        // create a new instance vector if it's from new node
+        if (fork_instance_table.count(nodeName) == 0) {
+          vector<Instance> fork_instances;
+          populateForkSamples(fork_instances, traceName, nodeName);
+          fork_instance_table[nodeName] = fork_instances; 
+        }
+        else { //node's file existed before, for fork_nb, fork_fast files
+          vector<Instance> &fork_instances = fork_instance_table[nodeName];
+          populateForkSamples(fork_instances, traceName, nodeName);
+        }
       }
-      else 
-        cerr<<"Error: there is a unmatching file in "<<dirName<<endl;
+      else if ((ent->d_type == DT_REG) && 
+          (strstr(ent->d_name, "Input-compute") == NULL)) //avoid dir entries: .&..
+        cerr<<"Error: there is a unmatching file "<<ent->d_name<<" in "<<dirName<<endl;
     }
     closedir(dir);
   } 
@@ -558,7 +581,7 @@ int main(int argc, char** argv)
   fprintf(stderr,"SAMPLES - ");
   my_timestamp();
 
-  stack_info.open("stackDebug", ofstream::out | ofstream::app);
+  stack_info.open("stackDebug", ofstream::out);
   compInstanceHash  comp_instance_table;
   preInstanceHash  pre_instance_table; //Added by Hui 12/25/15
   forkInstanceHash fork_instance_table; //Added by Hui 11/16/16
@@ -624,6 +647,8 @@ int main(int argc, char** argv)
       if ((*vec_I_i).isMainThread == false) 
         glueStackTraces(node, iCounter, (*vec_I_i),
                         pre_instance_table, fork_instance_table);
+
+      //TODO:Polish stacktrace again: rm chpl_gen_main for node0, (same line&file diff fName)frames
 
       // concise_print the final "perfect" stacktrace for each compute sample
       stack_info<<"NOW final stacktrace for inst#"<<iCounter<<" on "<<node<<endl;

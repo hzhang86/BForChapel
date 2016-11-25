@@ -44,13 +44,4 @@ struct Instance
   fork_t info; //specifically for fork* samples
 };
 
-bool isForkStarWrapper(std::string name)
-{
-  if (name == "fork_wrapper" || name == "fork_nb_wrapper" ||
-      name == "fork_large_wrapper" || name == "fork_nb_large_wrapper")
-    return true;
-  else
-    return false;
-}
-
 #endif

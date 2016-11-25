@@ -87,7 +87,8 @@ BlameFunction *BlameModule::findLineRange(int lineNum)
 	
   for (bf_i = blameFunctions.begin();  bf_i != blameFunctions.end(); bf_i++) {
     BlameFunction *bf = (*bf_i).second;
-    if (bf->allLineNums.count(lineNum)) {
+    if (bf && bf->allLineNums.size() &&
+            bf->allLineNums.count(lineNum)) {
 	  if (topCand == NULL) {
 		topCand = bf;
 	  }
