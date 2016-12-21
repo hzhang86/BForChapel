@@ -83,8 +83,8 @@ void VertexProps::printParsed(std::ostream & O)
 		std::vector<FuncCall *>::iterator ifc_i;
 		for (ifc_i = calls.begin(); ifc_i != calls.end(); ifc_i++)
 		{
-			FuncCall * iFunc = (*ifc_i);
-			O<<iFunc->callNode->name<<"  "<<iFunc->paramNumber<<std::endl;
+			FuncCall *iFunc = (*ifc_i);
+			O<<iFunc->Node->name<<"  "<<iFunc->paramNumber<<std::endl;
 		}
 		O<<"END CALLS"<<endl;
 		
@@ -103,35 +103,32 @@ void VertexProps::printParsed(std::ostream & O)
 void VertexProps::findSEExits(std::set<VertexProps *> & blamees)
 {
   //std::cout<<"Enter findSEExits"<<std::endl;
-	std::set<SideEffectParam *>::iterator set_sep_i;
-	for (set_sep_i = tempAliases.begin(); set_sep_i != tempAliases.end(); set_sep_i++)
-	{
-		SideEffectParam * sep = *set_sep_i;
-		if (sep == NULL)
-			continue;
-		if (sep->vpValue == NULL)
-			continue;
+  std::set<SideEffectParam *>::iterator set_sep_i;
+  for (set_sep_i = tempAliases.begin(); set_sep_i != tempAliases.end(); set_sep_i++) {
+	SideEffectParam *sep = *set_sep_i;
+	if (sep == NULL)
+      continue;
+	if (sep->vpValue == NULL)
+	  continue;
 			
-		sep->vpValue->addedFromWhere = 81;
+	sep->vpValue->addedFromWhere = 81;
 #ifdef DEBUG_BLAMEES
-		std::cout<<"Blamees insert "<<sep->vpValue->name<<" in findSEExits(1)"<<std::endl;
+	std::cout<<"Blamees insert "<<sep->vpValue->name<<" in findSEExits(1)"<<std::endl;
 #endif
-		blamees.insert(sep->vpValue);
-		
-		if (sep->vpValue->nStatus[EXIT_VAR_FIELD] || sep->vpValue->nStatus[LOCAL_VAR_FIELD])
-		{
-			VertexProps * upPtr = sep->vpValue->fieldUpPtr;
-			while (upPtr != NULL)
-			{
-				upPtr->addedFromWhere = 91;
+	blamees.insert(sep->vpValue);
+	
+	if (sep->vpValue->nStatus[EXIT_VAR_FIELD] || sep->vpValue->nStatus[LOCAL_VAR_FIELD]) {
+	  VertexProps * upPtr = sep->vpValue->fieldUpPtr;
+	  while (upPtr != NULL) {
+		upPtr->addedFromWhere = 91;
 #ifdef DEBUG_BLAMEES
-                std::cout<<"Blamees insert "<<upPtr->name<<" in findSEExits(2)"<<std::endl;
+        std::cout<<"Blamees insert "<<upPtr->name<<" in findSEExits(2)"<<std::endl;
 #endif
-                blamees.insert(upPtr);
-				upPtr = upPtr->fieldUpPtr;
-			}
-		}
+        blamees.insert(upPtr);
+		upPtr = upPtr->fieldUpPtr;
+	  }
 	}
+  }
 	//std::cout<<"Leaving findSEExits"<<std::endl;
 }
 
@@ -139,8 +136,7 @@ void VertexProps::findSEExits(std::set<VertexProps *> & blamees)
 void VertexProps::populateSERBlamees(std::set<VertexProps *> & visited, std::set<VertexProps *> & blamees)
 {
   //std::cout<<"Entering populateSERBlamees for "<<name<<std::endl;
-	if (visited.count(this) > 0)
-	{
+	if (visited.count(this) > 0) {
 	  //std::cout<<"Exiting(1) populateSERBlamees for "<<name<<std::endl;
 		return;
 	}
@@ -148,38 +144,32 @@ void VertexProps::populateSERBlamees(std::set<VertexProps *> & visited, std::set
 	visited.insert(this);
 	
 	std::set<VertexProps *>::iterator set_vp_i;
-	for (set_vp_i = tempRelationsParent.begin(); set_vp_i != tempRelationsParent.end(); set_vp_i++)
-	{
-		VertexProps * trp = *set_vp_i;
-		if (trp->eStatus > NO_EXIT || trp->nStatus[EXIT_VAR_FIELD])
-		{
-		  //std::cout<<"Blamees insert(13) "<<trp->name<<std::endl;
-			trp->addedFromWhere = 82;
+	for (set_vp_i = tempRelationsParent.begin(); set_vp_i != tempRelationsParent.end(); set_vp_i++) {
+	  VertexProps *trp = *set_vp_i;
+	  if (trp->eStatus > NO_EXIT || trp->nStatus[EXIT_VAR_FIELD]) {
+	  //std::cout<<"Blamees insert(13) "<<trp->name<<std::endl;
+	    trp->addedFromWhere = 82;
 #ifdef DEBUG_BLAMEES
-            cout<<"Blamees insert "<<trp->name<<" in populateSERBlamees(1)"<<endl;
+        cout<<"Blamees insert "<<trp->name<<" in populateSERBlamees(1)"<<endl;
 #endif
-            blamees.insert(trp);
-			
-			if (trp->nStatus[EXIT_VAR_FIELD] || trp->nStatus[LOCAL_VAR_FIELD])
-			{
-				VertexProps * upPtr = trp->fieldUpPtr;
-				while (upPtr != NULL)
-				{
-					upPtr->addedFromWhere = 92;
-#ifdef DEBUG_BLAMEES
-                    cout<<"Blamees insert "<<upPtr->name<<" in populateSERBlamees(2)"<<endl;
-#endif
-                    blamees.insert(upPtr);
-					upPtr = upPtr->fieldUpPtr;
-				}
-			}
-		}
+        blamees.insert(trp);
 		
-		trp->populateSERBlamees(visited, blamees);
+		if (trp->nStatus[EXIT_VAR_FIELD] || trp->nStatus[LOCAL_VAR_FIELD]) {
+		  VertexProps * upPtr = trp->fieldUpPtr;
+		  while (upPtr != NULL) {
+			upPtr->addedFromWhere = 92;
+#ifdef DEBUG_BLAMEES
+            cout<<"Blamees insert "<<upPtr->name<<" in populateSERBlamees(2)"<<endl;
+#endif
+            blamees.insert(upPtr);
+			upPtr = upPtr->fieldUpPtr;
+	      }
+	    }
+	  }
+	  trp->populateSERBlamees(visited, blamees);
 	}
 	
 	//std::cout<<"Exiting(2) populateSERBlamees for "<<name<<std::endl;
-
 }
 
 // TODO: figure out if this applies to more than parent/child relationships
@@ -244,10 +234,9 @@ int VertexProps::findBlamedExits(std::set<VertexProps *> & visited, int lineNum)
 	if (this->fieldUpPtr != NULL)
 		visited.insert(this->fieldUpPtr);
 	
-	if (lineNumbers.count(lineNum) || declaredLine == lineNum)
+	if (lineNumbers.count(lineNum) || declaredLine == lineNum) {
 #ifdef CHECK_PARAM_WRITTEN_IN_CALL
-    {
-      if(paramIsBlamedForTheCall) {   //added by Hui 04/18/16: param is only blamed for this call when it's written in the call
+      if(paramIsBlamedForTheCall) {//param is only blamed for this call when it's written in the call
         cout<<this->name<<"'s paramIsBlamedForTheCall=1 and lineNumbers includes "<<lineNum<<endl;
 #endif
         return 1;
@@ -795,8 +784,8 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 			sscanf(line.c_str(), "%s %d", arr, &paramNum);
 			
 			string s(arr);
-			VertexProps * callNode = bf->findOrCreateVP(s);
-			FuncCall * fc = new FuncCall(paramNum, callNode);			
+			VertexProps *Node = bf->findOrCreateVP(s);
+			FuncCall *fc = new FuncCall(paramNum, Node);			
 			
 			calls.push_back(fc);
 		}

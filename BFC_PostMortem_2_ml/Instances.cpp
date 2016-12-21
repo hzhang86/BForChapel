@@ -307,7 +307,7 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, string nodeName)
 
 void Instance::handleInstance(ModuleHash &modules, std::ostream &O, int InstanceNum, bool verbose)
 {   
-  stack_info<<"\nIn handleInstance for inst#"<<InstanceNum<<endl;
+    cout<<"\nIn handleInstance for inst#"<<InstanceNum<<endl;
   
   // This is true in the case where we're at the last stack frame that can be parsed
   // Here, "bottom" comes from the growing style of stack since it goes down 
@@ -324,45 +324,45 @@ void Instance::handleInstance(ModuleHash &modules, std::ostream &O, int Instance
         if (bf) { //after previous trim&glue, it should come down here without trouble
           std::set<VertexProps *> blamedParams;
           if (bf->getBlamePoint() > 0) {
-            stack_info<<"In function "<<bf->getName()<<" is BP="<<bf->getBlamePoint()<<endl;
+            cout<<"In function "<<bf->getName()<<" is BP="<<bf->getBlamePoint()<<endl;
             //blamePoint can be 0,1,2, why always set true(1) here ??
-            bf->resolveLineNum(frames, modules, vec_SF_i, blamedParams, true, isBottomParsed, 
-                    NULL, O);
+            bf->resolveLineNum(frames, modules, vec_SF_i, blamedParams, 
+                    true, isBottomParsed, NULL, O);
             return; //once the resolveLineNum returns from a frame, then the whole instance done
           }
           else {
-            stack_info<<"In function "<<bf->getName()<<" is not BP"<<endl;
-            bf->resolveLineNum(frames, modules, vec_SF_i, blamedParams, false, isBottomParsed, 
-                    NULL, O);
+            cout<<"In function "<<bf->getName()<<" is not BP"<<endl;
+            bf->resolveLineNum(frames, modules, vec_SF_i, blamedParams, 
+                    false, isBottomParsed, NULL, O);
             return; //once the resolveLineNum returns from a frame, the whole instance is done
           }
           // TODO: Delete isBottomParsed here and everything below since we won't come here
-          stack_info<<"THIS SHOULD NEVER EVER GETS PRINTED OUT"<<endl;
+          cout<<"THIS SHOULD NEVER EVER GETS PRINTED OUT"<<endl;
           isBottomParsed = false;
         }
         else {
           if (isBottomParsed == false) {
-            std::cerr<<"Break in stack debugging info, BF is NULL"<<endl;
+            cerr<<"Break in stack debugging info, BF is NULL"<<endl;
             isBottomParsed = true;
           }
-          stack_info<<"Error: BF NULL-- At Frame "<<(*vec_SF_i).frameNumber<<" "<<
+          cerr<<"Error: BF NULL-- At Frame "<<(*vec_SF_i).frameNumber<<" "<<
             (*vec_SF_i).lineNumber<<" "<<(*vec_SF_i).moduleName<<" "<<std::hex<<
             (*vec_SF_i).address<<std::dec<<(*vec_SF_i).frameName<<endl;
         }
       }
       else {
         if (isBottomParsed == false) {
-          std::cerr<<"Break in stack debugging info, BM is NULL"<<endl;
+          cerr<<"Break in stack debugging info, BM is NULL"<<endl;
           isBottomParsed = true;
         }
         
-        stack_info<<"Error: BM NULL-- At Frame "<<(*vec_SF_i).frameNumber<<" "<<
+        cerr<<"Error: BM NULL-- At Frame "<<(*vec_SF_i).frameNumber<<" "<<
           (*vec_SF_i).lineNumber<<" "<<(*vec_SF_i).moduleName<<" "<<std::hex<<
           (*vec_SF_i).address<<std::dec<<" "<<(*vec_SF_i).frameName<<endl;
       }
     }
     else
-      stack_info<<"Error: LINE#<=0-- At Frame "<<(*vec_SF_i).frameNumber<<" "<<
+      cerr<<"Error: LINE#<=0-- At Frame "<<(*vec_SF_i).frameNumber<<" "<<
         (*vec_SF_i).lineNumber<<" "<<(*vec_SF_i).moduleName<<" "<<std::hex<<
         (*vec_SF_i).address<<std::dec<<(*vec_SF_i).frameName<<endl;
   }

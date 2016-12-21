@@ -740,8 +740,8 @@ void VertexProps::parseVertex_OA(ifstream & bI, BlameFunction * bf)
 			sscanf(line.c_str(), "%s %d", arr, &paramNum);
 			
 			string s(arr);
-			VertexProps * callNode = bf->findOrCreateVP(s);
-			FuncCall * fc = new FuncCall(paramNum, callNode);			
+			VertexProps *Node = bf->findOrCreateVP(s);
+			FuncCall *fc = new FuncCall(paramNum, Node);			
 			
 			calls.push_back(fc);
 		}
@@ -1517,21 +1517,21 @@ void BlameFunction::handleTransferFunction_OA(VertexProps * callNode, std::set<V
 	std::vector<FuncCall *>::iterator vec_fc_i;
 	for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++)
 	{
-		FuncCall * fc = (*vec_fc_i);
+		FuncCall *fc = (*vec_fc_i);
 		if (blamed.count(fc->paramNumber) > 0)
 		{
-			std::cout<<"Param Num "<<fc->paramNumber<<" is blamed "<<fc->callNode->name<<std::endl;
-			blamedVP.insert(fc->callNode);
-			fc->callNode->tempLine = callNode->declaredLine;
+			std::cout<<"Param Num "<<fc->paramNumber<<" is blamed "<<fc->Node->name<<std::endl;
+			blamedVP.insert(fc->Node);
+			fc->Node->tempLine = callNode->declaredLine;
 			
 			// Propagate temp line up 
 			std::set<VertexProps *> visited;
-			fc->callNode->propagateTempLineUp(visited, fc->callNode->tempLine);
+			fc->Node->propagateTempLineUp(visited, fc->Node->tempLine);
 		}
 		else
 		{
 			std::cout<<"Param Num "<<fc->paramNumber<<" is blamer"<<std::endl;
-			blamerVP.insert(fc->callNode);
+			blamerVP.insert(fc->Node);
 		}
 	}
 	
@@ -2051,8 +2051,8 @@ void BlameFunction::calcParamInfo_OA(std::set<VertexProps *> & blamees, VertexPr
 			std::vector<FuncCall *>::iterator vec_fc_i;
 			for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++)
 			{
-				FuncCall * fc = (*vec_fc_i);
-				if (vp->params.count(fc->callNode))
+				FuncCall *fc = (*vec_fc_i);
+				if (vp->params.count(fc->Node))
 				{
 					vp->callerPars.insert(fc->paramNumber);
 				}
@@ -2073,8 +2073,8 @@ bool BlameFunction::transferFuncApplies_OA(VertexProps * caller, std::set<Vertex
 	std::vector<FuncCall *>::iterator vec_fc_i;
 	for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++)
 	{
-		FuncCall * fc = (*vec_fc_i);
-		if (caller->params.count(fc->callNode))
+		FuncCall *fc = (*vec_fc_i);
+		if (caller->params.count(fc->Node))
 		{
 			std::cout<<"In TFA, examining "<<caller->name<<" "<<fc->paramNumber<<" "<<std::endl;
 			std::set<VertexProps *>::iterator set_vp_i;

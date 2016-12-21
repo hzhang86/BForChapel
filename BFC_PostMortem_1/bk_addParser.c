@@ -69,34 +69,6 @@ void populateSamples(vector<Instance> &instances, char *exeName, const char *tra
     stringstream ss(str); // Insert the string into a stream
     string buf;
     
-    //////////////////See if ss has the right info ///////////////////////////
-//    string ss_cp = ss.str();
-//    std::cout<<"The content of ss is: "<<ss_cp<<std::endl;
-    /*
-    string buf_test;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    
-    ss.str("");
-    ss.str(str); // Insert the string into a stream
-    cout<<"ss is back to "<<ss.str()<<endl;
-    */
-    //////////////////////////////////////////////////////////////////////////////
-    
     if (lineType == START_LINE)
     {
       ss>>buf;

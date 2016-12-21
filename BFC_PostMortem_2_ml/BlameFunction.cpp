@@ -42,26 +42,23 @@ VertexProps *BlameFunction::findOrCreateVP(std::string & name)
   
 }
 
-VertexProps *BlameFunction::findOrCreateTempBlamees(std::set<VertexProps *> & blamees, std::string name, bool & found)
+VertexProps *BlameFunction::findOrCreateTempBlamees(std::set<VertexProps *> &blamees, std::string name, bool &found)
 {
   ////std::cout<<"In findOrCreateTempBlamees for "<<getName()<<std::endl;
   
-  VertexProps * vp = NULL;
+  VertexProps *vp = NULL;
   
   std::set<VertexProps *>::iterator set_vp_i;
   
-  for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++)
-  {
-    if (name ==  getFullStructName(*set_vp_i))
-    {
+  for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++) {
+    if (name ==  getFullStructName(*set_vp_i)) {
       vp = (*set_vp_i);
       ////std::cout<<"FOUND Temp Blamee "<<name<<std::endl;
       break;
     }
   }
   
-  if (vp == NULL)
-  {
+  if (vp == NULL) {
     ////std::cout<<"Creating derived blamee "<<name<<std::endl;
     std::string s(name);
     vp = new VertexProps(s);
@@ -77,7 +74,6 @@ VertexProps *BlameFunction::findOrCreateTempBlamees(std::set<VertexProps *> & bl
   }
   
   return vp;
-  
 }
 
 void BlameFunction::calcSEDWritesRecursive(VertexProps * ev, VertexProps * vp, std::set<VertexProps *> & visited)
@@ -558,7 +554,7 @@ void BlameFunction::calcAggregateLN_SE_Recursive(VertexProps * ivp)
   {
     //std::cout<<"CALN_SE_R(8) "<<(*s_vp_i)->name<<std::endl;
     
-    VertexProps * child = *s_vp_i;
+    VertexProps *child = *s_vp_i;
     if (child->calcAggSE == false)
       calcAggregateLN_SE_Recursive(child);
     
@@ -951,16 +947,12 @@ void BlameFunction::printParsed(std::ostream &O)
 void BlameFunction::addBlameToFieldParents(VertexProps * vp, std::set<VertexProps*> & blamees, short fromWhere)
 {
   //std::cout<<"In ABTFP"<<std::endl;
-  if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR_FIELD])
-  {
-    //std::cout<<"For "<<vp->name<<std::endl;
-    
+  if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR_FIELD]) {
     std::set<VertexProps *> visited;
-    VertexProps * upPtr = vp->fieldUpPtr;
-    while (upPtr != NULL && visited.count(upPtr) == 0) //Here visited is new for each call of this func
-    {                                               //TOCHECK: shall we make it global for each frame???
+    VertexProps *upPtr = vp->fieldUpPtr;
+    while (upPtr != NULL && visited.count(upPtr) == 0) {//Here visited is new for each call of this func
+                                                   //TOCHECK: shall we make it global for each frame???
       visited.insert(upPtr);
-      
       //std::cout<<"Adding field parent "<<upPtr->name<<std::endl;
       upPtr->addedFromWhere = fromWhere;
 #ifdef DEBUG_BLAMEES
@@ -970,32 +962,26 @@ void BlameFunction::addBlameToFieldParents(VertexProps * vp, std::set<VertexProp
       
       // Recursive parent situation, field is parent to container struct
       // TODO: Fix why this happens at the source
-      if (upPtr->fields.count(upPtr->fieldUpPtr) && upPtr->eStatus > NO_EXIT){
+      if (upPtr->fields.count(upPtr->fieldUpPtr) && upPtr->eStatus > NO_EXIT) {
         cout<<"Wooh,what's wrong with "<<upPtr->name<<", its fieldUpPtr: "<<upPtr->fieldUpPtr->name<<endl;
         upPtr = NULL;
       }
-      else
-      {
-        VertexProps * oldVP = upPtr;
+      else {
+        VertexProps *oldVP = upPtr;
         upPtr = upPtr->fieldUpPtr;
-        /////////////////for test///////////////////////////
 #ifdef DEBUG_UPPTRS
         if(upPtr != NULL)
             cout<<"In place1: new upPtr="<<upPtr->name<<endl;
 #endif
-        if (upPtr == NULL)
-        {
+        if (upPtr == NULL) {
           std::set<VertexProps *>::iterator s_vp_i;
-          for (s_vp_i = oldVP->aliases.begin(); s_vp_i != oldVP->aliases.end(); s_vp_i++)
-          {
+          for (s_vp_i = oldVP->aliases.begin(); s_vp_i != oldVP->aliases.end(); s_vp_i++) {
             VertexProps * vpAlias = *s_vp_i;
             //calcSEDWritesRecursive(ev, child, visited);
-            if (vpAlias != oldVP)
-            {
+            if (vpAlias != oldVP) {
               ////std::cout<<"21a - Alias "<<vpAlias->name<<std::endl;
               
-              if (vpAlias->fieldUpPtr != NULL)
-              {
+              if (vpAlias->fieldUpPtr != NULL) {
                 upPtr = vpAlias->fieldUpPtr;
 #ifdef DEBUG_UPPTRS
                 cout<<"In place2: new upPtr="<<upPtr->name<<endl;
@@ -1008,10 +994,8 @@ void BlameFunction::addBlameToFieldParents(VertexProps * vp, std::set<VertexProp
           }
         }
         
-        if (upPtr == NULL)
-        {
-          if (oldVP->aliasUpPtr != NULL)
-          {
+        if (upPtr == NULL) {
+          if (oldVP->aliasUpPtr != NULL) {
             ////std::cout<<"22a - AliasUpPtr "<<oldVP->aliasUpPtr->name<<std::endl;
             upPtr = oldVP->aliasUpPtr;
 #ifdef DEBUG_UPPTRS
@@ -1028,20 +1012,18 @@ void BlameFunction::addBlameToFieldParents(VertexProps * vp, std::set<VertexProp
 
 
 // Some of the fields are just repeats of existing exit fields
-bool BlameFunction::notARepeat(VertexProps * vp, std::set<VertexProps *> & blamees)
+bool BlameFunction::notARepeat(VertexProps *vp, std::set<VertexProps *> &blamees)
 {
-  return true;
+  return true; //ALWAYS true ?????
   
   std::set<VertexProps * >::iterator set_vp_i;
   
   std::string vpFull = getFullStructName(vp);
   
-  for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++)
-  {
+  for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++) {
     std::string blameeFull =   getFullStructName(*set_vp_i);
     
-    if ( vpFull.compare(blameeFull) == 0)
-    {
+    if ( vpFull.compare(blameeFull) == 0) {
       //std::cout<<"Found duplicate for "<<vpFull<<" raw "<<vp->name<<std::endl;
       return false;
     }
@@ -1051,7 +1033,7 @@ bool BlameFunction::notARepeat(VertexProps * vp, std::set<VertexProps *> & blame
 }
 
 
-void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std::set<VertexProps *> & oldBlamees,VertexProps * callNode,int lineNum, short isBlamePoint, std::set<VertexProps *> & localBlamees,std::set<VertexProps *> & DQblamees)
+void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std::set<VertexProps *> & oldBlamees,VertexProps * callNode,int lineNum, short isBlamePoint, std::set<VertexProps *> &localBlamees,std::set<VertexProps *> &DQblamees)
 {
   std::set<VertexProps *> visited;
   bool foundOne = false;
@@ -1061,98 +1043,65 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
   // we can have multiple varibales to be blamed within a single line of src code
   if (allLines.count(lineNum) > 0)  
     foundOne = true;
-///////////////////////////////////////////////////////  /////////////////  
-//  cout<<"All lines count "<<allLines.count(lineNum)<<std::endl;
-/////////////////////////////////////////////////////////////////////////  
   pair<multimap<int,VertexProps *>::iterator, multimap<int, VertexProps *>::iterator> ii;
   multimap<int, VertexProps *>::iterator it; //Iterator to be used along with ii
   ii = allLines.equal_range(lineNum); //We get the first and last entry in multimap;
   //ii.first, ii.second are pair<int, VertexProps*> where int ln=lineNum
   
-  for(it = ii.first; it != ii.second; ++it)
-  {
+  for(it = ii.first; it != ii.second; ++it) {
     VertexProps * vp = it->second;
 #ifdef DEBUG_DETER_BH
     //cout<<"Key = "<<it->first<<"    Value = "<<it->second->name<<endl;
 #endif
-    if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD])
-    {
-/////////////////////////////////////////////////////////////
+    if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD]) {
 #ifdef DEBUG_DETER_BH
-        cout<<"determinBlameHolders: in case 1"<<endl;
+      cout<<"determinBlameHolders: in case 1"<<endl;
 #endif
-/////////////////////////////////////////////////////////////
-        vp->findSEExits(blamees);
+      vp->findSEExits(blamees);
+      // Make sure the callee EV param num matches the caller param num
+      // notARepeat always return true, if callNode==NULL, tansferFuncApplies also return true
+      if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees)) { 
+#ifdef DEBUG_BLAMEES
+        cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(1)"<<endl;
+#endif
+        blamees.insert(vp);
+        vp->addedFromWhere = 1;
+        addBlameToFieldParents(vp, blamees, 11);
+      }
+      else {
+        vp->addedFromWhere = 61;
+        DQblamees.insert(vp);
+      }
+    }
+    else if (isBlamePoint && (vp->nStatus[EXIT_VAR_FIELD] || 
+            vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD])) {
+#ifdef DEBUG_DETER_BH
+      cout<<"determinBlameHolders: in case 2"<<endl;
+#endif
+      vp->findSEExits(blamees);
         
-        //std::cout<<"Blamees insert(1) "<<vp->name<<std::endl;
-
-        // Make sure the callee EV param num matches the caller param num
-        if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees)) //notARepeat always return true 
-        {                                                                           //if callNode==NULL, transferFuncApplies also returns true
+      // Make sure the callee EV param num matches the caller param num
+      //vp could be the local var in this frame holding the retval from callNode
+      if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees)){
 #ifdef DEBUG_BLAMEES
-          cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(1)"<<endl;
+        cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(2)"<<endl;
+        cout<<"Blamees ACTUAL insert(5) "<<vp->name<<endl;
 #endif
-          blamees.insert(vp);
-          //std::cout<<"Blamees ACTUAL insert(1) "<<vp->name<<std::endl;
-          vp->addedFromWhere = 1;
-          addBlameToFieldParents(vp, blamees, 11);
-        }
-        else
-        {
-          vp->addedFromWhere = 61;
-          DQblamees.insert(vp);
-        }
-    }
-    else if (isBlamePoint && (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD]))
-    {
-/////////////////////////////////////////////////////////////
-#ifdef DEBUG_DETER_BH
-        cout<<"determinBlameHolders: in case 2"<<endl;
-#endif
-/////////////////////////////////////////////////////////////
-      //if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR] ||vp->nStatus[LOCAL_VAR_FIELD])
-      //{ redundant condition!
-//////////////////////////////////////////////////////////////////////////////////////
-          //cout<<"I'm inside the first if "<<endl;
-/////////////////////////////////////////////////////////////////////////////////////
-          //std::cout<<"Blamees insert(5) "<<vp->name<<std::endl;
-          vp->findSEExits(blamees);
-          
-          
-          // Make sure the callee EV param num matches the caller param num
-          //vp could be the local var in this frame holding the retval from callNode
-          if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees)){//notARepeat always returns true
-///////////////////////////////////////////////////////////////////////////////////////  //transferFuncApplies returns true if callNode=NULL
-#ifdef DEBUG_DETER_BH
-              cout<<"I'm inside the if transferFuncApplies=true"<<endl;
-#endif
-        //////////////////////////////////////////////////////////////////////////////////////
-#ifdef DEBUG_BLAMEES
-            cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(2)"<<endl;
-            std::cout<<"Blamees ACTUAL insert(5) "<<vp->name<<std::endl;
-#endif
-            blamees.insert(vp);
-            vp->addedFromWhere = 5;
-            addBlameToFieldParents(vp, blamees, 15);
+        blamees.insert(vp);
+        vp->addedFromWhere = 5;
+        addBlameToFieldParents(vp, blamees, 15);
             
-          }
-          else
-          {
-            vp->addedFromWhere = 65;
-            DQblamees.insert(vp);
-          }          
-      //}
+      }
+      else {
+        vp->addedFromWhere = 65;
+        DQblamees.insert(vp);
+      }          
     }
-    else if (vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD])
-    {
-/////////////////////////////////////////////////////////////
+    else if (vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD]) {
 #ifdef DEBUG_DETER_BH      
         cout<<"determinBlameHolders: in case 3"<<endl;
 #endif
-        /////////////////////////////////////////////////////////////
         vp->findSEExits(blamees);
-
-        //std::cout<<"Blamees insert(L1) "<<vp->name<<std::endl;
 
         localBlamees.insert(vp);
         vp->addedFromWhere = 21;
@@ -1161,26 +1110,19 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
   }// end of for loop
   
   
-///////////////////////////////////////////////////////////////////
 #ifdef DEBUG_DETER_BH
   cout<<"Temp lines count "<<tempLines.count(lineNum)<<std::endl;
 #endif
-  ////////////////////////////////////////////////////////////////////
-  //tempLines is always empty here since it's cleared in the begining clearData(), so
-  //why we bother examing it again here after allLines ? 04/18/16
+  //tempLines has pairs of (call line, blameParamNode) 
   ii = tempLines.equal_range(lineNum); //We get the first and last entry in ii;
-  //cout<<"\n\nPrinting all Joe and then erasing them"<<endl;
   
-  for(it = ii.first; it != ii.second; ++it)
-  {
+  for(it = ii.first; it != ii.second; ++it) {
     VertexProps * vp = it->second;
-    if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD])
-    {
+    if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD]) {
       vp->findSEExits(blamees);
         
       // Make sure the callee EV param num matches the caller param num
-      if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees))        
-      {
+      if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees)) {
 #ifdef DEBUG_BLAMEES
         cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(3)"<<endl;
 #endif
@@ -1188,15 +1130,14 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
         vp->addedFromWhere = 3;
         addBlameToFieldParents(vp, blamees, 13);
       }
-      else
-      {
+      else {
         vp->addedFromWhere = 63;
         DQblamees.insert(vp);
       }
     }
     
-    else if ( isBlamePoint && (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD]))
-    {
+    else if (isBlamePoint && (vp->nStatus[EXIT_VAR_FIELD] || 
+            vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD])) {
       // This comes in handy when local variables are passed by reference,
       //  otherwise that line number would be masked by the line number of
       //  the function
@@ -1204,8 +1145,7 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
       vp->findSEExits(blamees);
           
       // Make sure the callee EV param num matches the caller param num
-      if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees))          
-      {
+      if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees)) {
 #ifdef DEBUG_BLAMEES
         cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(4)"<<endl;
 #endif
@@ -1213,15 +1153,13 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
         vp->addedFromWhere = 7;
         addBlameToFieldParents(vp, blamees, 17);
       }
-      else
-      {
+      else {
         vp->addedFromWhere = 67;
         DQblamees.insert(vp);
       }          
     }
     
-    else if (vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD])
-    {
+    else if (vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD]) {
       vp->findSEExits(blamees);
 #ifdef DEBUG_BLAMEES
       std::cout<<"Blamees insert(L3) "<<vp->name<<std::endl;
@@ -1230,73 +1168,46 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
       vp->addedFromWhere = 23;
       addBlameToFieldParents(vp, localBlamees, 33);
     }
-  }
+  } // end of tempLines
   
-////////////////////////////////////////////////////////////////////////////  
+
 #ifdef DEBUG_DETER_BH
   cout<<"Size of hasParams "<<hasParams.size()<<std::endl;
 #endif
-  ///////////////////////////////////////////////////////////////////////////
-  for (set_vp_i = hasParams.begin(); set_vp_i != hasParams.end(); set_vp_i++)
-  {
+  for (set_vp_i = hasParams.begin(); set_vp_i != hasParams.end(); set_vp_i++) {
     VertexProps * vp = (*set_vp_i);
 #ifdef DEBUG_BLAMEES
     cout<<"Checking inside "<<this->getName()<<": hasParams "<<vp->name<<", vp->eStatus="<<vp->eStatus<<", lineNum="<<lineNum<<endl;
 #endif
     visited.clear();
     
-    if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD])
-    {
-      if (vp->findBlamedExits(visited, lineNum))
-      {
-/////////////////////////////////////////////////////////////////////////////////////////////
-//        cout<<"hasParams: inside if 11"<<endl;
-//        std::cout<<"Blamees insert(8) "<<vp->name<<std::endl;
-/////////////////////////////////////////////////////////////////////////////////////////////
+    if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD]) {
+      if (vp->findBlamedExits(visited, lineNum)) {
         vp->findSEExits(blamees);
         
         // Make sure the callee EV param num matches the caller param num
         if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees)){
-///////////////////////////////////////////////////////////////////////////////////////////
-//          cout<<"hasParams: inside if 12"<<endl;
-///////////////////////////////////////////////////////////////////////////////////////////
 #ifdef DEBUG_BLAMEES
           cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(5)"<<endl;
 #endif
           blamees.insert(vp);
           vp->addedFromWhere = 4;
           addBlameToFieldParents(vp, blamees, 14);
-          
         }
-        else
-        {
+        else {
           vp->addedFromWhere = 64;
           DQblamees.insert(vp);
         }        
       }
     }
-    else if ( isBlamePoint )
-    {
+    else if (isBlamePoint) {
       if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR] ||
-          vp->nStatus[LOCAL_VAR_FIELD])
-      {
-///////////////////////////////////////////////////////////////////////////////////////////
-//                                        cout<<"hasParams: inside if 21"<<endl;
-///////////////////////////////////////////////////////////////////////////////////////////
-
-        if (vp->findBlamedExits(visited, lineNum))
-        {
-///////////////////////////////////////////////////////////////////////////////////////////
-//                                        cout<<"hasParams: inside if 22"<<endl;
-//          std::cout<<"Blamees insert(8) "<<vp->name<<std::endl;
-////////////////////////////////////////////////////////////////////////////////////////////          
+          vp->nStatus[LOCAL_VAR_FIELD]) {
+        if (vp->findBlamedExits(visited, lineNum)) {
           vp->findSEExits(blamees);
           
           // Make sure the callee EV param num matches the caller param num
           if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees)){
-///////////////////////////////////////////////////////////////////////////////////////////
-//                                        cout<<"hasParams: inside if 23"<<endl;
-///////////////////////////////////////////////////////////////////////////////////////////
 #ifdef DEBUG_BLAMEES
             cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(6)"<<endl;
 #endif
@@ -1305,102 +1216,62 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
             addBlameToFieldParents(vp, blamees, 18);
             
           }
-          else
-          {
+          else {
             vp->addedFromWhere = 68;
             DQblamees.insert(vp);
           }            
-        }
+        } //end of findBlamedExits
       }    
     }
     // Straight up Local Variables that don't count towards blame
-    else if (vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD])
-    {
-///////////////////////////////////////////////////////////////////////////////////////////
-//                                        cout<<"hasParams: inside if 31"<<endl;
-///////////////////////////////////////////////////////////////////////////////////////////
-
-      if (vp->findBlamedExits(visited, lineNum))
-      {
-///////////////////////////////////////////////////////////////////////////////////////////
-//                                        cout<<"hasParams: inside if 32"<<endl;
-///////////////////////////////////////////////////////////////////////////////////////////
-
+    else if (vp->nStatus[LOCAL_VAR] || vp->nStatus[LOCAL_VAR_FIELD]) {
+      if (vp->findBlamedExits(visited, lineNum)) {
         vp->findSEExits(blamees);
-
-      
-        //std::cout<<"Blamees insert(L4) "<<vp->name<<std::endl;
         localBlamees.insert(vp);
         vp->addedFromWhere = 24;
         addBlameToFieldParents(vp, localBlamees, 34);
       }
     }        
   }  
-  //for (hash_vp_i = allVertices.begin(); hash_vp_i != allVertices.end(); hash_vp_i++)
-  //{
-  //}
   
   
   bool proceed = false;
-  
-  
   // Only care about SE when only blamee is a return val
-////////////////////////////////////////////////////////////////////
 #ifdef DEBUG_DETER_BH
   cout<<"Before proceed, blamees.size= "<<blamees.size()<<endl;
 #endif
-  ///////////////////////////////////////////////////////////////////
   if (blamees.size() == 0)
     proceed = true;
-  
-  if (blamees.size() == 1) //the only blamee in this stackframe(func) is return value
-  {
+  //the only blamee in this stackframe(func) is the return value to the call node
+  if (blamees.size() == 1) {
     std::set<VertexProps *>::iterator set_vp_i;
-    for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++)
-    {
-      VertexProps * vp = *set_vp_i;
+    for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++) {
+      VertexProps *vp = *set_vp_i;
       if (vp->eStatus == EXIT_VAR_RETURN)
         proceed = true;
     }  
   }
   
   
-  if (proceed)
-  {
-/////////////////////////////////////////////////////////////////////////////////////////////
+  if (proceed) {
 #ifdef DEBUG_DETER_BH
       cout<<"I'm in proceed=true"<<endl;
 #endif
-/////////////////////////////////////////////////////////////////////////////////////////////
     // Populate side effect relations for the blame function
     populateTempSideEffectsRelations();
-
     calcAggregateLN_SE();
     
     // Populate Edges
-    for (hash_vp_i = allVertices.begin(); hash_vp_i != allVertices.end(); hash_vp_i++)
-    {
+    for (hash_vp_i = allVertices.begin(); hash_vp_i != allVertices.end(); hash_vp_i++) {
       VertexProps * vp = (*hash_vp_i).second;
-
-      //if (vp->lineNumbers.count(lineNum) || vp->declaredLine == lineNum || vp->tempLine == lineNum)
-      //foundOne = true;
       
       // The side effects play by a different set of rules then the others, deal with aliases
       //vp->findSEExits(blamees);
-      
-      if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD])
-      {
-        if (vp->seLineNumbers.count(lineNum)) 
-        {
-          //std::cout<<"Blamees insert(9) "<<vp->name<<std::endl;
-          
+      if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD]) {
+        if (vp->seLineNumbers.count(lineNum)) {
           vp->addedFromWhere = 40;
           // Make sure the callee EV param num matches the caller param num
-          //if (transferFuncApplies(vp, oldBlamees, callNode))
-          //{
-/////////////////////////////////////////////////////////////////////////////////////////////
-//          cout<<"Insert blamee again !"<<endl;
-/////////////////////////////////////////////////////////////////////////////////////////////
+          //if (transferFuncApplies(vp, oldBlamees, callNode)) {
 #ifdef DEBUG_BLAMEES
           cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(7)"<<endl;
 #endif
@@ -1409,56 +1280,39 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
           //}
         }
       }
-      else if ( isBlamePoint )
-      {
+      else if ( isBlamePoint ) {
         if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR] ||
-            vp->nStatus[LOCAL_VAR_FIELD])
-        {
-          if (vp->seLineNumbers.count(lineNum)) 
-          {
-            
+            vp->nStatus[LOCAL_VAR_FIELD]) {
+          if (vp->seLineNumbers.count(lineNum)) {
             // Make sure the callee EV param num matches the caller param num
             if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees))  {
-              //std::cout<<"Blamees insert(10) "<<vp->name<<std::endl;
-              
               vp->addedFromWhere = 41;
-/////////////////////////////////////////////////////////////////////////////////////////////
-//                                        cout<<"Insert blamee again !"<<endl;
-/////////////////////////////////////////////////////////////////////////////////////////////      
 #ifdef DEBUG_BLAMEES
               cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(8)"<<endl;
 #endif
               blamees.insert(vp);
               addBlameToFieldParents(vp, blamees, 51);
-              
             }
           }
         }    
       }
       else if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR] ||
-               vp->nStatus[LOCAL_VAR_FIELD])
-      {
+               vp->nStatus[LOCAL_VAR_FIELD]) {
         
-        if (vp->seLineNumbers.count(lineNum)) 
-        {
-          //std::cout<<"Blamees insert(L10) "<<vp->name<<std::endl;
+        if (vp->seLineNumbers.count(lineNum)) {
           vp->addedFromWhere = 42;
           localBlamees.insert(vp);
           addBlameToFieldParents(vp, localBlamees, 52);
         }
       }
     }  
-  }
+  }// end of proceed=true
   
-  if (blamees.size() == 0)
-  {
-    if (DQblamees.size() > 0)
-    {
-///////////////////////////////////////////////////////////////////////////////////
+  if (blamees.size() == 0) {
+    if (DQblamees.size() > 0) {
 #ifdef DEBUG_BLAMEES
-        cout<<"Insert blamee again from DQblamees in determineBlameHolders(9)!"<<endl;
+      cout<<"Insert blamee again from DQblamees in determineBlameHolders(9)!"<<endl;
 #endif
-        ////////////////////////////////////////////////////////////////////////////////////
       blamees.insert(DQblamees.begin(), DQblamees.end());
     }
   }
@@ -1474,10 +1328,8 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
     }
   }
 */
-  if (foundOne == false)
-  {
+  if (foundOne == false) {
     std::cerr<<"No VPs have the line number "<<std::endl;
-    //std::cout<<"No VPs have the line number "<<std::endl;
   }
 
 }
@@ -1819,7 +1671,7 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,
 
 */
 
-void BlameFunction::handleTransferFunction(VertexProps * callNode, std::set<VertexProps *> & blamedParams)
+void BlameFunction::handleTransferFunction(VertexProps *callNode, std::set<VertexProps *> &blamedParams)
 {
   std::cout<<"Need to do transfer function for "<<callNode->name<<std::endl;
   
@@ -1830,17 +1682,16 @@ void BlameFunction::handleTransferFunction(VertexProps * callNode, std::set<Vert
   
   std::set<VertexProps *> blamerVP; 
   std::set<VertexProps *> blamedVP;
-  
-  for (vec_int_i = blamedParams.begin(); vec_int_i != blamedParams.end(); vec_int_i++)
-  {
+  //blamedParams are vars in the frame that maps to this callNode 
+  //(storage for its formal arg)
+  for (vec_int_i = blamedParams.begin(); vec_int_i != blamedParams.end(); vec_int_i++) {
     VertexProps * vp = (*vec_int_i);
     std::cout<<"blamedParams: "<<vp->name<<",eStatus="<<vp->eStatus<<" "<<std::endl;
     
-    if (vp->eStatus >= EXIT_VAR_GLOBAL)//search blamed params in pre frames, 
-    {                                 //if they are global variables/param/retval
+    if (vp->eStatus >= EXIT_VAR_GLOBAL) {//search blamed params in pre frames, 
+                                     //if they are global variables/param/retval
       int paramNum = vp->eStatus - EXIT_VAR_PARAM;
-      if (paramNum >= 0) //if it's real param
-      {
+      if (paramNum >= 0) {//if it's real param
         blamed.insert(paramNum);
         std::cout<<"inserted with paramNum="<<paramNum<<"; ";
       }  
@@ -1849,46 +1700,42 @@ void BlameFunction::handleTransferFunction(VertexProps * callNode, std::set<Vert
   
   std::cout<<std::endl;
   
+  //Now calls are actual arg for this callNode, so they are vars in the upper
+  //frame to the one that maps to this callNode
   std::vector<FuncCall *>::iterator vec_fc_i;
-  for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++)
-  {
-    FuncCall * fc = (*vec_fc_i);
-    if (blamed.count(fc->paramNumber) > 0)
-    {
-      std::cout<<"Param Num "<<fc->paramNumber<<" is blamed "<<fc->callNode->name<<std::endl;
-      blamedVP.insert(fc->callNode);
-      fc->callNode->paramIsBlamedForTheCall = true; //added by Hui 04/18/16: we need to know which acutal param is blamed for this func call
+  for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++) {
+    FuncCall *fc = (*vec_fc_i);
+    if (blamed.count(fc->paramNumber) > 0) {
+      std::cout<<"Param Num "<<fc->paramNumber<<" is blamed "<<fc->Node->name<<std::endl;
+      blamedVP.insert(fc->Node);
+      //we need to know which acutal param is blamed for this func call
+      fc->Node->paramIsBlamedForTheCall = true; 
       
-      fc->callNode->tempLine = callNode->declaredLine;
-      tempLines.insert(pair<int, VertexProps *>( fc->callNode->tempLine, fc->callNode));
-
-
+      fc->Node->tempLine = callNode->declaredLine;
+      tempLines.insert(pair<int, VertexProps *>(fc->Node->tempLine, fc->Node));
+      
       // Propagate temp line up 
       std::set<VertexProps *> visited;
-      fc->callNode->propagateTempLineUp(visited, fc->callNode->tempLine);
+      fc->Node->propagateTempLineUp(visited, fc->Node->tempLine);
     }
-    else
-    {
+    else{
       std::cout<<"Param Num "<<fc->paramNumber<<" is blamer"<<std::endl;
-      blamerVP.insert(fc->callNode);
+      blamerVP.insert(fc->Node);
     }
   }
   
   std::set<VertexProps *>::iterator set_vp_i;
   std::set<VertexProps *>::iterator set_vp_i2;
   
-  for (set_vp_i = blamerVP.begin(); set_vp_i != blamerVP.end(); set_vp_i++)
-  {
-    VertexProps * bE = (*set_vp_i);
-    for (set_vp_i2 = blamedVP.begin(); set_vp_i2 != blamedVP.end(); set_vp_i2++)
-    {
+  for (set_vp_i = blamerVP.begin(); set_vp_i != blamerVP.end(); set_vp_i++) {
+    VertexProps *bE = (*set_vp_i);
+    for (set_vp_i2 = blamedVP.begin(); set_vp_i2 != blamedVP.end(); set_vp_i2++) {
       VertexProps * bD = *set_vp_i2;
       bD->tempChildren.insert(bE);
       bE->tempParents.insert(bD);
       
       tempChildrenHolder.insert(bD);
       tempParentsHolder.insert(bE);
-      
       //bD->tempIsWritten = true;  // PRE-DISSERTATION
       std::cout<<bE->name<<" is tempChild to "<<bD->name<<std::endl;
     }
@@ -2217,7 +2064,7 @@ void BlameFunction::outputParamInfo(std::ostream &O, VertexProps * vp)
    for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++)
    {
    FuncCall * fc = (*vec_fc_i);
-   if (vp->params.count(fc->callNode))
+   if (vp->params.count(fc->Node))
    O<<fc->paramNumber<<" ";
    }
    }    
@@ -2225,26 +2072,22 @@ void BlameFunction::outputParamInfo(std::ostream &O, VertexProps * vp)
   
 }
 
-bool BlameFunction::transferFuncApplies(VertexProps * caller, std::set<VertexProps *> & oldBlamees,
-                                        VertexProps * callNode)
+bool BlameFunction::transferFuncApplies(VertexProps *caller, std::set<VertexProps *> &oldBlamees,
+                                        VertexProps *callNode)
 {
   if (callNode == NULL)
     return true;
   
-  
   std::vector<FuncCall *>::iterator vec_fc_i;
-  for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++)
-  {
-    FuncCall * fc = (*vec_fc_i);
-    if (caller->params.count(fc->callNode))
-    {
+  for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++) {
+    FuncCall *fc = (*vec_fc_i);
+    if (caller->params.count(fc->Node)) {
 #ifdef DEBUG_TANSFUNC_APP
       std::cout<<"In TFA, examining "<<caller->name<<" "<<fc->paramNumber<<" "<<std::endl;
 #endif
       std::set<VertexProps *>::iterator set_vp_i;
-      for (set_vp_i = oldBlamees.begin(); set_vp_i != oldBlamees.end(); set_vp_i++)
-      {
-        VertexProps * vp = *set_vp_i;
+      for (set_vp_i = oldBlamees.begin(); set_vp_i != oldBlamees.end(); set_vp_i++) {
+        VertexProps *vp = *set_vp_i;
         
         if (vp->isDerived)
           continue;
@@ -2255,19 +2098,17 @@ bool BlameFunction::transferFuncApplies(VertexProps * caller, std::set<VertexPro
         {
           calleePar = vp->eStatus - EXIT_VAR_RETURN;
         }*/ //block is replaced by the one below, by Hui 03/15/16
-        if(vp->eStatus == EXIT_VAR_RETURN){
-          calleePar = 0;
+        if(vp->eStatus == EXIT_VAR_RETURN) {
+          calleePar = -1; //Changed from 0 to -1 12/19/16
         }
-        else if(vp->eStatus >= EXIT_VAR_PARAM){
+        else if(vp->eStatus >= EXIT_VAR_PARAM) {
           calleePar = vp->eStatus - EXIT_VAR_PARAM;
         } 
         
-        if (vp->nStatus[EXIT_VAR_FIELD])
-        {
-          VertexProps * upPtr = vp->fieldUpPtr;
+        else if (vp->nStatus[EXIT_VAR_FIELD]) { //changed from 'if' to 'else if' 12/19/16
+          VertexProps *upPtr = vp->fieldUpPtr;
           std::set<VertexProps *> visited;
-          while (upPtr != NULL && visited.count(upPtr) == 0)
-          {
+          while (upPtr != NULL && visited.count(upPtr) == 0) {
             visited.insert(upPtr);
             /*
             if (upPtr->eStatus >= EXIT_VAR_RETURN)
@@ -2275,12 +2116,11 @@ bool BlameFunction::transferFuncApplies(VertexProps * caller, std::set<VertexPro
               calleePar = upPtr->eStatus - EXIT_VAR_RETURN;
               break;
             }*/
-
-            if(upPtr->eStatus == EXIT_VAR_RETURN){
-              calleePar = 0;
+            if (upPtr->eStatus == EXIT_VAR_RETURN) {
+              calleePar = -1; //Changed from 0 to -1 12/19/16
               break;
             }
-            else if(upPtr->eStatus >= EXIT_VAR_PARAM){
+            else if (upPtr->eStatus >= EXIT_VAR_PARAM) {
               calleePar = upPtr->eStatus - EXIT_VAR_PARAM;
               break;
             } 
@@ -2288,8 +2128,7 @@ bool BlameFunction::transferFuncApplies(VertexProps * caller, std::set<VertexPro
           }
         }
         
-        if (fc->paramNumber == calleePar)
-        {  
+        if (fc->paramNumber == calleePar) {  
 #ifdef DEBUG_TANSFUNC_APP
           std::cout<<"In TFA, match found for "<<vp->name<<" and "<<caller->name<<" "<<calleePar<<std::endl;
 #endif
@@ -2303,7 +2142,7 @@ bool BlameFunction::transferFuncApplies(VertexProps * caller, std::set<VertexPro
   //std::cout<<"In TFA, no match found for "<<caller->name<<std::endl;
   return false;
 }
-
+ 
 
 
 VertexProps * BlameFunction::resolveSideEffectsCheckParentEV(VertexProps * vp, std::set<VertexProps *> & visited)
@@ -2392,7 +2231,7 @@ void BlameFunction::populateTempSideEffectsRelations()
         // This is essentially going through all the parameters for the call
         for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++)
         {
-          FuncCall * fc = (*vec_fc_i);
+          FuncCall *fc = (*vec_fc_i);
           
           std::vector<SideEffectRelation *>::iterator vec_ser_i;
           std::vector<SideEffectCall *>::iterator vec_sec_i;
@@ -2411,7 +2250,7 @@ void BlameFunction::populateTempSideEffectsRelations()
               // Check to see if the parent SE relation matches the param number of the call
               if (ser->parent->paramNumber == fc->paramNumber)
               {
-                matchVP = fc->callNode;
+                matchVP = fc->Node;
                 matchParamNum = fc->paramNumber;
               }
               
@@ -2435,7 +2274,7 @@ void BlameFunction::populateTempSideEffectsRelations()
                     for (vec_fc_i2 = callNode->calls.begin(); vec_fc_i2 != callNode->calls.end(); vec_fc_i2++)
                     {
                       // A given parameter
-                      FuncCall * fc2 = (*vec_fc_i2);
+                      FuncCall *fc2 = (*vec_fc_i2);
                       
                       // Want to make sure we find the parameter(from call) that matches the param (from side effect)
                       if (fc2->paramNumber == sep->paramNumber)
@@ -2445,14 +2284,14 @@ void BlameFunction::populateTempSideEffectsRelations()
                         std::set<VertexProps *> visited2;
                         
                         // This gets the actual EV the param is associated with
-                        VertexProps * evAnc = resolveSideEffectsCheckParentEV(fc2->callNode, visited2);
+                        VertexProps * evAnc = resolveSideEffectsCheckParentEV(fc2->Node, visited2);
                         visited2.clear();
                         
                         if (evAnc == NULL)
-                          evAnc = resolveSideEffectsCheckParentLV(fc2->callNode, visited2);
+                          evAnc = resolveSideEffectsCheckParentLV(fc2->Node, visited2);
                         
                         if (evAnc == NULL)
-                          evAnc = fc2->callNode;
+                          evAnc = fc2->Node;
                         
                         visited2.clear();
                         // This gets the actual EV the match is associated with
@@ -2588,7 +2427,7 @@ void BlameFunction::populateTempSideEffects(int lineNum, std::set<VertexProps *>
           // This is essentially going through all the parameters for the call
           for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++)
           {
-            FuncCall * fc = (*vec_fc_i);
+            FuncCall *fc = (*vec_fc_i);
             
             std::vector<SideEffectAlias *>::iterator vec_sea_i;
             
@@ -2613,7 +2452,7 @@ void BlameFunction::populateTempSideEffects(int lineNum, std::set<VertexProps *>
                   
                   if (sep->paramNumber == fc->paramNumber)
                   {  
-                    matchVP = fc->callNode;
+                    matchVP = fc->Node;
                     matchParamNum = fc->paramNumber;
                     matchSEP = sep;
                   }
@@ -2639,7 +2478,7 @@ void BlameFunction::populateTempSideEffects(int lineNum, std::set<VertexProps *>
                       for (vec_fc_i2 = callNode->calls.begin(); vec_fc_i2 != callNode->calls.end(); vec_fc_i2++)
                       {
                         // A given parameter
-                        FuncCall * fc2 = (*vec_fc_i2);
+                        FuncCall *fc2 = (*vec_fc_i2);
                         
                         // Want to make sure we find the parameter(from call) that matches the param (from side effect)
                         if (fc2->paramNumber == sep->paramNumber)
@@ -2647,19 +2486,19 @@ void BlameFunction::populateTempSideEffects(int lineNum, std::set<VertexProps *>
                           //matchSEP = sep;
                           std::set<VertexProps *> visited2;
                           
-                          if (fc2->callNode == matchVP)
+                          if (fc2->Node == matchVP)
                             continue;
                           
                           
                           // This gets the actual EV the param is associated with
-                          VertexProps * evAnc = resolveSideEffectsCheckParentEV(fc2->callNode, visited2);
+                          VertexProps * evAnc = resolveSideEffectsCheckParentEV(fc2->Node, visited2);
                           visited2.clear();
                           
                           if (evAnc == NULL)
-                            evAnc = resolveSideEffectsCheckParentLV(fc2->callNode, visited2);
+                            evAnc = resolveSideEffectsCheckParentLV(fc2->Node, visited2);
                           
                           if (evAnc == NULL)
-                            evAnc = fc2->callNode;
+                            evAnc = fc2->Node;
                           
                           sep->vpValue = evAnc;
                           
@@ -2688,40 +2527,30 @@ void BlameFunction::populateTempSideEffects(int lineNum, std::set<VertexProps *>
 }
 
 
-void BlameFunction::calcParamInfo(std::set<VertexProps *> & blamees, VertexProps * callNode)
+void BlameFunction::calcParamInfo(std::set<VertexProps *> &blamees, VertexProps *callNode)
 {
   std::set<VertexProps *>::iterator set_vp_i;
   
-  for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++)
-  {
-    VertexProps * vp = *set_vp_i;
+  for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++) {
+    VertexProps *vp = *set_vp_i;
     if (vp->isDerived)
       continue;
     
-    if (vp->calleePar < -1) //changed by Hui 04/18/16: from 0 to -1 as aligned to static analysis
-    {
+    if (vp->calleePar < -1) { //changed by Hui 04/18/16: from 0 to -1 as aligned to static analysis
       vp->calleePar = 99;
       
-      /*
-      if (vp->eStatus >= EXIT_VAR_RETURN)
-      {
-        vp->calleePar = vp->eStatus - EXIT_VAR_RETURN;
-      }*/
-
-      if(vp->eStatus == EXIT_VAR_RETURN){
+      if(vp->eStatus == EXIT_VAR_RETURN) {
         vp->calleePar = -1; //changed by Hui 04/18/16: from 0 to -1 as aligned to static analysis
       }
-      else if(vp->eStatus >= EXIT_VAR_PARAM){//all blamed 'chpl_macro_tmp*' nodes
+      else if(vp->eStatus >= EXIT_VAR_PARAM) {//all blamed 'chpl_macro_tmp*' nodes
         vp->calleePar = vp->eStatus - EXIT_VAR_PARAM;
       } 
       
-      if (vp->nStatus[EXIT_VAR_FIELD])
-      {
+      else if (vp->nStatus[EXIT_VAR_FIELD]) { //changed from 'if' to 'else if' 12/19/16
         VertexProps * upPtr = vp->fieldUpPtr;
         std::set<VertexProps *> visited;
-        
-        while (upPtr != NULL && visited.count(upPtr) == 0)
-        {
+        //If vp isn't a param, then we check its upPtrs
+        while (upPtr != NULL && visited.count(upPtr) == 0) {
           visited.insert(upPtr);
           /*
           if (upPtr->eStatus >= EXIT_VAR_RETURN)
@@ -2729,7 +2558,7 @@ void BlameFunction::calcParamInfo(std::set<VertexProps *> & blamees, VertexProps
             vp->calleePar = upPtr->eStatus - EXIT_VAR_RETURN;
             break;
           }*/
-          if(upPtr->eStatus == EXIT_VAR_RETURN){
+          if(upPtr->eStatus == EXIT_VAR_RETURN) {
             vp->calleePar = -1;//changed by Hui 04/18/16: from 0 to -1 as aligned to static analysis
             break;
           }
@@ -2743,14 +2572,12 @@ void BlameFunction::calcParamInfo(std::set<VertexProps *> & blamees, VertexProps
       }
     }
     
-    if (callNode != NULL)
-    {
+    // calculate the callerPar for the blamee(vp) in this frame
+    if (callNode != NULL) {
       std::vector<FuncCall *>::iterator vec_fc_i;
-      for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++)
-      {
-        FuncCall * fc = (*vec_fc_i);
-        if (vp->params.count(fc->callNode))
-        {
+      for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++) {
+        FuncCall *fc = (*vec_fc_i);
+        if (vp->params.count(fc->Node)) {
           vp->callerPars.insert(fc->paramNumber);
         }
       }
@@ -2769,15 +2596,13 @@ void BlameFunction::clearTempFields(std::set<VertexProps *> & oldBlamees, BlameF
   
   std::set<VertexProps *>::iterator set_vp_i;
   
-  for (set_vp_i = oldBlamees.begin(); set_vp_i != oldBlamees.end(); set_vp_i++)
-  {
+  for (set_vp_i = oldBlamees.begin(); set_vp_i != oldBlamees.end(); set_vp_i++) {
     VertexProps * vp = (*set_vp_i);
     vp->tempFields.clear();
     vp->temptempFields.clear();
     //std::cout<<"Clearing from "<<vp<<std::endl;
     
-    if (vp->isDerived)
-    {
+    if (vp->isDerived) {
       //std::cout<<"Deleting "<<vp<<std::endl;
       delete vp;
     }
@@ -2790,91 +2615,73 @@ void BlameFunction::outputFrameBlamees(std::set<VertexProps *> & blamees, std::s
 {
   std::set<VertexProps *>::iterator set_vp_i;
   
-  for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++)
-  {
+  for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++) {
     VertexProps * vp = (*set_vp_i);
-    /////////////added by Hui 01/08/16//////////////////////////////////////////////////
 #ifdef DEBUG_BLAMEES
     std::cout<<"Outputing blamee: "<<vp->name<<" estatus="<<vp->eStatus<<std::endl;
 #endif
-    ////////////////////////////////////////////////////////////////////////////////////
 
-    if (vp->isDerived) 
-    {
-      VertexProps * rootField = vp;
+    if (vp->isDerived) {
+      VertexProps *rootField = vp;
       std::set<VertexProps *> visited;
       
-      while (rootField->fieldUpPtr != NULL && visited.count(rootField->fieldUpPtr) == 0)
-      {
+      while (rootField->fieldUpPtr != NULL && visited.count(rootField->fieldUpPtr) == 0) {
         visited.insert(rootField->fieldUpPtr);
         rootField = rootField->fieldUpPtr;
       }
       
-      if  (rootField->eStatus >= EXIT_VAR_GLOBAL)
-      {
+      if  (rootField->eStatus >= EXIT_VAR_GLOBAL) {
         O<<"EDF";
         //std::cout<<"EDF ";
       }
-      else
-      {
+      else {
         O<<"LDF";
         //std::cout<<"LDF ";
       }
     }
-    else if (vp->eStatus == EXIT_PROG)
-    {
+    else if (vp->eStatus == EXIT_PROG) {
       O<<"EP";
       //std::cout<<"EP ";
     }
-    else if (vp->eStatus == EXIT_OUTP)
-    {
+    else if (vp->eStatus == EXIT_OUTP) {
       O<<"EO";
-      //std::cout<<"EO ";
-      
+      //std::cout<<"EO "; 
     }
     ////added by Hui 01/08/16, to distinguish global vars from params/returns///////////
-    else if (vp->eStatus == EXIT_VAR_GLOBAL)
-    {
+    else if (vp->eStatus == EXIT_VAR_GLOBAL) {
       O<<"EGV";
     }
     ///////////////////////////////////////////////////////////////////////////////////
-    else if (vp->eStatus > EXIT_VAR_GLOBAL) //'>=' --> '>'
-    {
+    else if (vp->eStatus > EXIT_VAR_GLOBAL) {//'>=' --> '>'
       O<<"EV";
       //std::cout<<"EV ";
     }
     ///////added by Hui 01/26/16 Exit Var's aliases shall also treated as 'EV' (aliases of gv in the func)
-    else if (vp->nStatus[EXIT_VAR] || vp->nStatus[EXIT_VAR_ALIAS])
-    {
+    else if (vp->nStatus[EXIT_VAR] || vp->nStatus[EXIT_VAR_ALIAS]) {
       O<<"EV";
     }
     //second cond is added by Hui 01/26/16 local aliases of gv should be treated just as a 'EF'
-    else if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[EXIT_VAR_FIELD_ALIAS])
-    {
+    else if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[EXIT_VAR_FIELD_ALIAS]) {
       O<<"EF";
       //std::cout<<"EF ";
     }
-    else if (vp->nStatus[LOCAL_VAR_FIELD])
-    {
+    else if (vp->nStatus[LOCAL_VAR_FIELD]) {
       O<<"LF";
       //std::cout<<"LF ";
       
     }
-    else 
-    {
+    else {
       O<<"U";
       //std::cout<<"U ";
     }
     
     O<<vp->addedFromWhere<<" ";
     
-    if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR_FIELD] || vp->isDerived)
-    {  
+    if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR_FIELD] || vp->isDerived) {  
       O<<getFullStructName(vp)<<"   ";
       //O<<vp->name;
     }
-    else
-    {
+    else {
       O<<vp->name<<"   ";
       //O<<vp->name;
     }
@@ -2882,12 +2689,10 @@ void BlameFunction::outputFrameBlamees(std::set<VertexProps *> & blamees, std::s
     // The generic type as given by LLVM (int, double, Struct*)
     O<<"   "<<vp->genType<<" ";
     
-    if (vp->sType != NULL)
-    {
+    if (vp->sType != NULL) {
       O<<vp->sType->structName<<"   ";
     }
-    else
-    {
+    else {
       O<<"NULL   ";
     }
     
@@ -2912,7 +2717,7 @@ void BlameFunction::outputFrameBlamees(std::set<VertexProps *> & blamees, std::s
   
   for (set_vp_i = localBlamees.begin(); set_vp_i != localBlamees.end(); set_vp_i++)
   {
-    VertexProps * vp = (*set_vp_i);
+    VertexProps *vp = (*set_vp_i);
     
     if (vp->isDerived) 
     {
@@ -2989,37 +2794,29 @@ void BlameFunction::outputFrameBlamees(std::set<VertexProps *> & blamees, std::s
   
 }
 
-
-void BlameFunction::addTempFieldBlameesRecursive(VertexProps * vp, VertexProps * blamee, std::set<VertexProps *> & oldBlamees,
-                                                 std::set<VertexProps *> & blamees, std::set<VertexProps *> & visited)
+//'vp' is the blamee from callee frame(oldBlamees), 'blamee' is the blamee for this frame(blamees)
+//now we try to add blamee.field to blamees by looking at vp.field
+void BlameFunction::addTempFieldBlameesRecursive(VertexProps *vp, VertexProps *blamee, 
+        std::set<VertexProps *> &oldBlamees, std::set<VertexProps *> &blamees, std::set<VertexProps *> &visited)
 {
   // The usual recursive check
   
-  //////std::cout<<"ATFB(1) "<<vp->name<<std::endl;
   if (visited.count(vp))
     return;
   
   visited.insert(vp);
   
   //std::cout<<"ATFB(2) "<<vp->name<<std::endl;
-  
-  
   std::set<VertexProps *>::iterator set_vp_i;
-  
-  for (set_vp_i = vp->fields.begin(); set_vp_i != vp->fields.end(); set_vp_i++)
-  {
+  for (set_vp_i = vp->fields.begin(); set_vp_i != vp->fields.end(); set_vp_i++) {
     //std::cout<<"ATFB(3) "<<vp->name<<" "<<(*set_vp_i)->name<<std::endl;
     
-    if (oldBlamees.count(*set_vp_i) > 0)
-    {
-      VertexProps * vp2 = *set_vp_i;
-      //std::cout<<getFullStructName(blamee)<<"("<<blamee<<") maybe connected to(2) "<<getFullStructName(vp2)<<" "<<vp2->name<<" "<<vp2<<std::endl;
-      
+    if (oldBlamees.count(*set_vp_i) > 0) {
+      VertexProps *vp2 = *set_vp_i;
       bool found = true;
-      VertexProps * newVP = findOrCreateTempBlamees(blamees, getFullStructName(vp2), found);
+      VertexProps *newVP = findOrCreateTempBlamees(blamees, getFullStructName(vp2), found);
       
-      if (found == false)
-      {
+      if (found == false) {
         //std::cout<<"Adding info for newly generated VP(2) "<<newVP->name<<std::endl;
         newVP->sType = vp2->sType;
         newVP->genType = vp2->genType;
@@ -3033,20 +2830,17 @@ void BlameFunction::addTempFieldBlameesRecursive(VertexProps * vp, VertexProps *
     }
   }
   
-  for (set_vp_i = vp->tempFields.begin(); set_vp_i != vp->tempFields.end(); set_vp_i++)
-  {
+  for (set_vp_i = vp->tempFields.begin(); set_vp_i != vp->tempFields.end(); set_vp_i++) {
     //std::cout<<"ATFB(4) "<<vp->name<<" "<<(*set_vp_i)->name<<std::endl;
     
-    if (oldBlamees.count(*set_vp_i) > 0)
-    {
-      VertexProps * vp2 = *set_vp_i;
+    if (oldBlamees.count(*set_vp_i) > 0) {
+      VertexProps *vp2 = *set_vp_i;
       //std::cout<<getFullStructName(blamee)<<"("<<blamee<<")"<<" maybe connected to(3) "<<getFullStructName(vp2)<<" "<<vp2->name<<" "<<vp2<<std::endl;
       
       bool found = true;
-      VertexProps * newVP = findOrCreateTempBlamees(blamees, getFullStructName(vp2), found);
+      VertexProps *newVP = findOrCreateTempBlamees(blamees, getFullStructName(vp2), found);
       
-      if (found == false)
-      {
+      if (found == false) {
         //std::cout<<"Adding info for newly generated VP(3) "<<newVP->name<<" "<<newVP<<std::endl;
         newVP->sType = vp2->sType;
         newVP->genType = vp2->genType;
@@ -3060,22 +2854,15 @@ void BlameFunction::addTempFieldBlameesRecursive(VertexProps * vp, VertexProps *
     }
   }
   
-  
-  
-  for (set_vp_i = vp->temptempFields.begin(); set_vp_i != vp->temptempFields.end(); set_vp_i++)
-  {
+  for (set_vp_i = vp->temptempFields.begin(); set_vp_i != vp->temptempFields.end(); set_vp_i++) {
     //std::cout<<"ATFB(5) "<<vp->name<<" "<<(*set_vp_i)->name<<std::endl;
     
-    if (oldBlamees.count(*set_vp_i) > 0)
-    {
-      VertexProps * vp2 = *set_vp_i;
-      //std::cout<<getFullStructName(blamee)<<"("<<blamee<<")"<<" maybe connected to(3) "<<getFullStructName(vp2)<<" "<<vp2->name<<" "<<vp2<<std::endl;
-      
+    if (oldBlamees.count(*set_vp_i) > 0) {
+      VertexProps *vp2 = *set_vp_i;
       bool found = true;
-      VertexProps * newVP = findOrCreateTempBlamees(blamees, getFullStructName(vp2), found);
+      VertexProps *newVP = findOrCreateTempBlamees(blamees, getFullStructName(vp2), found);
       
-      if (found == false)
-      {
+      if (found == false) {
         //std::cout<<"Adding info for newly generated VP(3) "<<newVP->name<<" "<<newVP<<std::endl;
         newVP->sType = vp2->sType;
         newVP->genType = vp2->genType;
@@ -3088,31 +2875,24 @@ void BlameFunction::addTempFieldBlameesRecursive(VertexProps * vp, VertexProps *
       addTempFieldBlameesRecursive(vp2, newVP, oldBlamees, blamees, visited);
     }
   }
-
-  
-  
+ 
 }
 
 
-void BlameFunction::addTempFieldBlamees(std::set<VertexProps *> & blamees, std::set<VertexProps *> & oldBlamees)
+void BlameFunction::addTempFieldBlamees(std::set<VertexProps *> &blamees, std::set<VertexProps *> &oldBlamees)
 {
   std::set<VertexProps *>::iterator set_vp_i, set_vp_i2;
   
-  for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++)
-  {
-    VertexProps * vp = (*set_vp_i);
+  for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++) {
+    VertexProps *vp = (*set_vp_i);
     // This blamee is a struct and has some fields we can attach to it from prior frames
-    if (vp->genType.find("Struct") != std::string::npos)
-    {
-      for (set_vp_i2 = oldBlamees.begin(); set_vp_i2 != oldBlamees.end(); set_vp_i2++)
-      {
-        VertexProps * vp2 = (*set_vp_i2);
-        //std::cout<<"Comparing "<<vp->name<<" to "<<vp2->name<<std::endl;
-        
-        //std::cout<<vp->callerPars.count(vp2->calleePar)<<"  "<<vp2->fieldUpPtr<<std::endl;
+    if (vp->genType.find("Struct") != std::string::npos) {
+      for (set_vp_i2 = oldBlamees.begin(); set_vp_i2 != oldBlamees.end(); set_vp_i2++) {
+        VertexProps *vp2 = (*set_vp_i2);
         // We're looking at the root in the previous frame that matches up
-        if (vp->callerPars.count(vp2->calleePar)  && vp2->fieldUpPtr == NULL)
-        {
+        if (vp->callerPars.count(vp2->calleePar) && vp2->fieldUpPtr == NULL) {
+          
+        //The follow two 'continue' conditions only apply for "Struct", check why? 12/19/16
           //std::cout<<vp->sType<<" "<<vp2->sType<<std::endl;
           if (vp->sType == NULL || vp2->sType == NULL)
             continue;
@@ -3120,10 +2900,7 @@ void BlameFunction::addTempFieldBlamees(std::set<VertexProps *> & blamees, std::
           //std::cout<<vp->sType->structName<<" "<<vp2->sType->structName<<std::endl;
           if (vp->sType->structName != vp2->sType->structName)
             continue;
-          
-          //std::cout<<vp->name<<" maybe connected to "<<vp2->name<<std::endl;
-          //std::cout<<getFullStructName(vp)<<" maybe connected to "<<getFullStructName(vp2)<<" "<<vp2->name<<std::endl;
-          
+
           std::set<VertexProps *> visited;
           addTempFieldBlameesRecursive(vp2, vp, oldBlamees, blamees, visited);
           
@@ -3133,64 +2910,25 @@ void BlameFunction::addTempFieldBlamees(std::set<VertexProps *> & blamees, std::
           ////std::cout<<std::endl;
         }
       }
-    }
-    else if (vp->genType.find("VOID") != std::string::npos)
-    {
-      
-      for (set_vp_i2 = oldBlamees.begin(); set_vp_i2 != oldBlamees.end(); set_vp_i2++)
-      {
+    } //end of vp->genType.find(Struct)
+
+    else if (vp->genType.find("VOID") != std::string::npos) {
+      for (set_vp_i2 = oldBlamees.begin(); set_vp_i2 != oldBlamees.end(); set_vp_i2++) {
         VertexProps * vp2 = (*set_vp_i2);
-        //std::cout<<"Comparing(3) "<<vp->name<<" to "<<vp2->name<<std::endl;
-        
-        //std::cout<<vp->callerPars.count(vp2->calleePar)<<"  "<<vp2->fieldUpPtr<<std::endl;
-        
         // We're looking at the root in the previous frame that matches up
-        if (vp->callerPars.count(vp2->calleePar)  && vp2->fieldUpPtr == NULL)
-        {
-          //std::cout<<"Comparing(3a) "<<vp->name<<" to "<<vp2->name<<std::endl;
-          //std::cout<<vp->sType<<" "<<vp2->sType<<std::endl;
-          
-          //if (vp->sType == NULL || vp2->sType == NULL)
-          //  continue;
-          
-          ////std::cout<<vp->sType->structName<<" "<<vp2->sType->structName<<std::endl;
-          //if (vp->sType->structName != vp2->sType->structName)
-          //  continue;
-          
-          //std::cout<<vp->name<<" maybe(3) connected to "<<vp2->name<<std::endl;
-          //std::cout<<getFullStructName(vp)<<" maybe(3) connected to "<<getFullStructName(vp2)<<" "<<vp2->name<<std::endl;
+        if (vp->callerPars.count(vp2->calleePar)  && vp2->fieldUpPtr == NULL) {
           
           std::set<VertexProps *> visited;
           addTempFieldBlameesRecursive(vp2, vp, oldBlamees, blamees, visited);
-          
         }
       }    
-      
     }
-    else if (vp->genType.find("Opaque") != std::string::npos)
-    {
-      for (set_vp_i2 = oldBlamees.begin(); set_vp_i2 != oldBlamees.end(); set_vp_i2++)
-      {
+
+    else if (vp->genType.find("Opaque") != std::string::npos) {
+      for (set_vp_i2 = oldBlamees.begin(); set_vp_i2 != oldBlamees.end(); set_vp_i2++) {
         VertexProps * vp2 = (*set_vp_i2);
-        //std::cout<<"Comparing(4) "<<vp->name<<" to "<<vp2->name<<std::endl;
-        
-        //std::cout<<vp->callerPars.count(vp2->calleePar)<<"  "<<vp2->fieldUpPtr<<std::endl;
-        
         // We're looking at the root in the previous frame that matches up
-        if (vp->callerPars.count(vp2->calleePar)  && vp2->fieldUpPtr == NULL)
-        {
-          //std::cout<<"Comparing(4a) "<<vp->name<<" to "<<vp2->name<<std::endl;
-          //std::cout<<vp->sType<<" "<<vp2->sType<<std::endl;
-          
-          //if (vp->sType == NULL || vp2->sType == NULL)
-          //  continue;
-          
-          ////std::cout<<vp->sType->structName<<" "<<vp2->sType->structName<<std::endl;
-          //if (vp->sType->structName != vp2->sType->structName)
-          //  continue;
-          
-          //std::cout<<vp->name<<" maybe(4) connected to "<<vp2->name<<std::endl;
-          //std::cout<<getFullStructName(vp)<<" maybe(4) connected to "<<getFullStructName(vp2)<<" "<<vp2->name<<std::endl;
+        if (vp->callerPars.count(vp2->calleePar)  && vp2->fieldUpPtr == NULL) {
           
           std::set<VertexProps *> visited;
           addTempFieldBlameesRecursive(vp2, vp, oldBlamees, blamees, visited);
@@ -3198,30 +2936,12 @@ void BlameFunction::addTempFieldBlamees(std::set<VertexProps *> & blamees, std::
         }
       }    
     }
-    else if (vp->genType.find("Int") != std::string::npos)
-    {
-      for (set_vp_i2 = oldBlamees.begin(); set_vp_i2 != oldBlamees.end(); set_vp_i2++)
-      {
-        VertexProps * vp2 = (*set_vp_i2);
-        //std::cout<<"Comparing(5) "<<vp->name<<" to "<<vp2->name<<std::endl;
-        
-        //std::cout<<vp->callerPars.count(vp2->calleePar)<<"  "<<vp2->fieldUpPtr<<std::endl;
-        
+
+    else if (vp->genType.find("Int") != std::string::npos) {
+      for (set_vp_i2 = oldBlamees.begin(); set_vp_i2 != oldBlamees.end(); set_vp_i2++) {
+        VertexProps *vp2 = (*set_vp_i2);
         // We're looking at the root in the previous frame that matches up
-        if (vp->callerPars.count(vp2->calleePar)  && vp2->fieldUpPtr == NULL)
-        {
-          //std::cout<<"Comparing(5a) "<<vp->name<<" to "<<vp2->name<<std::endl;
-          //std::cout<<vp->sType<<" "<<vp2->sType<<std::endl;
-          
-          //if (vp->sType == NULL || vp2->sType == NULL)
-          //  continue;
-          
-          ////std::cout<<vp->sType->structName<<" "<<vp2->sType->structName<<std::endl;
-          //if (vp->sType->structName != vp2->sType->structName)
-          //  continue;
-          
-          //std::cout<<vp->name<<" maybe(5) connected to "<<vp2->name<<std::endl;
-          //std::cout<<getFullStructName(vp)<<" maybe(5) connected to "<<getFullStructName(vp2)<<" "<<vp2->name<<std::endl;
+        if (vp->callerPars.count(vp2->calleePar)  && vp2->fieldUpPtr == NULL) {
           
           std::set<VertexProps *> visited;
           addTempFieldBlameesRecursive(vp2, vp, oldBlamees, blamees, visited);
@@ -3229,33 +2949,15 @@ void BlameFunction::addTempFieldBlamees(std::set<VertexProps *> & blamees, std::
         }
       }    
     }
-    else
-    {
-      for (set_vp_i2 = oldBlamees.begin(); set_vp_i2 != oldBlamees.end(); set_vp_i2++)
-      {
-        VertexProps * vp2 = (*set_vp_i2);
-        //std::cout<<"Comparing(2) "<<vp->name<<" to "<<vp2->name<<std::endl;
-        
-        //std::cout<<vp->callerPars.count(vp2->calleePar)<<"  "<<vp2->fieldUpPtr<<std::endl;
+
+    else {
+      for (set_vp_i2 = oldBlamees.begin(); set_vp_i2 != oldBlamees.end(); set_vp_i2++) {
+        VertexProps *vp2 = (*set_vp_i2);
         // We're looking at the root in the previous frame that matches up
-        if (vp->callerPars.count(vp2->calleePar)  && vp2->fieldUpPtr == NULL)
-        {
-          //std::cout<<"Comparing(2a) "<<vp->name<<" to "<<vp2->name<<std::endl;
-          //std::cout<<vp->sType<<" "<<vp2->sType<<std::endl;
+        if (vp->callerPars.count(vp2->calleePar)  && vp2->fieldUpPtr == NULL) {
           
           if (vp2->sType == NULL)
             continue;
-          //if (vp->sType == NULL || vp2->sType == NULL)
-          //continue;
-          
-          ////std::cout<<vp->sType->structName<<" "<<vp2->sType->structName<<std::endl;
-          //std::cout<<vp2->sType->structName<<std::endl;
-          
-          //if (vp->sType->structName != vp2->sType->structName)
-          //continue;
-          
-          //std::cout<<vp->name<<" maybe(2) connected to "<<vp2->name<<std::endl;
-          //std::cout<<getFullStructName(vp)<<" maybe(2) connected to "<<getFullStructName(vp2)<<" "<<vp2->name<<std::endl;
           
           std::set<VertexProps *> visited;
           addTempFieldBlameesRecursive(vp2, vp, oldBlamees, blamees, visited);
@@ -3302,11 +3004,8 @@ std::string BlameFunction::getFullContextName(vector<StackFrame> & frames, Modul
   
 }
 
-void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & modules,vector<StackFrame>::iterator vec_SF_i, std::set<VertexProps *> & blamees, short isBlamePoint, bool isBottomParsed, BlameFunction * oldFunc, std::ostream &O)
+void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & modules,vector<StackFrame>::iterator vec_SF_i, std::set<VertexProps *> & blamees, short isBlamePoint, bool isBottomParsed, BlameFunction *oldFunc, std::ostream &O)
 {
-  
-  //std::set<VertexProps *> blamees;
-  
   clearPastData();
   
   std::set<VertexProps *> localBlamees;
@@ -3318,61 +3017,36 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
   O<<(*vec_SF_i).lineNumber<<" "<<isBlamePoint<<" ";
   O<<beginLineNum<<" "<<endLineNum<<std::endl;
   
-////////////////////////////////////////////////////////////////
-//  if(!(isBlamePoint==1)&&(isBottomParsed==1))
-//  {  cout<<"There is a case that:"<<endl;
-//    cout<<"isBlamePoint = "<<isBlamePoint<<" isBottomParsed = "<<isBottomParsed << endl;
-//  }
-//////////////////////////////////////////////////////////////////  
-  //std::cout<<getName()<<" LN -  "<<(*vec_SF_i).lineNumber<<" BP - ";
-  //std::cout<<isBlamePoint<<" Frame # "<<(*vec_SF_i).frameNumber<<std::endl;
-  
   // Dominator call information for aliases
   populateTempSideEffects((*vec_SF_i).lineNumber, blamees);
   
   // We're not a blame point and we're in the middle of the stack,
   //   we're going to have to apply a transfer function to get out of this
-  if (isBlamePoint == NO_BLAME && isBottomParsed == false)
-  {  
-/////////////////////////////////////////////////////////////////////////////
+  if (isBlamePoint == NO_BLAME && isBottomParsed == false) {  
 #ifdef DEBUG_RESOLVE_LN
    cout<<"I'm IN isBlamePoint == NO_BLAME && isBottomParsed == false"<<endl;
 #endif
-//////////////////////////////////////////////////////////////////////////////////// 
     std::vector<VertexProps *>::iterator vec_vp_i;
     
-    VertexProps * callNode = NULL;
+    VertexProps *callNode = NULL;
     
     std::vector<VertexProps *> matchingCalls;
     // We're only concerned with transfer functions so we look through the call nodes
-    for (vec_vp_i = callNodes.begin(); vec_vp_i != callNodes.end(); vec_vp_i++)
-    {
+    for (vec_vp_i = callNodes.begin(); vec_vp_i != callNodes.end(); vec_vp_i++) {
       VertexProps *vp = *vec_vp_i;
-      /*
-       if (vp->lineNumbers.count((*vec_SF_i).lineNumber))
-       {
-       //std::cout<<"TRANSFER FUNC -- Line Number found in VP "<<vp->name<<std::endl;
-       matchingCalls.push_back(vp);
-       //atLeastOneFound = true;
-       }
-       else if (vp->declaredLine == (*vec_SF_i).lineNumber)
-       */
-      if (vp->declaredLine == (*vec_SF_i).lineNumber)
-      {
-        //std::cout<<"TRANSFER FUNC -- Line number(2) found in VP "<<vp->name<<std::endl;
+      if (vp->declaredLine == (*vec_SF_i).lineNumber) {
         matchingCalls.push_back(vp);
-        //atLeastOneFound = true;
       }
     }
-    if (matchingCalls.size() == 0)
-    {
+
+    if (matchingCalls.size() == 0) {
+#ifdef DEBUG_RESOLVE_LN
       std::cerr<<"TRANSFER FUNC BF.cpp:3365 - No lineNums found for sample in "<<getName();
       std::cerr<<" Line Num "<<(*vec_SF_i).lineNumber<<" Frame Number  "<<(*vec_SF_i).frameNumber<<std::endl;
+#endif
     }
-    else if (matchingCalls.size() == 1)
-    {
+    else if (matchingCalls.size() == 1) {
       // apply transfer function
-      //VertexProps * callNode = matchingCalls.front();
       callNode = matchingCalls.front();
       handleTransferFunction(callNode, blamees); 
       std::set<VertexProps *>  oldBlamees = blamees;
@@ -3396,103 +3070,83 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
       clearTempFields(oldBlamees, oldFunc);
       
       outputFrameBlamees(blamees, localBlamees, DQblamees, O);      
-      vec_SF_i++;
+      vec_SF_i++; 
       if (vec_SF_i == frames.end())
         return;
-      
-      if ((*vec_SF_i).lineNumber > 0 && (*vec_SF_i).toRemove == false)
-      {
+      // NOW check the upper/caller frame
+      if ((*vec_SF_i).lineNumber > 0 && (*vec_SF_i).toRemove == false) {
 #ifdef DEBUG_RESOLVE_LN
         cout<<"*****At Frame(3) "<<(*vec_SF_i).frameNumber<<" at line num "<<(*vec_SF_i).lineNumber;
         cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 #endif
         // Get the module from the debugging information
-        BlameModule * bm = modules[(*vec_SF_i).moduleName];
-        
-        if (bm != NULL)
-        {
-          // Use the combination of the module and the line number to determine the function
+        BlameModule *bm = modules[(*vec_SF_i).moduleName];
+        if (bm != NULL) {
           //BlameFunction *nextbf = bm->findLineRange((*vec_SF_i).lineNumber);
           BlameFunction *nextbf = bm->getFunction((*vec_SF_i).frameName);
-          //Changed by Hui, two consecutive stackFrames cannot mapped to same func
-          if (nextbf&&((this->getName()).compare(nextbf->getName())!=0)) 
-          {
-            //for test Hui 12/07/15
+          //Two consecutive stackFrames cannot mapped to same func
+          if (nextbf&&((this->getName()).compare(nextbf->getName())!=0)) {
 #ifdef DEBUG_RESOLVE_LN
             cout<<"start recursion in matchingCalls==1\n";
 #endif
             nextbf->resolveLineNum(frames, modules, vec_SF_i, blamees, 
                                nextbf->getBlamePoint(), false, this, O);
           }
-          else
-          {
-            std::cerr<<"BF null "<<std::endl;
+          else {
+#ifdef DEBUG_RESOLVE_LN
+            std::cerr<<"Error: nextbf=NULL or upper frame has saame name"<<std::endl;
+#endif
           }
         }
       }
     }
-    else  // More than one matching call (two func calls on one line number in code)
-    {
+    else { // More than one matching call (two func calls on one line number in code) 
       callNode = NULL;
-      //std::cout<<"More than one call node at that line number"<<std::endl;
       // figure out which call is appropriate, then apply transfer function
-      
-      
       vector<StackFrame>::iterator minusOne = vec_SF_i - 1;
-      //StackFrame * sfCheck = minusOne;
       BlameModule * bmCheck = modules[(*minusOne).moduleName];
       
-      if (bmCheck == NULL)
-      {
+      if (bmCheck == NULL) {
         std::cerr<<"BM null when differntiating calls"<<std::endl;
         return;
       }
       
-      
       //BlameFunction * bfCheck = bmCheck->findLineRange((*minusOne).lineNumber);
       BlameFunction *bfCheck = bmCheck->getFunction((*minusOne).frameName);
-      if (bfCheck == NULL)
-      {
+      if (bfCheck == NULL) {
         std::cerr<<"BF null when differentiating calls"<<std::endl;
         return;
       }
       
       std::vector<VertexProps *>::iterator vec_vp_i2;
-      for (vec_vp_i2 = matchingCalls.begin(); vec_vp_i2 != matchingCalls.end(); vec_vp_i2++)
-      {
-        VertexProps * vpCheck = *vec_vp_i2;
-        //std::cout<<vpCheck->name<<"  "<<bfCheck->getName()<<std::endl;
-        //if (vpCheck->name == bfCheck->getName())
-        //  callNode = vpCheck;
-        
+      for (vec_vp_i2 = matchingCalls.begin(); vec_vp_i2 != matchingCalls.end(); vec_vp_i2++) {
+        VertexProps *vpCheck = *vec_vp_i2;
         // Look for subsets since vpCheck will have the line number concatenated
-        if (vpCheck->name.find(bfCheck->getName()) != std::string::npos)
+        if (vpCheck->name.find(bfCheck->getName()) != std::string::npos) {
           callNode = vpCheck;
-        
-      }
-      
-      if (callNode == NULL)
-      {
-        for (vec_vp_i2 = matchingCalls.begin(); vec_vp_i2 != matchingCalls.end(); vec_vp_i2++)
-        {
-          VertexProps * vpCheck = *vec_vp_i2;
-          //std::cout<<vpCheck->name<<"  (tmpCheck)  "<<bfCheck->getName()<<std::endl;
-          
-          // Look for function pointers resolved at runtime //TC: why tmp? Hui
-          if (vpCheck->name.find("tmp") != std::string::npos)
-            callNode = vpCheck;
+          break;
         }
       }
       
-      if (callNode == NULL)
-      {
-        //std::cout<<"No matching call nodes from multiple matches"<<std::endl;
+      if (callNode == NULL) {
+        for (vec_vp_i2 = matchingCalls.begin(); vec_vp_i2 != matchingCalls.end(); vec_vp_i2++) {
+          VertexProps *vpCheck = *vec_vp_i2;
+          //TODO: funcPtrs shouldn't be handled in this way 12/05/16
+          // Look for function pointers resolved at runtime //TC: why tmp? Hui
+          if (vpCheck->name.find("tmp") != std::string::npos) {
+            callNode = vpCheck;
+            break;
+          }
+        }
+      }
+      
+      if (callNode == NULL) {
         std::cerr<<"No matching call nodes from multiple matches"<<std::endl;
         return;
       }
-      
-      
-      //std::cout<<"Call node that matched is "<<callNode->name<<std::endl;
+      else
+        std::cout<<"Call node that matched is "<<callNode->name<<std::endl;
+
       handleTransferFunction(callNode, blamees); 
       std::set<VertexProps *>  oldBlamees = blamees;
       blamees.clear();
@@ -3512,223 +3166,157 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
       //  U s1
       //  GF s1.b
       addTempFieldBlamees(blamees, oldBlamees);
-      
       clearTempFields(oldBlamees, oldFunc);
-      
       
       outputFrameBlamees(blamees, localBlamees, DQblamees, O);      
       vec_SF_i++;
       if (vec_SF_i == frames.end())
         return;
       
-      if ((*vec_SF_i).lineNumber > 0 && (*vec_SF_i).toRemove == false)
-      {
+      if ((*vec_SF_i).lineNumber>0 && (*vec_SF_i).toRemove==false) {
 #ifdef DEBUG_RESOLVE_LN
         cout<<"*****At Frame(4) "<<(*vec_SF_i).frameNumber<<" at line num "<<(*vec_SF_i).lineNumber;
         cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 #endif
         // Get the module from the debugging information
-        BlameModule * bm = modules[(*vec_SF_i).moduleName];
+        BlameModule *bm = modules[(*vec_SF_i).moduleName];
         
-        if (bm != NULL)
-        {
-          //cout<<"Checking(4) BM line range "<<bm->getName()<<std::endl;
-          // Use the combination of the module and the line number to determine the function
+        if (bm != NULL) {
           //BlameFunction *nextbf = bm->findLineRange((*vec_SF_i).lineNumber);
           BlameFunction *nextbf = bm->getFunction((*vec_SF_i).frameName);
           
           //Changed by Hui, two consecutive stackFrames cannot mapped to same func
-          if (nextbf&&((this->getName()).compare(nextbf->getName())!=0)) 
-          {
+          if (nextbf&&((this->getName()).compare(nextbf->getName())!=0)) {
             //cout<<"Checking(4) BF line range "<<bf->getName()<<std::endl;
-            //for test Hui 12/07/15
 #ifdef DEBUG_RESOLVE_LN
-              cout<<"start recursion when more than one matching call found\n";
+            cout<<"start recursion when more than one matching call found\n";
 #endif
             nextbf->resolveLineNum(frames, modules, vec_SF_i, blamees, 
                                nextbf->getBlamePoint(), false, this, O);
           }
         }
-        else
-        {
+        else {
 #ifdef DEBUG_RESOLVE_LN
-          cout<<"BM(4) is NULL"<<std::endl;
+          std::cerr<<"BM(4) is NULL"<<std::endl;
 #endif
         }
       }
     }
-  }
-  // We don't apply a transfer function as it's the bottom of the readable stack
-  else if (isBottomParsed == true)
-  {
-    //std::cout<<"RLN (2) "<<std::endl;
-/////////////////////////////////////////////////////////////////////////////////////
+  } //End of isBottomParsed=false and isBlamePoint=false
+
+  // We don't need to apply a transfer function as it's the bottom of the readable stack
+  else if (isBottomParsed == true) {
 #ifdef DEBUG_RESOLVE_LN
-      cout<<"I'm IN isBottomParsed==true"<<endl;
+    cout<<"I'm IN isBottomParsed==true"<<endl;
 #endif
-////////////////////////////////////////////////////////////////////////////////////    
     VertexProps * callNode = NULL;
-    std::set<VertexProps *>  oldBlamees = blamees;
-/////////////////////////////////////////////////////////////////////////////////
-//                cout<<"before determineBH, blamees.size= "<<blamees.size()<<endl;
-//    cout<<"lineNumber = "<<(*vec_SF_i).lineNumber<<endl;  
-/////////////////////////////////////////////////////////////////////////////////
+    std::set<VertexProps *> oldBlamees = blamees;
     determineBlameHolders(blamees, oldBlamees, callNode,(*vec_SF_i).lineNumber, isBlamePoint, localBlamees, DQblamees);
     calcParamInfo(blamees, callNode);
     
-/////////////////////////////////////////////////////////////////////////////////
-  //  if(blamees.size()==0){
-//      cout<<"after determineBH, blamees.size= "<<blamees.size()<<endl;
-  //    getchar();
-  //  }
-/////////////////////////////////////////////////////////////////////////////////
     outputFrameBlamees(blamees, localBlamees, DQblamees, O);
 
-    
     vec_SF_i++; //check the next stack frame in this instance
     if (vec_SF_i == frames.end())
-    {   
-        cout<<"I return because of end of frames"<<endl;
-//      getchar();
       return;
-    }
-    if ((*vec_SF_i).lineNumber > 0 && (*vec_SF_i).toRemove == false)
-    {
-/////////////////////////////////////////////////////////////////////////////
-//      cout<<"*****At Frame(1) "<<(*vec_SF_i).frameNumber<<" at line num "<<(*vec_SF_i).lineNumber;
-//      cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
-///////////////////////////////////////////////////////////////////////////////////      
-      // Get the module from the debugging information
+
+    if ((*vec_SF_i).lineNumber>0 && (*vec_SF_i).toRemove==false) {
       BlameModule * bm = modules[(*vec_SF_i).moduleName];
       
-      if (bm != NULL)
-      {
-  // Use the combination of the module and the line number to determine the function
+      if (bm != NULL) {
         //BlameFunction *nextbf = bm->findLineRange((*vec_SF_i).lineNumber);
         BlameFunction *nextbf = bm->getFunction((*vec_SF_i).frameName);
         //Changed by Hui, two consecutive stackFrames cannot mapped to same func
-        if (nextbf&&((this->getName()).compare(nextbf->getName())!=0)) 
-        {
-//////////////////////////////////////////////////////////////////////////
+        if (nextbf&&((this->getName()).compare(nextbf->getName())!=0)) {
 #ifdef DEBUG_RESOLVE_LN
             cout<<"Gonna start recursion when isBottomParsed=false"<<endl;
 #endif
-            /////////////////////////////////////////////////////////////////////////
           nextbf->resolveLineNum(frames, modules, vec_SF_i, blamees, nextbf->getBlamePoint(), false, this, O);
         }
       }
     }    
-  }
-  else if (isBlamePoint > NO_BLAME) //NO_BLAME=0
-  {
-    //std::cout<<"RLN (3)"<<std::endl;
-////////////////////////////////////////////////////////////////////////////////
+  } // End of isBottomParsed=true
+
+  else if (isBlamePoint > NO_BLAME) {//NO_BLAME=0
 #ifdef DEBUG_RESOLVE_LN
-      cout<<"I'm IN (isBlamePoint > NO_BLAME): isBlamePoint="<<isBlamePoint<<endl;
+    cout<<"I'm IN (isBlamePoint > NO_BLAME): isBlamePoint="<<isBlamePoint<<endl;
 #endif
-///////////////////////////////////////////////////////////////////////////////  
     std::vector<VertexProps *>::iterator vec_vp_i;
-    
     VertexProps *callNode = NULL;
     
     std::vector<VertexProps *> matchingCalls;
     //We're only concerned with transfer functions so we look through the call nodes
-    for (vec_vp_i = callNodes.begin(); vec_vp_i != callNodes.end(); vec_vp_i++)
-    {
+    for (vec_vp_i = callNodes.begin(); vec_vp_i != callNodes.end(); vec_vp_i++) {
       VertexProps *vp = *vec_vp_i;
-      ///////////////////////////////////
 #ifdef DEBUG_RESOLVE_LN
       std::cout<<"bf has callNode: "<<vp->name<<" in "<<getName()<<\
           " vp's declaredLine = "<<vp->declaredLine<<std::endl;
 #endif
-      if (vp->lineNumbers.count((*vec_SF_i).lineNumber))
-      {
+      if (vp->lineNumbers.count((*vec_SF_i).lineNumber)) {
 #ifdef DEBUG_RESOLVE_LN
         std::cout<<"TRANSFER FUNC -- Line Number found in VP "<<vp->name<<std::endl;
 #endif
         matchingCalls.push_back(vp);
-        //atLeastOneFound = true;
       }
-      else if (vp->declaredLine == (*vec_SF_i).lineNumber)
-      {
+      else if (vp->declaredLine == (*vec_SF_i).lineNumber) {
 #ifdef DEBUG_RESOLVE_LN
         std::cout<<"TRANSFER FUNC -- Line number(2) found in VP "<<vp->name<<std::endl;
 #endif
         matchingCalls.push_back(vp);
-        //atLeastOneFound = true;
       }
     }
-    if (matchingCalls.size() == 0)
-    {
+    if (matchingCalls.size() == 0) {
 #ifdef DEBUG_RESOLVE_LN
       std::cerr<<"TRANSFER FUNC BF.cpp:3632 - No lineNums found for sample in "<<getName();
       std::cerr<<" Line Num "<<(*vec_SF_i).lineNumber<<" Frame Number  "<<(*vec_SF_i).frameNumber<<std::endl;
 #endif
-      //std::cout<<"TF(1) - No line nums found"<<std::endl;
     }
-    else if (matchingCalls.size() == 1)
-    {
+    else if (matchingCalls.size() == 1) {
       // apply transfer function
       callNode = matchingCalls.front();
       handleTransferFunction(callNode, blamees); 
+      // In previous senarios, we need to output blamees 
+      //and prepare for the next frame, now no need since it's blame point
     }
-    else  // More than one matching call (two func calls on one line number in code)
-    {
+
+    else { // More than one matching call (two func calls on one line number in code)
       callNode = NULL;
-      //std::cout<<"More than one call node at that line number"<<std::endl;
       // figure out which call is appropriate, then apply transfer function
       vector<StackFrame>::iterator minusOne = vec_SF_i - 1;
-      //StackFrame * sfCheck = minusOne;
       BlameModule * bmCheck = modules[(*minusOne).moduleName];
-      
-      if (bmCheck == NULL)
-      {
+      if (bmCheck == NULL) {
         std::cerr<<"BM null when differntiating calls"<<std::endl;
         return;
       }
       
-      
       //BlameFunction * bfCheck = bmCheck->findLineRange((*minusOne).lineNumber);
       BlameFunction *bfCheck = bmCheck->getFunction((*minusOne).frameName);
-      if (bfCheck == NULL)
-      {
+      if (bfCheck == NULL) {
         std::cerr<<"BF null when differentiating calls"<<std::endl;
         return;
       }
       
       std::vector<VertexProps *>::iterator vec_vp_i2;
-      for (vec_vp_i2 = matchingCalls.begin(); vec_vp_i2 != matchingCalls.end(); vec_vp_i2++)
-      {
+      for (vec_vp_i2 = matchingCalls.begin(); vec_vp_i2 != matchingCalls.end(); vec_vp_i2++) {
         VertexProps * vpCheck = *vec_vp_i2;
-        //std::cout<<vpCheck->name<<"  "<<bfCheck->getName()<<std::endl;
-        //if (vpCheck->name == bfCheck->getName())
-        //  callNode = vpCheck;
-        
         // Look for subsets since vpCheck will have the line number concatenated
         if (vpCheck->name.find(bfCheck->getName()) != std::string::npos)
           callNode = vpCheck;
-        
       }
       
-      if (callNode == NULL)
-      {
-        for (vec_vp_i2 = matchingCalls.begin(); vec_vp_i2 != matchingCalls.end(); vec_vp_i2++)
-        {
+      if (callNode == NULL) {
+        for (vec_vp_i2 = matchingCalls.begin(); vec_vp_i2 != matchingCalls.end(); vec_vp_i2++) {
           VertexProps * vpCheck = *vec_vp_i2;
-          //std::cout<<vpCheck->name<<"  (tmpCheck2)  "<<bfCheck->getName()<<std::endl;
-          
           // Look for function pointers resolved at runtime
           if (vpCheck->name.find("tmp") != std::string::npos)
             callNode = vpCheck;
         }
       }      
       
-      if (callNode == NULL)
-      {
+      if (callNode == NULL) {
         std::cerr<<"No matching call nodes from multiple matches"<<std::endl;
         return;
       }
-      
       
       //std::cout<<"Call node that matched is "<<callNode->name<<std::endl;
       handleTransferFunction(callNode, blamees); 
@@ -3738,7 +3326,6 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
     blamees.clear();
     determineBlameHolders(blamees, oldBlamees, callNode,(*vec_SF_i).lineNumber, isBlamePoint, localBlamees, DQblamees);
     calcParamInfo(blamees, callNode);
-    
     
     // Go through and add temporary fields to the blamees from prior frames
     // Example
@@ -3752,49 +3339,40 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
     //  U s1
     //  GF s1.b
     addTempFieldBlamees(blamees, oldBlamees);
-    
     clearTempFields(oldBlamees, oldFunc);
-    
     outputFrameBlamees(blamees, localBlamees, DQblamees, O);    
-    //handleTransferFunction(callNode, blamedParams); 
-    //blamedParams.clear();
-    //determineBlameHolders(blamees, (*vec_SF_i).lineNumber, isBlamePoint);
+    
     vec_SF_i++;
     if (vec_SF_i == frames.end())
       return;
     
-    if ((*vec_SF_i).lineNumber > 0 && (*vec_SF_i).toRemove == false) //test the next stack frame
-    {
+    // We still need to check the upper frame if it's a implicit blamepoint, why?
+    if ((*vec_SF_i).lineNumber > 0 && (*vec_SF_i).toRemove == false) {//test the next stack frame 
 #ifdef DEBUG_RESOLVE_LN
       cout<<"*****At Frame(2) "<<(*vec_SF_i).frameNumber<<" at line num "<<(*vec_SF_i).lineNumber;
       cout<<" in module "<<(*vec_SF_i).moduleName<<endl;
 #endif
-      // Get the module from the debugging information
       BlameModule * bm = modules[(*vec_SF_i).moduleName];
       
-      if (bm != NULL)
-      {
+      if (bm != NULL) {
 #ifdef DEBUG_RESOLVE_LN
         cout<<"bm != NULL in :3748!"<<endl;
 #endif
         //BlameFunction *nextbf = bm->findLineRange((*vec_SF_i).lineNumber);
         BlameFunction *nextbf = bm->getFunction((*vec_SF_i).frameName);
         //Changed by Hui, two consecutive stackFrames cannot mapped to same func
-        if (nextbf&&((this->getName()).compare(nextbf->getName())!=0))
-        {
-          //for test by Hui 12/07/15
+        if (nextbf&&((this->getName()).compare(nextbf->getName())!=0)) {
 #ifdef DEBUG_RESOLVE_LN
           cout<<"start recursion if nextbf.isBlamePoint==IMPLICIT\n";
 #endif
-          if (isBlamePoint == IMPLICIT)
-          {
+          if (isBlamePoint == IMPLICIT) {
             nextbf->resolveLineNum(frames, modules, vec_SF_i, blamees, \
                                nextbf->getBlamePoint(), false, this, O);
           }
         }
       }
     }
-  }
+  } //End of isBlamePoint > 0
   
   // TODO:: Cases where blame point can pass up params
   // TODO:: Automatic detection of V param, V return (explicit blame points)

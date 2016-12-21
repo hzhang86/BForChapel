@@ -92,7 +92,7 @@ typedef std::unordered_map<int, int> LineReadHash;
     "calls" includes all the params and return value of this func call, like here,
     calls={a,b,c,d}
 
-  the members of a FuncCall (paramNumber, callNode) are corresponding attributes of
+  the members of a FuncCall (paramNumber, Node) are corresponding attributes of
   what the FuncCall refers to as described above :))
 */
 
@@ -105,12 +105,14 @@ struct FuncCall
 	// call node, but if we're looking
 	// at the VP for the call node, this
 	// is the param node
-	VertexProps * callNode;
+    // Which means: if it's one of calls that refers to a param, then it's the param
+    // if it refers to a callNode, then it's the callNode, so we better rename it
+	VertexProps *Node; //TODO: should it be better named just "Node" ?
 	
 	FuncCall(int pn, VertexProps * cn)
 	{
 		paramNumber = pn;
-		callNode = cn;
+		Node = cn;
 	}
 	
 };
