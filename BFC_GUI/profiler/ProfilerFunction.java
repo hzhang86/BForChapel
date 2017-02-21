@@ -120,14 +120,14 @@ public class ProfilerFunction {
 			 return -1;
 	}
 	 
-	 protected double percentageTime()
-		{
-			double nI = (double) instances.size();
-			double tI = (double) Global.totalInstances;
-			double dValue = (nI/tI)*100.0;
-			
-			return dValue;
-		}
+	protected double percentageTime()
+	{
+		double nI = (double) instances.size();
+		double tI = (double) Global.totalInstances;
+		double dValue = (nI/tI)*100.0;
+		
+		return dValue;
+	}
 		
 		
 	 
@@ -138,6 +138,7 @@ public class ProfilerFunction {
 	     DecimalFormat df = new DecimalFormat("#.##");
 	     String padding = new String();
 	     
+         //TOCHECK: don't think we need padding here
 	     for (int a = 0; a < numPeriods; a++)
 	     {
 	    	 padding += "  ";

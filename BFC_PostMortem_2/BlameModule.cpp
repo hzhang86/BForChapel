@@ -82,32 +82,33 @@ void BlameModule::addFunctionSet(BlameFunction * bf)
 
 BlameFunction *BlameModule::findLineRange(int lineNum)
 {
-    BlameFunction *topCand = NULL;
-    FunctionHash::iterator bf_i;
+  BlameFunction *topCand = NULL;
+  FunctionHash::iterator bf_i;
 	
-    for (bf_i = blameFunctions.begin();  bf_i != blameFunctions.end(); bf_i++) {
-		BlameFunction *bf = (*bf_i).second;
-        if (bf->allLineNums.count(lineNum)) {
-			if (topCand == NULL) {
-				topCand = bf;
-			}
-			else {
-				int tcDiff = topCand->getELineNum() - lineNum;
-				int currDiff = bf->getELineNum() - lineNum;
-				
-                cout<<"Another function has this line("<<lineNum<<"), tcDiff="<<tcDiff<<" currDiff="<<currDiff<<endl;
-				if (currDiff > tcDiff) //TOCHECK: to avoid matching the generated wrapcoforall/coforall func, we need '>'
-				    topCand = bf;
-			}
-		}
-    }
+  for (bf_i = blameFunctions.begin();  bf_i != blameFunctions.end(); bf_i++) {
+    BlameFunction *bf = (*bf_i).second;
+    if (bf && bf->allLineNums.size() &&
+            bf->allLineNums.count(lineNum)) {
+	  if (topCand == NULL) {
+		topCand = bf;
+	  }
+	  else {
+		int tcDiff = topCand->getELineNum() - lineNum;
+	    int currDiff = bf->getELineNum() - lineNum;
+		
+        cout<<"Another function has this line("<<lineNum<<"), tcDiff="<<tcDiff<<" currDiff="<<currDiff<<endl;
+		if (currDiff > tcDiff) //TOCHECK: to avoid matching the generated wrapcoforall/coforall func, we need '>'
+	      topCand = bf;
+	  }
+	}
+  }
 	
-	if (topCand == NULL)
-	    cout<<"Top Cand is NULL -- oh noes!!! for line#: "<<lineNum<<" file: "<<getName()<<endl;
-	else
-	    ;//cout<<"Find func: "<<topCand->getName()<<" for lineNum: "<<lineNum<<endl;
+  if (topCand == NULL)
+    cout<<"Top Cand is NULL -- oh noes!!! for line#: "<<lineNum<<" file: "<<getName()<<endl;
+  else
+    ;//cout<<"Find func: "<<topCand->getName()<<" for lineNum: "<<lineNum<<endl;
 	
-	return topCand;
+  return topCand;
 }
 
 

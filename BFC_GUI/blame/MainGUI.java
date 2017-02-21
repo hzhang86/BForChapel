@@ -71,27 +71,27 @@ public class MainGUI {
 		
 	    final boolean useSystemLookAndFeel = false;
 
-		   if (useSystemLookAndFeel) {
-	            try {
-	                UIManager.setLookAndFeel(
-	                    UIManager.getSystemLookAndFeelClassName());
-	            } catch (Exception e) {
-	                System.err.println("Couldn't use system look and feel.");
-	            }
-	        }
+        if (useSystemLookAndFeel) {
+            try {
+                UIManager.setLookAndFeel(
+                    UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                System.err.println("Couldn't use system look and feel.");
+            }
+        }
 
-	        //Create and set up the window.
-	        JFrame frame = new JFrame("Blame Points and Variables");
-	        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	        
+        //Create and set up the window.
+        JFrame frame = new JFrame("Blame Points and Variables");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        
 
-	        //Add content to the window.
-	        //frame.add(new BlameTree(bc));
-	        frame.add(tabbedPane);
-	        
-	        //Display the window.
-	        frame.pack();
-	        frame.setVisible(true);
+        //Add content to the window.
+        //frame.add(new BlameTree(bc));
+        frame.add(tabbedPane);
+        
+        //Display the window.
+        frame.pack();
+        frame.setVisible(true);
 		
 		//bt.createAndShowGUI();
 		
@@ -733,7 +733,8 @@ public class MainGUI {
 			String line = null;
 			
 			String typeOfTest = bufReader.readLine(); // typeOfTest = 0
-			Global.typeOfTest = Integer.valueOf(typeOfTest).intValue();
+            //all members in Global class are static, so they can be accessed without defining a Global object
+			Global.typeOfTest = Integer.valueOf(typeOfTest).intValue(); 
 			Global.useMetaData = false; //TOCHECK: Originally was false
 			
 			Global.testProgram = new String(bufReader.readLine()); //Global.testProgram = HelloBlame3

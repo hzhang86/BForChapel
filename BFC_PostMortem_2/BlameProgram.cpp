@@ -14,7 +14,7 @@
 #include <fstream>
 #include <string>
 #include <map>
-
+#include <dirent.h> //for iterating the directory
 using namespace std;
 
 
@@ -66,50 +66,70 @@ void BlameProgram::addImplicitBlamePoints()
 	addImplicitBlamePoint("callBottom");
 }
 
-
-
-void BlameProgram::grabUsedModules(const char * traceName)
+void BlameProgram::grabUsedModulesFromDir()
 {
-	ifstream bI(traceName);
-	std::string line;
-	
-	getline(bI, line);
+  DIR *dir;
+  struct dirent *ent;
+  string traceName;
+  string dirName;
+  string nodeName;
+  size_t pos;
 
-	int numInstances = atoi(line.c_str());
-	
-	char * buffer = (char *) malloc(100*sizeof(char));
-	
-	for (int a = 0; a < numInstances; a++)
-	{
-		getline(bI, line); //line would be: numFrames pTLN
-		
-		int numFrames = atoi(line.c_str()); //atoi will only convert the first "int" string, so pTLN will be ignored
-		
-		for (int b = 0; b < numFrames; b++)
-		{
-			int lineNum, frameNum;
-			unsigned address;
-			
-			getline(bI, line);
-			
-			sscanf(line.c_str(), "%d %d %s %x", &lineNum, &frameNum, 
-						 buffer, &address);
-			
-			if (strcmp(buffer,"NULL") != 0)
-			{
-				std::pair<set<std::string>::iterator,bool> ret;
-                std::string bufferStr(buffer);
-				ret = sampledModules.insert(bufferStr);//insert the module name to set
-				if (ret.second)                     //returns true if inserted succ
-				{
-					//std::cout<<"Inserting "<<buffer<<" into list of modules. "<<strlen(buffer)<<std::endl;
-				}
-			}
-			//std::string moduleName(buffer);
-			//i.frames.push_back(sf);
-		}
-	}
+  dirName = "COMPUTE";
+  if ((dir = opendir(dirName.c_str())) != NULL) {
+    while ((ent = readdir(dir)) != NULL) {
+      if ((ent->d_type == DT_REG) && 
+          (strstr(ent->d_name, "Input-") != NULL)) {
+        traceName = dirName + "/" + std::string(ent->d_name);
+        pos = traceName.find("Input-");
+        nodeName = traceName.substr(pos+6);
+
+        grabUsedModules(traceName, nodeName);
+      }
+    }
+    closedir(dir);
+  }
 }
+
+void BlameProgram::grabUsedModules(std::string traceName, std::string nodeName)
+{
+  ifstream ifs_comp(traceName);
+  string line;
+
+  if (ifs_comp.is_open()) {
+    getline(ifs_comp, line);
+    int numInstances = atoi(line.c_str());
+ 
+    for (int i = 0; i < numInstances; i++) {
+      getline(ifs_comp, line);
+      
+      int numFrames, processTLNum;
+      sscanf(line.c_str(), "%d %d", &numFrames, &processTLNum);
+    
+      for (int j=0; j<numFrames; j++) {
+        int buffer;
+        std::string moduleName;
+        getline(ifs_comp, line);
+        stringstream ss(line);
+    
+        ss>>buffer; //frameNumber
+        ss>>buffer; //lineNumber
+        ss>>moduleName;
+        //ss>>buffer; //address
+        //ss>>buffer; //frameName
+
+		if (moduleName != "NULL") {
+		  std::pair<set<std::string>::iterator,bool> ret;
+		  ret = sampledModules.insert(moduleName);//insert the module name to set
+		  if (ret.second)                     //returns true if inserted succ
+			std::cout<<"Inserting "<<moduleName<<" into list of modules."<<std::endl;
+		}
+      }
+    }
+  }
+}
+
+
 
 void BlameProgram::parseConfigFile_OA(const char * path)
 {

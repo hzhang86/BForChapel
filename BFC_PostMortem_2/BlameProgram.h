@@ -57,8 +57,8 @@ class BlameProgram
  // bool isVerbose();
   void parseConfigFile(const char * path);
 	
-	
-	void grabUsedModules(const char * traceName);
+	void grabUsedModulesFromDir();
+	void grabUsedModules(std::string traceName, std::string nodeName);
 
   void addFunction(BlameFunction * bf);
   

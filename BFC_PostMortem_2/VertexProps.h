@@ -67,7 +67,8 @@ namespace std
 //#define DEBUG_SELINES
 //#define DEBUG_GFSN
 //newly added by Hui---//
-#define CHECK_PARAM_WRITTEN_IN_CALL
+//#define CHECK_PARAM_WRITTEN_IN_CALL
+//#define DEBUG_HANDLETF //handleTransferFunction
 //---------------------//
 
 using namespace std;

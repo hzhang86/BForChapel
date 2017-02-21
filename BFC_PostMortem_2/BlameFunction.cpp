@@ -812,11 +812,15 @@ BlameFunction * BlameFunction::parseBlameFunction(ifstream & bI)
   
   if (BP->sampledModules.count(moduleName.c_str()))
   {
+#ifdef DEBUG_MODULE_FOUND
     std::cout<<"MODULE "<<moduleName<<" FOUND as one containing a sampled function "<<line<<std::endl;
+#endif
   }
   else
   {
+#ifdef DEBUG_MODULE_FOUND
     std::cout<<"MODULE NOT FOUND, no sampled function - "<<moduleName<<" "<<strlen(moduleName.c_str())<<std::endl;
+#endif
     return NULL;
   }
   
@@ -1821,8 +1825,9 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,
 
 void BlameFunction::handleTransferFunction(VertexProps * callNode, std::set<VertexProps *> & blamedParams)
 {
+#ifdef DEBUG_HANDLETF
   std::cout<<"Need to do transfer function for "<<callNode->name<<std::endl;
-  
+#endif
   std::set<VertexProps *>::iterator vec_int_i;
   
   std::set<int> blamers; // the values feeding into the blame
@@ -1834,15 +1839,18 @@ void BlameFunction::handleTransferFunction(VertexProps * callNode, std::set<Vert
   for (vec_int_i = blamedParams.begin(); vec_int_i != blamedParams.end(); vec_int_i++)
   {
     VertexProps * vp = (*vec_int_i);
+#ifdef DEBUG_HANDLETF
     std::cout<<"blamedParams: "<<vp->name<<",eStatus="<<vp->eStatus<<" "<<std::endl;
-    
+#endif
     if (vp->eStatus >= EXIT_VAR_GLOBAL)//search blamed params in pre frames, 
     {                                 //if they are global variables/param/retval
       int paramNum = vp->eStatus - EXIT_VAR_PARAM;
       if (paramNum >= 0) //if it's real param
       {
         blamed.insert(paramNum);
+#ifdef DEBUG_HANDLETF
         std::cout<<"inserted with paramNum="<<paramNum<<"; ";
+#endif
       }  
     }
   }
@@ -1855,7 +1863,9 @@ void BlameFunction::handleTransferFunction(VertexProps * callNode, std::set<Vert
     FuncCall * fc = (*vec_fc_i);
     if (blamed.count(fc->paramNumber) > 0)
     {
+#ifdef DEBUG_HANDLETF
       std::cout<<"Param Num "<<fc->paramNumber<<" is blamed "<<fc->callNode->name<<std::endl;
+#endif
       blamedVP.insert(fc->callNode);
       fc->callNode->paramIsBlamedForTheCall = true; //added by Hui 04/18/16: we need to know which acutal param is blamed for this func call
       
@@ -1869,7 +1879,9 @@ void BlameFunction::handleTransferFunction(VertexProps * callNode, std::set<Vert
     }
     else
     {
+#ifdef DEBUG_HANDLETF
       std::cout<<"Param Num "<<fc->paramNumber<<" is blamer"<<std::endl;
+#endif
       blamerVP.insert(fc->callNode);
     }
   }
@@ -1890,7 +1902,9 @@ void BlameFunction::handleTransferFunction(VertexProps * callNode, std::set<Vert
       tempParentsHolder.insert(bE);
       
       //bD->tempIsWritten = true;  // PRE-DISSERTATION
+#ifdef DEBUG_HANDLETF
       std::cout<<bE->name<<" is tempChild to "<<bD->name<<std::endl;
+#endif
     }
   }
 }
@@ -2054,7 +2068,9 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
       
       if (upPtr->fieldAlias->sField != NULL)
       {
+#ifdef DEBUG_GFSN
         std::cout<<"  5a - "<<upPtr->fieldAlias->sField->fieldName<<std::endl;
+#endif
         aName.insert(0, upPtr->fieldAlias->sField->fieldName);
       }
       else
@@ -2080,8 +2096,9 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
     
     if (upPtr->sField != NULL)
     {
+#ifdef DEBUG_GFSN
       std::cout<<"  2a - "<<upPtr->sField->fieldName<<std::endl;
-      
+#endif
       if (aName.size() > 0 && aName != upPtr->sField->fieldName)
       {
         fName.insert(0,")");
@@ -2102,9 +2119,9 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
         pos++;
       
       std::string modName = upPtr->name.substr(pos);
-      
+#ifdef DEBUG_GFSN
       std::cout<<"  2b - "<<modName<<std::endl;
-      
+#endif
       if (aName.size() > 0 && aName != modName)
       {
         fName.insert(0,")");

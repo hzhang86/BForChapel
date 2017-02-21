@@ -1,3 +1,11 @@
+/* Created By Hui 11/1616
+ *
+ * cmd: addParser lulesh        
+ *      argv[0]  argv[1] 
+ */
+
+
+#include <string>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -5,13 +13,9 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
-#include <iostream>
-#include <dirent.h> // for interating the directory
-/*
-#include "BlameProgram.h"
-#include "BlameFunction.h"
-#include "BlameModule.h"
-*/
+//#include <dirent.h> // for interating the directory
+#include <algorithm> // for std::count
+
 #include "Instances.h"
 
 #include "BPatch.h"
@@ -27,132 +31,252 @@
 #define ADD_LINE   1
 #define END_LINE   2
 */
-#define SEP_TAGS
+//#define MULTI_LOCALE
 using namespace std;
 using namespace Dyninst;
 
-//addParser lulesh    ./SSFs    preStackTrace       
-//argv[0]  argv[1]    argv[2]   argv[3]
-
-void populateFrames(Instance &inst, fstream &filestr, BPatch_process* proc)
+string getFileName(string &rawName) 
+{
+  size_t found = rawName.find_last_of("/");
+  if (found == string::npos)
+    return rawName;
+  else 
+    return rawName.substr(found+1);
+}
+  
+int populateFrames(Instance &inst, ifstream &ifs, BPatch_process* proc, string inputFile)
 {    
   char linebuffer[2000];
-  filestr.getline(linebuffer,2000);
+  ifs.getline(linebuffer,2000);
   string str(linebuffer);
   stringstream ss(str); // Insert the string into a stream
   //string buf;
 
   if (str.find("START")!=string::npos || str.find("END")!=string::npos) {
     cerr<<"Shouldn't be here ! Not ADD_LINE! it's "<<str<<endl;
-    return;
+    return 1; //for error debug 
   }
   else {
     int frameNum;
     unsigned long address;  //16 bits in hex
-    int stackSize = str.length()/22;//15 for 32-bit, 18 for 48-bit, 22 for 64-bit system
-    if (stackSize <= 0) {
+    string frameName;
+    unsigned long task_id;
+
+    if (str.length() <= 0) {
       cerr<<"Null Stack Size"<<endl;
-      return;
+      return 2; //for error debug
     }
+    //We can't use the previous way since the size of each frame is uncertain now
+    //we count the occurences of '\t' since each frame outputs one '\t'
+    size_t stackSize = std::count(str.begin(), str.end(), '\t');
     string emptyStr("NoFuncFound");
   
     for (int a = 0; a < stackSize; a++) {
       StackFrame sf;
-      ss>>frameNum;
+      ss>>frameNum; // 1st: frameNum
+      
       if (frameNum != a) {
-        printf("Missing a stack frame %d %d\n", frameNum, a);
-        break;;  // break out the for loop, directly go to the next iteration of while loop
+        cerr<<"Missing a stack frame "<<frameNum<<" "<<a<<" in "<<inputFile<<" of inst#"<<inst.instNum<<endl;
+        return 3;//break out the for loop
       }
-      ss>>std::hex>>address;
-      ss>>std::dec;
-    
-      short found = 0; // don't know what's it for
-      if ( address < 0x1000 )
-        found = 1;
-    
-      if (frameNum != 0)
+
+      ss>>std::hex>>address>>std::dec; // 2nd: address
+      //if (frameNum != 0)
+      if (a != 0)
         address = address - 1; //sampled IP should points to the last instruction 
       
-      BPatch_Vector<BPatch_statement> sLines;
-      proc->getSourceLines(address,sLines); // it can get the information associated with the 
-                                    //address, the vector sLines contain pairs of filenames
-                        //(source file names) and line numbers that are associated with address
-    
-      if (sLines.size() > 0) {
-        //for test
-        /*for (int i=0; i<sLines.size(); i++){
-          cout<<"Line Number "<<sLines[i].lineNumber()<<" in file ";
-          cout<<sLines[i].fileName()<<" stack pos "<<a<<std::endl;
-        }*/
+      ss>>frameName; // 3rd: frameName
+      //if it's from getEarlyStackTrace, we don't wanna this instance
+      if (frameName == "getEarlyStackTrace") {
+        cerr<<"We met getEarlyStackTrace "<<frameNum<<" "<<a<<" in "<<inputFile<<" of inst#"<<inst.instNum<<endl;
+        return 4;
+      }
 
+      //get frameName in case it's missing in libunwind, this block can be enabled with Dyninst 9.2
+      /*if (frameName == "***") {
+        BPatch_function *func = proc->findFunctionByAddr((void*)address);
+        if (func) {
+          frameName = func->getName();
+          if (frameName.empty()) //In case we still cant get the name
+            frameName = "***";
+        }
+        //After this, some frameName can be fork*wrapper, but we don't have
+        //fork_t info of that since the stupid libunwind didn't recognize it
+        //during runtime: TODO: use the nearby fork*wrapper info
+      }*/
+
+      BPatch_Vector<BPatch_statement> sLines;
+      proc->getSourceLines(address,sLines); // it can get the information associate 
+                                    // with the address, the vector sLines contain 
+                                    //pairs of filenames(source file names) and 
+                                    //line numbers that are associated with address
+
+      if (sLines.size() > 0) {
         sf.lineNumber = sLines[0].lineNumber();
-        string fileN(sLines[0].fileName());
-        sf.moduleName = fileN;
+        string fileN(sLines[0].fileName()); //contains the path
+        string cleanFileN = getFileName(fileN);
+        sf.moduleName = cleanFileN;
         sf.frameNumber = a;
         sf.address = address;
+        sf.frameName = frameName;
+        if (frameName == "thread_begin") {//taskID only update in thread_begin frame
+          ss>>task_id;
+          sf.task_id = task_id;
+        }
       }
       else {
         sf.lineNumber = -1;
         sf.moduleName = emptyStr;
         sf.frameNumber = a;
         sf.address = address;
+        sf.frameName = frameName;
       }
       inst.frames.push_back(sf);
+
+      //Hui 02/15/17 dump frames before chpl_gen_main in call_path
+      if (frameName=="chpl_gen_main")
+        return 0; //We are not going further
     }// end of for loop
   }
+
+  return 0;
 }
 
-void populateSamples(vector<Instance> &instances, char *exeName, const char *traceName)
+void populateSamples(vector<Instance> &instances, char *exeName, std::ifstream &ifs, string inputFile, int whichFile)
 {
   BPatch bpatch;
   BPatch_process* proc = NULL;
-  //BPatch_image* appImage = NULL;
-  //BPatch_Vector<BPatch_module*>* appModules = NULL;
   
-  if(!(proc = bpatch.processCreate(exeName,NULL  )))
-  {
+  if (!(proc = bpatch.processCreate(exeName, NULL))) {
     cerr << "error in bpatch.createProcess" << endl;
     exit(-1);
   }
   
-  char fileName[30];
   char linebuffer[2000];
-  
-  fstream filestr(traceName, fstream::in);
-
-  while(!filestr.eof()) {
-    filestr.getline(linebuffer,2000);
+  int inst_count = 0;
+  while(!ifs.eof()) {
+    ifs.getline(linebuffer,2000);
     string str(linebuffer);
     stringstream ss(str); // Insert the string into a stream
     string buf;
    
     if (str.find("<----START") != string::npos) {
       ss>>buf; //buf = "<----START"
-      ss>>buf; //buf = name of the raw stackTrace file
-      /////Added by Hui 12/23/15: to get the processTLNum///////
-      int processTLNum;
-      ss>>processTLNum;
+      ss>>buf; //buf = file name [fork, preSpawn, compute]
+      int tempVal = 0;  
+      if (whichFile) //if it's preSpawn file
+        ss>>tempVal; //taskID
+      
       Instance inst;
-      inst.processTLNum = processTLNum;
+      inst.taskID = tempVal;
+      inst.instNum = inst_count;
+      inst_count++;
 
-      populateFrames(inst, filestr, proc); 
+      int ret = populateFrames(inst, ifs, proc, inputFile); 
 
-      filestr.getline(linebuffer,2000);//---->END
+      ifs.getline(linebuffer,2000);//---->END
       string str2(linebuffer);
-      if (str2.find("---->END") != string::npos) {
+      if (str2.find("---->END") != string::npos && ret == 0) {
         instances.push_back(inst);
       }
     }
-    else 
-      cout<<"Done parsing a stack trace file"<<endl;
-      //ss.clear();
   }// while loop
-  ////////////////////////////////////////////////////////////  
-//  printf("The number of instances is %d \n", num_of_instances);
-  filestr.close();
+  
+  cout<<"Done parsing a stack trace file: "<<inputFile<<endl;
+}
+
+void outputParsedSamples(vector<Instance> &instances, string inputFile, string directory)
+{
+  string outName = directory + "/Input-" + inputFile;
+  std::ofstream ofs;
+  ofs.open(outName);
+  if (ofs.is_open()) {
+    int size = instances.size();
+    int i=0; //inst#
+    ofs<<size<<endl;   // output the number of instances in Input-
+    
+    vector<Instance>::iterator vec_I_i;
+    for (vec_I_i = instances.begin(); vec_I_i != instances.end(); vec_I_i++) {
+      int frameSize = (*vec_I_i).frames.size();
+      ofs<<frameSize<<" "<<(*vec_I_i).taskID<<" #"<<i<<endl;
+
+      vector<StackFrame>::iterator vec_sf_i;
+      for (vec_sf_i = (*vec_I_i).frames.begin(); 
+        vec_sf_i != (*vec_I_i).frames.end(); vec_sf_i++) {
+
+        if ((*vec_sf_i).lineNumber > 0) {
+          ofs<<(*vec_sf_i).frameNumber<<" "<<(*vec_sf_i).lineNumber<<" "
+            <<(*vec_sf_i).moduleName<<" "<<std::hex<<(*vec_sf_i).address
+            <<std::dec<<" "<<(*vec_sf_i).frameName;
+          
+          if ((*vec_sf_i).frameName == "thread_begin")      
+            ofs<<" "<<(*vec_sf_i).task_id;   
+
+          ofs<<endl;
+        }
+        else { //when lineNumber <= 0, no module found
+          ofs<<(*vec_sf_i).frameNumber<<" 0 NULL "<<std::hex
+            <<(*vec_sf_i).address<<std::dec<<" "<<(*vec_sf_i).frameName<<endl;
+        }
+      }
+
+      i++; //keep inst#
+    }
+    // CLOSE the file
+    ofs.close();
+  }
+
+  else
+    cerr<<"Error: could not open file: "<<outName<<endl;
 }
 
 
+int main(int argc, char** argv)
+{ 
+  if (argc < 2) //changed by Hui 12/23/15: it should be 4 for multi-thread code
+  {
+    std::cerr<<"Wrong Number of Arguments! "<<argc<<std::endl;
+    std::cerr<<"Usage: <this.exe>  <target app>"<<std::endl; 
+    exit(0);
+  }
+
+  char buffer[128];
+  gethostname(buffer,127);
+  std::string whichNode(buffer);  // whichNode = pygmy
+  std::string inputFile;
+  std::ifstream ifs_compute, ifs_preSpawn;
+  std::ifstream ifs_fork, ifs_fork_nb, ifs_fork_fast;
+  
+  vector<Instance> instances, preSpawnInstances;
+  
+  // parse compute file then output Input-compute file
+  ifs_compute.open(whichNode);
+  if (ifs_compute.is_open()) {
+    populateSamples(instances, argv[1], ifs_compute, whichNode, 0); 
+    if (instances.size())
+      outputParsedSamples(instances, whichNode, "COMPUTE");
+    else
+      cerr<<"Error: file exists but instances empty"<<endl;
+    ifs_compute.close(); //CLOSE the file
+  }
+    
+  // parse preSpawn file then output Input-preSpawn- file
+  inputFile = "preSpawn-" + whichNode;
+  ifs_preSpawn.open(inputFile);
+  if (ifs_preSpawn.is_open()) {
+    populateSamples(preSpawnInstances, argv[1], ifs_preSpawn, inputFile, 1);
+    if (preSpawnInstances.size())
+      outputParsedSamples(preSpawnInstances, inputFile, "PRESPAWN");
+    else
+      cerr<<"Error: file exists but instances empty"<<endl;
+    ifs_preSpawn.close(); //CLOSE the file
+  }
+
+  return 0;
+}
+
+ 
+/*
 void popSamplesFromDir(vector<Instance> &instances, char *exeName, const char *dirName, const char *nodeName)
 {
     DIR *dir;
@@ -172,162 +296,8 @@ void popSamplesFromDir(vector<Instance> &instances, char *exeName, const char *d
     } 
 
     else 
-        /* could not open directory */
+        // could not open directory 
         std::cerr<<"Couldn't open the directory !"<<std::endl;
 }
-
-
-int main(int argc, char** argv)
-{ 
-  if (argc < 3) //changed by Hui 12/23/15: it should be 4 for multi-thread code
-  {
-    std::cerr<<"Wrong Number of Arguments! "<<argc<<std::endl;
-    std::cerr<<"Usage: <this.exe>  <target app>  <Directory containing node files to be transformed>"<<std::endl; 
-    exit(0);
-  }
- 
-  char buffer[128];
-  gethostname(buffer,127);
-  std::string whichNode(buffer);  // whichNode = pygmy
-  std::string guiOut("Input_");    
-  guiOut += whichNode;       // guiOut = Input_pygmy  
-  std::ofstream gOut(guiOut.c_str());
-  
-#ifdef SEP_TAGS
-  //we need to match all processTLNums to all the samples
-  char linebuffer[2000];
-  std::ifstream rawStackTrace(buffer);
-  std::ifstream allTags("allTags");
-  string dir(argv[2]);
-  dir += "/";
-  dir += whichNode;
-  std::ofstream cookedStackTrace(dir.c_str(), std::ofstream::app);
-  string tag;
-  int num1=0, num2=0;
-  while(!rawStackTrace.eof()) {
-    rawStackTrace.getline(linebuffer, 2000);
-    string strhui(linebuffer);
-    if (strhui.find("<----START") != string::npos) { 
-      allTags >> tag;
-      cookedStackTrace<<strhui<<" "<<whichNode<<" "<<tag<<endl;
-      num2++;
-    }
-    else
-      cookedStackTrace<<strhui<<endl;
-  }
-  cout<<"\n----#raw samples = "<<num2<<endl;
-
-  allTags.close();
-  rawStackTrace.close();
-  cookedStackTrace.close();
-#endif
-
-  vector<Instance>  instances;  
-  popSamplesFromDir(instances, argv[1], argv[2], buffer);
-
-  ////Added by Hui: 12/23/15 addParse the preStackTrace file////////
-  vector<Instance> pre_instances;
-  std::string pstOut("Input_");
-  std::ofstream pOut;
-  if(argc >3){
-    std::string pstFile(argv[3]);
-    pstOut += pstFile;
-    pOut.open(pstOut.c_str());
-    populateSamples(pre_instances, argv[1], argv[3]);
-  }
-  else 
-    pOut.open("NoneSense");
-  /////////////////////////////////////////////////////////////////
-
-  int size = instances.size();
-  gOut<<size<<endl;   // output the number of instances in Input_pygmy
-    
-  vector<Instance>::iterator vec_I_i;
-  for (vec_I_i = instances.begin(); vec_I_i != instances.end(); vec_I_i++) {
-      int frameSize = (*vec_I_i).frames.size();
-      gOut<<frameSize<<" "<<(*vec_I_i).processTLNum<<endl;//added processTLNum by Hui 12/25/15
-      vector<StackFrame>::iterator vec_sf_i;
-      for (vec_sf_i = (*vec_I_i).frames.begin(); \
-              vec_sf_i != (*vec_I_i).frames.end(); vec_sf_i++) {
-
-        // In libunwind, it is always the address of the unwind sampler, but now we use 3rd-party sw, it's the source code
-        /*if ((*vec_sf_i).frameNumber == 0)//unnecessary, use lineNumber enough
-        {
-          gOut<<"0 "<<(*vec_sf_i).frameNumber<<" NULL "<<std::hex \
-              <<(*vec_sf_i).address<<std::dec<<endl;
-        }*/
-        if ((*vec_sf_i).lineNumber > 0)
-        {
-          gOut<<(*vec_sf_i).lineNumber<<" "<<(*vec_sf_i).frameNumber<<" ";
-          gOut<<(*vec_sf_i).moduleName<<" "<<std::hex \
-              <<(*vec_sf_i).address<<std::dec<<endl;;
-        }
-        else
-        {
-          gOut<<"0 "<<(*vec_sf_i).frameNumber<<" NULL "<<std::hex<<(*vec_sf_i).address<<std::dec<<endl;
-        }
-      }
-  }
-
-  /////Added by Hui 12/23/15: output Input_preStackTrace////////////////////////
-  if(argc >3) {
-    int psize = pre_instances.size();
-    pOut<<psize<<endl;   // output the number of instances in Input_pygmy
-    
-    vector<Instance>::iterator vec_I_ip;
-    for (vec_I_ip = pre_instances.begin(); vec_I_ip != pre_instances.end(); vec_I_ip++) {
-      int frameSize = (*vec_I_ip).frames.size();
-      pOut<<frameSize<<" "<<(*vec_I_ip).processTLNum<<endl;//added processTLNum by Hui 12/25/15
-      vector<StackFrame>::iterator vec_sf_ip;
-      for (vec_sf_ip = (*vec_I_ip).frames.begin(); \
-            vec_sf_ip != (*vec_I_ip).frames.end(); vec_sf_ip++)
-      {
-        //The first frame is always the address within the handler, we don't want to count it in
-        if ((*vec_sf_ip).frameNumber == 0)
-        {
-          pOut<<"0 "<<(*vec_sf_ip).frameNumber<<" NULL "<<std::hex \
-              <<(*vec_sf_ip).address<<std::dec<<endl;
-        }
-        else if ((*vec_sf_ip).lineNumber > 0)
-        {
-          pOut<<(*vec_sf_ip).lineNumber<<" "<<(*vec_sf_ip).frameNumber<<" ";
-          pOut<<(*vec_sf_ip).moduleName<<" "<<std::hex \
-            <<(*vec_sf_ip).address<<std::dec<<endl;;
-        }
-        else
-        {
-          pOut<<"0 "<<(*vec_sf_ip).frameNumber<<" NULL "<<std::hex<<(*vec_sf_ip).address<<std::dec<<endl;
-        }
-      }
-    }
-  }
-  ///////////////////////////////////////////////////////////////////////////////////////////
-}
-    //////////////////See if ss has the right info ///////////////////////////
-    /*    
-    string ss_cp = ss.str();
-    std::cout<<"The content of ss is: "<<ss_cp<<std::endl;
-    string buf_test;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    ss>>buf_test;
-    std::cout<<"buf_test= "<<buf_test<<std::endl;
-    
-    ss.str("");
-    ss.str(str); // Insert the string into a stream
-    cout<<"ss is back to "<<ss.str()<<endl;
-    */
-    //////////////////////////////////////////////////////////////////////////////
+*/
  
