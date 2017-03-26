@@ -306,8 +306,8 @@ int VertexProps::findBlamedExits(std::set<VertexProps *> & visited, int lineNum)
 
 void VertexProps::adjustVertex()
 {
-	if (eStatus > NO_EXIT) //TOCHECK: why?
-	{
+	if (eStatus > NO_EXIT) //because exit vars is the top-level
+	{                     //they came from outside of this frame
 		fieldUpPtr = NULL;
 	}
 }

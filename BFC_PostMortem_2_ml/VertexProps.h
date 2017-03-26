@@ -215,10 +215,6 @@ class VertexProps {
 	
 	int calleePar; //the paramNum of "this" when dealt as callee func
 	set<int> callerPars;//the paramNums of "this" when seen as from caller func
-	 
-	
-	
-	
 	/***************** TEMP VARIABLES  *******************/
 	
 	// taken out in clearPastData()

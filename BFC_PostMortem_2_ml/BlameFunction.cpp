@@ -1700,7 +1700,7 @@ void BlameFunction::handleTransferFunction(VertexProps *callNode, std::set<Verte
   
   std::cout<<std::endl;
   
-  //Now calls are actual arg for this callNode, so they are vars in the upper
+  //Now calls are actual params for this callNode, so they are vars in the upper
   //frame to the one that maps to this callNode
   std::vector<FuncCall *>::iterator vec_fc_i;
   for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++) {
@@ -2526,7 +2526,11 @@ void BlameFunction::populateTempSideEffects(int lineNum, std::set<VertexProps *>
   }
 }
 
-
+// For any blamees(blamed for this callNode) in the current frame,
+// if it's an exit var (has valid eStatus) then set calleePar for
+// the next frame; else set its callerPars for this callNode(since
+// a same vp can be blamed for multi-calls in the same frame, it
+// thus can have multi-callerPars("params"as real params in calls)
 void BlameFunction::calcParamInfo(std::set<VertexProps *> &blamees, VertexProps *callNode)
 {
   std::set<VertexProps *>::iterator set_vp_i;

@@ -1,9 +1,9 @@
 /*
- *  altMain.C
+ *  altMain.cpp
  *  
  *
- *  Created by Nick Rutar on 2/10/10.
- *  Copyright 2010 __MyCompanyName__. All rights reserved.
+ *  Created by Hui Zhang on 11/10/16.
+ *  Copyright 2016 __MyCompanyName__. All rights reserved.
  *
  */
 #include <string>

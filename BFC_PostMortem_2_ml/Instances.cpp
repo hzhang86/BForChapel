@@ -135,7 +135,8 @@ void Instance::secondTrim(ModuleHash &modules, string nodeName)
             (*vec_SF_i).toRemove = true;
           }
           else {
-            BlameFunction *bfCheck = bmCheck->findLineRange((*minusOne).lineNumber);
+            //BlameFunction *bfCheck = bmCheck->findLineRange((*minusOne).lineNumber);
+            BlameFunction *bf = bm->getFunction((*minusOne).frameName);
             if (bfCheck == NULL) {
               stack_info<<"BF of previous frame is null ! delete frame "<<(*vec_SF_i).frameNumber<<endl;
               (*vec_SF_i).toRemove = true;
@@ -307,17 +308,17 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, string nodeName)
 
 void Instance::handleInstance(ModuleHash &modules, std::ostream &O, int InstanceNum, bool verbose)
 {   
-    cout<<"\nIn handleInstance for inst#"<<InstanceNum<<endl;
+  cout<<"\nIn handleInstance for inst#"<<InstanceNum<<endl;
   
   // This is true in the case where we're at the last stack frame that can be parsed
   // Here, "bottom" comes from the growing style of stack since it goes down 
-  //if main->foo->bar, then bar is the bottom stackframe
+  // if main->foo->bar, then bar is the bottom stackframe
   bool isBottomParsed = true;
   vector<StackFrame>::iterator vec_SF_i;
   for (vec_SF_i = frames.begin(); vec_SF_i != frames.end(); vec_SF_i++) {
     if ((*vec_SF_i).lineNumber > 0 && (*vec_SF_i).toRemove == false) {
-    // Get the module from the debugging information
-    BlameModule *bm = modules[(*vec_SF_i).moduleName];   
+      // Get the module from the debugging information
+      BlameModule *bm = modules[(*vec_SF_i).moduleName];   
       if (bm) {
         //BlameFunction *bf = bm->findLineRange((*vec_SF_i).lineNumber);
         BlameFunction *bf = bm->getFunction((*vec_SF_i).frameName); 
