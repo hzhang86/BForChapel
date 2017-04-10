@@ -143,33 +143,29 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
     O<<std::endl;
     O<<"END ALL_LINES"<<std::endl;
 
-	//ImpVertexHash::iterator ivh_i;
-	std::set<NodeProps *>::iterator ivh_i;
-	std::set<NodeProps *>::iterator s_i_i;
-	
+	//This is to iterate all nodes in impVertices
+    std::set<NodeProps *>::iterator ivh_i;
 	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++)
 	{
-		//O<<"-------"<<std::endl;
-		NodeProps * impV = (*ivh_i);
-		NodeProps * ivp = impV;
+		NodeProps *ivp = (*ivh_i);
 		
-		if (!impV->isExported)
+		if (!ivp->isExported)
 			continue;
 		
 		O<<"BEGIN VAR  "<<std::endl;
 		
 		O<<"BEGIN V_NAME "<<std::endl;
-		O<<(*ivh_i)->name<<std::endl;
+		O<<ivp->name<<std::endl;
 		O<<"END V_NAME "<<std::endl;
 		
 		O<<"BEGIN V_TYPE "<<std::endl;
-		O<<(*ivh_i)->eStatus<<std::endl;
+		O<<ivp->eStatus<<std::endl;
 		
 		O<<"END V_TYPE "<<std::endl;
 		
 		O<<"BEGIN N_TYPE "<<std::endl;
 		for (int a = 0; a < NODE_PROPS_SIZE; a++)
-			O<<impV->nStatus[a]<<" ";
+			O<<ivp->nStatus[a]<<" ";
 			
 		O<<std::endl;
 		
@@ -177,20 +173,19 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 				
 	
 		O<<"BEGIN DECLARED_LINE"<<endl;
-		O<<(*ivh_i)->line_num<<endl;
+		O<<ivp->line_num<<endl;
 		O<<"END DECLARED_LINE"<<endl;
 		
 		O<<"BEGIN IS_WRITTEN"<<endl;
-		O<<(*ivh_i)->isWritten<<endl;
+		O<<ivp->isWritten<<endl;
 		O<<"END IS_WRITTEN"<<endl;
 		
-		
-		std::set<NodeProps *>::iterator ivp_i;
+		//used to iterate all set members of ivp
 		std::set<NodeProps *>::iterator set_ivp_i;
 		
 		
 /*		O<<"BEGIN PARENTS"<<endl;
-		for (set_ivp_i = (*ivh_i)->parents.begin(); set_ivp_i != (*ivh_i)->parents.end(); set_ivp_i++)
+		for (set_ivp_i = ivp->parents.begin(); set_ivp_i != ivp->parents.end(); set_ivp_i++)
 		{
 			NodeProps * ivpParent = (*set_ivp_i);
 			O<<ivpParent->name<<endl;
@@ -199,9 +194,9 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 	*/
 		
 		O<<"BEGIN CHILDREN "<<endl;
-		for (set_ivp_i = (*ivh_i)->children.begin(); set_ivp_i != (*ivh_i)->children.end(); set_ivp_i++)
+		for (set_ivp_i = ivp->children.begin(); set_ivp_i != ivp->children.end(); set_ivp_i++)
 		{
-			NodeProps * ivpChild = (*set_ivp_i);
+			NodeProps *ivpChild = (*set_ivp_i);
 			O<<ivpChild->name<<endl;
 		}
 		O<<"END CHILDREN"<<std::endl;
@@ -209,98 +204,98 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 		
 
 		O<<"BEGIN ALIASES "<<std::endl;
-		for (ivp_i = (*ivh_i)->aliases.begin(); ivp_i != (*ivh_i)->aliases.end(); ivp_i++)
+		for (set_ivp_i = ivp->aliases.begin(); set_ivp_i != ivp->aliases.end(); set_ivp_i++)
 		{
-			NodeProps * ivpAlias = (*ivp_i);
+			NodeProps * ivpAlias = (*set_ivp_i);
 			O<<ivpAlias->name<<endl;
 		}
 		O<<"END ALIASES "<<std::endl;
 	
 		
 		O<<"BEGIN DATAPTRS "<<std::endl;
-		for (ivp_i = (*ivh_i)->dataPtrs.begin(); ivp_i != (*ivh_i)->dataPtrs.end(); ivp_i++)
+		for (set_ivp_i = ivp->dataPtrs.begin(); set_ivp_i != ivp->dataPtrs.end(); set_ivp_i++)
 		{
-			NodeProps * ivpAlias = (*ivp_i);
+			NodeProps * ivpAlias = (*set_ivp_i);
 			O<<ivpAlias->name<<endl;
 		}
 		O<<"END DATAPTRS "<<std::endl;
 		
 
 		O<<"BEGIN DFALIAS "<<std::endl;
-		for (ivp_i = ivp->dfAliases.begin(); ivp_i != ivp->dfAliases.end(); ivp_i++)
+		for (set_ivp_i = ivp->dfAliases.begin(); set_ivp_i != ivp->dfAliases.end(); set_ivp_i++)
 		{
-			NodeProps * child = *ivp_i;
+			NodeProps * child = *set_ivp_i;
 			O<<child->name<<endl;
 		}
 		O<<"END DFALIAS "<<std::endl;
 		
 		O<<"BEGIN DFCHILDREN "<<std::endl;
-		for (s_i_i = ivp->dfChildren.begin(); s_i_i != ivp->dfChildren.end(); s_i_i++)
+		for (set_ivp_i = ivp->dfChildren.begin(); set_ivp_i != ivp->dfChildren.end(); set_ivp_i++)
 		{
-			NodeProps * child = *s_i_i;
+			NodeProps * child = *set_ivp_i;
 			O<<child->name<<endl;
 		}
 		O<<"END DFCHILDREN "<<std::endl;
 		
 
 		O<<"BEGIN RESOLVED_LS "<<std::endl;
-		for (ivp_i = ivp->resolvedLS.begin(); ivp_i != ivp->resolvedLS.end(); ivp_i++)
+		for (set_ivp_i = ivp->resolvedLS.begin(); set_ivp_i != ivp->resolvedLS.end(); set_ivp_i++)
 		{
-			NodeProps * child = *ivp_i;
+			NodeProps * child = *set_ivp_i;
 			O<<child->name<<endl;
 		}
 		O<<"END RESOLVED_LS "<<std::endl;		
 		
 		
 		O<<"BEGIN RESOLVEDLS_FROM "<<std::endl;
-		for (ivp_i = ivp->resolvedLSFrom.begin(); ivp_i != ivp->resolvedLSFrom.end(); ivp_i++)
+		for (set_ivp_i = ivp->resolvedLSFrom.begin(); set_ivp_i != ivp->resolvedLSFrom.end(); set_ivp_i++)
 		{			
-			NodeProps * child = *ivp_i;
+			NodeProps * child = *set_ivp_i;
 			O<<child->name<<endl;
 		}
 		O<<"END RESOLVEDLS_FROM "<<std::endl;
 
 	
 		O<<"BEGIN RESOLVEDLS_SE "<<std::endl;
-		for (ivp_i = ivp->resolvedLSSideEffects.begin(); ivp_i != ivp->resolvedLSSideEffects.end(); ivp_i++)
+		for (set_ivp_i = ivp->resolvedLSSideEffects.begin(); set_ivp_i != ivp->resolvedLSSideEffects.end(); set_ivp_i++)
 		{			
-			NodeProps * child = *ivp_i;
+			NodeProps * child = *set_ivp_i;
 			O<<child->name<<endl;
 		}		
 		O<<"END RESOLVEDLS_SE "<<std::endl;
 		
 
 		O<<"BEGIN STORES_TO" <<std::endl;
-		for (s_i_i = ivp->storesTo.begin(); s_i_i != ivp->storesTo.end(); s_i_i++)
+		for (set_ivp_i = ivp->storesTo.begin(); set_ivp_i != ivp->storesTo.end(); set_ivp_i++)
 		{
-			NodeProps *child = *s_i_i;
+			NodeProps *child = *set_ivp_i;
 			O<<child->name<<endl;
 		}
 		O<<"END STORES_TO"<<std::endl;
 	
 		
 		O<<"BEGIN FIELDS "<<std::endl;
-		for (ivp_i = (*ivh_i)->fields.begin(); ivp_i != (*ivh_i)->fields.end(); ivp_i++)
+		for (set_ivp_i = ivp->fields.begin(); set_ivp_i != ivp->fields.end(); set_ivp_i++)
 		{
-			NodeProps * ivpAlias = (*ivp_i);
+			NodeProps * ivpAlias = (*set_ivp_i);
 			O<<ivpAlias->name<<endl;
 		}
 		O<<"END FIELDS "<<std::endl;
 		
 		O<<"BEGIN FIELD_ALIAS"<<std::endl;
-		if ((*ivh_i)->fieldAlias == NULL)
+		if (ivp->fieldAlias == NULL)
 			O<<"NULL"<<std::endl;
 		else 
-			O<<(*ivh_i)->fieldAlias->name<<std::endl;
+			O<<ivp->fieldAlias->name<<std::endl;
 		O<<"END FIELD_ALIAS"<<std::endl;
 		
 
 /*
 		O<<"BEGIN ALIASEDFROM "<<std::endl;
-		if ( (*ivh_i)->pointsTo == NULL)
+		if (ivp->pointsTo == NULL)
 			O<<"NULL"<<std::endl;
 		else
-			O<< (*ivh_i)->pointsTo->name<<std::endl;
+			O<<ivp->pointsTo->name<<std::endl;
 		O<<"END ALIASEDFROM "<<std::endl;
 	*/
 	
@@ -309,12 +304,12 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 		
 		bool assigned = false;
 		
-		if ( (*ivh_i)->sField != NULL)
+		if (ivp->sField != NULL)
 		{
-			 if ( (*ivh_i)->sField->typeName.find("VOID") != std::string::npos)
+			 if (ivp->sField->typeName.find("VOID") != std::string::npos)
 			 {
-				blame_info<<"Void for "<<(*ivh_i)->name<<std::endl;
-				 O<<(*ivh_i)->sField->typeName<<std::endl;
+				blame_info<<"Void for "<<ivp->name<<std::endl;
+				 O<<ivp->sField->typeName<<std::endl;
 				 assigned = true;
 			 }
 		}
@@ -354,15 +349,15 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 		
 	
 		O<<"BEGIN STRUCTTYPE"<<std::endl;
-		if ( (*ivh_i)->sBFC == NULL){
-            /*if((*ivh_i)->llvm_inst != NULL){ //added by Hui 01/21/16
-                llvm::Type *origT = (*ivh_i)->llvm_inst->getType();
+		if (ivp->sBFC == NULL) {
+            /*if(ivp->llvm_inst != NULL){ //added by Hui 01/21/16
+                llvm::Type *origT = ivp->llvm_inst->getType();
                 unsigned typeVal = origT->getTypeID();
                 if(typeVal == Type::StructTyID){
                     const llvm::StructType *type = cast<StructType>(origT);
                     string structNameReal = type->getStructName().str();
                     blame_info<<"Create structName("<<structNameReal<<
-                        ") for "<<(*ivh_i)->name<<endl;
+                        ") for "<<ivp->name<<endl;
                     O<<structNameReal<<std::endl;
                 }
                 else O<<"NULL"<<std::endl;
@@ -373,48 +368,48 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
             O<<"NULL"<<std::endl;
         }
 		else
-			O<<(*ivh_i)->sBFC->structName<<std::endl;
+			O<<ivp->sBFC->structName<<std::endl;
 		O<<"END STRUCTTYPE "<<std::endl;
 	
 			
 		O<<"BEGIN STRUCTPARENT "<<std::endl;
-		if ( (*ivh_i)->sField == NULL)
+		if (ivp->sField == NULL)
 			O<<"NULL"<<std::endl;
-		else if ( (*ivh_i)->sField->parentStruct == NULL)
+		else if (ivp->sField->parentStruct == NULL)
 			O<<"NULL"<<std::endl;
 		else
-			O<< (*ivh_i)->sField->parentStruct->structName<<std::endl;
+			O<<ivp->sField->parentStruct->structName<<std::endl;
 		O<<"END STRUCTPARENT "<<std::endl;
 		
 		O<<"BEGIN STRUCTFIELDNUM "<<std::endl;
-		if ( (*ivh_i)->sField == NULL)
+		if (ivp->sField == NULL)
 			O<<"NULL"<<std::endl;
 		else
-			O<< (*ivh_i)->sField->fieldNum<<std::endl;
+			O<<ivp->sField->fieldNum<<std::endl;
 			
 		O<<"END STRUCTFIELDNUM "<<std::endl;
 		
 		O<<"BEGIN STOREFROM "<<std::endl;
-		if ( (*ivh_i)->storeFrom == NULL)
+		if (ivp->storeFrom == NULL)
 			O<<"NULL"<<std::endl;
 		else
-			O<< (*ivh_i)->storeFrom->name<<std::endl;//changed by Hui 01/29/16, before it was just 'storeFrom'
+			O<<ivp->storeFrom->name<<std::endl;//changed by Hui 01/29/16, before it was just 'storeFrom'
 			
 		O<<"END STOREFROM "<<std::endl;
 
 
 /*
 		O<<"BEGIN EXITV "<<std::endl;
-		if ( (*ivh_i)->exitV == NULL)
+		if (ivp->exitV == NULL)
 			O<<"NULL"<<std::endl;
 		else
-			O<< (*ivh_i)->exitV->name<<std::endl;
+			O<<ivp->exitV->name<<std::endl;
 		O<<"END EXITV "<<std::endl;
 	*/
 	
 	/*
 		O<<"BEGIN PARAMS"<<endl;
-		for (set_ivp_i = (*ivh_i)->descParams.begin(); set_ivp_i != (*ivh_i)->descParams.end(); set_ivp_i++)
+		for (set_ivp_i = ivp->descParams.begin(); set_ivp_i != ivp->descParams.end(); set_ivp_i++)
 		{
 			NodeProps * ivpAlias = (*set_ivp_i);
 			O<<ivpAlias->name<<endl;
@@ -424,7 +419,7 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 		
 		
 		O<<"BEGIN PARAMS"<<endl;
-		for (set_ivp_i = (*ivh_i)->descParams.begin(); set_ivp_i != (*ivh_i)->descParams.end(); set_ivp_i++)
+		for (set_ivp_i = ivp->descParams.begin(); set_ivp_i != ivp->descParams.end(); set_ivp_i++)
 		{
 			NodeProps * ivpAlias = (*set_ivp_i);
 			O<<ivpAlias->name<<endl;
@@ -435,7 +430,7 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 			
 		O<<"BEGIN CALLS"<<endl;
 		std::set<ImpFuncCall *>::iterator ifc_i;
-		for (ifc_i = (*ivh_i)->calls.begin(); ifc_i != (*ivh_i)->calls.end(); ifc_i++)
+		for (ifc_i = ivp->calls.begin(); ifc_i != ivp->calls.end(); ifc_i++)
 		{
 			ImpFuncCall * iFunc = (*ifc_i);
 			O<<iFunc->callNode->name<<"  "<<iFunc->paramNumber<<std::endl;
@@ -444,7 +439,7 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 		
 		std::set<int>::iterator si_i;
 		O<<"BEGIN DOM_LN "<<endl;
-			for (si_i = (*ivh_i)->domLineNumbers.begin(); si_i != (*ivh_i)->domLineNumbers.end(); si_i++)
+			for (si_i = ivp->domLineNumbers.begin(); si_i != ivp->domLineNumbers.end(); si_i++)
 		{
 			O<<*si_i<<endl;
 		}
@@ -452,7 +447,7 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 
 		
 		O<<"BEGIN LINENUMS "<<endl;
-			for (si_i = (*ivh_i)->descLineNumbers.begin(); si_i != (*ivh_i)->descLineNumbers.end(); si_i++)
+			for (si_i = ivp->descLineNumbers.begin(); si_i != ivp->descLineNumbers.end(); si_i++)
 		{
 			O<<*si_i<<endl;
 		}
@@ -464,7 +459,7 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 			O<<"BEGIN READ_L_NUMS "<<endl;
 			LineReadHash::iterator lrh_i;
 			
-			for (lrh_i = (*ivh_i)->readLines.begin(); lrh_i != (*ivh_i)->readLines.end(); lrh_i++)
+			for (lrh_i = ivp->readLines.begin(); lrh_i != ivp->readLines.end(); lrh_i++)
 			{
 				int lineNum = lrh_i->first;
 				int numReads = lrh_i->second;
@@ -473,30 +468,49 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 			}
 			O<<"END READ_L_NUMS "<<endl;
 		}
-		
-		/*
-		#ifdef ENABLE_FORTRAN
-		O<<"BEGIN STORELINES"<<std::endl;
-	std::set<int>::iterator set_i_i;
-	for (set_i_i = (*ivh_i)->storeLines.begin(); set_i_i != (*ivh_i)->storeLines.end(); set_i_i++)
-	{
-		O<<*set_i_i<<" ";
-	}
-	O<<std::endl;
-	O<<"END STORELINES"<<std::endl;
+
+#ifdef ADD_MULTI_LOCALE
+		O<<"BEGIN ISPID"<<endl;
+	    O<<ivp->isPid<<endl;;
+	    O<<"END ISPID"<<endl;
 	
-			O<<"BEGIN STOREPTRLINES"<<std::endl;
-	for (set_i_i = (*ivh_i)->storePTR_Lines.begin(); set_i_i != (*ivh_i)->storePTR_Lines.end(); set_i_i++)
-	{
-		O<<*set_i_i<<" ";
-	}
-	O<<std::endl;
-	O<<"END STOREPTRLINES"<<std::endl;
-	#endif
-		*/
+		O<<"BEGIN ISOBJ"<<endl;
+        O<<ivp->isObj<<endl;
+	    O<<"END ISOBJ"<<endl;
+
+		O<<"BEGIN MYPID"<<endl;
+        if (ivp->myPid == NULL)
+            O<<"NULL"<<endl;
+        else
+	        O<<ivp->myPid->name<<endl;;
+	    O<<"END MYPID"<<endl;
+	
+		O<<"BEGIN MYOBJ"<<endl;
+        if (ivp->myObj == NULL)
+            O<<"NULL"<<endl;
+        else
+            O<<ivp->myObj->name<<endl;
+	    O<<"END MYOBJ"<<endl;
+
+		O<<"BEGIN PIDALIASES "<<std::endl;
+		for (set_ivp_i = ivp->pidAliases.begin(); set_ivp_i != ivp->pidAliases.end(); set_ivp_i++)
+		{
+			NodeProps *ivpPidAlias = (*set_ivp_i);
+			O<<ivpPidAlias->name<<endl;
+		}
+		O<<"END PIDALIASES "<<std::endl;
+
+		O<<"BEGIN OBJALIASES "<<std::endl;
+		for (set_ivp_i = ivp->objAliases.begin(); set_ivp_i != ivp->objAliases.end(); set_ivp_i++)
+		{
+			NodeProps *ivpObjAlias = (*set_ivp_i);
+			O<<ivpObjAlias->name<<endl;
+		}
+		O<<"END OBJALIASES "<<std::endl;
+#endif
 		
 		
-		O<<"END VAR  "<<(*ivh_i)->name<<std::endl;
+		O<<"END VAR  "<<ivp->name<<std::endl;
 	}
 	
 	O<<"END FUNC "<<getSourceFuncName()<<std::endl;
@@ -534,7 +548,7 @@ void FunctionBFC::exportCalls(std::ostream &O, ExternFuncBFCHash & efInfo)
 	{
 		O<<*s_ch_i;
         std::string ss(*s_ch_i);
-		if (knownFuncNames.count(*s_ch_i))
+		if (knownFuncsInfo.count(ss))
 			O<<" K ";
 		else if (efInfo[ss])
 			O<<" E ";
@@ -2113,7 +2127,7 @@ void FunctionBFC::printToDotTrunc(std::ostream &O)
 						O<<":("<<v->line_num<<":"<<v->lineNumOrder<<")";
 					if (v->isLocalVar == true)
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=white]\n";
-					else if ( strstr(v->name.c_str(), PARAM_REC) != NULL )
+					else if (strstr(v->name.c_str(), PARAM_REC)!=NULL || strstr(v->name.c_str(), PARAM_REC2)!=NULL || v->isFormalArg)
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=white]\n";
 					else
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=white]\n";
@@ -2370,7 +2384,7 @@ void FunctionBFC::printToDot(std::ostream &O, bool printImplicit, bool printInst
 						O<<":("<<v->line_num<<":"<<v->lineNumOrder<<")";
 					if (v->isLocalVar == true)
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=forestgreen]\n";
-					else if ( strstr(v->name.c_str(), PARAM_REC) != NULL )
+					else if (strstr(v->name.c_str(), PARAM_REC)!=NULL || strstr(v->name.c_str(), PARAM_REC2)!=NULL || v->isFormalArg)
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=green]\n";
 					else
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=darkseagreen]\n";
@@ -2615,7 +2629,7 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
 						O<<":("<<v->line_num<<":"<<v->lineNumOrder<<")";
 					if (v->isLocalVar == true)
 						O<<"\",shape=rectangle, style=filled, fillcolor=pink]\n";
-					else if ( strstr(v->name.c_str(), PARAM_REC) != NULL )
+					else if (strstr(v->name.c_str(), PARAM_REC)!=NULL || strstr(v->name.c_str(), PARAM_REC2)!=NULL || v->isFormalArg)
 						O<<"\",shape=invtriangle, style=filled, fillcolor=green]\n";
 					else
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=darkseagreen]\n";

@@ -12,30 +12,32 @@
 #define _FUNCTION_BFC_H
 
 #include "llvm/Analysis/Passes.h"
+#include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/Dominators.h"
+#include "llvm/Analysis/DominatorInternals.h"
+
 #include "llvm/Pass.h"
+#include "llvm/InstVisitor.h"
+
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
+#include "llvm/IR/ValueSymbolTable.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Instruction.def"
+
 #include "llvm/Support/Compiler.h"
-#include "llvm/InstVisitor.h"
+#include "llvm/Support/CFG.h"
+#include "llvm/Support/Dwarf.h"
+
 #include "llvm/ADT/StringExtras.h"
-//#include "llvm/Support/Streams.h" //TC not found in 3.3
 #include "llvm/ADT/Statistic.h"
 #include "llvm/ADT/APFloat.h"
-
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/Dominators.h"
-#include "llvm/Support/CFG.h"
-#include "llvm/Support/Compiler.h"
 #include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/ADT/SetOperations.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/Analysis/DominatorInternals.h"
-#include "llvm/IR/ValueSymbolTable.h"
-#include "llvm/IR/Instructions.h"
-#include "llvm/IR/Instruction.def"
 
 #include <string>
 #include <algorithm>
@@ -89,11 +91,12 @@ class ExitSuper;
 class ExitVariable;
 class ExitProgram;
 class ExitOutput;
-struct FuncParam;
+//struct FuncParam;
 class FunctionBFC;
 class ExternFunctionBFC;
 class FunctionBFCCFG;
 class FunctionBFCBB;
+//class ModuleBFC;
 
 struct CallInfo
 {
@@ -127,7 +130,7 @@ struct FuncParam
 struct CollapsePair
 {
 // this is associated with a malloc so we'll need to free this
-	const char * nameFieldCombo;
+    std::string nameFieldCombo;
 	NodeProps * collapseVertex;
 	NodeProps * destVertex;
 };
@@ -173,7 +176,18 @@ struct FuncStores {
     int lineNumOrder;
 };
 
+//The real arg format for this function
+struct FuncFormalArg {
+    std::string name;
+    int argIdx;
+    const llvm::Type *argType;
+};
 
+struct FuncSignature {
+    std::string fname;
+    std::vector<FuncFormalArg*> args;
+    const llvm::Type *returnType;
+};
 // Comparators //
 struct eqstr { //used in unordered_map, key type should be string
     bool operator()(std::string s1, std::string s2) const {
@@ -197,7 +211,9 @@ typedef std::unordered_map<std::string, ExternFunctionBFC*, std::hash<std::strin
 typedef std::unordered_map<std::string, FunctionBFC*, std::hash<std::string>, eqstr> FuncBFCHash;
 
 typedef std::unordered_map<std::string, NodeProps*, std::hash<std::string>, eqstr> RegHashProps;
-//typedef std::unordered_map<const char*, NodeProps*> RegHashProps;
+
+// Augmented knownFuncNames, including name&type info of its formal args
+typedef std::unordered_map<std::string, FuncSignature*, std::hash<std::string>, eqstr> FuncSigHash;
 
 typedef std::unordered_map<int, int> LineNumHash;
 
@@ -209,13 +225,14 @@ typedef std::unordered_map<std::string, NodeProps*, std::hash<std::string>, eqst
 class FunctionBFC {
 ///////////////////////// Constructors/Destructor ///////////////////////////
 public:
-    FunctionBFC(Function *F, std::set<const char*, ltstr> &kFN); //kFN=knownFuncNames
+    FunctionBFC(Function *F, FuncSigHash &kFI); //kFI=knownFuncsInfo
 
     ~FunctionBFC();
 ////////////////////////// Variables ////////////////////////////////////////
 public:
     std::ofstream blame_info;
-
+    std::set<int> blamedArgs; //Only for internal module functions 12/19/16
+    bool isExternFunc; //03/07/17: distinguish extern funcs with user funcs
 private:
     //Graph representations
     MyGraphType G; // All nodes
@@ -255,8 +272,8 @@ private:
     int numParams; // Num of params for function, MAX_PARAMS+1 for variable argument
     int numPointerParams; // Num of params that are pointers
     bool voidReturn; // true->void
-    string moduleName; // name of module this func found
-    string modulePathName; // full path to the module
+    string moduleName; // name of file where this func found
+    string modulePathName; // full path to the file
     bool moduleSet; // true if above two variables have been set
     bool isVarLen; // true if parameters are of variable length
     bool isBFCPoint; // whether or not it's explicit blame point(main,
@@ -277,21 +294,33 @@ private:
     FunctionBFCCFG *cfg;
     //Set of all valid line numbers in program
     std::set<int> allLineNums;
-    //All other function names in this module
-    std::set<const char*, ltstr> knownFuncNames;
+    //All other function informs in this module
+    FuncSigHash knownFuncsInfo; //This should just be a reference since we
+                                //only keep ONE instantiation for each module
 
 	std::vector< std::pair<NodeProps *, NodeProps *> > seAliases;
 	std::vector< std::pair<NodeProps *, NodeProps *> > seRelations;
 	std::vector< FuncCallSE *> seCalls;
+
+    //for specialProcess 
+    //vector of pairs of <pid, obj>
+	std::vector<std::pair<NodeProps*, NodeProps*>> distObjs;
+
 ///////////////////////// Generic Public Calls ///////////////////////////////
 public:
     void firstPass(Function *F, std::vector<NodeProps *> &globalVars,
             ExternFuncBFCHash &efInfo, std::ostream &blame_file,
             std::ostream &blame_se_file, std::ostream &call_file, int &numMissing);
 
+    void externFuncPass(Function *F, std::vector<NodeProps *> &globalVars, 
+            ExternFuncBFCHash &efInfo, std::ostream &args_file);
+
+    void tweakBlamedArgs();
     std::string getSourceFuncName() {return func->getName().str();}
     std::string getModuleName() {return moduleName;}
     std::string getModulePathName() {return modulePathName;}
+    Module* getModule() {return M;}
+    ModuleBFC* getModuleBFC() {return mb;}
   
     int numExitVariables() {return exitVariables.size();}
     int getStartLineNum() {return startLineNum;}
@@ -336,12 +365,14 @@ private:
 //////////////////////// Graph Generation ////////////////////////////////////
     //Graph generation that calls all the rest of these functions
     void genGraph(ExternFuncBFCHash &efInfo);
+    void genGraphTrunc(ExternFuncBFCHash &efInfo);//Only for Chapel internal module
     //Wrapper function for boost edge adding
     void addEdge(const char *source, const char *dest, Instruction *pi);
     //Edge generation
     void genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum, std::set<NodeProps *> &seenCall);
 	//generate edges based on opcode
     void geCall(Instruction *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum, std::set<NodeProps *> &seenCall);
+    void geCallWrapFunc(Instruction *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum, std::set<NodeProps *> &seenCall);
 	
     //Added by Hui 08/20/15
     std::string getRealStructName(std::string rawStructVarName, Value *v, User *pi,  std::string instName);
@@ -359,7 +390,7 @@ private:
 														 
 	void geMemAtomic(Instruction *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum);
 
-    void geAtomicLoadPart(Value *ptr, Value *val, Instruction *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum);
+    void geAtomicLoadPart(Value *ptr, Instruction *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum);
 
     void geAtomicStorePart(Value *ptr, Value *val, Instruction *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum);
 
@@ -399,10 +430,13 @@ private:
 	void identifyExternCalls(ExternFuncBFCHash &efInfo);
 	
 	int checkForUnreadReturn(NodeProps *v, int v_index);
+    void recheckExitVars();
 	void determineBFCHoldersLite();
+    void determineBFCHoldersTrunc(); //Only for Chapel internal modules
 	bool isLibraryOutput(const char *tStr);
 	void determineBFCForOutputVertexLite(NodeProps *v, int v_index);
 	void determineBFCForVertexLite(NodeProps *v);
+    void determineBFCForVertexTrunc(NodeProps *v);//Only for Chapel internal
 	void LLVMtoOutputVar(NodeProps *v);
 	
 	void handleOneExternCall(ExternFunctionBFC *efb, NodeProps *v);
@@ -441,10 +475,10 @@ private:
 
 	////////////////////////////////////////////////////////////////////////////////
 	
-    ///////////// Graph Analysi(Pointers) ////////////////////////////////////////
+    ///////////// Graph Analysis(Pointers) ////////////////////////////////////////
 	void resolvePointers2();
     void againCheckIfWrittenForAllNodes();
-	void resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeProps *targetV, std::set<int> &visited, std::set<NodeProps *> &tempPointers, NodeProps *alias, NodeProps *previousTV);
+	void resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeProps *targetV, std::set<int> &visited, std::set<NodeProps *> &tempPointers, NodeProps *alias, int origOpCode);
 	void resolveLocalAliases2(NodeProps *exitCand, NodeProps *currNode, std::set<int> &visited, NodeProps *exitV);
 																			
 	void resolveAliases2(NodeProps *exitCand, NodeProps *currNode, std::set<int> &visited, NodeProps *exitV);
@@ -468,9 +502,26 @@ private:
 	
 	///////////////////////////////////////////////////////////////////////////////
 
+    ///////////// Graph Analysis(Pointers) ////////////////////////////////////////
+    int needExProc(std::string callName);
+    void specialProcess(Instruction *pi, int specialCall, std::string callName);
+    void spGetPrivatizedCopy(Instruction *pi);
+    void spGetPrivatizedClass(Instruction *pi);
+    void spConvertRTTypeToValue(Instruction *pi);
+    void spGenCommGet(Instruction *pi);
+    void spGenCommPut(Instruction *pi);
+    void spAccessHelper(Instruction *pi);
+    void resolvePidAliases(void);
+    void resolveObjAliases(void);
+    void resolvePidAliasForNode_bw(NodeProps *currNode, std::set<int> &visited);
+    void resolvePidAliasForNode_fw(NodeProps *currNode, std::set<int> &visited);
+    void resolveTransitivePidAliases(void);
+    void resolveTransitiveObjAliases(void);
+	///////////////////////////////////////////////////////////////////////////////
+    
     //////////////////////// LLVM Parser /////////////////////////////////////////
 public:
-    std::string returnTypeName(const llvm::Type *t, std::string prefix);
+    static std::string returnTypeName(const llvm::Type *t, std::string prefix);
     bool has_suffix(const std::string &str, const std::string &suffix){
         return str.size() >= suffix.size() &&
             str.compare(str.size()-suffix.size(), suffix.size(), suffix) == 0;
@@ -482,10 +533,11 @@ private:
     // LLVM UTILITY
     void structDump(Value *compUnit);
     void structResolve(Value *v, int fieldNum, NodeProps *fieldVP);
+    void pidArrayResolve(Value *v, int fieldNum, NodeProps *fieldVP, int numElems);
 
     // GENERAL
     void populateGlobals(std::vector<NodeProps *> &gvs);
-    void adjustLocalVars();
+    void adjustLVnEVs();
     bool varLengthParams();
     void printValueIDName(Value *v);
     std::string calcMetaFuncName(RegHashProps &variables, Value *v, bool isTradName, std::string nonTradName, int currentLineNum);
@@ -502,6 +554,14 @@ private:
 	void gatherAllDescendants(DominatorTreeBase<BasicBlock> *DT , BasicBlock *original, BasicBlock *&b, std::set<BasicBlock *> &cfgDesc, std::set<BasicBlock *> &visited);
 	
     // EXPLICIT
+    // Utility function to recursively get the original node that "val" bitcast from 
+    NodeProps* getNodeBitCasted(Value *val);
+    // Check the match situation between param and arg
+    int paramTypeMatch(const llvm::Type *t1, const llvm::Type *t2);
+    // get real params for on_fn_chpl* and coforall_fn_chpl*
+    void getParamsForCoforall(Instruction *pi, Value **params, int numArgs, std::vector<FuncFormalArg*> &args); 
+    void getParamsForOn(Instruction *pi, Value **params, int numArgs, std::vector<FuncFormalArg*> &args);
+
     // Hash that contains unique monotonically increasing ID hashed to name of var
     void determineFunctionExitStatus();
     void examineInstruction(Instruction *pi, int &varCount, int &currentLineNum, RegHashProps &variables, FunctionBFCBB *fbb);
@@ -513,15 +573,16 @@ private:
     
     void ieGen_LHS(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGen_LHS_Alloca(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
-    void ieGen_Operands(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
+    void ieGen_Operands(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGen_OperandsStore(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGen_OperandsAtomic(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
-    void ieDefault(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
+    void ieDefault(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieBlank(Instruction *pi, int &currentLineNum);
     void ieMemAtomic(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieInvoke(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieCall(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
+    void ieCallWrapFunc(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieLoad(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGetElementPtr(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieAlloca(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);

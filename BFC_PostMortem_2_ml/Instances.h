@@ -85,6 +85,7 @@ struct Instance
   void handleInstance(ModuleHash & modules, std::ostream &O, int InstanceNum, bool verbose);
   void trimFrames(ModuleHash &modules, int InstanceNum, std::string nodeName); 
   void removeRedundantFrames(ModuleHash &modules, std::string nodeName);
+  void removeWrapFrames(string node, int InstNum);
   void secondTrim(ModuleHash &modules, std::string nodeName); 
 
   void handleInstance_OA(ModuleHash & modules, std::ostream &O, std::ostream &O2, 

@@ -11,9 +11,12 @@
 #include "ModuleBFC.h"
 
 #include <iostream>
+#include <fstream>
 
 using namespace std;
 
+// to be used in pidArrayResolve
+extern std::ofstream struct_file;
 
 /*
 std::string getStringFromMD(Value * v)
@@ -260,6 +263,58 @@ void StructBFC::setModulePathName(std::string rawName)
 }
 */
 
+
+void ModuleBFC::exportOneStruct(std::ostream &O, StructBFC *sb)
+{
+    O<<"BEGIN STRUCT"<<endl;
+    
+    O<<"BEGIN S_NAME "<<endl;
+    O<<sb->structName<<endl;
+    O<<"END S_NAME "<<endl;
+    
+    O<<"BEGIN M_PATH"<<endl;
+    O<<sb->modulePathName<<std::endl;
+    O<<"END M_PATH"<<endl;
+    
+    O<<"BEGIN M_NAME"<<endl;
+    O<<sb->moduleName<<std::endl;
+    O<<"END M_NAME"<<endl;
+    
+    O<<"BEGIN LINENUM"<<endl;
+    O<<sb->lineNum<<std::endl;
+    O<<"END LINENUM"<<endl;
+    
+    O<<"BEGIN FIELDS"<<endl;
+    std::vector<StructField *>::iterator vec_sf_i;
+    for (vec_sf_i = sb->fields.begin(); vec_sf_i != sb->fields.end(); vec_sf_i++) {
+        O<<"BEGIN FIELD"<<endl;
+        StructField * sf = (*vec_sf_i);
+        if (sf == NULL) {
+            O<<"END FIELD"<<endl;
+            continue;
+        }
+        O<<"BEGIN F_NUM"<<endl;
+        O<<sf->fieldNum<<endl;
+        O<<"END F_NUM"<<endl;
+        
+        O<<"BEGIN F_NAME"<<endl;
+        O<<sf->fieldName<<endl;
+        O<<"END F_NAME"<<endl;
+        
+        O<<"BEGIN F_TYPE"<<endl;
+        O<<sf->typeName<<endl;
+        O<<"END F_TYPE"<<endl;
+        
+        O<<"END FIELD"<<endl;
+    }
+    
+    O<<"END FIELDS"<<endl;
+    
+    //end of this new added struct
+    O<<"END STRUCT"<<endl;
+}
+
+
 void ModuleBFC::exportStructs(std::ostream &O)
 {
 	std::vector<StructBFC *>::iterator vec_sb_i;
@@ -313,7 +368,9 @@ void ModuleBFC::exportStructs(std::ostream &O)
 		O<<"END STRUCT"<<endl;
 	}
 	
-	O<<"END STRUCTS"<<endl;
+    //we move the following MARK to the end of runOnModule since we may addin more
+    //when firstPassing each user functions (pidArrays)
+	//O<<"END STRUCTS"<<endl;
 }
 
 
@@ -386,15 +443,15 @@ void ModuleBFC::printStructs()
 
 StructBFC * ModuleBFC::structLookUp(std::string &sName)
 {
-	std::vector<StructBFC *>::iterator vec_sb_i;
-	for (vec_sb_i = structs.begin(); vec_sb_i != structs.end(); vec_sb_i++) {
-		StructBFC * sb = (*vec_sb_i);
+  std::vector<StructBFC *>::iterator vec_sb_i;
+  for (vec_sb_i = structs.begin(); vec_sb_i != structs.end(); vec_sb_i++) {
+	StructBFC * sb = (*vec_sb_i);
 		
-		if (sb->structName == sName)
-			return sb;
-	}
-	
-	return NULL;
+	if (sb->structName == sName)
+	  return sb;
+  }
+
+  return NULL;
 }
 
 
@@ -408,24 +465,76 @@ void ModuleBFC::addStructBFC(StructBFC * sb)
 #endif
 
 	for (vec_sb_i = structs.begin(); vec_sb_i != structs.end(); vec_sb_i++) {
-		StructBFC * sbv = (*vec_sb_i);
-		if (sbv->structName == sb->structName) {
-			if (sbv->moduleName == sb->moduleName &&
-				sbv->modulePathName == sb->modulePathName) {
-				// Already have this exact struct, repeat in the linked bitcode
-				delete sb;
-				return;
-			}
-			else {
-#ifdef DEBUG_ERROR			
-				std::cerr<<"Two structs with same name and different declaration sites"<<std::endl;
-#endif
-			}
+	  StructBFC *sbv = (*vec_sb_i);
+	  if (sbv->structName == sb->structName) {
+		if ((sbv->moduleName==sb->moduleName && sbv->modulePathName==sb->modulePathName) || 
+            (sbv->moduleName.empty() && sb->moduleName.empty() && sbv->modulePathName.empty() && sb->modulePathName.empty())) {
+			
+          // Already have this exact struct, free the space allocated for this sb
+          std::vector<StructField*>::iterator sf_i, sf_e;
+          for (sf_i=sb->fields.begin(), sf_e=sb->fields.end(); sf_i!=sf_e; sf_i++) {
+            StructField *sf = *sf_i;
+            delete sf;
+          }
+		  delete sb;
+		  
+          return;
 		}
+		
+        else {
+#ifdef DEBUG_ERROR			
+		  std::cerr<<"Two structs with same name and different declaration sites"<<std::endl;
+#endif
+		}
+	  }
 	}
 	
 	structs.push_back(sb);
+    exportOneStruct(struct_file, sb); //added 03/31/17
 }
+
+
+StructBFC* ModuleBFC::findOrCreatePidArray(std::string pidArrayName, int numElems, const llvm::Type *sbPointT)
+{
+    StructBFC *retSB = NULL;
+    retSB = structLookUp(pidArrayName);
+    if (retSB != NULL)
+      return retSB;
+    
+    else {
+      retSB = new StructBFC();
+      retSB->structName = pidArrayName;
+      //we leave context information blank since we dont know & we dont need them
+      //That includes: lineNum, moduleName, and modulePathName
+      // This should be true
+      if (sbPointT->isArrayTy()) {
+        const llvm::Type *pidType = cast<ArrayType>(sbPointT)->getElementType();
+        for (int i=0; i<numElems; i++) {
+          StructField *sf = new StructField(i); //fieldNum
+          char tempBuf[20];
+          sprintf(tempBuf, "pid_x%d", i);
+
+          sf->fieldName = string(tempBuf); //fieldName
+          sf->llvmType = pidType; //field->llvmType
+          sf->typeName = returnTypeName(sf->llvmType, ""); // field->typeName
+          sf->parentStruct = retSB;
+          // add this field to the struct
+          retSB->fields.push_back(sf);
+        }
+      }
+      else {
+        std::cerr<<"Error, non pid array apears in findOrCreatePidArray:"<<
+            pidArrayName<<endl;
+        delete retSB; 
+        return NULL;
+      }
+    }
+    
+    addStructBFC(retSB);
+    return retSB;
+}
+
+    
 
 
 void StructBFC::setModuleNameAndPath(llvm::DIScope *contextInfo)
@@ -552,7 +661,8 @@ bool ModuleBFC::parseCompositeType(DIType *dt, StructBFC *sb, bool isPrimary)
 #ifdef DEBUG_P
                                 cout<<"parseCompositeType "<<dt->getName().str()<<" failed in Cond5"<<endl;
 #endif
-                                return false; }
+                                return false; 
+                            }
                              
                             DIType *dtField = (DIType *)ddField;
 

@@ -83,6 +83,35 @@ void Instance::removeRedundantFrames(ModuleHash &modules, string nodeName)
 }
   
 
+// Actually this func is not necessary since wrap* funcs were deleted due to the missing bf
+void Instance::removeWrapFrames(string node, int InstNum)
+{
+  stack_info<<"In removeWrapFrames for instance #"<<InstNum<<" on "<<node<<endl;
+  vector<StackFrame>::iterator vec_SF_i;
+  vector<StackFrame> newFrames(frames);
+  frames.clear();
+
+  for (vec_SF_i=newFrames.begin(); vec_SF_i!=newFrames.end(); vec_SF_i++) {
+    if ((*vec_SF_i).frameName.find("wrapcoforall")==0 
+        || (*vec_SF_i).frameName.find("wrapon")==0) {
+      stack_info<<"Removable frame :"<<(*vec_SF_i).frameName<<
+            ", delete frame# "<<(*vec_SF_i).frameNumber<<endl;
+      (*vec_SF_i).toRemove = true;
+    }
+  }
+
+  //pick all the valid frames and push_back to "frames" again
+  for (vec_SF_i=newFrames.begin(); vec_SF_i!=newFrames.end(); vec_SF_i++) {
+    if ((*vec_SF_i).toRemove == false) {
+        StackFrame sf(*vec_SF_i);
+        frames.push_back(sf);
+    }
+  }
+  //thorougly free the memory of newFrames
+  vector<StackFrame>().swap(newFrames); 
+  
+}
+
 
 //Added by Hui 12/25/15: trim the stack trace from main thread again(NOT USED ANYMORE)
 void Instance::secondTrim(ModuleHash &modules, string nodeName)
@@ -137,7 +166,7 @@ void Instance::secondTrim(ModuleHash &modules, string nodeName)
           else {
             //BlameFunction *bfCheck = bmCheck->findLineRange((*minusOne).lineNumber);
             BlameFunction *bf = bm->getFunction((*minusOne).frameName);
-            if (bfCheck == NULL) {
+            if (bf == NULL) {
               stack_info<<"BF of previous frame is null ! delete frame "<<(*vec_SF_i).frameNumber<<endl;
               (*vec_SF_i).toRemove = true;
             }
@@ -146,7 +175,7 @@ void Instance::secondTrim(ModuleHash &modules, string nodeName)
               for (vec_vp_i2 = matchingCalls.begin(); vec_vp_i2 != matchingCalls.end(); vec_vp_i2++) {
                 VertexProps *vpCheck = *vec_vp_i2;
                 // Look for subsets since vpCheck will have the line number concatenated
-                if (vpCheck->name.find(bfCheck->getName()) != std::string::npos)
+                if (vpCheck->name.find(bf->getName()) != std::string::npos)
                   callNode = vpCheck;
               }
           

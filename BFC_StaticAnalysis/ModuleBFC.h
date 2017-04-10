@@ -50,15 +50,15 @@
 #include <iterator>
 
 #include "Parameters.h"
-
-using namespace std;
+//#include "FunctionBFC.h"
+//using namespace std;
 using namespace llvm;
 
 struct StructBFC;
 
 struct StructField {
 
-	string fieldName;
+    std::string fieldName;
 	int fieldNum;
 	const llvm::Type * llvmType; // not reliable
 	std::string typeName;  // different from LLVM Type
@@ -71,7 +71,7 @@ struct StructField {
 
 struct StructBFC {
 
-	string structName;
+    std::string structName;
 	std::vector<StructField *> fields;
 	
 	std::string moduleName;
@@ -91,6 +91,8 @@ struct StructBFC {
 struct ModuleBFC {
 
 	Module * M;
+    
+    std::vector<std::string> funcPtrTable;
 	
 	ModuleBFC(Module * mod) {M = mod;}
 
@@ -102,9 +104,12 @@ struct ModuleBFC {
 
 	void printStructs();
 	void exportStructs(std::ostream & O);
-	
-	StructBFC * structLookUp(std::string & sName);
-
+    void exportOneStruct(std::ostream &O, StructBFC *sb);
+	//void exportUserFuncsInfo(FuncSigHash &kFI, std::ostream &O);//added 03/16/17
+	StructBFC* structLookUp(std::string & sName);
+    StructBFC* findOrCreatePidArray(std::string pidArrayName, int numElems, 
+                                                const llvm::Type *sbPointT);
+    
 
 	void handleStructs();
 	std::vector<StructBFC *> structs;

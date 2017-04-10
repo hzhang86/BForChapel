@@ -55,7 +55,7 @@ public class ProfilerData {
 		return parseOutputFile(outputFile, nodeName);
 	}
 	
-
+    //allFunctions has names like main.foo.bar, main.foo, main....
 	public void addInstanceToEntireCallPath(String funcName, ProfileInstance pi, ProfilerFunction oldFunc)
 	{
 		ProfilerFunction pf = allFunctions.get(funcName);
@@ -67,6 +67,7 @@ public class ProfilerData {
 			//System.out.println("Adding " + funcName);
 		}
 		
+        // VERY IMPORTANT
 		pf.addInstance(pi);
 
 		if (oldFunc != null)
@@ -84,7 +85,6 @@ public class ProfilerData {
 		
 		String truncString = funcName.substring(0, lastPeriod);
 		addInstanceToEntireCallPath(truncString, pi, pf);
-		
 	}
 	
 	public String parseFrame(BufferedReader bufReader, ProfileInstance currInst, String line)
@@ -93,6 +93,9 @@ public class ProfilerData {
 		//String strFrameNum = pathTokens[1];
 		//int frameNum = Integer.valueOf(strFrameNum).intValue();
 		String funcName = pathTokens[2];
+        /////////////added by HUI 08/23/15////////////////
+        String cleanFuncName = funcName.replaceAll("chpl_user_main","main");
+        funcName = cleanFuncName.replace("_chpl","");
 		//String moduleName = pathTokens[3];
 		//String pathName = pathTokens[4];
 		//String strLineNum  = pathTokens[5];

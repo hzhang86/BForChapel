@@ -34,6 +34,7 @@ public:
     std::vector<NodeProps *> vertices;
     //std::set<int> lineNumbers;
 	int lineNum;
+    Value *llvmNode; //keep the corresponding llvm node(mainly for params)
 };
 
 
@@ -48,16 +49,17 @@ public:
 class ExitVariable : public ExitSuper
 {
 public: 
-    ExitVariable(std::string name){realName = name; lineNum = 0; vertex=NULL;}
-    ExitVariable(std::string name, ExitTypes e, int wp, bool isSP) 
-        {realName = name; et = e; whichParam = wp; lineNum = 0; vertex=NULL; isStructPtr = isSP;}
+    ExitVariable(std::string name){realName = name; lineNum = 0; 
+                                    vertex = NULL; llvmNode = NULL;}
+    ExitVariable(std::string name, ExitTypes e, int wp, bool isSP, Value *v) 
+        {realName = name; et = e; whichParam = wp; lineNum = 0; vertex=NULL; isStructPtr = isSP; llvmNode = v;}
 	~ExitVariable() { vertices.clear(); }
     ExitTypes et;
     int whichParam;
 	bool isStructPtr;
 };
 
-class ExitProgram : public ExitSuper
+class ExitProgram : public ExitSuper //refers call_node of output function like printf, needs to check writeln
 {
 public: 
     ExitProgram(std::string name){realName = name; lineNum = 0;}

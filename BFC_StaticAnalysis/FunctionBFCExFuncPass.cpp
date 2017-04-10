@@ -94,8 +94,21 @@ void FunctionBFC::transferExternCallEdges(std::vector< std::pair<int, int> > &bl
 			callV->nStatus[CALL_NODE] = false;
 
 			NodeProps *blamedV = get(get(vertex_props, G), blamed.second);
-			blamedV->isWritten = true;
-			
+			//TODO: 03/10/17: Is it to set the blamed Arg to be written ? or establish a new relationship between the blamed and blamee
+            //blamedV->isWritten = true;
+            /*
+              For an external call like: a = exfunc(b,c,d), NONE of a~d is written for sure if they are pointers (pointers are written if
+              the memory address they represents are written into. If b is blamed, then b has outgoing edges to a,c,d through the callnode
+              "exfunc", and we establish a blamees set for each blamed arg, when we do checkIfWritten for blamed arg "b", we count these
+              blamees to its sets. Blamed args are NOT necessarily written but they are if anyone of the blamees is written
+            */
+            std::vector<std::pair<int, int>>::iterator v_pair_i2;
+            for (v_pair_i2=blameeNodes.begin(); v_pair_i2!=blameeNodes.end(); v_pair_i2++) {
+              std::pair<int, int> blamee2 = *v_pair_i2;
+              NodeProps *blameeV2 = get(get(vertex_props, G), blamee2.second);
+              blamedV->blameesFromExFunc.insert(blameeV2);
+            }
+
 			int remainingCalls = 0;
 			//blamedV->externCallLineNumbers.insert(callNode->line_num);
 			// We can reassign call statuses since these calls have now been resolved
@@ -193,7 +206,7 @@ void FunctionBFC::handleOneExternCall(ExternFunctionBFC *efb, NodeProps *v)
 			
 			if (efb->paramNums.count(fc->paramNumber)) {
 	            blamedNodes.push_back(tmpPair);
-				inTargetV->isExternCallParam = true;
+				inTargetV->isBlamedExternCallParam = true;
 				#ifdef DEBUG_EXTERN_CALLS
 				blame_info<<inTargetV->name<<" receives blame for extern call to "<<v->name<<std::endl;
 				#endif
@@ -215,7 +228,7 @@ void FunctionBFC::handleOneExternCall(ExternFunctionBFC *efb, NodeProps *v)
 	}
     else {	
 #ifdef DEBUG_ERROR
-		std::cerr<<"The blamed node vector(extern) was empty for "<<v->name<<" in "<<getSourceFuncName()<<std::endl;
+		blame_info<<"The blamed node vector(extern) was empty for "<<v->name<<" in "<<getSourceFuncName()<<std::endl;
 #endif
 	}
 }

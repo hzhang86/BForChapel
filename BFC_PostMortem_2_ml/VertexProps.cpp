@@ -440,7 +440,9 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 		{
 			VertexProps * alias = bf->findOrCreateVP(line);
 			aliases.insert(alias);
-			alias->aliasUpPtr = this; //a->alias->aliasUpPtr = a ??? what's the logic
+			//TODO: make sure what's aliasUpPtr really mean, aliases are
+            //mutually inclusive, like a is b's alias also b's aliasUpPtr ??
+            //alias->aliasUpPtr = this; //a->alias->aliasUpPtr = a ??? what's the logic
             //added above aliasUpPtr line back 08/06/16
 		}
 	}
@@ -558,8 +560,6 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 			resolvedLSSideEffects.insert(rlsse);
 		}
 	}
-	
-	
 	
 	
 	//----
@@ -830,10 +830,95 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 			descLineNumbers.insert(ln);
 			bf->allLines.insert(pair<int, VertexProps *>(ln,this));
 		}
-	}	
-	
-	// END VAR
+	}
+
+#ifdef SUPPORT_MULTILOCALE
+	//BEGIN ISPID
+    getline(bI, line);
+	// get isPid
 	getline(bI, line);
+	isPid = atoi(line.c_str());
+	//END ISPID
+	getline(bI, line);
+
+	//BEGIN ISOBJ
+    getline(bI, line);
+	// get isObj
+	getline(bI, line);
+	isObj = atoi(line.c_str());
+	//END ISOBJ
+	getline(bI, line);
+
+	//BEGIN MYPID
+	getline(bI, line);
+	// get myPid
+	getline(bI, line);	
+	if (line.find("NULL") != std::string::npos)
+	{
+		myPid = NULL;
+	}
+	else
+	{
+		VertexProps *temp = bf->findOrCreateVP(line);
+		myPid = temp;
+	}		
+	//END MYPID
+	getline(bI, line);
+
+
+	//BEGIN MYOBJ
+	getline(bI, line);
+	// get myObj
+	getline(bI, line);	
+	if (line.find("NULL") != std::string::npos)
+	{
+		myObj = NULL;
+	}
+	else
+	{
+		VertexProps *temp = bf->findOrCreateVP(line);
+		myObj = temp;
+	}		
+	//END MYOBJ
+	getline(bI, line);
+
+
+	//----
+	//BEGIN PIDALIASES
+	getline(bI, line);
+	proceed = true;
+	while (proceed)
+	{
+		getline(bI, line);
+		if (line.find("END PIDALIASES") != std::string::npos)
+			proceed = false;
+		else
+		{
+			VertexProps *temp = bf->findOrCreateVP(line);
+			pidAliases.insert(temp);
+		}
+	}
+
+
+	//----
+	//BEGIN OBJALIASES
+	getline(bI, line);
+	proceed = true;
+	while (proceed)
+	{
+		getline(bI, line);
+		if (line.find("END OBJALIASES") != std::string::npos)
+			proceed = false;
+		else
+		{
+			VertexProps *temp = bf->findOrCreateVP(line);
+			objAliases.insert(temp);
+		}
+	}
+#endif
+
+    //END VAR 
+    getline(bI, line);
 	line.clear();
 	
 }

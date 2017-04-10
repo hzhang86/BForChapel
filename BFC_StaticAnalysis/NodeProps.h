@@ -211,6 +211,7 @@ public:
 	bool isLocalVar;
 	bool isFakeLocal;
 	bool isStructure;
+    bool isFormalArg; //those args that have no chpl_macro_tmp to hold once passed in
 	
 	// arrays treated slightly different
 	bool isArr;
@@ -219,10 +220,31 @@ public:
 	short ptrStatus;
 	
 	bool isWritten;
-	
+
+    //New added for special calls 03/04/17
+    bool isPid;
+    bool isTempPid; //helper in recursively finding pid
+	bool isObj;
+    bool isRemoteWritten; //due to chpl_gen_comm_* calls
+    NodeProps *myObj; //If "this" is a pid, non-NULL
+    NodeProps *myPid; //If "this" is a obj, non-NULL
+    // very similar to aliases, except these are for pid/obj and can add lines from
+    set<NodeProps *> objAliasesIn; //representations of same obj
+    set<NodeProps *> objAliasesOut; 
+    set<NodeProps *> objAliases; //representations of same obj
+    
+    set<NodeProps *> pidAliasesIn; //representations of same pid
+    set<NodeProps *> pidAliasesOut; 
+    set<NodeProps *> pidAliases; //representations of same pid
+
+    //helper set for pidAliases from collapsable pair
+    set<NodeProps *> collapseNodes; //all deleted nodes from cp pairs
+    NodeProps *collapseTo;  //the recipient node
+
 	// true if this is a param that takes the blame for an extern call
-	bool isExternCallParam;
-	
+	bool isBlamedExternCallParam;
+	set<NodeProps *> blameesFromExFunc;
+
 	bool deleted;
 	
 	bool resolved;
@@ -248,24 +270,25 @@ public:
        b = GEP a;
        and if this is NOT a struct and b's ptrLevel>0, then: this.GEPs.insert(b), a.GEPs.insert(b)
     */
-    set<NodeProps *> fields; // for structures, shouldn't include itself
+    set<NodeProps *> fields; //for structures, shouldn't include itself
 	set<NodeProps *> GEPs;  //a=GEP array, .... Then a is a GEP of array
 	set<NodeProps *> loads; //%val = load i32* %ptr, then ptr.loads.insert(val)
 	set<NodeProps *> nonAliasStores;//if v has no almostAlias, then it has nonAliasStores
                             //for a_(GEP/LOAD)_>b, c_(STORE)_>a, then b.nonAliasStores.insert(c)
 	set<NodeProps *> arrayAccess;//if array A, you access a in A, then A.arrayAccess.insert(a)
 	set<NodeProps *> almostAlias; // it's an alias to one instantiation of
-	// a variable,thought technically the pointers arent' the same level
+	// a variable,though technically the pointers arent' the same level
 	//if *a=load **b; store *a **c; store *d **c; 
     //then a and b are almostAliases respectively
 
 	// The list of nodes that resolves to the VP through a RESOLVED_L_S_OP
     //RESOLVED_L_S_OP: resolved from the load-store operation
-    //用来作为此node的datatrs的一部分
+    //They are used as part of dataPtrs
 	set<NodeProps *> resolvedLS;//e.g. if we have: store a, b; c=load b;
 	                            //then we create c->a, a.resolvedLS.insert(c)
-	// The list of nodes that are resolved from the VP through a R_LS
-    //在calcLineNum时有相关操作（非直接加入所有lines）
+	
+    // The list of nodes that are resolved from the VP through a R_LS
+    // There are some operations about it in calcLineNum(not directly adding all lines from it)
 	set<NodeProps *> resolvedLSFrom; //c.resolvedLSFrom.insert(a);
 	
 	// A subset of the resolvedLS nodes that write to the data range
@@ -302,7 +325,7 @@ public:
     StructField * sField;  //b.sBFC = a.sField.parentStruct    	
     StructBFC * sBFC;
 	
-    set<int> lineNumbers; //loop line + lines that this node is as a lhs val(左值）
+    set<int> lineNumbers; //loop line + lines that this node is as a lhs val
 	set<int> descLineNumbers;
 	
 	// Mostly used with Fortran, these are the line numbers that 
@@ -333,10 +356,10 @@ public:
 	NodeProps * storeFrom;   // if store int a int* b  edge: b->a
 	set<NodeProps *> storesTo;// then a.storeFrom = b, b.storesTo.insert(a)
 	//storeLines has all lines that this node's definition reaches/valid
-    //所有此node reaching definitions的line
+    //all lines that this node reaches as a definition
     set<int> storeLines;      //one node can have many sources(like a),  
     //borderLines has farthest line# for this node's valid definition in each fbb
-    //此node的def能reach到的最远的line/被kill的line
+    //The farthest line that this node's def can reach, or where this node is killed as a definition
 	set<int> borderLines;     //but it can only have single destination(like b)
 	/////////////////////////
 	
@@ -388,11 +411,12 @@ public:
 	// TODO: probably should make this a vector
 	NodeProps * fieldAlias;
 	
+    //TODO: not sure what the following two nodes used for 
     NodeProps * pointsTo; //if a=GEP b, 0, 1, 1.. then a.pointsTo = b;
     NodeProps * exitV;
   
     // For Constants
-    int constValue;
+    //int constValue;
 	
 	
 	// For each line number, the order at which the statement appeared
@@ -456,12 +480,19 @@ public:
 		isLocalVar = false;
 		isFakeLocal = false;
 		
+        isFormalArg = false;
 		isStructure = false;
 		isPtr = false;
 		isWritten = false;
 		
+        isPid = false;
+        isTempPid = false;
+        isObj = false;
+        isRemoteWritten = false;
+        myPid = NULL;
+        myObj = NULL;
 		
-		isExternCallParam = false;
+		isBlamedExternCallParam = false;
 		
         //printf("Address of pointsTo for %s is 0x%x\n", name.c_str(), pointsTo);
         pointsTo = NULL;
@@ -477,7 +508,16 @@ public:
 		dataPtrs.clear();
 		aliasesIn.clear();
 		aliasesOut.clear();
-		
+	
+        //for special calls
+        pidAliasesOut.clear();
+        pidAliasesIn.clear();
+        pidAliases.clear();
+        objAliasesOut.clear();
+        objAliasesIn.clear();
+        objAliases.clear();
+        blameesFromExFunc.clear();
+
 		funcCalls.clear();
 		
 		fields.clear();

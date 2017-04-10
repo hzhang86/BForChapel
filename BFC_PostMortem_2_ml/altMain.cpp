@@ -42,7 +42,6 @@ static void populatePreSamples(InstanceHash &pre_instances, string traceName, st
 static void populateForkSamples(vector<Instance> &fork_instances, string traceName, string nodeName);
 static void populateSamplesFromDirs(compInstanceHash &comp_instance_table, 
         preInstanceHash &pre_instance_table, forkInstanceHash &fork_instance_table);
-
 //the following util function will be used globablly
 //====================vv========================================//
 bool isForkStarWrapper(std::string name)
@@ -648,7 +647,8 @@ int main(int argc, char** argv)
         glueStackTraces(node, iCounter, (*vec_I_i),
                         pre_instance_table, fork_instance_table);
 
-      //TODO:Polish stacktrace again: rm chpl_gen_main for node0, (same line&file diff fName)frames
+      // Polish stacktrace again: rm all wrap* functions such as wrapcoforall_fn_chpl
+      (*vec_I_i).removeWrapFrames(node, iCounter);
 
       // concise_print the final "perfect" stacktrace for each compute sample
       stack_info<<"NOW final stacktrace for inst#"<<iCounter<<" on "<<node<<endl;

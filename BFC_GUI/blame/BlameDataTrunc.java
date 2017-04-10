@@ -5,12 +5,14 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.StringTokenizer;
+import java.util.HashSet;
 
 
 public class BlameDataTrunc extends BlameData {
 
 	//private int instanceCount;
-	
+	//DEBUG FLAGS: just like #ifdef in C++
+    private static final boolean DEBUG_PARSE_FRAME = false;
 	
 	
 	public BlameDataTrunc(String outputFile, BlameContainer bc)
@@ -29,14 +31,44 @@ public class BlameDataTrunc extends BlameData {
 		System.out.println("We have " + numInstances() + "instances");
 	}
 	
-	
+
+    public boolean nameFromUsrCode(String rawName)
+    {
+        HashSet<String> varNames = bc.getAllUsrVarNames();
+        boolean isUsrVar = false;
+        // rawName is the name to a field
+        if (rawName.indexOf(".") >0) {
+            StringTokenizer st = new StringTokenizer(rawName);
+            String[] esTokens = new String[st.countTokens()];
+
+            int counter = 0;
+            while (st.hasMoreTokens()) {
+	            esTokens[counter] = st.nextToken();
+                counter++;
+            }
+
+            for (int i=0; i<counter; i++) {
+                if (varNames.contains(esTokens[i])) {
+                    isUsrVar = true;
+                    break;
+                }
+            }
+        }
+        // not a field
+        else {
+            if (varNames.contains(rawName))
+                isUsrVar = true;
+        }
+
+        return isUsrVar;
+    }
 
 	
 	public String parseFrame(BufferedReader bufReader, Instance currInst, String line)
 	{
         //////////////////////////////////////////
         System.out.println("parseFrame in BlameDataTrunc Called !");
-		String pathTokens[] = line.split("\\s");
+		String pathTokens[] = line.split("\\s"); //NOT sure why we need double backslash for a space
 		//String strFrameNum = pathTokens[1];
 		//int frameNum = Integer.valueOf(strFrameNum).intValue();
 		String funcName = pathTokens[2];
@@ -48,7 +80,7 @@ public class BlameDataTrunc extends BlameData {
 		String pathName = pathTokens[4];
 		//String strLineNum  = pathTokens[5];
 		//int lineNumber = Integer.valueOf(strLineNum).intValue();
-		String strBPType   = pathTokens[6];
+		String strBPType   = pathTokens[6]; //BlamePoint
 		short bptType = Short.valueOf(strBPType).shortValue();
 		String strFBeginLine = pathTokens[7];
 		int beginLine = Integer.valueOf(strFBeginLine).intValue();
@@ -178,146 +210,160 @@ public class BlameDataTrunc extends BlameData {
 						
 				ExitSuper es = new ExitSuper();
 				
-				if (strEVType.indexOf("EV") >= 0)
-				{
-					ExitVariable ev = bf.getOrCreateEV(strVarName);
-					es = ev;
-				}
-                ///added by Hui 01/08/16, to distinguish global vars from params/rets
-                else if (strEVType.indexOf("EGV") >=0)
+                //use UsrNames to filter out most variables that didn't come from user code
+                if (nameFromUsrCode(strVarName)) {
+                    if (strEVType.indexOf("EV") >= 0)
+                    {
+                        ExitVariable ev = bf.getOrCreateEV(strVarName);
+                        es = ev;
+                    }
+                    ///added by Hui 01/08/16, to distinguish global vars from params/rets
+                    else if (strEVType.indexOf("EGV") >=0)
+                    {
+                        ExitVariable ev = bf.getOrCreateEV(strVarName);
+                        ev.isGlobal = true;
+                        es = ev;
+                    }
+                    ////////////////////////////////////////////////////////////////
+                    else if (strEVType.indexOf("EO") >= 0)
+                    {
+                        ExitOutput eo = bf.getOrCreateEO(strVarName);
+                        es = eo;
+                    }
+                    else if (strEVType.indexOf("U") >= 0)
+                    {
+                        ExitProgram ep = bf.getOrCreateEP(strVarName);
+                        es = ep;
+                    }
+                    else if (strEVType.indexOf("EF") >= 0 || strEVType.indexOf("EDF") >= 0)
+                    {
+                        ExitVariable evf = bf.getOrCreateEVField(strVarName);
+                        ExitVariable fieldParent;
+                        es = evf;
+                        
+                        //while (strVarName.indexOf('.') != strVarName.lastIndexOf('.'))
+                        while (strVarName.indexOf('.') > 0) //changed by Hui 01/20/16: mimic LF to get hiearchical view 
+                        {
+                            String newStrVarName = strVarName.substring(0,strVarName.lastIndexOf('.'));
+                            
+                            if (strVarName.indexOf('.') == strVarName.lastIndexOf('.'))
+                            {
+                                fieldParent = bf.getOrCreateEV(newStrVarName);
+                                fieldParent.isGlobal = true; //added by Hui 01/26/16, in order to keep it in AllGlobalVariabales
+                            }
+                            else
+                            {
+                                fieldParent = bf.getOrCreateEVField(newStrVarName);
+                            }
+                            
+                            //added by Hui 01/25/16 for test
+                            if (DEBUG_PARSE_FRAME) {
+                                System.out.println("Add field "+evf.getName()+" to parent "+fieldParent.getName());
+                            }
+
+                            fieldParent.addField(evf);	
+                            
+                            //TOCHECK: WHETHER BELOW SHOULD BE ADDED !!!
+                            //if (fieldParent.getLastInst() != currInst)
+                                //fieldParent.addInstanceTrunc(currInst);
+
+                            strVarName = newStrVarName;
+                            evf = fieldParent; //added by Hui 01/20/16: mimic what LF did to show hiearchical view
+                        }
+                    }
+                    else if (strEVType.indexOf("LF") >= 0 || strEVType.indexOf("LDF") >= 0)
+                    {
+                        ExitProgram epf = bf.getOrCreateEPField(strVarName);
+                        ExitProgram fieldParent;
+                        es = epf;
+                        
+                        while (strVarName.indexOf('.') > 0)
+                        {
+                            String newStrVarName = strVarName.substring(0,strVarName.lastIndexOf('.'));
+                            
+                            if (newStrVarName.indexOf('.') < 0)
+                            {
+                                fieldParent = bf.getOrCreateEP(newStrVarName);
+                            }
+                            else
+                            {
+                                fieldParent = bf.getOrCreateEPField(newStrVarName);
+                            }
+                            
+                            fieldParent.addField(epf);	
+                            
+                            //if (fieldParent.getLastInst() != currInst)
+                                //fieldParent.addInstanceTrunc(currInst);
+                            
+                            
+                            strVarName = newStrVarName;
+                            epf = fieldParent;
+                        }
+                    }
+                    
+                    else if (strEVType.indexOf("VL") >= 0)
+                    {
+                        ExitProgram ep = bf.getOrCreateEP(strVarName);
+                        es = ep;
+                    }				
+                    else if (strEVType.indexOf("VFL") >= 0)//|| strEVType.indexOf("VL") >= 0)
+                    {
+                        
+                        ExitProgram epf = bf.getOrCreateEPField(strVarName);
+                        ExitProgram fieldParent;
+                        es = epf;
+                        
+                        while (strVarName.indexOf('.') > 0) {
+                            String newStrVarName = strVarName.substring(0,strVarName.lastIndexOf('.'));
+                            if (newStrVarName.indexOf('.') < 0)
+                            {
+                                fieldParent = bf.getOrCreateEP(newStrVarName);
+                            }
+                            else
+                            {
+                                fieldParent = bf.getOrCreateEPField(newStrVarName);
+                            }
+                            
+                            fieldParent.addField(epf);	
+                            
+                            //if (fieldParent.getLastInst() != currInst)
+                                //fieldParent.addInstanceTrunc(currInst);
+                                                    
+                            strVarName = newStrVarName;
+                            epf = fieldParent;
+
+                        }
+                    }
+                    else
+                    {
+                        evLine = bufReader.readLine();
+                        continue;
+                    }
+
+                    /////////////////////HUI//////////////////////////////////
+                    if (DEBUG_PARSE_FRAME) {
+                        System.out.println("Setting GT " + strTypeName + " ST " + structName + " for " + es.getName());
+                    }
+                    es.setGenType(strTypeName);
+                    es.setStructType(structName);
+                    es.setType();
+                    bc.addType(es.getType());
+                                
+                    if (es.getLastInst() != currInst)
+                        es.addInstanceTrunc(currInst);
+                    
+                    // We set this to make sure we don't have any repeats
+                    es.setLastInst(currInst);
+
+                    evLine = bufReader.readLine();
+                } //end of nameFromUsrCode
+                // If name not from usr code, we ignore this var completely
+                else
                 {
-                    ExitVariable ev = bf.getOrCreateEV(strVarName);
-                    ev.isGlobal = true;
-                    es = ev;
+                    evLine = bufReader.readLine();
+                    continue;
                 }
-                ////////////////////////////////////////////////////////////////
-				else if (strEVType.indexOf("EO") >= 0)
-				{
-					ExitOutput eo = bf.getOrCreateEO(strVarName);
-					es = eo;
-				}
-				else if (strEVType.indexOf("U") >= 0)
-				{
-					ExitProgram ep = bf.getOrCreateEP(strVarName);
-					es = ep;
-				}
-				else if (strEVType.indexOf("EF") >= 0 || strEVType.indexOf("EDF") >= 0)
-				{
-					ExitVariable evf = bf.getOrCreateEVField(strVarName);
-					ExitVariable fieldParent;
-					es = evf;
-					
-					//while (strVarName.indexOf('.') != strVarName.lastIndexOf('.'))
-					while (strVarName.indexOf('.') > 0) //changed by Hui 01/20/16: mimic LF to get hiearchical view 
-					{
-						String newStrVarName = strVarName.substring(0,strVarName.lastIndexOf('.'));
-						
-						if (strVarName.indexOf('.') == strVarName.lastIndexOf('.'))
-						{
-							fieldParent = bf.getOrCreateEV(newStrVarName);
-                            fieldParent.isGlobal = true; //added by Hui 01/26/16, in order to keep it in AllGlobalVariabales
-						}
-						else
-						{
-							fieldParent = bf.getOrCreateEVField(newStrVarName);
-						}
-						
-                        //added by Hui 01/25/16 for test
-                        System.out.println("Add field "+evf.getName()+" to parent "+fieldParent.getName());
-						fieldParent.addField(evf);	
-						
-                        //TOCHECK: WHETHER BELOW SHOULD BE ADDED !!!
-						//if (fieldParent.getLastInst() != currInst)
-							//fieldParent.addInstanceTrunc(currInst);
-
-						strVarName = newStrVarName;
-                        evf = fieldParent; //added by Hui 01/20/16: mimic what LF did to show hiearchical view
-					}
-				}
-				else if (strEVType.indexOf("LF") >= 0 || strEVType.indexOf("LDF") >= 0)
-				{
-					ExitProgram epf = bf.getOrCreateEPField(strVarName);
-					ExitProgram fieldParent;
-					es = epf;
-					
-					while (strVarName.indexOf('.') > 0)
-					{
-						String newStrVarName = strVarName.substring(0,strVarName.lastIndexOf('.'));
-						
-						if (newStrVarName.indexOf('.') < 0)
-						{
-							fieldParent = bf.getOrCreateEP(newStrVarName);
-						}
-						else
-						{
-							fieldParent = bf.getOrCreateEPField(newStrVarName);
-						}
-						
-						fieldParent.addField(epf);	
-						
-						//if (fieldParent.getLastInst() != currInst)
-							//fieldParent.addInstanceTrunc(currInst);
-						
-						
-						strVarName = newStrVarName;
-						epf = fieldParent;
-					}
-				}
-				
-				else if (strEVType.indexOf("VL") >= 0)
-				{
-					ExitProgram ep = bf.getOrCreateEP(strVarName);
-					es = ep;
-				}				
-				else if (strEVType.indexOf("VFL") >= 0)//|| strEVType.indexOf("VL") >= 0)
-				{
-					
-					ExitProgram epf = bf.getOrCreateEPField(strVarName);
-					ExitProgram fieldParent;
-					es = epf;
-					
-					while (strVarName.indexOf('.') > 0) {
-						String newStrVarName = strVarName.substring(0,strVarName.lastIndexOf('.'));
-						if (newStrVarName.indexOf('.') < 0)
-						{
-							fieldParent = bf.getOrCreateEP(newStrVarName);
-						}
-						else
-						{
-							fieldParent = bf.getOrCreateEPField(newStrVarName);
-						}
-						
-						fieldParent.addField(epf);	
-						
-						//if (fieldParent.getLastInst() != currInst)
-							//fieldParent.addInstanceTrunc(currInst);
-												
-						strVarName = newStrVarName;
-						epf = fieldParent;
-
-					}
-				}
-				else
-				{
-				    evLine = bufReader.readLine();
-				    continue;
-				}
-				
-				/////////////////////HUI//////////////////////////////////
-				System.out.println("Setting GT " + strTypeName + " ST " + structName + " for " + es.getName());
-				es.setGenType(strTypeName);
-				es.setStructType(structName);
-				es.setType();
-				bc.addType(es.getType());
-							
-				if (es.getLastInst() != currInst)
-					es.addInstanceTrunc(currInst);
-				
-				// We set this to make sure we don't have any repeats
-				es.setLastInst(currInst);
-
-				evLine = bufReader.readLine();
-			}
+			} //end of while #FRAME
 			
 			return evLine;
 		}

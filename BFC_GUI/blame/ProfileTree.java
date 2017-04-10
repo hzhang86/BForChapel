@@ -203,14 +203,14 @@ public class ProfileTree extends JPanel implements MouseListener {
     	
     	//recursiveAddFunctions(functions, mainFunc);
     	
-    	// Should probably be smarter about this, hope we never run into a call path over 100
+    	// Should probably be smarter about this, hope we never run into a call path over 100; 
     	DefaultMutableTreeNode[] tNodes = new DefaultMutableTreeNode[100];
     	
 		Iterator<profiler.ProfilerFunction> it = pd.getSortedFunctions(true).values().iterator();
 		
 		//int prevLevel = 0;
 		//int currentLevel = 0;
-		
+
 		while (it.hasNext())
 		{
 			profiler.ProfilerFunction bf = (profiler.ProfilerFunction) it.next();	
@@ -225,6 +225,7 @@ public class ProfileTree extends JPanel implements MouseListener {
 				top.add(functions);
 				tNodes[0] = functions;
 			}
+		// Highly depends on the sorted bf names; otherwise fail
 			else
 			{
 				tNodes[numPeriods-1].add(functions);

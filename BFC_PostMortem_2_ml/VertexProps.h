@@ -58,16 +58,21 @@ namespace std
 #define EXIT_VAR_PARAM  5 //changed by Hui 03/15/16
 
 //added for debug purpose//
-/*
+
 #define DEBUG_BLAMEES
 #define DEBUG_BLAMED_EXITS
 #define DEBUG_DETER_BH
 #define DEBUG_RESOLVE_LN
-*/
+
 //#define DEBUG_SELINES
 //#define DEBUG_GFSN
 //newly added by Hui---//
+#define DEBUG_GFSN0
+#define DEBUG_ATFB
+#define SUPPORT_MULTILOCALE
 #define CHECK_PARAM_WRITTEN_IN_CALL
+#define DEBUG_CALCPARAM_INFO
+#define DEBUG ADD_TEMP_FIELDBLAMEES
 //---------------------//
 
 using namespace std;
@@ -283,8 +288,8 @@ class VertexProps {
 	// In case this is a field, this data structure contains relevant information
 	//BlameField * bf;
 	
-	StructBlame * bs;
-	StructBlame * sType;
+	StructBlame * bs; //STRUCTTYPE
+	StructBlame * sType; //STRUCTPARENT
 	StructField * sField;
 	VertexProps * fieldUpPtr;
 	
@@ -292,6 +297,14 @@ class VertexProps {
 	
 	// General type of this vertex
 	std::string genType;
+
+    // new added for multi-locale Chapel
+    bool isPid;
+    bool isObj;
+    VertexProps * myPid;
+    VertexProps * myObj;
+	std::set<VertexProps *> pidAliases;
+    std::set<VertexProps *> objAliases;
 	
 	VertexProps(string na)
 	{
@@ -299,14 +312,22 @@ class VertexProps {
 		//aliasedFrom = NULL;
 		//bf = NULL;
 		bs = NULL;
+        sType = NULL;
 		sField = NULL;
 		eStatus = NO_EXIT;
+
+        //added 03/27/17 for multi-locale Chapel
+        isPid = false;
+        isObj = false;
+        myPid = NULL;
+        myObj = NULL;
 
         BF = NULL; //added by Hui 08/08/16
 		
 		weight = 1.0;
 		
-		calleePar = -1;
+		calleePar = -99; //Init impossible as paramNum
+                        //when it's func seen as callee
 		addedFromWhere = -1;
 		
 		isDerived = false;

@@ -11,7 +11,7 @@ LEVEL = ../../..
 LIBRARYNAME = BFC
 LOADABLE_MODULE = 1
 USEDLIBS =
-#Added by Hui to enable -std=c++11 in the compilation
+#Somehow we need to explicitly put the following cmd after "make" to enable -std=c++11 in the compilation
 #ENABLE_CXX11 := 1
 
 include $(LEVEL)/Makefile.common

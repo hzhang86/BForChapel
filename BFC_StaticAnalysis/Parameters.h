@@ -23,7 +23,6 @@
 #define DEBUG_AGAINCHECK
 #define DEBUG_EXTERNFUNC
 //#define HUI_C
-//#define REVERSE_CP_REL1
 #define REVERSE_CP_REL2
 #define PARAMS_CONTRIBUTOR_FIELDS
 #define ONLY_FOR_PARAM1
@@ -34,16 +33,18 @@
 #define ONLY_FOR_MINIMD_LINE_FROM_LOADFORCALLS
 #define ONLY_FOR_MINIMD_LINE_FROM_ALIASESOUT 
 #define TEMP_FOR_MINIMD
+#define ADD_MULTI_LOCALE
 //#define DATAPTRS_FROM_FIELDS
 //#define DATAPTRS_FROM_FIELDS2
 //#define USE_LLVM25 //shall never be turned on for llvm newer than 2.5
 #define NEW_FOR_PARAM1 //08/11/16
+#define SPECIAL_FUNC_PTR //12/08/16 deal with wrapon and wrapcoforall
 //////////////////////////
-
+#define DEBUG_CFG_STORELINES
 #define DEBUG_GRAPH_BUILD
 #define DEBUG_GRAPH_BUILD_EDGES
 #define DEBUG_GRAPH_COLLAPSE
-
+#define DEBUG_SPECIAL_PROC
 
 #define DEBUG_GRAPH_IMPLICIT
 #define DEBUG_LLVM_IMPLICIT
@@ -128,10 +129,18 @@
 #define GEP_S_FIELD_VAR_OFF_OP 1002
 #define GEP_S_FIELD_OFFSET_OP  1003
 
+// define PRIMITIVE for some special calls
+#define NO_SPECIAL              0
+#define GET_PRIVATIZEDCOPY      1
+#define GET_PRIVATIZEDCLASS     2
+#define GEN_COMM_GET            3
+#define GEN_COMM_PUT            4
+#define ACCESSHELPER            5 //not processed currently
+#define CONVERTRTTYPETOVALUE    6
+
 extern const char* PRJ_HOME_DIR;
 extern const char *PARAM_REC;
-
-
+extern const char *PARAM_REC2;
 
 #endif
 

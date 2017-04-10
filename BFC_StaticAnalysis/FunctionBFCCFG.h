@@ -68,6 +68,8 @@ struct eqstr2 //used for unordered_map, key type should be string
 
 using namespace llvm;
 
+class FunctionBFC;
+
 class FunctionBFCBB {
 
 public:
@@ -136,7 +138,8 @@ public:
 	// order doesn't really matter since we are just iterating
 	//  through until we have convergence
 	BBHash  LLVM_BBs;
-	
+	FunctionBFC *fb; //points to the function it builds from
+
 	// gen pred/succ edges between FunctionBFCBBs
 	void genEdges();
 	// gen ancestors & descendants
@@ -157,6 +160,11 @@ public:
 	void assignPTRBBGenKill();
 	
     bool controlDep(NodeProps * target, NodeProps * anchor, std::ofstream &blame_info);
+
+    //default constructor
+    FunctionBFCCFG(FunctionBFC *funcBFC){
+        fb = funcBFC;
+    };
 };
 
 #endif

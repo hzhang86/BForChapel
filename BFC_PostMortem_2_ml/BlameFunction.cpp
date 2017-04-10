@@ -1051,7 +1051,8 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
   for(it = ii.first; it != ii.second; ++it) {
     VertexProps * vp = it->second;
 #ifdef DEBUG_DETER_BH
-    //cout<<"Key = "<<it->first<<"    Value = "<<it->second->name<<endl;
+    cout<<"In allLines: Key="<<it->first<<", Value="<<it->second->name<<
+        ", eStatus="<<it->second->eStatus<<endl;
 #endif
     if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD]) {
 #ifdef DEBUG_DETER_BH
@@ -1085,7 +1086,6 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
       if (transferFuncApplies(vp, oldBlamees, callNode) && notARepeat(vp, blamees)){
 #ifdef DEBUG_BLAMEES
         cout<<"Blamees insert "<<vp->name<<" in determineBlameHolders(2)"<<endl;
-        cout<<"Blamees ACTUAL insert(5) "<<vp->name<<endl;
 #endif
         blamees.insert(vp);
         vp->addedFromWhere = 5;
@@ -1117,6 +1117,9 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,std:
   ii = tempLines.equal_range(lineNum); //We get the first and last entry in ii;
   
   for(it = ii.first; it != ii.second; ++it) {
+#ifdef DEBUG_DETER_BH
+    cout<<"In tempLines: Key = "<<it->first<<"    Value = "<<it->second->name<<endl;
+#endif
     VertexProps * vp = it->second;
     if (vp->eStatus > NO_EXIT || vp->nStatus[EXIT_VAR_FIELD]) {
       vp->findSEExits(blamees);
@@ -1693,7 +1696,7 @@ void BlameFunction::handleTransferFunction(VertexProps *callNode, std::set<Verte
       int paramNum = vp->eStatus - EXIT_VAR_PARAM;
       if (paramNum >= 0) {//if it's real param
         blamed.insert(paramNum);
-        std::cout<<"inserted with paramNum="<<paramNum<<"; ";
+        std::cout<<"inserted with paramNum="<<paramNum<<endl;
       }  
     }
   }
@@ -1806,7 +1809,7 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
   // Already been calculated
   if (vp->fsName.size() > 0)
     return vp->fsName;
-#ifdef DEBUG_GFSN
+#ifdef DEBUG_GFSN0
   std::cout<<"In GFSN for "<<vp->name<<std::endl;
   //std::cout<<"vp->sField is "<<vp->sField<<std::endl;
 #endif
@@ -1949,9 +1952,9 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
         pos++;
       
       std::string modName = upPtr->name.substr(pos);
-      
+#ifdef DEBUG_GFSN      
       std::cout<<"  2b - "<<modName<<std::endl;
-      
+#endif
       if (aName.size() > 0 && aName != modName)
       {
         fName.insert(0,")");
@@ -2009,6 +2012,10 @@ std::string BlameFunction::getFullStructName(VertexProps * vp)
     //upPtr = upPtr->fieldUpPtr;
   }
   
+#ifdef DEBUG_GFSN0
+  std::cout<<"After calculation GFSN of "<<vp->name
+      <<": "<<fName<<std::endl;
+#endif
   
   vp->fsName = fName;
   return fName;
@@ -2528,7 +2535,8 @@ void BlameFunction::populateTempSideEffects(int lineNum, std::set<VertexProps *>
 
 // For any blamees(blamed for this callNode) in the current frame,
 // if it's an exit var (has valid eStatus) then set calleePar for
-// the next frame; else set its callerPars for this callNode(since
+// the next frame; Or if vp is EF, then get the calleePar of its fieldUpPtr(can
+// be grand*Parent..) ...else set its callerPars for this callNode(since
 // a same vp can be blamed for multi-calls in the same frame, it
 // thus can have multi-callerPars("params"as real params in calls)
 void BlameFunction::calcParamInfo(std::set<VertexProps *> &blamees, VertexProps *callNode)
@@ -2539,10 +2547,8 @@ void BlameFunction::calcParamInfo(std::set<VertexProps *> &blamees, VertexProps 
     VertexProps *vp = *set_vp_i;
     if (vp->isDerived)
       continue;
-    
+    // means vp hs not related to EV yet
     if (vp->calleePar < -1) { //changed by Hui 04/18/16: from 0 to -1 as aligned to static analysis
-      vp->calleePar = 99;
-      
       if(vp->eStatus == EXIT_VAR_RETURN) {
         vp->calleePar = -1; //changed by Hui 04/18/16: from 0 to -1 as aligned to static analysis
       }
@@ -2574,6 +2580,10 @@ void BlameFunction::calcParamInfo(std::set<VertexProps *> &blamees, VertexProps 
           upPtr = upPtr->fieldUpPtr;
         }
       }
+#ifdef DEBUG_CALCPARAM_INFO
+      if (vp->calleePar >= -1)
+        std::cout<<"CalcParamInfo: set "<<vp->calleePar<<" to "<<vp->name<<"'s calleePar"<<std::endl;
+#endif 
     }
     
     // calculate the callerPar for the blamee(vp) in this frame
@@ -2583,6 +2593,9 @@ void BlameFunction::calcParamInfo(std::set<VertexProps *> &blamees, VertexProps 
         FuncCall *fc = (*vec_fc_i);
         if (vp->params.count(fc->Node)) {
           vp->callerPars.insert(fc->paramNumber);
+#ifdef DEBUG_CALCPARAM_INFO
+          std::cout<<"CalcParamInfo: add "<<fc->paramNumber<<" to "<<vp->name<<"'s callerPars"<<std::endl;
+#endif 
         }
       }
     }    
@@ -2691,7 +2704,11 @@ void BlameFunction::outputFrameBlamees(std::set<VertexProps *> & blamees, std::s
     }
     
     // The generic type as given by LLVM (int, double, Struct*)
-    O<<"   "<<vp->genType<<" ";
+    // We make special type for Pids 04/10/17
+    if (vp->isPid)
+      O<<"   "<<"*Pid ";
+    else
+      O<<"   "<<vp->genType<<" ";
     
     if (vp->sType != NULL) {
       O<<vp->sType->structName<<"   ";
@@ -2798,6 +2815,8 @@ void BlameFunction::outputFrameBlamees(std::set<VertexProps *> & blamees, std::s
   
 }
 
+
+/* SAVE TENO
 //'vp' is the blamee from callee frame(oldBlamees), 'blamee' is the blamee for this frame(blamees)
 //now we try to add blamee.field to blamees by looking at vp.field
 void BlameFunction::addTempFieldBlameesRecursive(VertexProps *vp, VertexProps *blamee, 
@@ -2810,16 +2829,22 @@ void BlameFunction::addTempFieldBlameesRecursive(VertexProps *vp, VertexProps *b
   
   visited.insert(vp);
   
-  //std::cout<<"ATFB(2) "<<vp->name<<std::endl;
+#ifdef DEBUG_ATFB
+  std::cout<<"ATFB(2) "<<vp->name<<std::endl;
+#endif
+
   std::set<VertexProps *>::iterator set_vp_i;
   for (set_vp_i = vp->fields.begin(); set_vp_i != vp->fields.end(); set_vp_i++) {
-    //std::cout<<"ATFB(3) "<<vp->name<<" "<<(*set_vp_i)->name<<std::endl;
-    
+#ifdef DEBUG_ATFB
+    std::cout<<"ATFB(3) "<<vp->name<<"'s field: "<<(*set_vp_i)->name<<std::endl;
+#endif
     if (oldBlamees.count(*set_vp_i) > 0) {
       VertexProps *vp2 = *set_vp_i;
       bool found = true;
+      //TOCHECK: why name of newVP == vp2 ?? the top-level struct parent name should
+      //be "blamee" in blamees but not vp in oldBlamees, Change it!
       VertexProps *newVP = findOrCreateTempBlamees(blamees, getFullStructName(vp2), found);
-      
+      //findOrCreateTempBlamees will create/find blamee.field and insert into blamees 
       if (found == false) {
         //std::cout<<"Adding info for newly generated VP(2) "<<newVP->name<<std::endl;
         newVP->sType = vp2->sType;
@@ -2835,13 +2860,17 @@ void BlameFunction::addTempFieldBlameesRecursive(VertexProps *vp, VertexProps *b
   }
   
   for (set_vp_i = vp->tempFields.begin(); set_vp_i != vp->tempFields.end(); set_vp_i++) {
-    //std::cout<<"ATFB(4) "<<vp->name<<" "<<(*set_vp_i)->name<<std::endl;
+#ifdef DEBUG_ATFB
+    std::cout<<"ATFB(4) "<<vp->name<<"'s tempfield: "<<(*set_vp_i)->name<<std::endl;
+#endif
     
     if (oldBlamees.count(*set_vp_i) > 0) {
       VertexProps *vp2 = *set_vp_i;
       //std::cout<<getFullStructName(blamee)<<"("<<blamee<<")"<<" maybe connected to(3) "<<getFullStructName(vp2)<<" "<<vp2->name<<" "<<vp2<<std::endl;
       
       bool found = true;
+      //TOCHECK: why name of newVP == vp2 ?? the top-level struct parent name should
+      //be "blamee" in blamees but not vp in oldBlamees, Change it!
       VertexProps *newVP = findOrCreateTempBlamees(blamees, getFullStructName(vp2), found);
       
       if (found == false) {
@@ -2858,12 +2887,17 @@ void BlameFunction::addTempFieldBlameesRecursive(VertexProps *vp, VertexProps *b
     }
   }
   
+  // a is a temptempField of b if b=a->alias->fieldUpPtr or b=a->aliasUpPtr, came from addBlameToFieldParent
   for (set_vp_i = vp->temptempFields.begin(); set_vp_i != vp->temptempFields.end(); set_vp_i++) {
-    //std::cout<<"ATFB(5) "<<vp->name<<" "<<(*set_vp_i)->name<<std::endl;
+#ifdef DEBUG_ATFB
+    std::cout<<"ATFB(5) "<<vp->name<<"'s temptempfield: "<<(*set_vp_i)->name<<std::endl;
+#endif
     
     if (oldBlamees.count(*set_vp_i) > 0) {
       VertexProps *vp2 = *set_vp_i;
       bool found = true;
+      //TOCHECK: why name of newVP == vp2 ?? the top-level struct parent name should
+      //be "blamee" in blamees but not vp in oldBlamees, Change it!
       VertexProps *newVP = findOrCreateTempBlamees(blamees, getFullStructName(vp2), found);
       
       if (found == false) {
@@ -2881,12 +2915,146 @@ void BlameFunction::addTempFieldBlameesRecursive(VertexProps *vp, VertexProps *b
   }
  
 }
+*/
+
+
+
+//'vp' is the blamee from callee frame(oldBlamees), 'blamee' is the blamee for this frame(blamees)
+//now we try to add blamee.field to blamees by looking at vp.field
+void BlameFunction::addTempFieldBlameesRecursive(VertexProps *vp, VertexProps *blamee, 
+        std::set<VertexProps *> &oldBlamees, std::set<VertexProps *> &blamees, std::set<VertexProps *> &visited)
+{
+  // The usual recursive check
+  
+  if (visited.count(vp))
+    return;
+  
+  visited.insert(vp);
+  
+#ifdef DEBUG_ATFB
+  std::cout<<"ATFB(2) "<<vp->name<<std::endl;
+#endif
+
+  std::set<VertexProps *>::iterator set_vp_i;
+  for (set_vp_i = vp->fields.begin(); set_vp_i != vp->fields.end(); set_vp_i++) {
+#ifdef DEBUG_ATFB
+    std::cout<<"ATFB(3) "<<vp->name<<"'s field: "<<(*set_vp_i)->name<<std::endl;
+#endif
+    if (oldBlamees.count(*set_vp_i) > 0) {
+      VertexProps *vp2 = *set_vp_i;
+      if (vp2->sField) {
+        //newly added 03/31/17: match fields from caller to blamed fields in callee
+        std::set<VertexProps *>::iterator svi;
+        for (svi=blamee->fields.begin(); svi!=blamee->fields.end(); svi++) {
+          VertexProps *vp3 = *svi;
+          if (vp3->sField) {
+            if (vp2->sField->fieldNum == vp3->sField->fieldNum) {
+              blamees.insert(vp3);
+              vp3->addedFromWhere = 80; //new tag 
+              //recursively check vp2<->vp3
+              addTempFieldBlameesRecursive(vp2, vp3, oldBlamees, blamees, visited);
+            }
+          }
+        }   
+        //---------------------^^^^^--------------------------------------------//
+        //We still keep newVP in case vp3 doesn't exsits 03/31/17
+        bool found = true;
+        //for vp2 = a_addr.f1, newVP->name will also be a_addr.f1 but added to blamees;
+        //however, when newVP is finally output, getFullStructName(newVP) will produce
+        //"a.f1" because of the fields relation added for newVP with blamee (a)
+        //Although, a.f1 should already be there from the above vp3 if sField  exists
+        //We put this under "vp2->sField" because if not, it'll be a.0x666* but 0x666* 
+        //should not be in blamees since it's a reg in oldBlamees
+        VertexProps *newVP = findOrCreateTempBlamees(blamees, getFullStructName(vp2), found);
+        if (found == false) {
+#ifdef DEBUG_ATFB
+          std::cout<<"Adding info for newly generated VP(2) "<<newVP->name<<std::endl;
+#endif
+          newVP->sType = vp2->sType;
+          newVP->genType = vp2->genType;
+          newVP->fieldUpPtr = blamee;
+          newVP->sField = vp2->sField;
+          newVP->calleePar = blamee->calleePar;
+          blamee->tempFields.insert(newVP);
+        }
+    
+        addTempFieldBlameesRecursive(vp2, newVP, oldBlamees, blamees, visited);
+      } //if vp2->sField != NULL
+      else {
+#ifdef DEBUG_ATFB
+        std::cout<<"vp2 from oldBlamee's fields has no sField, we ignore "<<vp2->name<<std::endl;
+#endif
+      }
+    }
+  }
+  
+  for (set_vp_i = vp->tempFields.begin(); set_vp_i != vp->tempFields.end(); set_vp_i++) {
+#ifdef DEBUG_ATFB
+    std::cout<<"ATFB(4) "<<vp->name<<"'s tempfield: "<<(*set_vp_i)->name<<std::endl;
+#endif
+    
+    if (oldBlamees.count(*set_vp_i) > 0) {
+      VertexProps *vp2 = *set_vp_i;
+      if (vp2->sField) {
+      
+        bool found = true;
+        //TOCHECK: why name of newVP == vp2 ?? the top-level struct parent name should
+        //be "blamee" in blamees but not vp in oldBlamees, Change it!
+        VertexProps *newVP = findOrCreateTempBlamees(blamees, getFullStructName(vp2), found);
+      
+        if (found == false) {
+          //std::cout<<"Adding info for newly generated VP(3) "<<newVP->name<<" "<<newVP<<std::endl;
+          newVP->sType = vp2->sType;
+          newVP->genType = vp2->genType;
+          newVP->fieldUpPtr = blamee;
+          newVP->sField = vp2->sField;
+          newVP->calleePar = blamee->calleePar;
+          blamee->tempFields.insert(newVP);
+        }
+      
+        addTempFieldBlameesRecursive(vp2, newVP, oldBlamees, blamees, visited);
+      }
+    }
+  }
+  
+  // a is a temptempField of b if b=a->alias->fieldUpPtr or b=a->aliasUpPtr, came from addBlameToFieldParent
+  for (set_vp_i = vp->temptempFields.begin(); set_vp_i != vp->temptempFields.end(); set_vp_i++) {
+#ifdef DEBUG_ATFB
+    std::cout<<"ATFB(5) "<<vp->name<<"'s temptempfield: "<<(*set_vp_i)->name<<std::endl;
+#endif
+    
+    if (oldBlamees.count(*set_vp_i) > 0) {
+      VertexProps *vp2 = *set_vp_i;
+      if (vp2->sField) {
+        bool found = true;
+        //TOCHECK: why name of newVP == vp2 ?? the top-level struct parent name should
+        //be "blamee" in blamees but not vp in oldBlamees, Change it!
+        VertexProps *newVP = findOrCreateTempBlamees(blamees, getFullStructName(vp2), found);
+      
+        if (found == false) {
+          //std::cout<<"Adding info for newly generated VP(3) "<<newVP->name<<" "<<newVP<<std::endl;
+          newVP->sType = vp2->sType;
+          newVP->genType = vp2->genType;
+          newVP->fieldUpPtr = blamee;
+          newVP->sField = vp2->sField;
+          newVP->calleePar = blamee->calleePar;
+          blamee->tempFields.insert(newVP);
+        }
+      
+        addTempFieldBlameesRecursive(vp2, newVP, oldBlamees, blamees, visited);
+      }
+    }
+  }
+}
 
 
 void BlameFunction::addTempFieldBlamees(std::set<VertexProps *> &blamees, std::set<VertexProps *> &oldBlamees)
 {
   std::set<VertexProps *>::iterator set_vp_i, set_vp_i2;
   
+#ifdef ADD_TEMP_FIELDBLAMEES
+  std::cout<<"Entering addTempFieldBlamees for "<<this->realName<<endl;
+#endif
   for (set_vp_i = blamees.begin(); set_vp_i != blamees.end(); set_vp_i++) {
     VertexProps *vp = (*set_vp_i);
     // This blamee is a struct and has some fields we can attach to it from prior frames
@@ -2907,14 +3075,31 @@ void BlameFunction::addTempFieldBlamees(std::set<VertexProps *> &blamees, std::s
 
           std::set<VertexProps *> visited;
           addTempFieldBlameesRecursive(vp2, vp, oldBlamees, blamees, visited);
-          
-          //if (vp2->fieldUpPtr != NULL)
-          ////std::cout<<" "<<vp2->fieldUpPtr->name<<std::endl;
-          //else
-          ////std::cout<<std::endl;
         }
       }
     } //end of vp->genType.find(Struct)
+
+    //pid array (chpl__iterLF) has no sType but we still need to handle it
+    else if (vp->genType.find("Array") != std::string::npos) {
+      for (set_vp_i2 = oldBlamees.begin(); set_vp_i2 != oldBlamees.end(); set_vp_i2++) {
+        VertexProps *vp2 = (*set_vp_i2);
+        // We're looking at the root in the previous frame that matches up
+        if (vp->callerPars.count(vp2->calleePar)  && vp2->fieldUpPtr == NULL) {
+          
+          if (vp->sType == NULL || vp2->sType == NULL)
+            continue;
+          
+          if (vp->sType->structName != vp2->sType->structName)
+            continue;
+          
+          if (vp->sType->structName.find("PidArray") == std::string::npos) //Only pidArray takes this special process
+            continue;
+          
+          std::set<VertexProps *> visited;
+          addTempFieldBlameesRecursive(vp2, vp, oldBlamees, blamees, visited);
+        }
+      }
+    }
 
     else if (vp->genType.find("VOID") != std::string::npos) {
       for (set_vp_i2 = oldBlamees.begin(); set_vp_i2 != oldBlamees.end(); set_vp_i2++) {
@@ -2969,6 +3154,30 @@ void BlameFunction::addTempFieldBlamees(std::set<VertexProps *> &blamees, std::s
       }
     }
   }
+}
+
+
+// Add all pidAliases of the one in blamees to blamees 03/31/17
+void BlameFunction::addPidAliasesToBlamees(std::set<VertexProps *> &blamees)
+{
+  std::set<VertexProps *>::iterator svi, sve, svi2, sve2;
+  std::set<VertexProps *> tempBlamees;
+  for (svi=blamees.begin(), sve=blamees.end(); svi != sve; svi++) {
+    VertexProps *vp = *svi;
+    if (vp->isPid) {
+      for (svi2=vp->pidAliases.begin(), sve2=vp->pidAliases.end(); svi2 != sve2; svi2++) {
+        VertexProps *vp2 = *svi2;
+        // we shouldn't change those that already existed in blamees
+        if (blamees.count(vp2) == 0) {
+          tempBlamees.insert(vp2);
+          vp2->addedFromWhere = 88; //new tag 03/31/17
+        }
+      }
+    }
+  }
+
+  //add all new nodes from tempBlamees to blamees
+  blamees.insert(tempBlamees.begin(), tempBlamees.end());
 }
 
 
@@ -3071,6 +3280,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
       //  U s1
       //  GF s1.b
       addTempFieldBlamees(blamees, oldBlamees);
+      addPidAliasesToBlamees(blamees); //added 03/31/17 for blamed pidAliases
       clearTempFields(oldBlamees, oldFunc);
       
       outputFrameBlamees(blamees, localBlamees, DQblamees, O);      
@@ -3170,6 +3380,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
       //  U s1
       //  GF s1.b
       addTempFieldBlamees(blamees, oldBlamees);
+      addPidAliasesToBlamees(blamees); //added 03/31/17
       clearTempFields(oldBlamees, oldFunc);
       
       outputFrameBlamees(blamees, localBlamees, DQblamees, O);      
@@ -3217,6 +3428,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
     std::set<VertexProps *> oldBlamees = blamees;
     determineBlameHolders(blamees, oldBlamees, callNode,(*vec_SF_i).lineNumber, isBlamePoint, localBlamees, DQblamees);
     calcParamInfo(blamees, callNode);
+    addPidAliasesToBlamees(blamees); //added 03/31/17
     
     outputFrameBlamees(blamees, localBlamees, DQblamees, O);
 
@@ -3343,6 +3555,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
     //  U s1
     //  GF s1.b
     addTempFieldBlamees(blamees, oldBlamees);
+    addPidAliasesToBlamees(blamees); //added 03/31/17
     clearTempFields(oldBlamees, oldFunc);
     outputFrameBlamees(blamees, localBlamees, DQblamees, O);    
     

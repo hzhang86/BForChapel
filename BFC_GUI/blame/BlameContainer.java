@@ -31,6 +31,9 @@ public class BlameContainer {
     //we still use allGlobalVariables later as it's easier than HashMap
 	private Vector<ExitSuper> allGlobalVariables;
 	private HashSet<String> allTypes;
+    //04/07/17: keep all valid names from usr_names file
+	private HashSet<String> allUsrVarNames;
+	private HashSet<String> allUsrFuncNames;
 	
 	
 
@@ -40,6 +43,16 @@ public class BlameContainer {
 	}
 
 	
+	public HashSet<String> getAllUsrVarNames() {
+		return allUsrVarNames;
+	}
+
+
+	public HashSet<String> getAllUsrFuncNames() {
+		return allUsrFuncNames;
+	}
+
+
 	public void addType(String typeName)
 	{
 		allTypes.add(typeName);
@@ -257,6 +270,9 @@ public class BlameContainer {
         allGlobalVariablesHash = new HashMap<String, ExitSuper>();//added by Hui 02/16/16
 		allGlobalVariables = new Vector<ExitSuper>();
 		allTypes = new HashSet<String>();
+        //added by Hui 04/07/17
+        allUsrVarNames = new HashSet<String>();
+        allUsrFuncNames = new HashSet<String>();
 	}
 
 	BlameFunction getOrCreateBlameFunction(String fName, String mName, short blamePointType)
@@ -469,7 +485,44 @@ public class BlameContainer {
 		}
 	}
 	
-	
+	//added by Hui 04/09/17 keep all valid var/func names from usr_names
+    void getUsrNames(String name_file)
+    {   
+      File nf = new File(name_file);
+
+      try {
+        BufferedReader bufReader = new BufferedReader(new FileReader(nf));
+        String line = null;
+
+        while ((line = bufReader.readLine()) != null) {
+          if (line.indexOf("BEGIN VARIABLE NAMES") >= 0) {
+            while ((line = bufReader.readLine()) != null) {
+              if (line.indexOf("END VARIABLE NAMES") >=0) 
+                break;
+              
+              String varName = new String(line);
+              allUsrVarNames.add(varName);
+            } //end of var while
+          }
+
+          else if (line.indexOf("BEGIN FUNCTION NAMES") >=0) {
+            while ((line = bufReader.readLine()) != null) {
+              if (line.indexOf("END FUNCTION NAMES") >=0) 
+                break;
+              
+              String funcName = new String(line);
+              allUsrFuncNames.add(funcName);
+            } //end of func while
+          }
+        } //end of out-most while
+      } //end of try
+
+      catch(IOException ie) {
+        ie.printStackTrace();
+      }
+    }
+
+
 	void addNode(ParentData bd)
 	{
 		nodes.add(bd);

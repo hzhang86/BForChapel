@@ -388,10 +388,10 @@ void StructBlame::parseStruct(ifstream & bI)
 			continue;
 		}
 		
-		// field num
+		// BEGIN F_NUM
 		getline(bI, line);
 		int fNum = atoi(line.c_str());
-		StructField * sf = new StructField(fNum);
+		StructField *sf = new StructField(fNum);
 		fields[fNum] = sf;
 		
 		// END F_NUM

@@ -30,13 +30,13 @@ public class MainGUI {
 	
 	
 	protected static JComponent makeTextPanel(String text) {
-	        JPanel panel = new JPanel(false);
-	        JLabel filler = new JLabel(text);
-	        filler.setHorizontalAlignment(JLabel.CENTER);
-	        panel.setLayout(new GridLayout(1, 1));
-	        panel.add(filler);
-	        return panel;
-	    }
+        JPanel panel = new JPanel(false);
+        JLabel filler = new JLabel(text);
+        filler.setHorizontalAlignment(JLabel.CENTER);
+        panel.setLayout(new GridLayout(1, 1));
+        panel.add(filler);
+        return panel;
+    }
 
 	
 	
@@ -47,7 +47,8 @@ public class MainGUI {
 		// what is in the BlameSourceWindow and the BlameExitVarWindow
 		
 		JTabbedPane tabbedPane = new JTabbedPane();
-		
+	
+        // Three different windows, for Hybrid, Data-centric, Code-centric respectively
 		BlameTreeBlamePoints bt = new BlameTreeBlamePoints(bc);
 		BlameTreeDataCentric btdc = new BlameTreeDataCentric(bc);
 		ProfileTree pt = new ProfileTree(pd);
@@ -58,9 +59,6 @@ public class MainGUI {
 		
 		tabbedPane.addTab("Full Data Centric", btdc);
 		tabbedPane.addTab("Blame Points (Data/Code Hybrid)", bt);
-		
-		
-		
 		//JComponent panel3 = makeTextPanel("Panel #3");
 		//tabbedPane.addTab("Full Code Centric", panel3);
 		
@@ -71,27 +69,27 @@ public class MainGUI {
 		
 	    final boolean useSystemLookAndFeel = false;
 
-		   if (useSystemLookAndFeel) {
-	            try {
-	                UIManager.setLookAndFeel(
-	                    UIManager.getSystemLookAndFeelClassName());
-	            } catch (Exception e) {
-	                System.err.println("Couldn't use system look and feel.");
-	            }
-	        }
+        if (useSystemLookAndFeel) {
+            try {
+                UIManager.setLookAndFeel(
+                    UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception e) {
+                System.err.println("Couldn't use system look and feel.");
+            }
+        }
 
-	        //Create and set up the window.
-	        JFrame frame = new JFrame("Blame Points and Variables");
-	        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-	        
+        //Create and set up the window.
+        JFrame frame = new JFrame("Blame Points and Variables");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        
 
-	        //Add content to the window.
-	        //frame.add(new BlameTree(bc));
-	        frame.add(tabbedPane);
-	        
-	        //Display the window.
-	        frame.pack();
-	        frame.setVisible(true);
+        //Add content to the window.
+        //frame.add(new BlameTree(bc));
+        frame.add(tabbedPane);
+        
+        //Display the window.
+        frame.pack();
+        frame.setVisible(true);
 		
 		//bt.createAndShowGUI();
 		
@@ -733,7 +731,8 @@ public class MainGUI {
 			String line = null;
 			
 			String typeOfTest = bufReader.readLine(); // typeOfTest = 0
-			Global.typeOfTest = Integer.valueOf(typeOfTest).intValue();
+            //all members in Global class are static, so they can be accessed without defining a Global object
+			Global.typeOfTest = Integer.valueOf(typeOfTest).intValue(); 
 			Global.useMetaData = false; //TOCHECK: Originally was false
 			
 			Global.testProgram = new String(bufReader.readLine()); //Global.testProgram = HelloBlame3
@@ -741,6 +740,11 @@ public class MainGUI {
 			
 			System.out.println("Name of test program is " + Global.testProgram);
 			
+            // output all valid variable/function names in the user code
+            line = bufReader.readLine(); //.../usr
+            bc.getUsrNames(line);
+
+
 			String strNumNodes = bufReader.readLine();// numNodes = 1
 			numNodes = Integer.valueOf(strNumNodes).intValue();
 			System.out.println("Number of nodes is " + numNodes);
@@ -751,6 +755,7 @@ public class MainGUI {
 				return;
 			}
 			
+
 			for (int a = 0; a < numNodes; a++)
 			{
 				if (Global.typeOfTest == 0)

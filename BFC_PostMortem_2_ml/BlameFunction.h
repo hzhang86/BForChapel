@@ -150,7 +150,9 @@ class BlameFunction
 
 	void calcParamInfo(std::set<VertexProps *> & blamees, VertexProps * callNode);
 	
-	void calcAggCallRecursive(VertexProps * ivp);
+    void addPidAliasesToBlamees(std::set<VertexProps *> &blamees);
+	
+    void calcAggCallRecursive(VertexProps * ivp);
 
 	void calcAggregateLNRecursive(VertexProps * ivp);
 
