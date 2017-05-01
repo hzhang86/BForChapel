@@ -745,7 +745,7 @@ public class MainGUI {
             bc.getUsrNames(line);
 
 
-			String strNumNodes = bufReader.readLine();// numNodes = 1
+			String strNumNodes = bufReader.readLine();
 			numNodes = Integer.valueOf(strNumNodes).intValue();
 			System.out.println("Number of nodes is " + numNodes);
 			

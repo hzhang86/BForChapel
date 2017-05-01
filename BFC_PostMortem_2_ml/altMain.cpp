@@ -29,14 +29,10 @@ using namespace std;
 //Hui for test: output file for finer stacktraces
 ofstream stack_info;
 nodeHash nodeIDNameMap; //Initialized in populateForkSamples
-
+globalTaskIDHash gTaskMap; //(nodeName, (taskID, parent taskID))
 // some forward-declarations
 static void glueStackTraces(string node, int InstNum, Instance &inst, 
-        preInstanceHash &pre_instance_table, forkInstanceHash &fork_instance_table);
-static void glueForkTrace(Instance &inst, forkInstanceHash &fork_instance_table,
-                                preInstanceHash &pre_instance_table, string node);
-static void gluePreTrace(Instance &inst, Instance &pre_inst, string node, int PTLN);
-
+        preInstanceHash &pre_instance_table, globalForkInstMap &gForkInsts);
 static void populateCompSamples(vector<Instance> &comp_instances, string traceName, string nodeName);
 static void populatePreSamples(InstanceHash &pre_instances, string traceName, string nodeName);
 static void populateForkSamples(vector<Instance> &fork_instances, string traceName, string nodeName);
@@ -60,17 +56,6 @@ bool isTopMainFrame(std::string name)
   else
     return false;
 }
-
-bool forkInfoMatch(StackFrame &sf, Instance &inst)
-{
-  if (sf.info.callerNode == inst.info.callerNode &&
-      sf.info.calleeNode == inst.info.calleeNode &&
-      sf.info.fid == inst.info.fid &&
-      sf.info.fork_num == inst.info.fork_num)
-    return true;
-  else
-    return false;
-}
 //========================^^===============================//
 
 void my_timestamp()
@@ -85,179 +70,138 @@ void my_timestamp()
 }
 
 
-//Added by Hui 12/25/15
 static void glueStackTraces(string node, int InstNum, Instance &inst, 
-        preInstanceHash &pre_instance_table, forkInstanceHash &fork_instance_table)
+        preInstanceHash &pre_instance_table, globalForkInstMap &gForkInsts)
 {
+
   stack_info<<"In glueStackTraces for instance "<<InstNum<<" on "<<node<<endl;
-  InstanceHash &preForNode = pre_instance_table[node];
-  
-  if (inst.needGlueFork) {//if the last frame is fork*wrapper,we skip gluePreTrace
-    glueForkTrace(inst, fork_instance_table, pre_instance_table, node);//Recursive 
-    if (inst.isMainThread==true || isTopMainFrame(inst.frames.back().frameName)) {
-      if (inst.frames.back().frameName == "chpl_gen_main")
-        inst.frames.pop_back(); //we delete chpl_gen_main frame
-      stack_info<<"Finish glueStackTraces for inst "<<InstNum<<" to main"<<endl;
+  // We use a while-loop to glue stack traces instead of recursion: jumping
+  // between Fork and Pre until we make it to "main" or nowhere
+  string workingNode = node; //workingNode will change as fork_inst glued
+  while (!inst.isMainThread && (inst.needGlueFork || inst.needGluePre)) {
+    if (inst.needGlueFork && inst.needGluePre) {
+      stack_info<<"Error: needGlueFork and needGluePre can't be both TRUE! inst#"
+        <<InstNum<<" on "<<node<<endl;
+      break;
     }
-    else
-      stack_info<<"Fail glueStackTraces for inst "<<InstNum<<" to main"<<endl;
     
-    return;
-  }
-  
-  else {
-    //inst != mainThread (top frame isn't chpl_*_main) && inst doesn't have 
-    //fork*wrapper as top frame, then it has to be glued with preSpawn stacktrace 
-    if (preForNode.count(inst.processTLNum) == 0) {
-      stack_info<<"Error: worker thread has pTLN "<<inst.processTLNum<<
-          " not found in preSpawn on "<<node<<endl;
-      return;
-    }
-    Instance &pre_inst = preForNode[inst.processTLNum];
-    gluePreTrace(inst, pre_inst, node, inst.processTLNum);//Non-recursive
-  
-    //Check if the inst comes to main now
-    if (inst.isMainThread==true || isTopMainFrame(inst.frames.back().frameName)) {
-      if (inst.frames.back().frameName == "chpl_gen_main")
-        inst.frames.pop_back(); //we delete chpl_gen_main frame
-      stack_info<<"Finish glueStackTraces for inst "<<InstNum<<" to main"<<endl;
-      return;
-    }
-    else if (inst.needGlueFork) {//we have fork*wrapper as last frame after gluePre
-      glueForkTrace(inst, fork_instance_table, pre_instance_table, node);//Recursive
-      if (inst.isMainThread==true || isTopMainFrame(inst.frames.back().frameName)) {
-        if (inst.frames.back().frameName == "chpl_gen_main")
-          inst.frames.pop_back(); //we delete chpl_gen_main frame
-        stack_info<<"Finish glueStackTraces for inst "<<InstNum<<" to main"<<endl;
+    // needGluePre=true, needGlueFork==false
+    else if (inst.needGluePre) {
+      unsigned long TID = inst.frames.back().task_id;
+      stack_info<<"Glueing inst&pre_inst taskID: "<<TID<<" on "<<workingNode<<endl;
+      // Double check whether the end frame is thread_begin
+      if (inst.frames.back().frameName != "thread_begin") {
+        stack_info<<"Error: the end frame is NOT thread_begin while needGluePre==TRUE"<<endl;
+        break;
       }
-      else
-        stack_info<<"Fail glueStackTraces for inst "<<InstNum<<" to main"<<endl;
       
-      return;
-    }
-    else {//not come to main nor need more glueForkTrace, then it's incomplete
-      stack_info<<"Fail glueStackTraces for inst "<<InstNum<<" to main"<<endl;
-      return;
-    }
-  }
-}
-
-static void glueForkTrace(Instance &inst, forkInstanceHash &fork_instance_table,
-                                preInstanceHash &pre_instance_table, string node)
-{
-  if (inst.isMainThread==true || isTopMainFrame(inst.frames.back().frameName)) 
-    return;
-  if (!inst.needGlueFork)
-    return;
-
-  stack_info<<"Glueing inst&fork_inst on "<<node<<endl;
-  forkInstanceHash::iterator fh_i;
-  vector<Instance>::iterator vec_I_i;
-  //fh_i: <string nodeName, vector<Instance> fork_vec>
-  for (fh_i=fork_instance_table.begin(); fh_i!=fork_instance_table.end(); fh_i++) {
-    vector<Instance> &fork_vec = (*fh_i).second;
-    for (vec_I_i=fork_vec.begin(); vec_I_i!=fork_vec.end(); vec_I_i++) {
-      if (forkInfoMatch(inst.frames.back(), *vec_I_i)) {
-        if (!(*vec_I_i).frames.empty()) {
-          inst.frames.pop_back(); //IMPORTANT: delete the last fork* frame
-          inst.frames.insert(inst.frames.end(), (*vec_I_i).frames.begin(),
-                                                (*vec_I_i).frames.end());
-          if (isForkStarWrapper(inst.frames.back().frameName)) {
-            //We need to do recursion here
-            inst.needGlueFork = true;
-            //IMPORTANT: the new link info(from frames.back()) should be vec_i_i's now
-            stack_info<<"Start recursively call glueForkTrace"<<endl;
-            glueForkTrace(inst, fork_instance_table, pre_instance_table, node); 
-            return; // we should return
-          }
-          else if (isTopMainFrame(inst.frames.back().frameName)) {
-            inst.isMainThread = true;
-            return; //
-          }
-          else { //new last frame isn't main nor fork*wrapper, we just glue pre
-            //IMPORTANT: the new link info should be vec_i_i's now
-            int forkPTLN = (*vec_I_i).processTLNum;
-            string node2 = nodeIDNameMap[(*vec_I_i).info.callerNode]; 
-            InstanceHash preForNode = pre_instance_table[node2];
-            if (preForNode.count(forkPTLN) == 0) {
-              stack_info<<"Error: fork inst has pTLN "<<forkPTLN<<
-                    " not found in preSpawn on "<<node2<<endl;
-              return;
-            }
-
-            Instance &pre_inst = preForNode[forkPTLN];
-            gluePreTrace(inst, pre_inst, node2, forkPTLN);
-            return; 
-          }
+      InstanceHash &preForNode = pre_instance_table[workingNode];
+      if (preForNode.count(gTaskMap[workingNode][TID]) == 0) {
+        stack_info<<"Error: worker thread has parent taskID "<<gTaskMap[workingNode][TID]
+            <<" not found in preSpawn on "<<workingNode<<endl;
+        break;
+      }
+      
+      Instance &pre_inst = preForNode[gTaskMap[workingNode][TID]];
+      if (!pre_inst.frames.empty()) {
+        inst.frames.pop_back(); //delete the original "thread_begin" frame
+        inst.frames.insert(inst.frames.end(), pre_inst.frames.begin(), 
+                                            pre_inst.frames.end());
+        //Very Important! we need to reset the new "inst" attributes
+        if (isTopMainFrame(inst.frames.back().frameName)) {
+          inst.isMainThread = true;
+          inst.needGluePre = false;
+          inst.needGlueFork = false;
         }
-        else {//fork_inst's frames is empty,BUT we can still glue its pre_inst
-          stack_info<<"Corresponding fork_inst is empty"<<endl;
-          // since we don't need this fork*wrapper frame, we should dump it 
-          inst.frames.pop_back();
-          //IMPORTANT: the new link info should be vec_i_i's now
-          int forkPTLN = (*vec_I_i).processTLNum;
-          string node2 = nodeIDNameMap[(*vec_I_i).info.callerNode]; 
-          InstanceHash preForNode = pre_instance_table[node2];
-          if (preForNode.count(forkPTLN) == 0) {
-            stack_info<<"Error: fork inst has pTLN "<<forkPTLN<<
-                  " not found in preSpawn on "<<node2<<endl;
-            return;
-          }
-
-          Instance &pre_inst = preForNode[forkPTLN];
-          gluePreTrace(inst, pre_inst, node2, forkPTLN);
-          return;
+        else if (isForkStarWrapper(inst.frames.back().frameName)) {
+          inst.isMainThread = false;
+          inst.needGluePre = false;
+          inst.needGlueFork = true;
         }
-      }//We found matched fork instance, everything should return within this block
-    }
-  }
-
-  //Shouldn't come to this point since it means we can't glue fork
-  StackFrame &lastFrame = inst.frames.back();
-  stack_info<<"Error: we couldn't find matched fork_inst, we need: "<<
-    lastFrame.info.callerNode<<" "<<lastFrame.info.calleeNode<<" "<<lastFrame.info.fid<<" "
-    <<lastFrame.info.fork_num<<" for "<<lastFrame.frameName<<" on "<<node<<endl;
-}
-
-static void gluePreTrace(Instance &inst, Instance &pre_inst, string node, int PTLN)
-{
-    //The following condition may not hold since we've removed all frames that 
-    //coorespond to coforall/wrapcoforall functions, need to check safety !
-/*
-    vector<StackFrame>::iterator p_SFi = pre_inst.frames.begin();  
-    StackFrame &c_SFr = inst.frames.back(); //returns a reference, not iterator
-    if ((*p_SFi).lineNumber != c_SFr.lineNumber || 
-            (*p_SFi).moduleName != c_SFr.moduleName) {
-      stack_info<<"Can't glue child and parent stacktrace due to mismatch!"<<endl;
-      return;
-    }
-    inst.frames.pop_back(); //delete the last element in the vector
-    p_SFi++; //start from the second frame in pre_inst 
-    for (; p_SFi!=parent.frames.end(); p_SFi++) {
-      if ((*p_SFi).toRemove == false) {
-        StackFrame sf;
-        sf.lineNumber = (*p_SFi).lineNumber;
-        sf.frameNumber = i.frames.back().frameNumber+1;
-        sf.moduleName = (*p_SFi).moduleName;
-        sf.address = (*p_SFi).address;
-        sf.toRemove = (*p_SFi).toRemove;
-
-        i.frames.push_back(sf);
+        else if (inst.frames.back().frameName == "thread_begin") {
+          inst.isMainThread = false;
+          inst.needGluePre = true;
+          inst.needGlueFork = false;
+        }
+        else { //We should break out the loop but we need to reset before that
+          inst.isMainThread = false;
+          inst.needGluePre = false;
+          inst.needGlueFork = false;
+        }
+      }
+      else {
+        stack_info<<"Whoops: the pre_inst is empty for parent TID: "<<gTaskMap[workingNode][TID]<<endl;
+        break;
       }
     }
-*/ 
-  stack_info<<"Glueing inst&pre_inst PTLN: "<<PTLN<<" on "<<node<<endl;
-  if (!pre_inst.frames.empty()) {
-    inst.frames.insert(inst.frames.end(), pre_inst.frames.begin(), 
-                                            pre_inst.frames.end());
-    if (isForkStarWrapper(inst.frames.back().frameName))
-      inst.needGlueFork = true;
-    else if (isTopMainFrame(inst.frames.back().frameName))
-      inst.isMainThread = true;
-  }
-  else  
-    stack_info<<"Corresponding pre_inst is empty PTLN:"<<inst.processTLNum<<endl;
-  
+
+    // needGluePre=false, needGlueFork==true
+    else if (inst.needGlueFork) {
+      fork_t fork_key = inst.frames.back().info;
+      stack_info<<"Glueing inst&fork_inst with fork_key: "<<fork_key.callerNode<<" "<<
+        fork_key.calleeNode<<" "<<fork_key.fid<<" "<<fork_key.fork_num<<" on "<<workingNode<<endl;
+      // Double check whether the end frame is fork*wrapper
+      if (!isForkStarWrapper(inst.frames.back().frameName)) {
+        stack_info<<"Error: the end frame is NOT fork_*_wrapper while needGlueFork==TRUE"<<endl;
+        break;
+      }
+
+      if (gForkInsts.count(fork_key) == 0) {
+        stack_info<<"Error: No such fork_key found: "<<fork_key.callerNode<<" "
+          <<fork_key.calleeNode<<" "<<fork_key.fid<<" "<<fork_key.fork_num<<endl;
+        break;
+      }
+       
+      Instance &fork_inst = gForkInsts[fork_key];
+      if (!fork_inst.frames.empty()) {
+        inst.frames.pop_back(); //delete the original "fork*wrapper" frame
+        inst.frames.insert(inst.frames.end(), fork_inst.frames.begin(), 
+                                            fork_inst.frames.end());
+        //Very Important! we need to reset the new "inst" attributes
+        if (isTopMainFrame(inst.frames.back().frameName)) {
+          inst.isMainThread = true;
+          inst.needGluePre = false;
+          inst.needGlueFork = false;
+        }
+        else if (isForkStarWrapper(inst.frames.back().frameName)) {
+          inst.isMainThread = false;
+          inst.needGluePre = false;
+          inst.needGlueFork = true;
+        }
+        else if (inst.frames.back().frameName == "thread_begin") {
+          inst.isMainThread = false;
+          inst.needGluePre = true;
+          inst.needGlueFork = false;
+        }
+        else { //We should break out the loop but we need to reset before that
+          inst.isMainThread = false;
+          inst.needGluePre = false;
+          inst.needGlueFork = false;
+        }
+      }
+      else {
+        stack_info<<"Whoops: the fork_inst is empty for fork_key: "<<fork_key.callerNode
+          <<" "<<fork_key.calleeNode<<" "<<fork_key.fid<<" "<<fork_key.fork_num<<endl;
+        break;
+      }
+
+      //Very Very Important! we need to switch node to work on!
+      workingNode = nodeIDNameMap[fork_key.callerNode];
+    }
+  } //End of while-loop gluing, should end up in main or nowhere(toplevelframes)
+ 
+  //Result check: not changing any attributes
+  if (isTopMainFrame(inst.frames.back().frameName) && inst.isMainThread)
+    stack_info<<"Got to main after glueStackTraces!"<<endl;
+  else if (isForkStarWrapper(inst.frames.back().frameName) && inst.needGlueFork)
+    stack_info<<"Got to fork*wrapper after glueStackTraces!"<<endl;
+  else if (inst.frames.back().frameName == "thread_begin" && inst.needGluePre)
+    stack_info<<"Got to thread_begin after glueStackTraces!"<<endl;
+  else
+    stack_info<<"Check:"<<inst.isMainThread<<" "<<inst.needGlueFork<<" "<<
+      inst.needGluePre<<", last frame="<<inst.frames.back().frameName<<endl;
+
+  stack_info<<"Finish glueStackTraces for instance "<<InstNum<<" on "<<node<<endl;
 }
 
 
@@ -277,7 +221,7 @@ static void populateCompSamples(vector<Instance> &comp_instances, string traceNa
       
       int numFrames;
       inst.instType = COMPUTE_INST;
-      sscanf(line.c_str(), "%d %d", &numFrames, &(inst.processTLNum));
+      sscanf(line.c_str(), "%d", &numFrames);
     
       for (int j=0; j<numFrames; j++) {
         StackFrame sf;
@@ -298,12 +242,17 @@ static void populateCompSamples(vector<Instance> &comp_instances, string traceNa
             ss>>sf.info.fork_num;
           }
         }
-          
+        else if (sf.frameName == "thread_begin") {
+          ss>>sf.task_id;
+        }
+
         inst.frames.push_back(sf);
       }
     
       comp_instances.push_back(inst);
     }
+    //Close the read file
+    ifs_comp.close();
   }
   else
     cerr<<"Error: open file "<<traceName<<" fail"<<endl;
@@ -320,14 +269,21 @@ static void populatePreSamples(InstanceHash &pre_instances, string traceName, st
     int numInstances = atoi(line.c_str());
     cout<<"Number of pre_instances from "<<traceName<<" is "<<numInstances<<endl;
  
+    //-- populate gTaskMap for this node --//
+    taskHash th;
     for (int i = 0; i < numInstances; i++) {
       Instance inst;
       getline(ifs_pre, line);
       
       int numFrames;
       inst.instType = PRESPAWN_INST;
-      sscanf(line.c_str(), "%d %d", &numFrames, &(inst.processTLNum));
-    
+      sscanf(line.c_str(), "%d %d %d %d", &numFrames, &(inst.taskID), &(inst.minTID), &(inst.maxTID));
+
+      // populate taskHash for this preSpawn instance
+      th[inst.taskID] = inst.taskID; //add itself to the map first
+      for (int tid = inst.minTID; tid <= inst.maxTID; tid++)
+        th[tid] = inst.taskID;       //add all children tid to the map
+
       for (int j=0; j<numFrames; j++) {
         StackFrame sf;
         getline(ifs_pre, line);
@@ -347,16 +303,24 @@ static void populatePreSamples(InstanceHash &pre_instances, string traceName, st
             ss>>sf.info.fork_num;
           }
         }
-          
+        else if (sf.frameName == "thread_begin") {
+          ss>>sf.task_id;
+        }
+
         inst.frames.push_back(sf);
       }
     
-      if (pre_instances.count(inst.processTLNum) == 0)
-        pre_instances[inst.processTLNum] = inst;
+      if (pre_instances.count(inst.taskID) == 0)
+        pre_instances[inst.taskID] = inst;
       else
-        cerr<<"Error: more than 1 pre-instance mapped to the same processTLNum "
-          <<inst.processTLNum<<" in "<<traceName<<endl;
+        cerr<<"Error: more than 1 pre-instance mapped to the same taskID "
+          <<inst.taskID<<" in "<<traceName<<endl;
     }
+    
+    //-- add th for this node to the gTaskMap --//
+    gTaskMap[nodeName] = th;
+    //Close the read file
+    ifs_pre.close();
   }
   else
     cerr<<"Error: open file "<<traceName<<" fail"<<endl;
@@ -387,7 +351,7 @@ static void populateForkSamples(vector<Instance> &fork_instances, string traceNa
       
       int numFrames;
       inst.instType = IT;
-      sscanf(line.c_str(), "%d %d %d %d %d %d", &numFrames, &(inst.processTLNum),
+      sscanf(line.c_str(), "%d %d %d %d %d", &numFrames,
               &(inst.info.callerNode), &(inst.info.calleeNode), 
               &(inst.info.fid), &(inst.info.fork_num));
       
@@ -410,6 +374,9 @@ static void populateForkSamples(vector<Instance> &fork_instances, string traceNa
             ss>>sf.info.fork_num;
           }
         }
+        else if (sf.frameName == "thread_begin") {
+          ss>>sf.task_id;
+        }
           
         inst.frames.push_back(sf);
       }
@@ -423,10 +390,12 @@ static void populateForkSamples(vector<Instance> &fork_instances, string traceNa
         else {
           if (nodeIDNameMap[inst.info.callerNode] != nodeName)
             stack_info<<"Error: two compute nodes are mapped to same ID: "
-                <<inst.info.callerNode<<endl;
+                <<inst.info.callerNode<<" from "<<traceName<<endl;
         }
       }
     }
+    //Close read file
+    ifs_fork.close();
   }
   else
     cerr<<"Error: open file "<<traceName<<" fail"<<endl;
@@ -584,7 +553,7 @@ int main(int argc, char** argv)
   compInstanceHash  comp_instance_table;
   preInstanceHash  pre_instance_table; //Added by Hui 12/25/15
   forkInstanceHash fork_instance_table; //Added by Hui 11/16/16
-
+  globalForkInstMap gForkInsts; //Added by Hui 04/28/17
   // Import sample info from all Input- files
   populateSamplesFromDirs(comp_instance_table, pre_instance_table, 
                                                 fork_instance_table);
@@ -597,7 +566,7 @@ int main(int argc, char** argv)
   //ph_i: <string nodeName, InstanceHash pre_hash>
   for (ph_i=pre_instance_table.begin(); ph_i!=pre_instance_table.end(); ph_i++) {
     InstanceHash &pre_hash = (*ph_i).second;
-    //ih_i: <int processTLNum, Instance inst>
+    //ih_i: <int taskID, Instance inst>
     int iCounter = 0;
     for (ih_i=pre_hash.begin(); ih_i!=pre_hash.end(); ih_i++) {
       (*ih_i).second.trimFrames(bp.blameModules, iCounter, (*ph_i).first);
@@ -615,6 +584,18 @@ int main(int argc, char** argv)
     for (vec_I_i=fork_vec.begin(); vec_I_i!=fork_vec.end(); vec_I_i++) {
       (*vec_I_i).trimFrames(bp.blameModules, iCounter, (*fh_i).first);
       iCounter++;
+    }
+  }
+  //Put everything from fork_instance_table to the global fork inst map
+  for (fh_i=fork_instance_table.begin(); fh_i!=fork_instance_table.end(); fh_i++) {
+    vector<Instance> &fork_vec = (*fh_i).second;
+    for (vec_I_i=fork_vec.begin(); vec_I_i!=fork_vec.end(); vec_I_i++) {
+      fork_t fork_key = (*vec_I_i).info;
+      if (gForkInsts.count(fork_key) == 0)
+        gForkInsts[fork_key] = *vec_I_i;
+      else 
+        cerr<<"Error: duplicate fork_key appear! "<<fork_key.callerNode<<" "
+          <<fork_key.calleeNode<<" "<<fork_key.fid<<" "<<fork_key.fork_num<<endl;
     }
   }
 
@@ -638,6 +619,8 @@ int main(int argc, char** argv)
     string outName = "PARSED_" + node;
     ofstream gOut(outName.c_str());
     int iCounter = 0;
+    int numUnresolvedInsts = 0;
+    int emptyInst = 0;
 
     for (vec_I_i=comp_vec.begin(); vec_I_i!=comp_vec.end(); vec_I_i++) {
       gOut<<"---INSTANCE "<<iCounter<<"  ---"<<std::endl;
@@ -645,10 +628,19 @@ int main(int argc, char** argv)
       // glue stacktraces whenever necessary !
       if ((*vec_I_i).isMainThread == false) 
         glueStackTraces(node, iCounter, (*vec_I_i),
-                        pre_instance_table, fork_instance_table);
+                        pre_instance_table, gForkInsts);
+
+      // Result check, due to the BAD libunwind missing info !!!
+      if ((*vec_I_i).frames.size()>1 && ((*vec_I_i).frames.back().frameName =="thread_begin"
+            || isForkStarWrapper((*vec_I_i).frames.back().frameName)))
+        numUnresolvedInsts++;
 
       // Polish stacktrace again: rm all wrap* functions such as wrapcoforall_fn_chpl
       (*vec_I_i).removeWrapFrames(node, iCounter);
+
+      // Result check, invalid samples end up in polling task
+      if ((*vec_I_i).frames.empty())
+        emptyInst++;
 
       // concise_print the final "perfect" stacktrace for each compute sample
       stack_info<<"NOW final stacktrace for inst#"<<iCounter<<" on "<<node<<endl;
@@ -660,6 +652,9 @@ int main(int argc, char** argv)
       gOut<<"$$$INSTANCE "<<iCounter<<"  $$$"<<std::endl; 
       iCounter++;
     }
+
+    stack_info<<"#unresolved instances = "<<numUnresolvedInsts<<
+        ", #emptyInst = "<<emptyInst<<" on "<<node<<endl;
   }
       
 //    ////for testing/////////////////////

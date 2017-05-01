@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
+#include <unordered_map>
 
 struct fork_t 
 {
@@ -34,14 +35,25 @@ struct StackFrame
   unsigned long address;
   std::string frameName;
   fork_t info; //specifically for fork_*_wrapper frame
+  unsigned long task_id = 0; //specifically for thread_begin frame
 };
 
 struct Instance
 {
   std::vector<StackFrame> frames;
   int instNum; //denote which inst in this sample file
-  int processTLNum; //Added by Hui 12/25/15: processTaskList Number
+  unsigned long taskID = 0; //for preSpawn stacktraces
+  unsigned long minTID = 0; //if minTID != taskID (from processTaskLIst) then maxTID = taskID-1
+  unsigned long maxTID = 0; 
   fork_t info; //specifically for fork* samples
+};
+
+struct eqstr
+{
+  bool operator() (std::string s1, std::string s2) const {
+	return s1 == s2;
+  }
+
 };
 
 #endif

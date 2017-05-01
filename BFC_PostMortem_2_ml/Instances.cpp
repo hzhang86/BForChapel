@@ -84,6 +84,7 @@ void Instance::removeRedundantFrames(ModuleHash &modules, string nodeName)
   
 
 // Actually this func is not necessary since wrap* funcs were deleted due to the missing bf
+// Mainly used for removing fork_*_wrapper, thread_begin, and chpl_gen_main
 void Instance::removeWrapFrames(string node, int InstNum)
 {
   stack_info<<"In removeWrapFrames for instance #"<<InstNum<<" on "<<node<<endl;
@@ -93,7 +94,12 @@ void Instance::removeWrapFrames(string node, int InstNum)
 
   for (vec_SF_i=newFrames.begin(); vec_SF_i!=newFrames.end(); vec_SF_i++) {
     if ((*vec_SF_i).frameName.find("wrapcoforall")==0 
-        || (*vec_SF_i).frameName.find("wrapon")==0) {
+        || (*vec_SF_i).frameName.find("wrapon")==0 
+        || isForkStarWrapper((*vec_SF_i).frameName) 
+        || (*vec_SF_i).frameName=="thread_begin"
+        || ((*vec_SF_i).frameName.find("chpl_gen_main")==0 && newFrames.size()>=2 
+            && (*(vec_SF_i-1)).frameName.find("chpl_user_main")==0)) {
+        
       stack_info<<"Removable frame :"<<(*vec_SF_i).frameName<<
             ", delete frame# "<<(*vec_SF_i).frameNumber<<endl;
       (*vec_SF_i).toRemove = true;
@@ -204,15 +210,15 @@ void Instance::secondTrim(ModuleHash &modules, string nodeName)
 void Instance::trimFrames(ModuleHash &modules, int InstanceNum, string nodeName)
 {
   if(this->instType == COMPUTE_INST)
-    stack_info<<"Triming compute instance "<<InstanceNum<<" with pTLN="<<processTLNum<<" on "<<nodeName<<endl;
+    stack_info<<"Triming compute instance "<<InstanceNum<<" on "<<nodeName<<endl;
   else if(this->instType == PRESPAWN_INST)
-    stack_info<<"Triming preSpawn instance "<<InstanceNum<<" with pTLN="<<processTLNum<<" on "<<nodeName<<endl;
+    stack_info<<"Triming preSpawn instance "<<InstanceNum<<" on "<<nodeName<<endl;
   else if(this->instType == FORK_INST)
-    stack_info<<"Triming fork instance "<<InstanceNum<<" with pTLN="<<processTLNum<<" on "<<nodeName<<endl;
+    stack_info<<"Triming fork instance "<<InstanceNum<<" on "<<nodeName<<endl;
   else if(this->instType == FORK_NB_INST)
-    stack_info<<"Triming fork_nb instance "<<InstanceNum<<" with pTLN="<<processTLNum<<" on "<<nodeName<<endl;
+    stack_info<<"Triming fork_nb instance "<<InstanceNum<<" on "<<nodeName<<endl;
   else if(this->instType == FORK_FAST_INST)
-    stack_info<<"Triming fork_fast instance "<<InstanceNum<<" with pTLN="<<processTLNum<<" on "<<nodeName<<endl;
+    stack_info<<"Triming fork_fast instance "<<InstanceNum<<" on "<<nodeName<<endl;
   else stack_info<<"What am I triming ? instType="<<this->instType<<endl;
 
   vector<StackFrame>::iterator vec_SF_i;
@@ -227,14 +233,14 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, string nodeName)
     }
     else { //lineNumber >0
       BlameModule *bm = NULL;
-      if((*vec_SF_i).moduleName.empty()==false);
+      if ((*vec_SF_i).moduleName.empty()==false);
         bm = modules[(*vec_SF_i).moduleName];
       if (bm == NULL) {
-        if (!isForkStarWrapper((*vec_SF_i).frameName)) {
+        if (!isForkStarWrapper((*vec_SF_i).frameName) && (*vec_SF_i).frameName!="thread_begin") {
           (*vec_SF_i).toRemove = true; //delete it if it's not fork*wrapper frame
-          stack_info<<"BM is NULL and it's not fork*wrapper, delete frame "<<(*vec_SF_i).frameNumber<<endl;
+          stack_info<<"BM is NULL and it's neither fork*wrapper or thread_begin, delete frame "<<(*vec_SF_i).frameNumber<<endl;
         }
-        else continue; //we always keep the frame with "fork*wrapper" name
+        else continue; //we always keep the frame with "fork*wrapper" or "thread_begin" name
       }
       else { //bm != NULL, it's from user code
         // Use the combination of the module and the line number to determine the function & compare with frameName
@@ -248,10 +254,6 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, string nodeName)
           else {
             stack_info<<"BF is NULL, delete frame #"<<(*vec_SF_i).frameNumber<<" "<<fName<<endl;
             (*vec_SF_i).toRemove = true;
-            //Doing the following only for info checking, we still should discard this frame anyway
-            BlameFunction *bf2 = bm->findLineRange((*vec_SF_i).lineNumber);
-            if (bf2 != NULL)
-              stack_info<<"While the old findLineRange("<<bf2->getName()<<") finds bf."<<endl;
           }
         }
         else { //we found bf using frameName
@@ -327,9 +329,20 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, string nodeName)
 */    
 
   // Important: mark the instance that needs to glue fork* stacktraces
-  StackFrame &vec_SF_r = frames.back();
-  if (isForkStarWrapper(vec_SF_r.frameName))
-    needGlueFork = true;
+  if (!frames.empty()) { //very likely to be empty for insts in fork and preSpawn files
+    vector<StackFrame>::reverse_iterator rsf_i = frames.rbegin();
+    if ((*rsf_i).frameName == "thread_begin") { //not from the main thread of main node
+      needGluePre = true;
+      if (frames.size() > 1) {
+        if (isForkStarWrapper((*(rsf_i+1)).frameName)) {
+          needGlueFork = true;
+          needGluePre =  false; //If we have fork, then we should ignore thread frame
+          frames.pop_back(); //No need to keep thread_begin as we will depend on fork*wrapper
+        }
+      } //at least Two frames
+    }
+  } //at least One frame
+  
   // print the new instance
   stack_info<<"After trimFrames, Instance #"<<InstanceNum<<" on "<<nodeName<<endl;
   printInstance_concise();

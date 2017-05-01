@@ -24,6 +24,7 @@ namespace std
 
 #include "BlameStruct.h"
 #include <unordered_map>
+#include <utility>
 #define COMPUTE_INST    0
 #define PRESPAWN_INST   1
 #define FORK_INST       2
@@ -67,6 +68,8 @@ struct StackFrame
   unsigned long address;
   bool toRemove = false;
   std::string frameName;
+
+  unsigned long task_id = 0;
   fork_t info;
 };
 
@@ -74,9 +77,13 @@ struct Instance
 {
   std::vector<StackFrame> frames;
   int instType = -1;//which file it came from, -1 is invalid
-  int processTLNum; //processTaskList called#
   bool isMainThread = false; //whether this instance is from the main thread
-  bool needGlueFork = false;
+  //needGlueFork and needGluePre should NOT be both true at the same time
+  bool needGlueFork = false; //has fork*wrapper frame
+  bool needGluePre  = false; //has thread_begin frame but NO fork*wrapper frame
+  unsigned long taskID = 0; 
+  unsigned long minTID = 0; //if minTID != taskID (from processTaskLIst) then maxTID = taskID-1
+  unsigned long maxTID = 0; 
   fork_t info; //Specifically for fork* samples
   //std::ofstream stackDebug = stack_info;
   
@@ -112,6 +119,31 @@ typedef std::unordered_map<std::string, std::vector<Instance>, std::hash<std::st
 
 //we keep a map between the chpl_nodeID and real compute node names
 typedef std::unordered_map<int, std::string> nodeHash;
+//we keep a map between node name and taskIDs, for the use of prespawn (optimized runtime) 
+//first = taskID of this prespawn stacktrace, second = parent(leader) taskID of this one when calling gluePreStacktraces
+typedef std::unordered_map<int, int> taskHash;
+typedef std::unordered_map<std::string, taskHash, std::hash<std::string>, eqstr> globalTaskIDHash;
 
+//fork hash using fork_t as the key_type
+struct key_hash : public std::unary_function<fork_t, std::size_t>
+{
+  std::size_t operator()(const fork_t &k) const
+  {
+    return k.callerNode ^ k.calleeNode ^ k.fid;
+  }
+};
+
+struct key_equal : public std::binary_function<fork_t, fork_t, bool>
+{
+  bool operator()(const fork_t &k1, const fork_t &k2) const
+  {
+    return (
+        k1.callerNode == k2.callerNode &&
+        k1.calleeNode == k2.calleeNode &&
+        k1.fid        == k2.fid);
+  }
+};
+
+typedef std::unordered_map<const fork_t, Instance, key_hash, key_equal> globalForkInstMap;  //contains all fork instances from all nodes
 
 #endif

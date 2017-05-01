@@ -31,7 +31,6 @@
 #define ADD_LINE   1
 #define END_LINE   2
 */
-#define SEP_TAGS
 using namespace std;
 using namespace Dyninst;
 
@@ -72,25 +71,54 @@ bool equalInstance(Instance instA, Instance instB)
 
 //==========================^^==================================//
 
-void getNeighborInfo(StackFrame &sf, vector<Instance>::iterator inst)
+void getNeighborForkInfo(StackFrame &sf, vector<Instance>::iterator inst, vector<Instance> &instances)
+{
+  vector<Instance>::iterator minusOne = inst-1, plusOne = inst+1;
+  //Check plusOne if inst is NOT the last element in the vector
+  if (plusOne != instances.end()) {
+    if (equalInstance(*inst, *plusOne) && ((*plusOne).frames)[sf.frameNumber].info.callerNode >=0) {
+      sf.info = ((*plusOne).frames)[sf.frameNumber].info;
+      return;
+    }
+  }
+  //Check minusOne if inst is NOT the first element in the vector
+  if (inst != instances.begin()) {
+    if (equalInstance(*inst, *minusOne) && ((*minusOne).frames)[sf.frameNumber].info.callerNode >=0) {
+      sf.info = ((*minusOne).frames)[sf.frameNumber].info;
+      return;
+    }
+  }
+  
+  //We really have to let it be for now
+  cerr<<"Fail to getNeighborForkInfo for sf "<<sf.frameName<<" "
+      <<sf.info.callerNode<<" "<<sf.info.calleeNode<<" "
+      <<sf.info.fid<<" "<<sf.info.fork_num<<" in inst#"<<(*inst).instNum<<endl;
+}
+  
+void getNeighborThreadInfo(StackFrame &sf, vector<Instance>::iterator inst, vector<Instance> &instances)
 {
   vector<Instance>::iterator minusOne = inst-1, plusOne = inst+1;
   //Check plusOne first
-  if (equalInstance(*inst, *plusOne) &&
-    ((*plusOne).frames)[sf.frameNumber].info.callerNode >=0)
-    sf.info = ((*plusOne).frames)[sf.frameNumber].info;
+  if (plusOne != instances.end()) {
+    if (equalInstance(*inst, *plusOne) && ((*plusOne).frames)[sf.frameNumber].task_id >0) {
+      sf.task_id = ((*plusOne).frames)[sf.frameNumber].task_id;
+      return;
+    }
+  }
   //Check minusOne then
-  else if (equalInstance(*inst, *minusOne) &&
-    ((*minusOne).frames)[sf.frameNumber].info.callerNode >=0)
-    sf.info = ((*minusOne).frames)[sf.frameNumber].info;
+  if (inst != instances.begin()) {
+    if (equalInstance(*inst, *minusOne) && ((*minusOne).frames)[sf.frameNumber].task_id >0) {
+      sf.task_id = ((*minusOne).frames)[sf.frameNumber].task_id;
+      return;
+    }
+  }
+
   //We really have to let it be for now
-  else
-    cerr<<"Fail to getNeighborInfo for sf "<<sf.frameName<<" "
-      <<sf.info.callerNode<<" "<<sf.info.calleeNode<<" "
-      <<sf.info.fid<<" "<<sf.info.fork_num<<endl;
+  cerr<<"Fail to getNeighborThreadInfo for sf "<<sf.frameName<<" "
+      <<sf.task_id<<" in inst#"<<(*inst).instNum<<endl;
 }
-  
-void populateFrames(Instance &inst, ifstream &ifs, BPatch_process* proc, string inputFile)
+
+int populateFrames(Instance &inst, ifstream &ifs, BPatch_process *proc, string inputFile)
 {    
   char linebuffer[2000];
   ifs.getline(linebuffer,2000);
@@ -100,7 +128,7 @@ void populateFrames(Instance &inst, ifstream &ifs, BPatch_process* proc, string 
 
   if (str.find("START")!=string::npos || str.find("END")!=string::npos) {
     cerr<<"Shouldn't be here ! Not ADD_LINE! it's "<<str<<endl;
-    return;
+    return 1;
   }
   else {
     int frameNum;
@@ -110,7 +138,7 @@ void populateFrames(Instance &inst, ifstream &ifs, BPatch_process* proc, string 
     //above: 15 for 32-bit, 18 for 48-bit, 22 for 64-bit system
     if (str.length() <= 0) {
       cerr<<"Null Stack Size"<<endl;
-      return;
+      return 2;
     }
     //We can't use the previous way since the size of each frame is uncertain now
     //we count the occurences of '\t' since each frame outputs one '\t'
@@ -122,30 +150,19 @@ void populateFrames(Instance &inst, ifstream &ifs, BPatch_process* proc, string 
       ss>>frameNum; // 1st: frameNum
       if (frameNum != a) {
         cerr<<"Missing a stack frame "<<frameNum<<" "<<a<<" in "<<inputFile<<" of inst#"<<inst.instNum<<endl;
-        break;//break out the for loop, directly go to the next iteration
+        return 3;//break out the for loop, directly go to the next iteration
       }
 
       ss>>std::hex>>address>>std::dec; // 2nd: address
       if (frameNum != 0)
         address = address - 1; //sampled IP should points to the last instruction 
       
-      BPatch_Vector<BPatch_statement> sLines;
-      proc->getSourceLines(address,sLines); // it can get the information associate 
-                                    // with the address, the vector sLines contain 
-                                    //pairs of filenames(source file names) and 
-                                    //line numbers that are associated with address
-
       ss>>frameName; // 3rd: frameName
-      bool isForkFrame = false;
-      int loc, rem, fID, f_num;
-      if (isForkStarWrapper(frameName)) {
-        isForkFrame = true;
-        ss>>loc;
-        ss>>rem;
-        ss>>fID;
-        ss>>f_num;
+      //if it's from getEarlyStackTrace, we don't wanna this instance
+      if (frameName == "getEarlyStackTrace") {
+        cerr<<"We met getEarlyStackTrace "<<frameNum<<" "<<a<<" in "<<inputFile<<" of inst#"<<inst.instNum<<endl;
+        return 4;
       }
-
       //get frameName in case it's missing in libunwind
       else if (frameName == "***") {
         BPatch_function *func = proc->findFunctionByAddr((void*)address);
@@ -154,10 +171,32 @@ void populateFrames(Instance &inst, ifstream &ifs, BPatch_process* proc, string 
           if (frameName.empty()) //In case we still cant get the name
             frameName = "***";
         }
-        //After this, some frameName can be fork*wrapper, but we don't have
+        //After this, some frameName can be fork*wrapper/thread_begin, but we don't have
         //fork_t info of that since the stupid libunwind didn't recognize it
-        //during runtime: TODO: use the nearby fork*wrapper info
+        //Current workround: use the nearby fork*wrapper/thread_begin info in outputSamples
       }
+      //get extra info for special frames that "really existed" (not ***)
+      else {
+        int loc, rem, fID, f_num;
+        unsigned long task_id;
+        if (isForkStarWrapper(frameName)) {
+          ss>>loc;
+          ss>>rem;
+          ss>>fID;
+          ss>>f_num;
+          sf.info = {loc, rem, fID, f_num};
+        }
+        else if (frameName == "thread_begin") {
+          ss>>task_id;
+          sf.task_id = task_id;
+        }
+      }
+
+      BPatch_Vector<BPatch_statement> sLines;
+      proc->getSourceLines(address,sLines); // it can get the information associate 
+                                    // with the address, the vector sLines contain 
+                                    //pairs of filenames(source file names) and 
+                                    //line numbers that are associated with address
 
       if (sLines.size() > 0) {
         //for test
@@ -173,8 +212,6 @@ void populateFrames(Instance &inst, ifstream &ifs, BPatch_process* proc, string 
         sf.frameNumber = a;
         sf.address = address;
         sf.frameName = frameName;
-        if (isForkFrame) //info fields only update in fork*wrapper frame
-          sf.info = {loc, rem, fID, f_num};
       }
       else {
         sf.lineNumber = -1;
@@ -183,17 +220,22 @@ void populateFrames(Instance &inst, ifstream &ifs, BPatch_process* proc, string 
         sf.address = address;
         sf.frameName = frameName;
       }
+
       inst.frames.push_back(sf);
+
+      //Hui 04/11/17 dump frames before chpl_gen_main in call_path
+      if (frameName=="chpl_gen_main")
+        return 0; //We are not going further
     }// end of for loop
   }
+
+  return 0;
 }
 
 void populateSamples(vector<Instance> &instances, char *exeName, std::ifstream &ifs, string inputFile)
 {
   BPatch bpatch;
   BPatch_process* proc = NULL;
-  //BPatch_image* appImage = NULL;
-  //BPatch_Vector<BPatch_module*>* appModules = NULL;
   
   if (!(proc = bpatch.processCreate(exeName, NULL))) {
     cerr << "error in bpatch.createProcess" << endl;
@@ -209,17 +251,24 @@ void populateSamples(vector<Instance> &instances, char *exeName, std::ifstream &
     string buf;
    
     if (str.find("<----START") != string::npos) {
-      ss>>buf; //buf = "<----START"
-      ss>>buf; //buf = file name [fork, preSpawn, compute]
-      int tempVal; 
-      ss>>tempVal; //prcoessTLNum;
-
       Instance inst;
-      inst.processTLNum = tempVal;
       inst.instNum = inst_count;
       inst_count++;
+      
+      ss>>buf; //buf = "<----START"
+      ss>>buf; //buf = file name [fork, preSpawn, compute]
+      int tempVal = 0;
+      if (buf.find("preSpawn") != string::npos) { //if it's preSpawn file
+        ss>>tempVal; //taskID;
+        inst.taskID = tempVal;
+        ss>>tempVal;
+        inst.minTID = tempVal;
+        ss>>tempVal;
+        inst.maxTID = tempVal;
+      }
+
       //only fork file has the following fields
-      if (buf.find("fork") != string::npos) { 
+      else if (buf.find("fork") != string::npos) { 
         if(ss>>tempVal);
           inst.info.callerNode = tempVal;
         if(ss>>tempVal);
@@ -230,11 +279,11 @@ void populateSamples(vector<Instance> &instances, char *exeName, std::ifstream &
           inst.info.fork_num = tempVal;
       }
 
-      populateFrames(inst, ifs, proc, inputFile); 
+      int ret = populateFrames(inst, ifs, proc, inputFile); 
 
       ifs.getline(linebuffer,2000);//---->END
       string str2(linebuffer);
-      if (str2.find("---->END") != string::npos) {
+      if (str2.find("---->END") != string::npos && ret == 0) {
         instances.push_back(inst);
       }
     }
@@ -250,14 +299,21 @@ void outputParsedSamples(vector<Instance> &instances, string inputFile, string d
   ofs.open(outName);
   if (ofs.is_open()) {
     int size = instances.size();
+    int i = 0; //inst#
     ofs<<size<<endl;   // output the number of instances in Input-
     
     vector<Instance>::iterator vec_I_i;
     for (vec_I_i = instances.begin(); vec_I_i != instances.end(); vec_I_i++) {
+      //cout<<"Outputing inst#"<<i<<" from "<<inputFile<<endl;
+
       int frameSize = (*vec_I_i).frames.size();
-      ofs<<frameSize<<" "<<(*vec_I_i).processTLNum;
+      ofs<<frameSize;
+      // output TID info for preSpawn* inputFiles
+      if (inputFile.find("preSpawn") == 0) {
+        ofs<<" "<<(*vec_I_i).taskID<<" "<<(*vec_I_i).minTID<<" "<<(*vec_I_i).maxTID;
+      }
       // output fork_t info for fork* inputFiles
-      if (inputFile.find("fork") == 0) {//file starts with "fork"
+      else if (inputFile.find("fork") == 0) {//file starts with "fork"
         ofs<<" "<<(*vec_I_i).info.callerNode<<" "<<(*vec_I_i).info.calleeNode
           <<" "<<(*vec_I_i).info.fid<<" "<<(*vec_I_i).info.fork_num;
       }
@@ -275,10 +331,17 @@ void outputParsedSamples(vector<Instance> &instances, string inputFile, string d
           if (isForkStarWrapper((*vec_sf_i).frameName)) {      
             // it refers to fork*wrappers that were not discovered by libunwind
             if ((*vec_sf_i).info.callerNode == -1) //since default is -1 if not changed
-              getNeighborInfo(*vec_sf_i, vec_I_i);
+              getNeighborForkInfo(*vec_sf_i, vec_I_i, instances);
               
             ofs<<" "<<(*vec_sf_i).info.callerNode<<" "<<(*vec_sf_i).info.calleeNode
                  <<" "<<(*vec_sf_i).info.fid<<" "<<(*vec_sf_i).info.fork_num;   
+          }
+          else if ((*vec_sf_i).frameName == "thread_begin") {
+            // it refers to thread_begins that were not discovered by libunwind
+            if ((*vec_sf_i).task_id == 0)
+              getNeighborThreadInfo(*vec_sf_i, vec_I_i, instances);
+            
+            ofs<<" "<<(*vec_sf_i).task_id;   
           }
 
           ofs<<endl;
@@ -288,6 +351,8 @@ void outputParsedSamples(vector<Instance> &instances, string inputFile, string d
             <<(*vec_sf_i).address<<std::dec<<" "<<(*vec_sf_i).frameName<<endl;
         }
       }
+
+      i++; //keep inst#
     }
     // CLOSE the file
     ofs.close();
@@ -318,13 +383,14 @@ int main(int argc, char** argv)
   vector<Instance> forkInstances, fork_nbInstances, fork_fastInstances;
   
   // parse compute file then output Input-compute file
-  ifs_compute.open(whichNode);
+  inputFile = whichNode;
+  ifs_compute.open(inputFile);
   if (ifs_compute.is_open()) {
-    populateSamples(instances, argv[1], ifs_compute, whichNode); 
+    populateSamples(instances, argv[1], ifs_compute, inputFile); 
     if (instances.size())
       outputParsedSamples(instances, whichNode, "COMPUTE");
     else
-      cerr<<"Error: file exists but instances empty"<<endl;
+      cerr<<"Error: file exists but instances empty in "<<inputFile<<endl;
     ifs_compute.close(); //CLOSE the file
   }
     
@@ -336,7 +402,7 @@ int main(int argc, char** argv)
     if (preSpawnInstances.size())
       outputParsedSamples(preSpawnInstances, inputFile, "PRESPAWN");
     else
-      cerr<<"Error: file exists but instances empty"<<endl;
+      cerr<<"Error: file exists but instances empty in "<<inputFile<<endl;
     ifs_preSpawn.close(); //CLOSE the file
   }
 
@@ -348,7 +414,7 @@ int main(int argc, char** argv)
     if (forkInstances.size())
       outputParsedSamples(forkInstances, inputFile, "FORK");
     else
-      cerr<<"Error: file exists but instances empty"<<endl;
+      cerr<<"Error: file exists but instances empty in "<<inputFile<<endl;
     ifs_fork.close(); //CLOSE the file
   }
 
@@ -360,7 +426,7 @@ int main(int argc, char** argv)
     if (fork_nbInstances.size())
       outputParsedSamples(fork_nbInstances, inputFile, "FORK");
     else
-      cerr<<"Error: file exists but instances empty"<<endl;
+      cerr<<"Error: file exists but instances empty in "<<inputFile<<endl;
     ifs_fork_nb.close(); //CLOSE the file
   }
 
@@ -372,7 +438,7 @@ int main(int argc, char** argv)
     if (fork_fastInstances.size())
       outputParsedSamples(fork_fastInstances, inputFile, "FORK");
     else
-      cerr<<"Error: file exists but instances empty"<<endl;
+      cerr<<"Error: file exists but instances empty in "<<inputFile<<endl;
     ifs_fork_fast.close(); //CLOSE the file
   }
 
