@@ -486,7 +486,7 @@ public class BlameContainer {
 	}
 	
 	//added by Hui 04/09/17 keep all valid var/func names from usr_names
-    void getUsrNames(String name_file)
+    public void getUsrNames(String name_file)
     {   
       File nf = new File(name_file);
 

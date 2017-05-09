@@ -5,9 +5,11 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.StringTokenizer;
 //import java.util.Vector;
 
 //import blame.BlameFunction;
@@ -17,10 +19,16 @@ import java.util.TreeMap;
 public class ProfilerData {
 	
 	private HashMap<String, ProfilerFunction> allFunctions;
+    //04/07/17: keep all valid names from usr_names file
+	private HashSet<String> allUsrVarNames;
+	private HashSet<String> allUsrFuncNames;
 
 	public ProfilerData()
 	{
 		allFunctions = new HashMap<String, ProfilerFunction>();
+        //added by Hui 04/07/17
+        allUsrVarNames = new HashSet<String>();
+        allUsrFuncNames = new HashSet<String>();
 	}
 	
 	
@@ -28,6 +36,14 @@ public class ProfilerData {
 		return allFunctions;
 	}
 
+	public HashSet<String> getAllUsrVarNames() {
+		return allUsrVarNames;
+	}
+
+
+	public HashSet<String> getAllUsrFuncNames() {
+		return allUsrFuncNames;
+	}
 
 	public Map<String, ProfilerFunction> getSortedFunctions(boolean standardSort) {
 		
@@ -87,6 +103,85 @@ public class ProfilerData {
 		addInstanceToEntireCallPath(truncString, pi, pf);
 	}
 	
+	//added by Hui 04/09/17 keep all valid var/func names from usr_names
+    public void getUsrNames(String name_file)
+    {   
+      File nf = new File(name_file);
+
+      try {
+        BufferedReader bufReader = new BufferedReader(new FileReader(nf));
+        String line = null;
+
+        while ((line = bufReader.readLine()) != null) {
+          if (line.indexOf("BEGIN VARIABLE NAMES") >= 0) {
+            while ((line = bufReader.readLine()) != null) {
+              if (line.indexOf("END VARIABLE NAMES") >=0) 
+                break;
+              
+              String varName = new String(line);
+              allUsrVarNames.add(varName);
+            } //end of var while
+          }
+
+          else if (line.indexOf("BEGIN FUNCTION NAMES") >=0) {
+            while ((line = bufReader.readLine()) != null) {
+              if (line.indexOf("END FUNCTION NAMES") >=0) 
+                break;
+              
+              String funcName = new String(line);
+              allUsrFuncNames.add(funcName);
+            } //end of func while
+          }
+        } //end of out-most while
+      } //end of try
+
+      catch(IOException ie) {
+        ie.printStackTrace();
+      }
+    }
+
+
+    public String removeGenFrames(String callPathName)
+    {
+        
+        HashSet<String> funcNames = getAllUsrFuncNames();
+        String cp = new String(""); //Initialize an empty string to return
+        StringBuilder sb = new StringBuilder(cp); //String.concat() doesn't work! Use StringBuilder
+        // callPathName is the original call path, including gen frames
+        if (callPathName.indexOf(".") >0) {
+            StringTokenizer st = new StringTokenizer(callPathName, ".");
+            String[] esTokens = new String[st.countTokens()];
+            int counter = 0;
+            // store tokens into esTokens array
+            while (st.hasMoreTokens()) {
+	            esTokens[counter] = st.nextToken();
+                counter++;
+            }
+            // feed usr frames into cp
+            for (int i=0; i<counter; i++) {
+                if (funcNames.contains(esTokens[i])) {
+                    sb.append(esTokens[i]);
+                    sb.append(".");
+                }
+            }
+
+            cp = sb.toString();
+            // chop the last '.' symbol
+            if (cp.endsWith("."))
+                cp = cp.substring(0, cp.length()-1);
+        }
+
+        // only one frame in this instance, could be Empty if it's gen frame
+        else {
+            if (funcNames.contains(callPathName))
+                cp = callPathName;
+        }
+        
+
+        return cp;
+    }
+
+
 	public String parseFrame(BufferedReader bufReader, ProfileInstance currInst, String line)
 	{
 		String pathTokens[] = line.split("\\s"); //Q: why double back slash
@@ -96,16 +191,16 @@ public class ProfilerData {
         /////////////added by HUI 08/23/15////////////////
         String cleanFuncName = funcName.replaceAll("chpl_user_main","main");
         funcName = cleanFuncName.replace("_chpl","");
-		//String moduleName = pathTokens[3];
-		//String pathName = pathTokens[4];
-		//String strLineNum  = pathTokens[5];
-		//int lineNumber = Integer.valueOf(strLineNum).intValue();
-		//String strBPType   = pathTokens[6];
-		//short bptType = Short.valueOf(strBPType).shortValue();
-		
-		
-		addInstanceToEntireCallPath(funcName, currInst, null);
-		
+        // remove all generated frames inside the call path 05/08/17
+        funcName = removeGenFrames(funcName);
+        
+        if (!funcName.isEmpty()) {
+		    // we only add this instance if the trimed funcName isn't empty (means we have at least one usr frame in this call path)
+		    addInstanceToEntireCallPath(funcName, currInst, null);
+        }
+        
+        else
+		    System.out.println("Found one instance without any usr frames in the call path!");
 		/*
 		ProfilerFunction pf = allFunctions.get(funcName);
 		//System.out.println("cashew");
@@ -130,6 +225,7 @@ public class ProfilerData {
 					return evLine;
 				}
 									
+                // we only need to parse the first FRAME so pop out all other lines in this instance
 				evLine = bufReader.readLine();
 			}
 						
@@ -182,6 +278,8 @@ public class ProfilerData {
 						line = parseFrame(bufReader, currInst, line);
 					}
 
+
+                    // we only need to parse the first FRAME since it has complete call path
 					while (line.indexOf("$$INSTANCE") < 0)
 					{
 						line = bufReader.readLine();

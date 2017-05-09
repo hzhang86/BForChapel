@@ -717,6 +717,7 @@ public class MainGUI {
 		BlameContainer bc = new BlameContainer();	
 		profiler.ProfilerData pd = new profiler.ProfilerData();
 
+
 		//SourceContainer has a public static member: sourceFiles Q:why 'new' here?
 		SourceContainer.sourceFiles = new HashMap<String, SourceFile>();
 		
@@ -743,7 +744,9 @@ public class MainGUI {
             // output all valid variable/function names in the user code
             line = bufReader.readLine(); //.../usr
             bc.getUsrNames(line);
-
+            //May 08/17 store usr func names for code-centric  
+            pd.getUsrNames(line);
+			System.out.println("#of usr functions: " + pd.getAllUsrFuncNames().size());
 
 			String strNumNodes = bufReader.readLine();
 			numNodes = Integer.valueOf(strNumNodes).intValue();

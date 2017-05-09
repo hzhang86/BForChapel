@@ -38,7 +38,7 @@ public class BlameDataTrunc extends BlameData {
         boolean isUsrVar = false;
         // rawName is the name to a field
         if (rawName.indexOf(".") >0) {
-            StringTokenizer st = new StringTokenizer(rawName);
+            StringTokenizer st = new StringTokenizer(rawName, ".");
             String[] esTokens = new String[st.countTokens()];
 
             int counter = 0;
@@ -66,8 +66,6 @@ public class BlameDataTrunc extends BlameData {
 	
 	public String parseFrame(BufferedReader bufReader, Instance currInst, String line)
 	{
-        //////////////////////////////////////////
-        System.out.println("parseFrame in BlameDataTrunc Called !");
 		String pathTokens[] = line.split("\\s"); //NOT sure why we need double backslash for a space
 		//String strFrameNum = pathTokens[1];
 		//int frameNum = Integer.valueOf(strFrameNum).intValue();
@@ -426,7 +424,7 @@ public class BlameDataTrunc extends BlameData {
 							ep.blameByNode.put(currInst.getNodeName(), value);
 						}		
 						//ep.addInstance(currInst, null, bf);	
-                        this.instanceCount--; //added by Hui 03/08/16: we should NOT count in the invalid samples
+                        this.instanceCount--; //added by Hui 03/08/16: we should NOT count in the invalid (polling) samples
 					}
 				}
 			}
