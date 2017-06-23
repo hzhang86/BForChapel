@@ -3996,6 +3996,9 @@ void FunctionBFC::adjustMainGraph()
                                 //Added for pids: %6=Load A; funcCall(%6, ..) when A is Pid, we should add %6 to A's loadForCalls before the edge is deleted
                                 if (vp->isPid) {
                                   if (sourceVP->nStatus[CALL_PARAM]) {
+#ifdef DEBUG_GRAPH_COLLAPSE
+                                    blame_info<<"Adding "<<sourceVP->name<<" to Pid "<<vp->name<<" as loadForCall"<<endl;
+#endif
                                     vp->loadForCalls.insert(sourceVP);
                                   }
                                 }

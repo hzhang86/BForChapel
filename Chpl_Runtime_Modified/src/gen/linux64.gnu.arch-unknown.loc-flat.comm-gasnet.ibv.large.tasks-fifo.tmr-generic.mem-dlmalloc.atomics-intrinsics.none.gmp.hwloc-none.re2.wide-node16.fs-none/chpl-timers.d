@@ -1,0 +1,24 @@
+gen/linux64.gnu.arch-unknown.loc-flat.comm-gasnet.ibv.large.tasks-fifo.tmr-generic.mem-dlmalloc.atomics-intrinsics.none.gmp.hwloc-none.re2.wide-node16.fs-none/chpl-timers.o: \
+ chpl-timers.c ../include/chplrt.h ../include/sys_basic.h \
+ ../include/chpl-mem-warning-macros.h ../include/chpltimers.h \
+ ../include/chpltypes.h ../include/localeModels/flat/chpl-locale-model.h \
+ ../include/sys_basic.h ../include/chpltypes.h \
+ ../include/chpl-string-support.h
+
+../include/chplrt.h:
+
+../include/sys_basic.h:
+
+../include/chpl-mem-warning-macros.h:
+
+../include/chpltimers.h:
+
+../include/chpltypes.h:
+
+../include/localeModels/flat/chpl-locale-model.h:
+
+../include/sys_basic.h:
+
+../include/chpltypes.h:
+
+../include/chpl-string-support.h:

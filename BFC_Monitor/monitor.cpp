@@ -55,7 +55,8 @@ static char host_name[128];
  * } fork_t;
  *
  */
-
+//control whether record special frame info (fork*, thread_begin)
+#define ENABLE_FRAME_INFO
 
 Process::cb_ret_t on_signal(Event::const_ptr evptr)
 {
@@ -101,6 +102,7 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
         frameName = "***";   // but we still need to hold the place
       fprintf(pFile, "%d 0x%016lx ", i, (unsigned long) ra);
       fprintf(pFile, "%s ", frameName.c_str());
+#ifdef ENABLE_FRAME_INFO
       // if it's one of the fork_*_wrapper function, then we need to concatenate the call stack
       // with the pre-On stmt call stack by retrieving the "info" of this frame
       if (frameName.find("fork")!=std::string::npos && frameName.find("wrapper")!=std::string::npos) {
@@ -229,7 +231,7 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
           }
         }
       } // End of thread_begin frame
-        
+#endif
       // separate the next stack frame
       fprintf(pFile, "\t");
     }

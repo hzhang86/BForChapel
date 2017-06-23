@@ -12,6 +12,7 @@
 #include <iostream>
 #include <map>
 #include <time.h>
+#include <ctype.h> //for the call of "isdigit"
 
 using namespace std;
 
@@ -588,8 +589,7 @@ void FunctionBFC::makeNewTruncGraph()
 			if (ivp->eStatus > EXIT_VAR_GLOBAL)
 				continue;
 #ifdef DEBUG_GRAPH_TRUNC			
-			blame_info<<"Adding IVP P edge name "<<ivpParent->name<<" to "<<ivp->name<<std::endl;
-			blame_info<<"Adding IVP P edge "<<ivpParent->impNumber<<" to "<<ivp->impNumber<<std::endl;
+			blame_info<<"Adding IVP P edge ("<<ivpParent->name<<","<<ivpParent->impNumber<<") to ("<<ivp->name<<","<<ivp->impNumber<<")"<<std::endl;
 #endif
 			tie(ed, inserted) = add_edge(ivpParent->impNumber, ivp->impNumber, G_trunc);
 			if (inserted)
@@ -1560,6 +1560,10 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         if (child->isWritten && child != ivp) {
             ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
             debugPrintLineNumbers(ivp, child, 7);
+        }
+        else if (ivp->isPid && child != ivp) {
+            ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+            debugPrintLineNumbers(ivp, child, 13);
         }
     }
 #ifdef DEBUG_LINE_NUMS
@@ -2753,6 +2757,19 @@ void FunctionBFC::tweakBlamedArgs()
     }
     else if (fname.find("chpl__dynamicFastFollowCheck") == 0) {
       blamedArgs.clear();
+    }
+    else if (fname.find("this") == 0) {
+      //we need to double check the name has no other alpabet chars, except numbers: thisXXXX
+      bool realThis = true; //default to be real "this"function
+      for (int i=4; i<fname.size(); i++) {
+        if (!isdigit(fname[i])) {
+          realThis = false;
+          break;
+        }
+      }
+      
+      if (realThis)
+        blamedArgs.insert(0);
     }
 
     // We really shouldn't add lineNumber(_ln) and fileName(_fn) into blamedArgs

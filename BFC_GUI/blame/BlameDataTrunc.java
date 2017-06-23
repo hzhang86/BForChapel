@@ -423,8 +423,9 @@ public class BlameDataTrunc extends BlameData {
 							value++;
 							ep.blameByNode.put(currInst.getNodeName(), value);
 						}		
-						//ep.addInstance(currInst, null, bf);	
-                        this.instanceCount--; //added by Hui 03/08/16: we should NOT count in the invalid (polling) samples
+						
+                        //ep.addInstance(currInst, null, bf);	
+                        //this.instanceCount--; //added by Hui 03/08/16: we should NOT count in the invalid (polling) samples
 					}
 				}
 			}
