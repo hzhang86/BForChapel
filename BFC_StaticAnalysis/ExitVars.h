@@ -17,9 +17,6 @@
 
 class NodeProps;
 
-using namespace std;
-
-
 enum ExitTypes { PARAM, RET, GLOBAL, STATIC, UNDEFINED };
 
 enum ExitProgramTypes { UNREAD_RET, BLAME_HOLDER };

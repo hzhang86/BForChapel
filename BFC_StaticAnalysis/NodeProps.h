@@ -20,7 +20,6 @@
 #include "Parameters.h"
 
 using namespace llvm;
-using namespace std;
 /*
 #ifdef __GNUC__
 #include <ext/hash_map>
@@ -122,14 +121,14 @@ class FunctionBFCBB;
  
 struct FuncCall {
     int paramNumber;//changed by Hui 12/31/15: now -1 represents return val,
-    string funcName;//and -2 represents the callnode, normal params start from 0  
+    std::string funcName;//and -2 represents the callnode, normal params start from 0  
     int lineNum;
     ExitSuper * es;
 	short resolveStatus;
     NodeProps * param;
 	bool outputEvaluated;
 	
-    FuncCall(int pN, string fn) {
+    FuncCall(int pN, std::string fn) {
         paramNumber = pN;
         funcName = fn;
 		lineNum = 0;
@@ -175,7 +174,7 @@ public:
 		return d1->line_num < d2->line_num;
 	}
 	
-	string & getFullName();
+	std::string & getFullName();
 	int getParamNum(std::set<NodeProps *> & visited);
 	void getStructName(std::string & structName, std::set<NodeProps *> & visited);
 	
@@ -192,14 +191,14 @@ public:
     const char *uniqueNameAsField; //2.P.I.8.P.3.P.topStructName
     //////////////////////////////////////////////////////////////////
 
-    string name;
+    std::string name;
 	
 	bool calcName;
 	
 	// If the Vertex is a EV value > 0, otherise 0
 	int paramNum; 
 	
-	string fullName;
+	std::string fullName;
     int line_num; //declared line number for vars, or where the instruction appears
 	
 	bool calcAgg;  // has the aggregate line number been calculated
@@ -211,7 +210,7 @@ public:
 	bool isLocalVar;
 	bool isFakeLocal;
 	bool isStructure;
-    bool isFormalArg; //those args that have no chpl_macro_tmp to hold once passed in
+    bool isFormalArg; //formal args that are added to EVs (ptr>=1)
 	
 	// arrays treated slightly different
 	bool isArr;
@@ -224,26 +223,27 @@ public:
     //New added for special calls 03/04/17
     bool isPid;
     bool isTempPid; //helper in recursively finding pid
+    bool isPidFromT2V; //helper in forward resolving pids from convertRTTValue
 	bool isObj;
     bool isRemoteWritten; //due to chpl_gen_comm_* calls
     NodeProps *myObj; //If "this" is a pid, non-NULL
     NodeProps *myPid; //If "this" is a obj, non-NULL
     // very similar to aliases, except these are for pid/obj and can add lines from
-    set<NodeProps *> objAliasesIn; //representations of same obj
-    set<NodeProps *> objAliasesOut; 
-    set<NodeProps *> objAliases; //representations of same obj
+    std::set<NodeProps *> objAliasesIn; //representations of same obj
+    std::set<NodeProps *> objAliasesOut; 
+    std::set<NodeProps *> objAliases; //representations of same obj
     
-    set<NodeProps *> pidAliasesIn; //representations of same pid
-    set<NodeProps *> pidAliasesOut; 
-    set<NodeProps *> pidAliases; //representations of same pid
-
+    std::set<NodeProps *> pidAliasesIn; //representations of same pid
+    std::set<NodeProps *> pidAliasesOut; 
+    std::set<NodeProps *> pidAliases; //representations of same pid
+    std::set<NodeProps *> PPAs; //potential pid aliases for EV nodes only
     //helper set for pidAliases from collapsable pair
-    set<NodeProps *> collapseNodes; //all deleted nodes from cp pairs
+    std::set<NodeProps *> collapseNodes; //all deleted nodes from cp pairs
     NodeProps *collapseTo;  //the recipient node
 
 	// true if this is a param that takes the blame for an extern call
 	bool isBlamedExternCallParam;
-	set<NodeProps *> blameesFromExFunc;
+	std::set<NodeProps *> blameesFromExFunc;
 
 	bool deleted;
 	
@@ -261,8 +261,8 @@ public:
 	
 	// Pointer Info (raw, refined into the sets for IVVs below
 	//e.g we have: *a=load **b; store *a **c; then
-    set<NodeProps *> aliasesIn; // c.aliasesIn.insert(b);
-	set<NodeProps *> aliasesOut;// b.aliasesOut.insert(c);
+    std::set<NodeProps *> aliasesIn; // c.aliasesIn.insert(b);
+	std::set<NodeProps *> aliasesOut;// b.aliasesOut.insert(c);
 	/*
        difference between fields and GEP, if 'this' node is a struct, then a GEP_BASE
        edge generates a field; otherwise a GEP_BASE edge generates a GEP; besides, if:
@@ -270,13 +270,13 @@ public:
        b = GEP a;
        and if this is NOT a struct and b's ptrLevel>0, then: this.GEPs.insert(b), a.GEPs.insert(b)
     */
-    set<NodeProps *> fields; //for structures, shouldn't include itself
-	set<NodeProps *> GEPs;  //a=GEP array, .... Then a is a GEP of array
-	set<NodeProps *> loads; //%val = load i32* %ptr, then ptr.loads.insert(val)
-	set<NodeProps *> nonAliasStores;//if v has no almostAlias, then it has nonAliasStores
+    std::set<NodeProps *> fields; //for structures, shouldn't include itself
+	std::set<NodeProps *> GEPs;  //a=GEP array, .... Then a is a GEP of array
+	std::set<NodeProps *> loads; //%val = load i32* %ptr, then ptr.loads.insert(val)
+	std::set<NodeProps *> nonAliasStores;//if v has no almostAlias, then it has nonAliasStores
                             //for a_(GEP/LOAD)_>b, c_(STORE)_>a, then b.nonAliasStores.insert(c)
-	set<NodeProps *> arrayAccess;//if array A, you access a in A, then A.arrayAccess.insert(a)
-	set<NodeProps *> almostAlias; // it's an alias to one instantiation of
+	std::set<NodeProps *> arrayAccess;//if array A, you access a in A, then A.arrayAccess.insert(a)
+	std::set<NodeProps *> almostAlias; // it's an alias to one instantiation of
 	// a variable,though technically the pointers arent' the same level
 	//if *a=load **b; store *a **c; store *d **c; 
     //then a and b are almostAliases respectively
@@ -284,35 +284,36 @@ public:
 	// The list of nodes that resolves to the VP through a RESOLVED_L_S_OP
     //RESOLVED_L_S_OP: resolved from the load-store operation
     //They are used as part of dataPtrs
-	set<NodeProps *> resolvedLS;//e.g. if we have: store a, b; c=load b;
+	std::set<NodeProps *> resolvedLS;//e.g. if we have: store a, b; c=load b;
 	                            //then we create c->a, a.resolvedLS.insert(c)
 	
+	std::set<NodeProps *> preRLS;//Before deleting any edges,kept only for EVs
     // The list of nodes that are resolved from the VP through a R_LS
     // There are some operations about it in calcLineNum(not directly adding all lines from it)
-	set<NodeProps *> resolvedLSFrom; //c.resolvedLSFrom.insert(a);
+	std::set<NodeProps *> resolvedLSFrom; //c.resolvedLSFrom.insert(a);
 	
 	// A subset of the resolvedLS nodes that write to the data range
 	//  thus causing potential side effects to all the other nodes that
 	//  interact through the R_L_S
-	set<NodeProps *> resolvedLSSideEffects;
+	std::set<NodeProps *> resolvedLSSideEffects;
 	
 	
-	set<NodeProps *> blameeEVs;
+	std::set<NodeProps *> blameeEVs;
 	
 	
 	// Important Vertex Vectors
-	set<NodeProps *> parents; //if store a @b, then b is a parent of a, a is a child of b
-	set<NodeProps *> children; //if b->a(a is blamed for b), then a is b's child
+	std::set<NodeProps *> parents; //if store a @b, then b is a parent of a, a is a child of b
+	std::set<NodeProps *> children; //if b->a(a is blamed for b), then a is b's child
 
 	// DF_CHILD_EDGE
-	set<NodeProps *> dfChildren; 
-	set<NodeProps *> dfParents;
+	std::set<NodeProps *> dfChildren; 
+	std::set<NodeProps *> dfParents;
 	
-	set<NodeProps *> aliases; // taken care of with pointer analysis, can include itself
-	set<NodeProps *> dfAliases; //aliases dictated by data flow, e.g its storesTo
+	std::set<NodeProps *> aliases; // taken care of with pointer analysis, can include itself
+	std::set<NodeProps *> dfAliases; //aliases dictated by data flow, e.g its storesTo
                                 //as long as it's a localVar
-	set<NodeProps *> dataPtrs; //if this node is int** array, and we have 
-	set<ImpFuncCall *> calls;  // store int* a int** array
+	std::set<NodeProps *> dataPtrs; //if this node is int** array, and we have 
+	std::set<ImpFuncCall *> calls;  // store int* a int** array
 	                           // int* b = load int** array
 	                        // int* c = GEP b, 4
                             //then to array: a is child, b is load, c is dataPtr
@@ -320,60 +321,60 @@ public:
     //added by Hui 05/10/16 for cases: store %6,a; %1=load a; call %myfunc(%1,..);
     //if %1 is written inside myfunc, then a shall get blamed as well. %1 was not put
     //into a's loads because there's a RLS between %6 and %1, so we made a new set to hold these
-    set<NodeProps *> loadForCalls; 
+    std::set<NodeProps *> loadForCalls; 
     // Field info          if we have a = GEP b, 0, 1...    then	
     StructField * sField;  //b.sBFC = a.sField.parentStruct    	
     StructBFC * sBFC;
 	
-    set<int> lineNumbers; //loop line + lines that this node is as a lhs val
-	set<int> descLineNumbers;
+    std::set<int> lineNumbers; //loop line + lines that this node is as a lhs val
+	std::set<int> descLineNumbers;
 	
 	// Mostly used with Fortran, these are the line numbers that 
 	//  get put into a given paramater.  Fortran uses parm.* pain
 	// in the ass struct parameters so we need to keep track of these
 	// so that way the fields can access the parent struct and get the 
 	// line numbers
-	set<int> externCallLineNumbers;
+	std::set<int> externCallLineNumbers;
 	
-	// the set of lines that are dominated by this vertex
-	set<int> domLineNumbers;
+	// the std::set of lines that are dominated by this vertex
+	std::set<int> domLineNumbers;
 	
-	set<ImpFuncCall *> descCalls;
-	set<NodeProps *> descParams;
-	set<NodeProps *> aliasParams;
+	std::set<ImpFuncCall *> descCalls;
+	std::set<NodeProps *> descParams;
+	std::set<NodeProps *> aliasParams;
 	
-    set<NodeProps *> pointedTo; //if a=GEP b, 0, 1, 1.. then b.pointedTo.insert(a)
-	set<NodeProps *> dominatedBy;
+    std::set<NodeProps *> pointedTo; //if a=GEP b, 0, 1, 1.. then b.pointedTo.insert(a)
+	std::set<NodeProps *> dominatedBy;
 	
 	
 	// For DataFlow analysis (reaching defs for primitives)
-	set<NodeProps *> genVP;
-	set<NodeProps *> killVP;
+	std::set<NodeProps *> genVP;
+	std::set<NodeProps *> killVP;
 	
-	set<NodeProps *> inVP;
-	set<NodeProps *> outVP;	
+	std::set<NodeProps *> inVP;
+	std::set<NodeProps *> outVP;	
 	
 	NodeProps * storeFrom;   // if store int a int* b  edge: b->a
-	set<NodeProps *> storesTo;// then a.storeFrom = b, b.storesTo.insert(a)
+	std::set<NodeProps *> storesTo;// then a.storeFrom = b, b.storesTo.insert(a)
 	//storeLines has all lines that this node's definition reaches/valid
     //all lines that this node reaches as a definition
-    set<int> storeLines;      //one node can have many sources(like a),  
+    std::set<int> storeLines;      //one node can have many sources(like a),  
     //borderLines has farthest line# for this node's valid definition in each fbb
     //The farthest line that this node's def can reach, or where this node is killed as a definition
-	set<int> borderLines;     //but it can only have single destination(like b)
+	std::set<int> borderLines;     //but it can only have single destination(like b)
 	/////////////////////////
 	
 	// More DataFlow Analysis (reaching defs for pointers)
-	set<NodeProps *> genPTR_VP;
-	set<NodeProps *> killPTR_VP;
+	std::set<NodeProps *> genPTR_VP;
+	std::set<NodeProps *> killPTR_VP;
 	
-	set<NodeProps *> inPTR_VP;
-	set<NodeProps *> outPTR_VP;	
+	std::set<NodeProps *> inPTR_VP;
+	std::set<NodeProps *> outPTR_VP;	
 
-	set<int> storePTR_Lines;
-	set<int> borderPTR_Lines;
+	std::set<int> storePTR_Lines;
+	std::set<int> borderPTR_Lines;
 	
-	set<NodeProps *>  dataWritesFrom;
+	std::set<NodeProps *>  dataWritesFrom;
 	/////////////////////////////////////////////
 	//added by Hui 05/10/16: help variables's lineNumOrder since that's not reliable
 	//It maps line# to the order of this node appeared in that line
@@ -384,10 +385,10 @@ public:
 	LineReadHash readLines;
 	//////////////////////////////////////////////
 	
-	set<NodeProps *> suckedInEVs;
+	std::set<NodeProps *> suckedInEVs;
 	
 	
-    set<FuncCall *> funcCalls;//all the func calls that this node was involved(
+    std::set<FuncCall *> funcCalls;//all the func calls that this node was involved(
                             //being as param/return value/the callNode(func))
     Value * llvm_inst;//the first instruction this node associated with
 	//for var, it's usually alloca(for lv), for reg, it can be any inst
@@ -424,7 +425,7 @@ public:
                       //for variables, since they were all declared in the first
                       //line of the function with "alloca"
   
-    NodeProps(int nu, string na, int ln, Value *pi)
+    NodeProps(int nu, std::string na, int ln, Value *pi)
     {
         number = nu;
 		impNumber = -1;
@@ -487,6 +488,7 @@ public:
 		
         isPid = false;
         isTempPid = false;
+        isPidFromT2V = false;
         isObj = false;
         isRemoteWritten = false;
         myPid = NULL;
@@ -513,6 +515,7 @@ public:
         pidAliasesOut.clear();
         pidAliasesIn.clear();
         pidAliases.clear();
+        PPAs.clear(); //07/18/18 reserved for postmortem2 use
         objAliasesOut.clear();
         objAliasesIn.clear();
         objAliases.clear();
@@ -524,7 +527,21 @@ public:
 		GEPs.clear();
 		loads.clear();
 		nonAliasStores.clear();
+
+        arrayAccess.clear();
+        almostAlias.clear();
+        resolvedLS.clear();
+        preRLS.clear();
+        resolvedLSFrom.clear();
+        resolvedLSSideEffects.clear();
+        blameeEVs.clear();
 		
+        // DF_CHILD_EDGE
+        dfChildren.clear();
+        dfParents.clear();
+        dfAliases.clear();
+        loadForCalls.clear();
+
 		lineNumbers.clear();
 		descLineNumbers.clear();
 		pointedTo.clear();

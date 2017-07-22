@@ -17,9 +17,9 @@
 #include <sstream> 
 //#include "llvm/Support/raw_os_ostream.h"
 //struct fltSemantics;
+using namespace std;
 
-
-void FunctionBFC::parseLLVM(std::vector<NodeProps *> &globalVars)
+void FunctionBFC::parseLLVM(vector<NodeProps *> &globalVars)
 {
     // push back all the exit variables in this function(ret, pointer params)
     determineFunctionExitStatus();
@@ -67,55 +67,51 @@ void FunctionBFC::adjustLVnEVs()
   //Check if v is LV first
   for (begin = variables.begin(), end = variables.end(); begin != end; begin++) {
     NodeProps *v = begin->second;
-    std::vector<LocalVar *>::iterator lv_i;
+    vector<LocalVar *>::iterator lv_i;
 	for (lv_i = localVars.begin();  lv_i != localVars.end(); lv_i++) {
-      std::string chplName = std::string(begin->first);
+      string chplName = string(begin->first);
       if (chplName.compare((*lv_i)->varName) == 0) {
 #ifdef DEBUG_LOCALS			
         blame_info<<"Local Var found begin="<<begin->first<<
-          ", it's line_num will be "<<(*lv_i)->definedLine<<std::endl;
+          ", it's line_num will be "<<(*lv_i)->definedLine<<endl;
 #endif				
         v->isLocalVar = true;
         v->line_num = (*lv_i)->definedLine;
         allLineNums.insert(v->line_num);
 
-        if (((*lv_i)->varName.find(".") != std::string::npos || 
-             (*lv_i)->varName.find("0x") != std::string::npos)
-            && (*lv_i)->varName.find("equiv.") == std::string::npos   
-            && (*lv_i)->varName.find("result.") == std::string::npos) 
+        if (((*lv_i)->varName.find(".") != string::npos || 
+             (*lv_i)->varName.find("0x") != string::npos)
+            && (*lv_i)->varName.find("equiv.") == string::npos   
+            && (*lv_i)->varName.find("result.") == string::npos) 
                     //TC: not sure about above conds
         {
           v->isFakeLocal = true; //no use later
         }
         break; //No need to continue search for this v anymore
       }
-#ifdef DEBUG_LOCALS
-      else
-        blame_info<<"Local Var Not Found: begin = "<<begin->first<< \
-                    ", lv_i = "<<(*lv_i)->varName.c_str()<<std::endl;
-#endif
     }
   } //end of variables
 
   //Now we check if v is EV, We don't tag arg holders/global vars/retVal as isFormalAr
   for (begin = variables.begin(), end = variables.end(); begin != end; begin++) {
     NodeProps *v = begin->second;
-    //std::string vName = v->name;
-    std::string vName = begin->first;
-    if (!vName.empty() && vName.find(PARAM_REC)==std::string::npos && vName.find(PARAM_REC2)==std::string::npos 
-            && vName.find("retval")==std::string::npos && v->isGlobal==false) {
-      std::vector<ExitVariable *>::iterator ev_i; 
+    //string vName = v->name;
+    string vName = begin->first;
+    if (!vName.empty() && vName.find("retval")==string::npos && v->isGlobal==false) {
+      vector<ExitVariable *>::iterator ev_i; 
       for (ev_i=exitVariables.begin(); ev_i != exitVariables.end(); ev_i++) {
 	    if (vName.compare((*ev_i)->realName)==0) {
 #ifdef DEBUG_EXIT
-	      blame_info<<"We found a real formal Arg: "<<vName<<std::endl;
+          //for formal arg that don't have arg holders and used directly in the func
+	      blame_info<<"We found a formalArg(EV): "<<vName<<endl;
 #endif
           v->isFormalArg = true;
           v->llvm_inst = (*ev_i)->llvmNode;//we dont hv alloc for v, use formal arg
-          if (v->isLocalVar)
+          if (v->isLocalVar) {
 #ifdef DEBUG_EXIT
-	        blame_info<<"Weird arg (lv&ev): "<<vName<<std::endl;
+	        blame_info<<"Weird arg (lv&ev): "<<vName<<endl;
 #endif
+          }
           break; //No need to search the exitvariables for this node anymore
         }
       }
@@ -125,10 +121,10 @@ void FunctionBFC::adjustLVnEVs()
   /*// Remove all nodes with empty name (weid, donnu how them got added in
   for (begin = variables.begin(), end = variables.end(); begin != end; begin++) {
     NodeProps *v = begin->second;
-    //std::string vName = std::string(begin->first);
+    //string vName = string(begin->first);
     if (!v || v->name.empty()) {
 #ifdef DEBUG_EXIT
-	  blame_info<<"Weird we have an empty named node in variables"<<std::endl;
+	  blame_info<<"Weird we have an empty named node in variables"<<endl;
 #endif
       variables.erase(begin);
     }
@@ -137,21 +133,21 @@ void FunctionBFC::adjustLVnEVs()
 }
 
 
-void FunctionBFC::populateGlobals(std::vector<NodeProps *> &gvs)
+void FunctionBFC::populateGlobals(vector<NodeProps *> &gvs)
 {
-  std::vector<NodeProps *>::iterator gv_i, gv_e;
+  vector<NodeProps *>::iterator gv_i, gv_e;
   for (gv_i = gvs.begin(), gv_e = gvs.end(); gv_i != gv_e; gv_i++) {
 		NodeProps *global = *gv_i;
 		
 #ifdef DEBUG_VP_CREATE
-		blame_info<<"Adding NodeProps(9) for "<<global->name<<std::endl;
+		blame_info<<"Adding NodeProps(9) for "<<global->name<<endl;
 #endif
 		
 		NodeProps *np = new NodeProps(global->number, global->name, global->line_num, global->llvm_inst);
 		np->isGlobal = true;
 		np->impNumber = 0;
 #ifdef DEBUG_GLOBALS
-		blame_info<<"Globals__(populateGlobals)--creating global NP for "<<np->name.c_str()<<std::endl;
+		blame_info<<"Globals__(populateGlobals)--creating global NP for "<<np->name.c_str()<<endl;
 #endif
 		variables[np->name] = np; //RegHashProps variables: string --> NodeProps*
 		//addGlobalExitVar(new ExitVariable(vp->name.c_str(), GLOBAL, -1));
@@ -169,7 +165,7 @@ void FunctionBFC::propagateConditional(DominatorTreeBase<BasicBlock> *DT, const 
 		return;
   
     if (rootBlock->hasName()) {
-		std::set<const char*, ltstr> t;
+		set<const char*, ltstr> t;
 		ImpRegSet::iterator irs_i;
 		
 		irs_i = iReg.find(rootBlock->getName().str());
@@ -180,12 +176,12 @@ void FunctionBFC::propagateConditional(DominatorTreeBase<BasicBlock> *DT, const 
 		if (condName != NULL) {
 			t.insert(condName);
 #ifdef DEBUG_LLVM_IMPLICIT
-			blame_info<<"Inserting (4)"<<condName<<" into "<<rootBlock->getName().str()<<std::endl;
+			blame_info<<"Inserting (4)"<<condName<<" into "<<rootBlock->getName().str()<<endl;
 #endif
 		}
 		
 		iReg[rootBlock->getName().str()] = t; //after update t, update t in iReg
-		//blame_info<<"New iReg (2)"<<(unsigned) &(iReg[rootBlock->getNameStart()])<<std::endl;
+		//blame_info<<"New iReg (2)"<<(unsigned) &(iReg[rootBlock->getNameStart()])<<endl;
 	}
   
     for (DomTreeNodeBase<BasicBlock>::const_iterator I = N->begin(), E = N->end(); I != E; ++I)
@@ -195,7 +191,7 @@ void FunctionBFC::propagateConditional(DominatorTreeBase<BasicBlock> *DT, const 
 
 
 void FunctionBFC::gatherAllDescendants(DominatorTreeBase<BasicBlock> *DT, BasicBlock *original, 
-                BasicBlock *&b, std::set<BasicBlock *> &cfgDesc, std::set<BasicBlock *> &visited)
+                BasicBlock *&b, set<BasicBlock *> &cfgDesc, set<BasicBlock *> &visited)
 {
 	if (visited.count(b))
 		return;
@@ -217,7 +213,7 @@ void FunctionBFC::handleOneConditional(DominatorTreeBase<BasicBlock> *DT, \
 {
 #ifdef DEBUG_LLVM_IMPLICIT
     blame_info<<"Looking at handling conditional for "<<N->getBlock()->getName().str() \
-        <<" for cond name "<<br->getCondition()->getName().str()<<std::endl;
+        <<" for cond name "<<br->getCondition()->getName().str()<<endl;
 #endif
     BasicBlock *b = N->getBlock();
 	
@@ -228,10 +224,10 @@ void FunctionBFC::handleOneConditional(DominatorTreeBase<BasicBlock> *DT, \
 	
 	size_t numChildren = N->getNumChildren();
 #ifdef DEBUG_LLVM_IMPLICIT
-	blame_info<<"Number of children is "<<numChildren<<std::endl;
+	blame_info<<"Number of children is "<<numChildren<<endl;
 #endif
 	BasicBlock *termBB = NULL;
-	std::set<DomTreeNodeBase<BasicBlock> *> blocks;
+	set<DomTreeNodeBase<BasicBlock> *> blocks;
 	
 	// Case where we have 
 	// if ( bool)
@@ -251,8 +247,8 @@ void FunctionBFC::handleOneConditional(DominatorTreeBase<BasicBlock> *DT, \
 		BasicBlock *succ2 = br->getSuccessor(1);
 		
 #ifdef DEBUG_LLVM_IMPLICIT
-		blame_info<<"First successor is "<<succ1->getName().str()<<std::endl;
-		blame_info<<"Second successor is "<<succ2->getName().str()<<std::endl;
+		blame_info<<"First successor is "<<succ1->getName().str()<<endl;
+		blame_info<<"Second successor is "<<succ2->getName().str()<<endl;
 #endif 
 		// Second successor is either
 		//  a) the terminal node (in the case of a straight if() with no else if or else
@@ -260,8 +256,8 @@ void FunctionBFC::handleOneConditional(DominatorTreeBase<BasicBlock> *DT, \
 		
 		// First, lets handle the straight up if case
 		// If an immediate dominated node is equal to the second successor then it must be the terminal 
-		std::set<BasicBlock *> cfgDesc;
-		std::set<BasicBlock *> visited;
+		set<BasicBlock *> cfgDesc;
+		set<BasicBlock *> visited;
 		
 		// Insert parent so we don't traverse the other conditional in the case of a loop
 		visited.insert(b);
@@ -270,7 +266,7 @@ void FunctionBFC::handleOneConditional(DominatorTreeBase<BasicBlock> *DT, \
 		// If one of the descendants to succ1 is succ2 then we know that succ2 is the terminal
 		if (cfgDesc.count(succ2)) {
 #ifdef DEBUG_LLVM_IMPLICIT
-			blame_info<<"Standard if, no else -- "<<succ2->getName().str()<<" is terminal."<<std::endl;
+			blame_info<<"Standard if, no else -- "<<succ2->getName().str()<<" is terminal."<<endl;
 #endif
 			termBB = succ2;
 		}
@@ -313,7 +309,7 @@ void FunctionBFC::handleOneConditional(DominatorTreeBase<BasicBlock> *DT, \
 			// for all children in CFG
 			for (succ_iterator Iter = succ_begin(b), En = succ_end(b); Iter != En; ++Iter) {
 #ifdef DEBUG_LLVM_IMPLICIT
-				blame_info<<"CFG - "<<Iter->getName().str()<<" D - "<<dest->getName().str()<<std::endl;
+				blame_info<<"CFG - "<<Iter->getName().str()<<" D - "<<dest->getName().str()<<endl;
 #endif 
 				if (strcmp(Iter->getName().data(), dest->getName().data()) == 0)
 					match++;
@@ -321,13 +317,13 @@ void FunctionBFC::handleOneConditional(DominatorTreeBase<BasicBlock> *DT, \
 			
 			if (match == 0) {
 #ifdef DEBUG_LLVM_IMPLICIT
-				blame_info<<"Terminal for if/else if/else case is -- "<<dest->getName().str()<<std::endl;
+				blame_info<<"Terminal for if/else if/else case is -- "<<dest->getName().str()<<endl;
 #endif
 				termBB = dest;
 			}
 			else if (match) {
 #ifdef DEBUG_LLVM_IMPLICIT
-				blame_info<<"Block "<<dest->getName().str()<<" is a block to be inserted."<<std::endl;
+				blame_info<<"Block "<<dest->getName().str()<<" is a block to be inserted."<<endl;
 #endif
 				DomTreeNodeBase<BasicBlock> *dbb = *I;
 				blocks.insert(dbb);
@@ -335,7 +331,7 @@ void FunctionBFC::handleOneConditional(DominatorTreeBase<BasicBlock> *DT, \
 		}	
 	}
 	
-	std::set< DomTreeNodeBase<BasicBlock> *>::iterator set_dbb_i;
+	set< DomTreeNodeBase<BasicBlock> *>::iterator set_dbb_i;
 	
 	for (set_dbb_i = blocks.begin(); set_dbb_i != blocks.end(); set_dbb_i++) {
 		DomTreeNodeBase<BasicBlock> *dbb = *set_dbb_i;
@@ -344,7 +340,7 @@ void FunctionBFC::handleOneConditional(DominatorTreeBase<BasicBlock> *DT, \
 		else {
 			char tempBuf2[18];
 			sprintf(tempBuf2, "0x%x", /*(unsigned)*/br->getCondition());
-			std::string name(tempBuf2);
+			string name(tempBuf2);
 			
 			if (variables.count(name)) {
 				NodeProps *vp = variables[name];
@@ -361,7 +357,7 @@ void FunctionBFC::handleOneConditional(DominatorTreeBase<BasicBlock> *DT, \
 	 
 	 // for all children in CFG
 	 for (succ_iterator Iter = succ_begin(b), En = succ_end(b); Iter != En; ++Iter) {
-	 blame_info<<"CFG - "<<Iter->getNameStart()<<" D - "<<dest->getNameStart()<<std::endl;
+	 blame_info<<"CFG - "<<Iter->getNameStart()<<" D - "<<dest->getNameStart()<<endl;
 	 if (strcmp(Iter->getNameStart(), dest->getNameStart()) == 0)
 	 match++;
 	 }
@@ -377,7 +373,7 @@ void FunctionBFC::handleOneConditional(DominatorTreeBase<BasicBlock> *DT, \
 bool FunctionBFC::errorRetCheck(User *v)
 {
 #ifdef DEBUG_ERR_RET
-	blame_info<<"in errorRetCheck for "<<v->getName().str()<<std::endl;
+	blame_info<<"in errorRetCheck for "<<v->getName().str()<<endl;
 #endif
 	Instruction *icmpInst = NULL;
 	
@@ -385,7 +381,7 @@ bool FunctionBFC::errorRetCheck(User *v)
 		icmpInst = dyn_cast<Instruction>(v);
 #ifdef DEBUG_ERR_RET
 		blame_info<<"ToBool instruction is "<<icmpInst->getName().str()<<" op "
-            <<icmpInst->getOpcodeName()<<std::endl;
+            <<icmpInst->getOpcodeName()<<endl;
 #endif 
 	}
 	else	
@@ -397,7 +393,7 @@ bool FunctionBFC::errorRetCheck(User *v)
 			Instruction *zextInst = dyn_cast<Instruction>(zextVal);		
 			if (zextInst->getOpcode() == Instruction::ZExt) {
 			#ifdef DEBUG_ERR_RET
-				blame_info<<"ZEXT inst is "<<zextInst->getName().str()<<std::endl;
+				blame_info<<"ZEXT inst is "<<zextInst->getName().str()<<endl;
 			#endif 
 				Value *icmpVal = zextInst->getOperand(0);
 				
@@ -409,14 +405,14 @@ bool FunctionBFC::errorRetCheck(User *v)
 
             else if (zextInst->getOpcode() == Instruction::Load) {
 			#ifdef DEBUG_ERR_RET
-				blame_info<<"Load inst is "<<zextInst->getName().str()<<std::endl;
+				blame_info<<"Load inst is "<<zextInst->getName().str()<<endl;
 			#endif 
 				Value *condLocal = zextInst->getOperand(0); //First operand of Load is the ptr(mem addr)
 			#ifdef DEBUG_ERR_RET
-			    blame_info<<"CondLocal is "<<condLocal->getName().str()<<std::endl;
+			    blame_info<<"CondLocal is "<<condLocal->getName().str()<<endl;
 			#endif 
-				if (condLocal->getName().str().find("ierr") != std::string::npos) {
-                    std::cout<<"errorRetCheck returns false on "<<zextInst->getName().str()<<std::endl;
+				if (condLocal->getName().str().find("ierr") != string::npos) {
+                    cout<<"errorRetCheck returns false on "<<zextInst->getName().str()<<endl;
                     return false;
                 }
 				else
@@ -436,23 +432,23 @@ bool FunctionBFC::errorRetCheck(User *v)
 
 
 void FunctionBFC::handleAllConditionals(DominatorTreeBase<BasicBlock> *DT, const DomTreeNodeBase<BasicBlock> *N, 
-											LoopInfoBase<BasicBlock,Loop> &LI, std::set<BasicBlock *> &termBlocks)
+											LoopInfoBase<BasicBlock,Loop> &LI, set<BasicBlock *> &termBlocks)
 {
   BasicBlock *b = N->getBlock();
   
   // Only concerned with branch instructions
   if (isa<BranchInst>(b->getTerminator())) {
 #ifdef DEBUG_LLVM_IMPLICIT
-		blame_info<<"Branch Instruction found for basic block "<<b->getName().str()<<std::endl;
+		blame_info<<"Branch Instruction found for basic block "<<b->getName().str()<<endl;
 #endif
 		BranchInst *bBr = cast<BranchInst>(b->getTerminator());	
 		
 #ifdef DEBUG_LLVM_IMPLICIT
 		if (bBr->isConditional())
-			blame_info<<"... is conditional"<<std::endl;
+			blame_info<<"... is conditional"<<endl;
 		
 		if (!LI.isLoopHeader(b))
-			blame_info<<"... not loop header"<<std::endl;
+			blame_info<<"... not loop header"<<endl;
 #endif 		
 		// Only concerend with conditional non loop header instructions		
 		if (bBr->isConditional() && !LI.isLoopHeader(b)) {
@@ -462,7 +458,7 @@ void FunctionBFC::handleAllConditionals(DominatorTreeBase<BasicBlock> *DT, const
 				eRC = errorRetCheck(icmpInst);	
 			}			
 			#ifdef DEBUG_ERR_RET
-			blame_info<<"... is an error checking call."<<std::endl;
+			blame_info<<"... is an error checking call."<<endl;
 			#endif 
 			if (eRC)	
 				handleOneConditional(DT, N, bBr);	
@@ -480,13 +476,13 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
         return; 
     else
 #ifdef DEBUG_LLVM_IMPLICIT
-	    blame_info<<"Entering handleLoops "<<std::endl;
+	    blame_info<<"Entering handleLoops "<<endl;
 #endif 
 	
     //short blockCount = 0;
     BranchInst *bBr = NULL;
 	// These will be the vertices for each loop that will be blamed
-	std::set<NodeProps *> blamedConditions;
+	set<NodeProps *> blamedConditions;
 	
 	// We get all the exit blocks in the loop using LLVM calls
 	SmallVector<BasicBlock *, 8> exitBlocks;
@@ -496,7 +492,7 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 #ifdef DEBUG_LLVM_IMPLICIT
 	for (svimpl_i = exitBlocks.begin(); svimpl_i != exitBlocks.end(); svimpl_i++) {
 		BasicBlock *bb = *svimpl_i;
-		blame_info<<"Exit Block is "<<bb->getName().str()<<std::endl;
+		blame_info<<"Exit Block is "<<bb->getName().str()<<endl;
 	}
 #endif 
 	
@@ -513,7 +509,7 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 			if (bBr->isConditional()) {
 #ifdef DEBUG_LLVM_IMPLICIT
 				blame_info<<"Terminator is "<<bBr->getCondition()->getName().str()
-                    <<" "<<bBr->getNumOperands()<<std::endl;
+                    <<" "<<bBr->getNumOperands()<<endl;
 #endif 				
 				Value *bCondVal = bBr->getCondition();
 				
@@ -526,7 +522,7 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 				
 				if (eRC == false) {
 				#ifdef DEBUG_ERR_RET
-					blame_info<<"Not adding break from loop due to error checking."<<std::endl;
+					blame_info<<"Not adding break from loop due to error checking."<<endl;
 					#endif 
 					continue;
 				}
@@ -535,7 +531,7 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 					BasicBlock *bbSucc = bBr->getSuccessor(i);
 					
 #ifdef DEBUG_LLVM_IMPLICIT
-					blame_info<<"Examining successor "<<bbSucc->getName().str()<<std::endl;
+					blame_info<<"Examining successor "<<bbSucc->getName().str()<<endl;
 #endif
 					for (svimpl_i = exitBlocks.begin(); svimpl_i != exitBlocks.end(); svimpl_i++) {
 						BasicBlock * bbMatch = *svimpl_i;			
@@ -543,9 +539,9 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 #ifdef DEBUG_LLVM_IMPLICIT
 							blame_info<<"Matching Exit Block is "<<bbMatch->getName().str()<<" for "; 
 							if (bCondVal->hasName())
-								blame_info<<bCondVal->getName().str()<<std::endl;
+								blame_info<<bCondVal->getName().str()<<endl;
 							else
-								blame_info<<std::hex<</*(unsigned)*/ bCondVal<<std::dec<<std::endl;
+								blame_info<<std::hex<</*(unsigned)*/ bCondVal<<std::dec<<endl;
 #endif
 							if (bCondVal->hasName()) {
 								if (variables.count(bCondVal->getName().str()))
@@ -554,7 +550,7 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 							else {
 								char tempBuf2[18];
 								sprintf(tempBuf2, "0x%x", /*(unsigned)*/bBr->getCondition());
-								std::string name(tempBuf2);
+								string name(tempBuf2);
 								
 								if (variables.count(name)) {
 									blamedConditions.insert(variables[name]);
@@ -572,7 +568,7 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 	//  sometimes we have to deal with switch statements
 	if (blamedConditions.size() == 0) {
 #ifdef DEBUG_LLVM_IMPLICIT
-		blame_info<<"...Now looking through switch statements "<<std::endl;
+		blame_info<<"...Now looking through switch statements "<<endl;
 #endif
 	  for (LoopBase<BasicBlock,Loop>::block_iterator li_bi = lb->block_begin(); 
 				 li_bi != lb->block_end(); li_bi++) {
@@ -590,7 +586,7 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 						BasicBlock *bbSucc = bBr->getSuccessor(i);
 						
 #ifdef DEBUG_LLVM_IMPLICIT
-						blame_info<<"Examining successor "<<bbSucc->getName().str()<<std::endl;
+						blame_info<<"Examining successor "<<bbSucc->getName().str()<<endl;
 #endif 
 						for (svimpl_i = exitBlocks.begin(); svimpl_i != exitBlocks.end(); svimpl_i++) {
 							BasicBlock * bbMatch = *svimpl_i;	
@@ -600,9 +596,9 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 #endif
 #ifdef DEBUG_LLVM_IMPLICIT
 								if (v->hasName())
-									blame_info<<v->getName().str()<<std::endl;
+									blame_info<<v->getName().str()<<endl;
 								else
-									blame_info<<std::hex<</*(unsigned)*/ v<<std::dec<<std::endl;
+									blame_info<<std::hex<</*(unsigned)*/ v<<std::dec<<endl;
 #endif 								
 								if (v->hasName()) {
 									if (variables.count(v->getName().str()))
@@ -611,7 +607,7 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 								else {
 									char tempBuf2[18];
 									sprintf(tempBuf2, "0x%x", /*(unsigned)*/bBr->getCondition());
-									std::string name(tempBuf2);
+									string name(tempBuf2);
 									
 									if (variables.count(name)) {
 										blamedConditions.insert(variables[name]);
@@ -630,12 +626,12 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
     for (LoopBase<BasicBlock,Loop>::block_iterator li_bi = lb->block_begin(); 
         li_bi != lb->block_end(); li_bi++) {
 		
-		std::set<const char*, ltstr> t; // every bb has a 't'
+		set<const char*, ltstr> t; // every bb has a 't'
 		BasicBlock *bb = *li_bi;
 		ImpRegSet::iterator irs_i; //ptr to each pair: (bb_name, set 't')
 		
 #ifdef DEBUG_LLVM_IMPLICIT
-		blame_info<<"Loop now in basic block "<<bb->getName().str()<<std::endl;
+		blame_info<<"Loop now in basic block "<<bb->getName().str()<<endl;
 #endif
 		
 		if (bb->hasName()) {
@@ -643,11 +639,11 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 			if (irs_i != iReg.end())
 				t = iReg[bb->getName().str()];
 			
-			std::set<NodeProps *>::iterator set_vp_i, set_vp_e;
+			set<NodeProps *>::iterator set_vp_i, set_vp_e;
 			for (set_vp_i = blamedConditions.begin(), set_vp_e = blamedConditions.end(); set_vp_i != set_vp_e; set_vp_i++) {
 				NodeProps *vp = *set_vp_i;
 #ifdef DEBUG_LLVM_IMPLICIT
-				blame_info<<"Implicit -- Inserting "<<vp->name<<" into loop implicit set for bb:"<<bb->getName().str()<<std::endl;
+				blame_info<<"Implicit -- Inserting "<<vp->name<<" into loop implicit set for bb:"<<bb->getName().str()<<endl;
 #endif 
 				t.insert(vp->name.c_str());
 			}
@@ -661,7 +657,7 @@ void FunctionBFC::handleLoops(LoopBase<BasicBlock,Loop> *lb)
 		handleLoops(*li_si); //start handling all subloops in this loop
                              //since it's the last call in recursion, it'll terminate anyway
 #ifdef DEBUG_LLVM_IMPLICIT
-	blame_info<<"Exiting handleLoops "<<std::endl;
+	blame_info<<"Exiting handleLoops "<<endl;
 #endif
 	
 }
@@ -672,21 +668,21 @@ void FunctionBFC::generateImplicits()
     DominatorTreeBase<BasicBlock> *DT = new DominatorTreeBase<BasicBlock>(false);	
     DT->recalculate(*func);
   
-    std::string dom_path("DOMINATOR/");
-    std::string func_name = func->getName();
-    std::string dot_extension(".dot");
+    string dom_path("DOMINATOR/");
+    string func_name = func->getName();
+    string dot_extension(".dot");
     dom_path += func_name;
     dom_path += dot_extension;
-    std::ofstream dot_file(dom_path.c_str()); //Not used except 'print2' below
+    ofstream dot_file(dom_path.c_str()); //Not used except 'print2' below
     //DT->print2(dot_file, 0);
     
     LoopInfoBase<BasicBlock,Loop> LI;
     //LI.Calculate(*DT);
     LI.Analyze(*DT); //TC: new func in llvm 3.3 (to replace Calculate in 2.5)
     for (LoopInfoBase<BasicBlock,Loop>::iterator li_i = LI.begin(); li_i != LI.end(); li_i++)
-        handleLoops(*li_i); //typedef typename std::vector<LoopT *>::const_iterator iterator
+        handleLoops(*li_i); //typedef typename vector<LoopT *>::const_iterator iterator
   
-	std::set<BasicBlock *> terminalNodes;
+	set<BasicBlock *> terminalNodes;
 	
     handleAllConditionals(DT, DT->getRootNode(), LI, terminalNodes);
 		
@@ -713,13 +709,13 @@ void FunctionBFC::determineFunctionExitStatus()
 	voidReturn = true;
   }
   else {
-	ExitVariable *ev = new ExitVariable(std::string("DEFAULT_RET"), RET, -1, false, NULL); //{realName, ExitType, whichParam, isStructPtr}, changed by Hui from 0 to -1
+	ExitVariable *ev = new ExitVariable(string("DEFAULT_RET"), RET, -1, false, NULL); //{realName, ExitType, whichParam, isStructPtr}, changed by Hui from 0 to -1
 	addExitVar(ev); //exitVariables.push_back(ev)
   }
 	
   //bool isParam = false;
 #ifdef DEBUG_LLVM	
-  blame_info<<"LLVM__(checkFunctionProto) - Number of args is "<<func->arg_size()<<std::endl;
+  blame_info<<"LLVM__(checkFunctionProto) - Number of args is "<<func->arg_size()<<endl;
 #endif
 	
   int whichParam = 0;
@@ -728,124 +724,45 @@ void FunctionBFC::determineFunctionExitStatus()
   for(Function::arg_iterator af_i = func->arg_begin(); af_i != func->arg_end(); af_i++) {
 	//whichParam++; //commented out by Hui 03/15/16, now real args of func starts from #0
 	Value *v = af_i; //guess arg_iterator is Value* ?
-	bool findEV = false;
 #ifdef DEBUG_LLVM	
-  	blame_info<<"Param# "<<whichParam<<" is "<<v->getName().str()<<std::endl;
+  	blame_info<<"Param# "<<whichParam<<" is "<<v->getName().str()<<endl;
 #endif
+	const llvm::Type *argT = v->getType();		
+	string argTStr = returnTypeName(argT, string(""));
+	int argPtrLevel = pointerLevel(argT, 0); //ptrLevel = 1 means it's a 1-level pointer, like int *ip
+    string argName = v->getName().str(); //formal arg has a name for sure
+	bool isStructPtr = false;		
+
 	// EXIT VAR HERE
 	// We are only concerned with args that are pointers 
-	if (v->getType()->getTypeID() == Type::PointerTyID) {
-#ifdef DEBUG_LLVM	
-  	  blame_info<<v->getName().str()<<" is a pointer parameter"<<std::endl;
-#endif
+	if (argPtrLevel >= 1) {
 	  numPointerParams++;
-			
-	  const llvm::Type *argT = v->getType();		
-	  std::string argTStr = returnTypeName(argT, std::string(""));
-	  int argPtrLevel = pointerLevel(argT, 0); //ptrLevel = 1 means it's a 1-level pointer, like int *ip
-	  bool isStructPtr = false;		
 	  // Dealing with a struct pointer
-	  if (argTStr.find("Struct") != std::string::npos) {
-		isStructPtr = true;
+	  if (argTStr.find("Struct") != string::npos) {
+	    isStructPtr = true;
 	  }
 	  // Add exit variable for address of parameter since that's where the blame will eventually point to
       // "SURE" FOR NOW: Here,in <=3.3 LLVM, I think deference the use_iterator (*use_iterator) will give you the Value*( or User*)
       // In ?~3.7 LLVM, you should use user_iterator instead of use_iterator directly for the following purpose 
-	  for (Value::use_iterator u_i = v->use_begin(), u_e = v->use_end(); u_i != u_e; ++u_i) { 
-		// Verify that the Value is that of an instruction 
-		if (Instruction *i = dyn_cast<Instruction>(*u_i)) {
-	      if (i->getOpcode() == Instruction::BitCast)	{ //All OpCode can be found in instruction.def
-			//Value * bcV = i;
-		    for (Value::use_iterator u_i2 = i->use_begin(), u_e2 = i->use_end(); u_i2 != u_e2; ++u_i2) { // what is a use of an instruction ?
-			  // Verify that the Value is that of an instruction 
-			  if (Instruction *i2 = dyn_cast<Instruction>(*u_i2)) {
-				if (i2->getOpcode() == Instruction::Store) {
-			  	  User::op_iterator op_i = i2->op_begin(); //typedef Use* op_iterator
-                  Value *second = *(++op_i); // second is the actual mem address where to store the value
-						
-				  if (second->hasName()) { //in this case, firt can be a register since the original arg has been bicasted 
-                    std::string argHolderName = second->getName().str();
-                    if (argHolderName.find(PARAM_REC) != std::string::npos || argHolderName.find(PARAM_REC2) != std::string::npos) {
-				      const llvm::Type * origT = second->getType();		
-					  std::string origTStr = returnTypeName(origT, std::string(""));
-								
-					  int ptrLevel = pointerLevel(origT, 0); //ptrLevel = 1 means it's a 1-level pointer, like int *ip
-					  if (ptrLevel > 1 || origTStr.find("Array") != std::string::npos || (origTStr.find("Struct") != std::string::npos)) { 						
-						addExitVar(new ExitVariable(argHolderName, PARAM, whichParam, isStructPtr, second));
-                        findEV = true;
-#ifdef DEBUG_LLVM	
-						blame_info<<"LLVM_(checkFunctionProto) - Adding exit var(2) "<<argHolderName;
-						blame_info<<" Param "<<whichParam<<" in "<<getSourceFuncName()<<std::endl;
-#endif
-					  }
-                    }
-                    else //second name isn't PARAM_REC[2]
-#ifdef DEBUG_LLVM
-                      blame_info<<"LLVM_(checkFunctionProto) - wrong name(2)? argHolder: "<<argHolderName<<std::endl;
-#endif
-				  }
-				  else //second no name 
-#ifdef DEBUG_LLVM	
-				    blame_info<<"LLVM_(checkFunctionProto) - what's going on here(2)"<<endl;
-#endif
-				} //i2 is Store
-			  }  //i2 is instruction
-			} //for loop of i2's uses
-		  } //i is BitCast
-		  
-          else if (i->getOpcode() == Instruction::Store) {
-			User::op_iterator op_i = i->op_begin();
-            Value  *first = *op_i,  *second = *(++op_i);
-						
-			if (first->hasName() && second->hasName()) { //In this case, first must have name since it's the Arg
-              std::string argHolderName = second->getName().str();
-              if (argHolderName.find(PARAM_REC) != std::string::npos || argHolderName.find(PARAM_REC2) != std::string::npos) {
-				const llvm::Type *origT = second->getType();		
-				std::string origTStr = returnTypeName(origT, std::string(""));
-				
-				int ptrLevel = pointerLevel(origT, 0);
-						
-				if (ptrLevel > 1 || origTStr.find("Array") != std::string::npos
-					|| origTStr.find("Struct") != std::string::npos) {						
-						
-				  addExitVar(new ExitVariable(second->getName().str(), PARAM, whichParam, isStructPtr, second));
-                  findEV = true;
-#ifdef DEBUG_LLVM	
-				  blame_info<<"LLVM_(checkFunctionProto) - Adding exit var "<<second->getName().str();
-				  blame_info<<" Param "<<whichParam<<" in "<<getSourceFuncName()<<std::endl;
-#endif
-				}
-              }
-              else
-#ifdef DEBUG_LLVM
-                blame_info<<"LLVM_(checkFunctionProto) - wrong name? arg: "<<first->getName().str()<<" holder: "<<argHolderName<<std::endl;
-#endif
-			} //first and second has name
-			else { //either of first and second doesn't have name
-#ifdef DEBUG_LLVM	
-			  blame_info<<"LLVM_(checkFunctionProto) - what's going on here for "<<second->getName().str();
-			  blame_info<<" and "<<first->getName().str()<<std::endl;
-#endif
-			}
-		  }
 
-		} //i is instruction
-	  } // end of i's uses, for loop	
-
-      if (findEV == false) { //EV not created from arg's uses
-        //If the arg not stored to the holder then it must be used directly
-        //We will take the real arg as the exit variable if it's a pointer
-        std::string argName = v->getName().str();
-		if (argPtrLevel >= 1 || argTStr.find("Array") != std::string::npos || (argTStr.find("Struct") != std::string::npos)) { 						
-		  addExitVar(new ExitVariable(argName, PARAM, whichParam, isStructPtr, v));
-          findEV = true;
+      // From Chapel 1.15, now we treat formal args directly as ExitVariable, instead of using the argHolder(no matter it has the
+      // argHolder or not) We found it more explicit and understandable, No need for PARAM_REC anymore
+	  addExitVar(new ExitVariable(argName, PARAM, whichParam, isStructPtr, v));
 #ifdef DEBUG_LLVM	
-		  blame_info<<"LLVM_(checkFunctionProto) - Adding exit var(3) "<<argName;
-		  blame_info<<" Param "<<whichParam<<" in "<<getSourceFuncName()<<std::endl;
+  	  blame_info<<argName<<" is a Pointer parameter"<<endl;
+	  blame_info<<"LLVM_(checkFunctionProto) - Adding exit var "<<argName;
+	  blame_info<<" Param "<<whichParam<<" in "<<getSourceFuncName()<<endl;
 #endif
-        }
-      } //i is other instruction, add arg as ev   
     } //if arg(v) is a pointer
+    //if the formal arg is not a pointer but a struct or array (very unlikely) we also add it as an EV
+    else if (argTStr.find("Array") != string::npos || argTStr.find("Struct") != string::npos) {
+	  addExitVar(new ExitVariable(argName, PARAM, whichParam, isStructPtr, v));
+#ifdef DEBUG_LLVM	
+  	  blame_info<<"WEIRD! "<<argName<<" is a "<<argTStr<<" parameter"<<endl;
+	  blame_info<<"LLVM_(checkFunctionProto) - Adding exit var "<<argName;
+	  blame_info<<" Param "<<whichParam<<" in "<<getSourceFuncName()<<endl;
+#endif
+    }
 
     whichParam++; //added by Hui 03/15/16, moved from the beginning
   } // end of all args for loop	
@@ -853,10 +770,9 @@ void FunctionBFC::determineFunctionExitStatus()
   if (numPointerParams == 0 && voidReturn == true) {
 	isBFCPoint = true;  //if the func has 0 pointer param and returns nothing, then it's a blame point ???
 #ifdef DEBUG_LLVM		//Yes, since you don't need to go further up
-	blame_info<<"IS BP - "<<numPointerParams<<" "<<voidReturn<<std::endl;  
+	blame_info<<"IS BP - "<<numPointerParams<<" "<<voidReturn<<endl;  
 #endif		
   }
-	
 }
 
 
@@ -886,45 +802,45 @@ void FunctionBFC::determineFunctionExitStatus()
  FirstDerivedTyID = IntegerTyID
 */
 /* Given a type return the string that describes the type */
-std::string FunctionBFC::returnTypeName(const llvm::Type *t, std::string prefix)
+string FunctionBFC::returnTypeName(const llvm::Type *t, string prefix)
 {
 	if (t == NULL)
-		return prefix += std::string("NULL");
+		return prefix += string("NULL");
 	
 	unsigned typeVal = t->getTypeID();
 	
     if (typeVal == Type::VoidTyID)
-        return prefix += std::string("Void");
+        return prefix += string("Void");
     else if (typeVal == Type::FloatTyID)
-        return prefix += std::string("Float");
+        return prefix += string("Float");
     else if (typeVal == Type::DoubleTyID)
-        return prefix += std::string("Double");
+        return prefix += string("Double");
     else if (typeVal == Type::X86_FP80TyID)
-        return prefix += std::string("80 bit FP");
+        return prefix += string("80 bit FP");
     else if (typeVal == Type::FP128TyID)
-        return prefix += std::string("128 bit FP");
+        return prefix += string("128 bit FP");
     else if (typeVal == Type::PPC_FP128TyID)
-        return prefix += std::string("2-64 bit FP");
+        return prefix += string("2-64 bit FP");
     else if (typeVal == Type::LabelTyID)
-        return prefix += std::string("Label");
+        return prefix += string("Label");
     else if (typeVal == Type::MetadataTyID)
-        return prefix += std::string("Metadata");
+        return prefix += string("Metadata");
     else if (typeVal == Type::IntegerTyID)
-        return prefix += std::string("Int");
+        return prefix += string("Int");
     else if (typeVal == Type::FunctionTyID)
-        return prefix += std::string("Function");
+        return prefix += string("Function");
     else if (typeVal == Type::StructTyID)
-        return prefix += std::string("Struct");
+        return prefix += string("Struct");
     else if (typeVal == Type::ArrayTyID)
-        return prefix += std::string("Array");
+        return prefix += string("Array");
     else if (typeVal == Type::PointerTyID)
-        return prefix += returnTypeName(cast<PointerType>(t)->getElementType(),	std::string("*"));
+        return prefix += returnTypeName(cast<PointerType>(t)->getElementType(),	string("*"));
     else if (typeVal == Type::MetadataTyID)
-        return prefix += std::string("Metadata");
+        return prefix += string("Metadata");
     else if (typeVal == Type::VectorTyID)
-        return prefix += std::string("Vector");
+        return prefix += string("Vector");
     else
-        return prefix += std::string("UNKNOWN");
+        return prefix += string("UNKNOWN");
 }
 
 
@@ -933,27 +849,27 @@ void printConstantType(Value * compUnit)
 {
 	
   if (isa<GlobalValue>(compUnit))
-    std::cout<<"is Global Val";
+    cout<<"is Global Val";
   else if (isa<ConstantStruct>(compUnit))
-    std::cout<<"is ConstantStruct";
+    cout<<"is ConstantStruct";
   else if (isa<ConstantPointerNull>(compUnit))
-    std::cout<<"is CPNull";
+    cout<<"is CPNull";
   else if (isa<ConstantAggregateZero>(compUnit))
-    std::cout<<"is ConstantAggZero";
+    cout<<"is ConstantAggZero";
   else if (isa<ConstantArray>(compUnit))
-    std::cout<<"is C Array";
+    cout<<"is C Array";
   else if (isa<ConstantExpr>(compUnit))
-    std::cout<<"is C Expr";
+    cout<<"is C Expr";
   else if (isa<ConstantFP>(compUnit))
-    std::cout<<"is C FP";
+    cout<<"is C FP";
   else if (isa<UndefValue>(compUnit))
-    std::cout<<"is UndefValue";
+    cout<<"is UndefValue";
   else if (isa<ConstantInt>(compUnit))
-    std::cout<<"is C Int";
+    cout<<"is C Int";
   else
-    std::cout<<"is ?";
+    cout<<"is ?";
 	
-  std::cout<<endl;
+  cout<<endl;
 	
 }
 
@@ -965,7 +881,7 @@ void FunctionBFC::pidArrayResolve(Value *v, int fieldNum, NodeProps *fieldVP, in
 	unsigned typeVal = pointT->getTypeID();
 	
 #ifdef DEBUG_STRUCTS
-	blame_info<<"pidArrayResolve Here"<<std::endl;
+	blame_info<<"pidArrayResolve Here"<<endl;
 #endif
 	
     while (typeVal == Type::PointerTyID) {		
@@ -979,7 +895,7 @@ void FunctionBFC::pidArrayResolve(Value *v, int fieldNum, NodeProps *fieldVP, in
       sprintf(tempBuf, "PidArray_X%d", numElems);
 	  string pidArrayName = string(tempBuf);
 #ifdef DEBUG_STRUCTS
-	  blame_info<<"pidArrayName -- "<<pidArrayName<<std::endl;
+	  blame_info<<"pidArrayName -- "<<pidArrayName<<endl;
 #endif
       StructBFC *sb = mb->findOrCreatePidArray(pidArrayName, numElems, pointT);
 	  if (sb == NULL)
@@ -988,17 +904,17 @@ void FunctionBFC::pidArrayResolve(Value *v, int fieldNum, NodeProps *fieldVP, in
 #ifdef DEBUG_STRUCTS
       //Here we only assign sFiled to fieldVP, but not sBFC to v (struct node)
       //we will assign sBFC after this call if sField is found successfully
-	  blame_info<<"Found sb for "<<pidArrayName<<std::endl;
+	  blame_info<<"Found sb for "<<pidArrayName<<endl;
 #endif
 		
 	  // TODO: Hash
-	  std::vector<StructField *>::iterator vec_sf_i;
+	  vector<StructField *>::iterator vec_sf_i;
 	  for (vec_sf_i = sb->fields.begin(); vec_sf_i != sb->fields.end(); vec_sf_i++){
 		StructField *sf = (*vec_sf_i);
 		if (sf->fieldNum == fieldNum) {				
 #ifdef DEBUG_STRUCTS
 		  blame_info<<"Assigning fieldVP->sfield: "<<sf->fieldName
-              <<" to "<<fieldVP->name<<std::endl;
+              <<" to "<<fieldVP->name<<endl;
 #endif
 		  fieldVP->sField = sf;
 		}
@@ -1013,60 +929,62 @@ void FunctionBFC::structResolve(Value *v, int fieldNum, NodeProps *fieldVP)
 	unsigned typeVal = pointT->getTypeID();
 	
 #ifdef DEBUG_STRUCTS
-	blame_info<<"structResolve Here"<<std::endl;
+	blame_info<<"structResolve Here"<<endl;
 #endif
 	
     while (typeVal == Type::PointerTyID) {		
   	  pointT = cast<PointerType>(pointT)->getElementType();
-	  //std::string origTStr = returnTypeName(pointT, std::string(" "));
+	  //string origTStr = returnTypeName(pointT, string(" "));
 	  typeVal = pointT->getTypeID();
 	}
 #ifdef DEBUG_STRUCTS
-	blame_info<<"structResolve Here(2)"<<std::endl;
+	blame_info<<"structResolve Here(2)"<<endl;
 #endif
     if (typeVal == Type::StructTyID) {
 	  const llvm::StructType * type = cast<StructType>(pointT);
-	  string structNameFull = type->getStructName().str();
+      if (type->hasName()) {
+	    string structNameFull = type->getStructName().str();
 #ifdef DEBUG_STRUCTS
-	  blame_info<<"structNameFull -- "<<structNameFull<<std::endl;
+	    blame_info<<"structNameFull -- "<<structNameFull<<endl;
 #endif
 
 #ifdef USE_LLVM25
-	  if (structNameFull.find("struct.") == std::string::npos) {
+	    if (structNameFull.find("struct.") == string::npos) {
 #ifdef DEBUG_ERROR
-		blame_info<<"structName is incomplete--"<<structNameFull<<std::endl;
-		std::cerr<<"structName is incomplete--"<<structNameFull<<std::endl;
+		  blame_info<<"structName is incomplete--"<<structNameFull<<endl;
+		  cerr<<"structName is incomplete--"<<structNameFull<<endl;
 #endif
-		return;
-	  }
-	  // need to get rid of preceding "struct." and trailing NULL character
-	  string justStructName = structNameFull.substr(7, structNameFull.length()-7);
-	  StructBFC *sb = mb->structLookUp(justStructName);
+		  return;
+	    }
+	    // need to get rid of preceding "struct." and trailing NULL character
+	    string justStructName = structNameFull.substr(7, structNameFull.length()-7);
+	    StructBFC *sb = mb->structLookUp(justStructName);
 #else
-      StructBFC *sb = mb->structLookUp(structNameFull);
+        StructBFC *sb = mb->structLookUp(structNameFull);
 #endif
-	  if (sb == NULL)
-		return;
+	    if (sb == NULL)
+		  return;
 		
 #ifdef DEBUG_STRUCTS
-      //Here we only assign sFiled to fieldVP, but not sBFC to v (struct node)
-      //we will assign sBFC after this call if sField is found successfully
-	  blame_info<<"Found sb for "<<structNameFull<<std::endl;
+        //Here we only assign sFiled to fieldVP, but not sBFC to v (struct node)
+        //we will assign sBFC after this call if sField is found successfully
+	    blame_info<<"Found sb for "<<structNameFull<<endl;
 #endif
 		
-	  // TODO: Hash
-	  std::vector<StructField *>::iterator vec_sf_i;
-	  for (vec_sf_i = sb->fields.begin(); vec_sf_i != sb->fields.end(); vec_sf_i++){
-		StructField *sf = (*vec_sf_i);
-		if (sf->fieldNum == fieldNum) {				
+	    // TODO: Hash
+	    vector<StructField *>::iterator vec_sf_i;
+	    for (vec_sf_i = sb->fields.begin(); vec_sf_i != sb->fields.end(); vec_sf_i++){
+		  StructField *sf = (*vec_sf_i);
+		  if (sf->fieldNum == fieldNum) {				
 #ifdef DEBUG_STRUCTS
-		  blame_info<<"Assigning fieldVP->sfield "<<fieldVP->name<<" to "<<sf->fieldName<<std::endl;
-          //blame_info<<returnTypeName(sf->llvmType, std::string(" "));
+		    blame_info<<"Assigning fieldVP->sfield "<<fieldVP->name<<" to "<<sf->fieldName<<endl;
+            //blame_info<<returnTypeName(sf->llvmType, string(" "));
 #endif
-		  fieldVP->sField = sf;
-		}
+		    fieldVP->sField = sf;
+		  }
+	    }
 	  }
-	}
+    }
 }
 
 
@@ -1080,21 +998,22 @@ void FunctionBFC::structDump(Value * compUnit)
 	
     while (typeVal == Type::PointerTyID) {		
 		pointT = cast<PointerType>(pointT)->getElementType();
-		//std::string origTStr = returnTypeName(pointT, std::string(" "));
+		//string origTStr = returnTypeName(pointT, string(" "));
 		typeVal = pointT->getTypeID();
 	}
 		
     if (typeVal == Type::StructTyID) {
 		const llvm::StructType *type = cast<StructType>(pointT);
 		numStructElements = cast<StructType>(pointT)->getNumElements();
-		blame_info<<"Num of elements "<<numStructElements<<std::endl;
-		//std::cout<<"TYPE - "<<type->getDescription()<<std::endl;
-		blame_info<<"TYPE - "<<returnTypeName(type, std::string(""))<<" "<<type->getName().data()<<std::endl;
+		blame_info<<"Num of elements "<<numStructElements<<endl;
+		//cout<<"TYPE - "<<type->getDescription()<<endl;
+        if (type->hasName())
+		  blame_info<<"TYPE - "<<returnTypeName(type, string(""))<<" "<<type->getName().data()<<endl;
 		
 		for (int eleBegin = 0, eleEnd = type->getNumElements(); eleBegin != eleEnd; eleBegin++) {
 			llvm::Type *elem = type->getElementType(eleBegin);
             //elem->print(OS);
-            blame_info<<"typeid: "<<elem->getTypeID()<<std::endl;
+            blame_info<<"typeid: "<<elem->getTypeID()<<endl;
 			blame_info<<endl;
 			//fprintf(stdout,"dump element: type=%p: ", elem);
 			//elem->dump();
@@ -1104,7 +1023,7 @@ void FunctionBFC::structDump(Value * compUnit)
 }
 
 /*
-std::string getStringFromMetadata(Value * v)
+string getStringFromMetadata(Value * v)
 {
 	if (isa<ConstantExpr>(v))
 	{
@@ -1128,7 +1047,7 @@ std::string getStringFromMetadata(Value * v)
 						ConstantArray * ca = cast<ConstantArray>(stringArr2);
 						if (ca->isString())
 						{
-							//std::cout<<"String name "<<ca->getAsString();
+							//cout<<"String name "<<ca->getAsString();
 							return ca->getAsString();
 						}
 					}		
@@ -1137,7 +1056,7 @@ std::string getStringFromMetadata(Value * v)
 		}
 	}
 	
-	std::string fail("fail");
+	string fail("fail");
 	return fail;
 }
 
@@ -1152,8 +1071,8 @@ void FunctionBFC::getPathOrName(Value * v, bool isName)
 		for (; op_i3 != op4ce->op_end(); op_i3++)
 		{
 			Value * pathArr = *op_i3;			
-			//std::cout<<"Op 4 of type "<<returnTypeName(pathArr->getType(), std::string(" "));//;<<std::endl; 	
-			//std::cout<<" and kind ";
+			//cout<<"Op 4 of type "<<returnTypeName(pathArr->getType(), string(" "));//;<<endl; 	
+			//cout<<" and kind ";
 			//printConstantType(pathArr);
 			
 			if (isa<GlobalValue>(pathArr))
@@ -1175,15 +1094,15 @@ void FunctionBFC::getPathOrName(Value * v, bool isName)
 								//moduleName = ca->getAsString();
 								setModuleName(ca->getAsString());
 #ifdef DEBUG_LLVM	
-								blame_info<<"Module Name is "<<moduleName<<std::endl;
+								blame_info<<"Module Name is "<<moduleName<<endl;
 #endif
-								//std::cerr<<"Module Name is "<<moduleName<<std::endl;
+								//cerr<<"Module Name is "<<moduleName<<endl;
 							}
 							else
 							{
 								setModulePathName(ca->getAsString());
 								//modulePathName = ca->getAsString();
-								//std::cout<<"Path to module is "<<modulePathName<<std::endl;
+								//cout<<"Path to module is "<<modulePathName<<endl;
 							}
 							
 						}
@@ -1246,7 +1165,7 @@ void FunctionBFC::grabVarInformation(llvm::Value *varDeclare)
 /*
 void FunctionBFC::grabModuleNameAndPath(llvm::Value * compUnit)
 {
-	//blame_info<<"Entering grabModuleNameAndPath"<<std::endl;
+	//blame_info<<"Entering grabModuleNameAndPath"<<endl;
   ConstantExpr * ce = cast<ConstantExpr>(compUnit);
   User::op_iterator op_i = ce->op_begin();
 	
@@ -1257,7 +1176,7 @@ void FunctionBFC::grabModuleNameAndPath(llvm::Value * compUnit)
 		
 		if (isa<GlobalValue>(bitCastOp))
 		{
-			//blame_info<<"Global op "<<std::endl;
+			//blame_info<<"Global op "<<endl;
 			GlobalValue * gvOp = cast<GlobalValue>(bitCastOp);		
 			User::op_iterator op_i2 = gvOp->op_begin();
 			for (; op_i2 != gvOp->op_end(); op_i2++)
@@ -1265,7 +1184,7 @@ void FunctionBFC::grabModuleNameAndPath(llvm::Value * compUnit)
 	      Value * structOp = *op_i2;			
 	      if (isa<ConstantStruct>(structOp))
 				{
-					//	blame_info<<"Struct Op "<<std::endl;
+					//	blame_info<<"Struct Op "<<endl;
 					ConstantStruct * csOp = cast<ConstantStruct>(structOp);
 					Value * op4 = csOp->getOperand(3);
 					Value * op5 = csOp->getOperand(4);
@@ -1326,10 +1245,10 @@ void FunctionBFC::printValueIDName(Value *v)
 	
 }
 
-std::string FunctionBFC::calcMetaFuncName(RegHashProps &variables, Value *v, bool isTradName, std::string nonTradName, int currentLineNum)
+string FunctionBFC::calcMetaFuncName(RegHashProps &variables, Value *v, bool isTradName, string nonTradName, int currentLineNum)
 {
 	
-	std::string newName;
+	string newName;
 	char tempBuf[1024];
 	
 	if (isTradName) //isTradName = is traditional name
@@ -1356,9 +1275,9 @@ void FunctionBFC::printCurrentVariables()
 	 */
     for (begin = variables.begin(), end = variables.end(); begin != end; begin++)
     {
-		std::string name(begin->first);
+		string name(begin->first);
 		NodeProps * v = begin->second;
-		blame_info<<"Node "<<v->number<<" ("<<v->name<<")"<<std::endl;
+		blame_info<<"Node "<<v->number<<" ("<<v->name<<")"<<endl;
 	}
 #endif 
 }
@@ -1384,7 +1303,7 @@ bool FunctionBFC::firstGEPCheck(User * pi)
 	else
 	{
 #ifdef DEBUG_ERROR
-		std::cerr<<"What are we?!?"<<std::endl;
+		cerr<<"What are we?!?"<<endl;
 #endif 
 		exit(0);
 	}
@@ -1394,7 +1313,7 @@ bool FunctionBFC::firstGEPCheck(User * pi)
 	
 	
 	//const llvm::Type * origT;		
-	//std::string origTStr = returnTypeName(origT, std::string(" "));
+	//string origTStr = returnTypeName(origT, string(" "));
 	//origT = v->getType();	
 	//int origPointerLevel = pointerLevel(origT,0);
 	
@@ -1409,25 +1328,26 @@ bool FunctionBFC::firstGEPCheck(User * pi)
 	
 	if (typeVal == Type::StructTyID)
 	{
-		const llvm::StructType * type = cast<StructType>(pointT);
+	  const llvm::StructType * type = cast<StructType>(pointT);
+      if (type->hasName()) {  
 		string structNameFull = type->getName().str();
 		
 #ifdef DEBUG_LLVM
-		blame_info<<"first GEP check -- structNameFull -- "<<structNameFull<<std::endl;
+		blame_info<<"first GEP check -- structNameFull -- "<<structNameFull<<endl;
 #endif
 		
-		if (structNameFull.find("struct.descriptor_dimension") != std::string::npos)
+		if (structNameFull.find("struct.descriptor_dimension") != string::npos)
 			return false;
 		
-		if (structNameFull.find("struct.array1") != std::string::npos)
+		if (structNameFull.find("struct.array1") != string::npos)
 		{
 #ifdef DEBUG_LLVM
-		    blame_info<<"I'm in Hui 1 for "<<structNameFull<<std::endl;
+		    blame_info<<"I'm in Hui 1 for "<<structNameFull<<endl;
 #endif
 		    if (pi->getNumOperands() >= 3)
 		    {
 #ifdef DEBUG_LLVM
-		        blame_info<<"I'm in Hui 2 for "<<structNameFull<<std::endl;
+		        blame_info<<"I'm in Hui 2 for "<<structNameFull<<endl;
 #endif
 			    Value * vOp = pi->getOperand(2);
 				if (vOp->getValueID() == Value::ConstantIntVal)
@@ -1435,13 +1355,14 @@ bool FunctionBFC::firstGEPCheck(User * pi)
 					ConstantInt * cv = (ConstantInt *)vOp;
 					int number = cv->getSExtValue();
 #ifdef DEBUG_LLVM
-		            blame_info<<"I'm in Hui 3, cv= "<<number<<std::endl;
+		            blame_info<<"I'm in Hui 3, cv= "<<number<<endl;
 #endif
 				    if (number != 0)
 						return false;
 				}
 			}
 		}	
+      }//type->hasName
 	}
 	return true;
 }
@@ -1473,7 +1394,7 @@ void FunctionBFC::genDILocationInfo(Instruction *pi, int &currentLineNum, Functi
             // The shortest lines should be in entry, in FORTRAN we have cases where
             // there are branches ot pseudo blocks where it includes the definition line
             // of the function which messes up the analysis
-            if (fbb->getName().find("entry") != std::string::npos)
+            if (fbb->getName().find("entry") != string::npos)
                 startLineNum = currentLineNum;
         }
 
@@ -1497,19 +1418,19 @@ bool FunctionBFC::parseDeclareIntrinsic(Instruction *pi, int &currentLineNum, Fu
     CallInst *ci = dyn_cast<CallInst>(pi);
 	if (ci == NULL) {
 #ifdef DEBUG_LLVM
-        blame_info<<"LLVM__(parseDeclareIntrinsic) "<<pi->getName().str()<<" is not a CallInst"<<std::endl;
+        blame_info<<"LLVM__(parseDeclareIntrinsic) "<<pi->getName().str()<<" is not a CallInst"<<endl;
 #endif
         return false;
     }
     
     Function *calledFunc = ci->getCalledFunction();	
     if(calledFunc != NULL && calledFunc->hasName()){
-	  if(calledFunc->getName().str().find("llvm.dbg.declare") != std::string::npos) {
+	  if(calledFunc->getName().str().find("llvm.dbg.declare") != string::npos) {
 		//Value * varDeclare = pi->getOperand(2); //TO CHECK: if it doesn't work, then need calledFunc::arg_iterator
         //Function::arg_iterator arg_i = calledFunc->arg_begin();
         //arg_i++;
         //Value *varDeclare = calledFunc->getOperand(1);
-        blame_info<<"parseDeclareIntrinsic called!"<<std::endl;
+        blame_info<<"parseDeclareIntrinsic called!"<<endl;
 		Value *varDeclare = ci->getArgOperand(1);//Only this work, aboves NOT
         grabVarInformation(varDeclare);
 	    return true;
@@ -1523,23 +1444,23 @@ bool FunctionBFC::parseDeclareIntrinsic(Instruction *pi, int &currentLineNum, Fu
 void FunctionBFC::ieInvoke(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb) 
 {
 #ifdef DEBUG_LLVM_L2
-	blame_info<<"LLVM__(examineInstruction)(Invoke) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<std::endl;
+	blame_info<<"LLVM__(examineInstruction)(Invoke) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<endl;
 #endif 
 	//invokeCount++;
 	//cout<<"EI Invoke Begin\n";
 	// Add LHS variable to list of symbols
 	/*
 	 if (pi->hasName())
-	 cout<<"Name is "<<pi->getNameStart()<<std::endl;
+	 cout<<"Name is "<<pi->getNameStart()<<endl;
 	 else
 	 cout<<"No name\n";
 	 */
 	
 	if (pi->hasName() && variables.count(pi->getName().str()) == 0) {
-		std::string name = pi->getName().str();
+		string name = pi->getName().str();
 		
 #ifdef DEBUG_VP_CREATE
-		blame_info<<"Adding NodeProps(10) for "<<name<<std::endl;
+		blame_info<<"Adding NodeProps(10) for "<<name<<endl;
 #endif
 		NodeProps * vp = new NodeProps(varCount,name,currentLineNum,pi); //TO CHECK, what's varCount for here ?
 		vp->fbb = fbb;
@@ -1562,9 +1483,9 @@ void FunctionBFC::ieInvoke(Instruction *pi, int &varCount, int &currentLineNum, 
 		
 		if (v->hasName() &&  v->getValueID() != Value::BasicBlockVal) {			
 			if (variables.count(v->getName().str()) == 0) {
-				std::string name = v->getName().str();
+				string name = v->getName().str();
 #ifdef DEBUG_VP_CREATE
-				blame_info<<"Adding NodeProps(11) for "<<name<<std::endl;
+				blame_info<<"Adding NodeProps(11) for "<<name<<endl;
 #endif 
 				NodeProps * vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
@@ -1602,7 +1523,7 @@ NodeProps* FunctionBFC::getNodeBitCasted(Value *val)
         }
       }
       // Otherwise, we return this node
-      std::string bcFromName;
+      string bcFromName;
       if (bcFrom->hasName()) // not likely
         bcFromName = bcFrom->getName().str();
       else {
@@ -1611,7 +1532,7 @@ NodeProps* FunctionBFC::getNodeBitCasted(Value *val)
             && valueID != Value::UndefValueVal && valueID != Value::ConstantPointerNullVal) {//v isn't a constant value
           char tempBuf2[18];
           sprintf(tempBuf2, "0x%x", /*(unsigned)*/bcFrom);
-          bcFromName = std::string(tempBuf2);
+          bcFromName = string(tempBuf2);
         }
       }
       //With the name, we can get vp from variables since it's been there
@@ -1649,8 +1570,8 @@ void FunctionBFC::ieCallWrapFunc(Instruction *pi, int &varCount, int &currentLin
     blame_info<<"Error: can't retrive fid from "<<lastOp->getName().str()<<endl;
     return;
   }
-  std::string wrapName = (this->getModuleBFC()->funcPtrTable)[fidHolder];
-  std::string realName;
+  string wrapName = (this->getModuleBFC()->funcPtrTable)[fidHolder];
+  string realName;
   if (wrapName.find("wrap") == 0) 
     realName = wrapName.substr(4); //start from 4th char (chopped "wrap" from head)
   else if (wrapName.find("_local_wrap") == 0) {
@@ -1682,7 +1603,7 @@ void FunctionBFC::ieCallWrapFunc(Instruction *pi, int &varCount, int &currentLin
   bool complete = true;
   for (int i=0; i<numArgs; i++) {
     if (params[i] == NULL) {
-      blame_info<<"Error: params for on are incomplete: param#"<<i<<endl;
+      blame_info<<"Error: params for "<<realName<<" are incomplete: param#"<<i<<endl;
       complete = false;
     }
   }
@@ -1690,18 +1611,18 @@ void FunctionBFC::ieCallWrapFunc(Instruction *pi, int &varCount, int &currentLin
   //Now we can construct function call for on/coforall_fn_chpl*
   //name for each callnode: bar--51a, bar--51aa.. 
   //basically same as in calcMetaFuncName, just we don't need lastOp here
-  std::string mangledCallName;
+  string mangledCallName;
   char tempBuf[1024];
   sprintf(tempBuf, "%s--%i", realName.c_str(), currentLineNum);
   mangledCallName.insert(0, tempBuf);
   while (variables.count(mangledCallName))
     mangledCallName.push_back('a');
-  blame_info<<"MangledCallName is: "<<mangledCallName<<std::endl;
+  blame_info<<"MangledCallName is: "<<mangledCallName<<endl;
 
   //Now we need to create the node for wrap*_fn_chpl* function call
   if (variables.count(mangledCallName) == 0) { 
 #ifdef DEBUG_VP_CREATE
-	blame_info<<"Adding NodeProps(ieCallWrapFunc) for "<<mangledCallName<<std::endl;
+	blame_info<<"Adding NodeProps(ieCallWrapFunc) for "<<mangledCallName<<endl;
 #endif
 	NodeProps *vp = new NodeProps(varCount,mangledCallName,currentLineNum,pi);
 	vp->fbb = fbb;
@@ -1743,7 +1664,7 @@ void FunctionBFC::ieCallWrapFunc(Instruction *pi, int &varCount, int &currentLin
             && valueID != Value::UndefValueVal && valueID != Value::ConstantPointerNullVal) {//v isn't a constant value
           char tempBuf2[20];
           sprintf(tempBuf2, "0x%x", /*(unsigned)*/param);
-          paramName = std::string(tempBuf2);
+          paramName = string(tempBuf2);
         }
       }
       //With the name, we can get vp from variables since it's been there
@@ -1784,12 +1705,16 @@ int FunctionBFC::paramTypeMatch(const llvm::Type *t1, const llvm::Type *t2)
 
   // If both are struct, we need a further check on names
   if (tReal1->getTypeID()==Type::StructTyID && tReal2->getTypeID()==Type::StructTyID) {
-    tName1 = cast<StructType>(tReal1)->getName().str();
-    tName2 = cast<StructType>(tReal2)->getName().str();
-    if (tName1 == tName2)
-      return (ptrL1 - ptrL2);
-    else
-      return 99; 
+    const llvm::StructType *t1 = cast<StructType>(tReal1);
+    const llvm::StructType *t2 = cast<StructType>(tReal2);
+    if (t1->hasName() && t2->hasName()) {
+      tName1 = cast<StructType>(tReal1)->getName().str();
+      tName2 = cast<StructType>(tReal2)->getName().str();
+      if (tName1 == tName2)
+        return (ptrL1 - ptrL2);
+      else
+        return 99; 
+    }
   }
   // If typeId are same but they are not struct, simply return the ptr diff
   else if (tReal1->getTypeID() == tReal2->getTypeID()) 
@@ -1800,166 +1725,199 @@ int FunctionBFC::paramTypeMatch(const llvm::Type *t1, const llvm::Type *t2)
 }
 
 
-void FunctionBFC::getParamsForCoforall(Instruction *pi, Value **params, int numArgs, std::vector<FuncFormalArg*> &args) 
+void FunctionBFC::getParamsForCoforall(Instruction *pi, Value **params, int numArgs, vector<FuncFormalArg*> &args) 
 {
   // pi->taskListAddCoStmt
-  Value *p0 = pi->getOperand(2); //Naming pattern: p#<==>inst# same thing,same#
-  if (Instruction *inst0 = dyn_cast<Instruction>(p0)) {
-    if (inst0->getOpcode() == Instruction::BitCast) {
-      Value *p1 = inst0->getOperand(0);
-      if (Instruction *inst1 = dyn_cast<Instruction>(p1)) {
-        if (inst1->getOpcode() == Instruction::Load) {
-          Value *p2 = inst1->getOperand(0);
-          if (p2->hasName()) { // it should have _args_forcoforall_fn_chpl
-            // we check all use of _args*:  p3 = load _args*
-            for (Value::use_iterator u_i=p2->use_begin(), u_e=p2->use_end(); u_i!=u_e; u_i++) {
-              Value *p3 = *u_i;
-              if (Instruction *inst3 = dyn_cast<Instruction>(p3)) {
-                if (inst3->getOpcode() == Instruction::Load) {
-                  if (inst3 != inst1) { //No need to check the last load of _args* since we came from there
-                    // now we check use of p3: inst3 = GEP inst2, 0,..   
-                    for (Value::use_iterator u_i2=p3->use_begin(), u_e2=p3->use_end(); u_i2!=u_e2; u_i2++) {
-                      Value *p4 = *u_i2;
-                      if (Instruction *inst4 = dyn_cast<Instruction>(p4)) {
-                        if (inst4->getOpcode() == Instruction::GetElementPtr) {
-                          // get the param index
-                          Value *paramIdx = inst4->getOperand(2); //GEP a, 0, 8..
-                          int whichParam; 
-                          if (isa<ConstantInt>(paramIdx)) {
-                            ConstantInt *paramIdxVal = cast<ConstantInt>(paramIdx);
-                            whichParam= (int)(paramIdxVal->getZExtValue());
+  Value *p2 = get_args_for(pi);
+  if (p2->hasName()) { // it should have _args_forcoforall_fn_chpl
+    if (p2->getName().str().find("_args_forcoforall_fn_chpl") == string::npos) 
+      blame_info<<"Check what's the name for coforall: "<<p2->getName().str()<<endl;
+    // we check all use of _args*:  p3 = load _args*
+    for (Value::use_iterator u_i=p2->use_begin(), u_e=p2->use_end(); u_i!=u_e; u_i++) {
+      Value *p3 = *u_i;
+      if (Instruction *inst3 = dyn_cast<Instruction>(p3)) {
+        if (inst3->getOpcode() == Instruction::Load) {
+          // now we check use of p3: inst3 = GEP inst2, 0,..   
+          for (Value::use_iterator u_i2=p3->use_begin(), u_e2=p3->use_end(); u_i2!=u_e2; u_i2++) {
+            Value *p4 = *u_i2;
+            if (Instruction *inst4 = dyn_cast<Instruction>(p4)) {
+              if (inst4->getOpcode() == Instruction::GetElementPtr) {
+                // get the param index
+                Value *paramIdx = inst4->getOperand(2); //GEP a, 0, 8..
+                int whichParam; 
+                if (isa<ConstantInt>(paramIdx)) {
+                  ConstantInt *paramIdxVal = cast<ConstantInt>(paramIdx);
+                  whichParam= (int)(paramIdxVal->getZExtValue()) - 1; //coforall_fn param starts from GEP x,0,1
+                }
+                //Check if it's within the range, coforall param starts from GEP x,0,0
+                if (whichParam < numArgs && whichParam >= 0) {
+                  if (params[whichParam] == NULL) {
+                    int typeMatchResult = paramTypeMatch(p4->getType(), args[whichParam]->argType);
+                    // Total match, simply put in p4
+                    if (typeMatchResult == 0)
+                      params[whichParam] = p4;
+                    // p4 is *arg, should put in p4->storesTo instead
+                    else if (typeMatchResult == 1) {
+                      for (Value::use_iterator u_i3=p4->use_begin(), u_e3=p4->use_end(); u_i3!=u_e3; u_i3++) {
+                        Value *p5 = *u_i3;
+                        if (Instruction *inst5 = dyn_cast<Instruction>(p5)) {
+                          if (inst5->getOpcode() == Instruction::Store) {
+                            Value *p6 = inst5->getOperand(0); // store p6, p4
+                            params[whichParam] = p6;
                           }
-                          //Check if it's within the range, coforall param starts from GEP x,0,0
-                          if (whichParam <= numArgs && whichParam >= 0) {
-                            if (params[whichParam] == NULL) {
-                              int typeMatchResult = paramTypeMatch(p4->getType(), args[whichParam]->argType);
-                              // Total match, simply put in p4
-                              if (typeMatchResult == 0)
-                                  params[whichParam] = p4;
-                              // p4 is *arg, should put in p4->storesTo instead
-                              else if (typeMatchResult == 1) {
-                                for (Value::use_iterator u_i3=p4->use_begin(), u_e3=p4->use_end(); u_i3!=u_e3; u_i3++) {
-                                  Value *p5 = *u_i3;
-                                  if (Instruction *inst5 = dyn_cast<Instruction>(p5)) {
-                                    if (inst5->getOpcode() == Instruction::Store) {
-                                      Value *p6 = inst5->getOperand(0); // store p6, p4
-                                      if (params[whichParam] == NULL)
-                                        params[whichParam] = p6;
-                                      else
-                                        blame_info<<"Check: multiple stores to param: "<<whichParam<<endl;
-                                    }
-                                  }
-                                }
-                              }
-                              // Total Unmatch 
-                              else if (typeMatchResult == 99)
-                                blame_info<<"Check: param type Unmatch to arg: "<<whichParam<<endl;
-                              // Otherwise, weird !
-                              else
-                                blame_info<<"Weird ! tMR="<<typeMatchResult<<" at param="<<whichParam<<endl;
-                            }
-                            else
-                              blame_info<<"Check: old param existed: "<<whichParam<<endl;
-                          }
-                          // whichParam isn't within the range
-                          else
-                            blame_info<<"Check: whichParam is out of the range ! p="<<whichParam<<endl;
-                        } //if inst4 is GEP
-                      } //if p4 is inst
-                    } //all uses of GEP 
-                  } //inst1 != inst3
-                } //isnt 3 is Load
-              } //p3 is inst
-            } //all uses of _args*
-          } //p2 has name: _args*
-          else
-            blame_info<<"Weird: no name for _args_forcoforall_fn_chpl"<<endl;
-        } //inst1 is Load
-      } //p1 is inst
-    } //inst0 is bitcast
-  } //p0 is inst
+                        }
+                      }
+                    }
+                    // Total Unmatch 
+                    else if (typeMatchResult == 99)
+                      blame_info<<"Check: param type Unmatch to arg: "<<whichParam<<endl;
+                    // Otherwise, weird !
+                    else
+                      blame_info<<"Weird ! tMR="<<typeMatchResult<<" at param="<<whichParam<<endl;
+                  }
+                  else
+                    blame_info<<"Check: old param existed: "<<whichParam<<endl;
+                }
+                // whichParam isn't within the range
+                else
+                  blame_info<<"Check: whichParam is out of the range ! p="<<whichParam<<endl;
+              } //if inst4 is GEP
+            } //if p4 is inst
+          } //all uses of GEP 
+        } //isnt 3 is Load
+      } //p3 is inst
+    } //all uses of _args*
+  } //p2 has name: _args*
 }
 
 
-
-void FunctionBFC::getParamsForOn(Instruction *pi, Value **params, int numArgs, std::vector<FuncFormalArg*> &args) 
+//Helper func for getParamsFor*
+Value* FunctionBFC::get_args_for(Instruction *pi)
 {
   //pi->executeOn*
+  //Chapel 1.15 has additional bitcasts for new "_args_vforon_fn_chpl", so we started from p_2 (means -2)
   Value *p0 = pi->getOperand(2); //Naming pattern: p#<==>inst# same thing,same#
-  if (Instruction *inst0 = dyn_cast<Instruction>(p0)) {
+  if (Instruction *inst0 = dyn_cast<Instruction>(p0)) { 
     if (inst0->getOpcode() == Instruction::BitCast) {
       Value *p1 = inst0->getOperand(0);
       if (Instruction *inst1 = dyn_cast<Instruction>(p1)) {
         if (inst1->getOpcode() == Instruction::Load) {
           Value *p2 = inst1->getOperand(0);
-          if (p2->hasName()) { // it should have _args_foron_fn_chpl
-            // we check all use of _args*:  p3 = load _args*
+          if (p2->hasName()) { //p2 should be _args_vforon_fn_chpl
             for (Value::use_iterator u_i=p2->use_begin(), u_e=p2->use_end(); u_i!=u_e; u_i++) {
-              Value *p3 = *u_i;
+              Value *p3 = *u_i; //p3 is the inst pointing to "store %1, _args_vforon_"
               if (Instruction *inst3 = dyn_cast<Instruction>(p3)) {
-                if (inst3->getOpcode() == Instruction::Load) {
-                  if (inst3 != inst1) { //No need to check the last load of _args* since we came from there
-                    // now we check use of p3: inst3 = GEP inst2, 0,..   
-                    for (Value::use_iterator u_i2=p3->use_begin(), u_e2=p3->use_end(); u_i2!=u_e2; u_i2++) {
-                      Value *p4 = *u_i2;
-                      if (Instruction *inst4 = dyn_cast<Instruction>(p4)) {
-                        if (inst4->getOpcode() == Instruction::GetElementPtr) {
-                          // get the param index
-                          Value *paramIdx = inst4->getOperand(2); //GEP a, 0, 8..
-                          int whichParam; //starts from 1, should ignore 0
-                          if (isa<ConstantInt>(paramIdx)) {
-                            ConstantInt *paramIdxVal = cast<ConstantInt>(paramIdx);
-                            whichParam= (int)(paramIdxVal->getZExtValue());
+                if (inst3->getOpcode() == Instruction::Store) {
+                  Value *p4 = inst3->getOperand(0); //p4 is %1
+                  if (Instruction *inst4 = dyn_cast<Instruction>(p4)) {
+                    if (inst4->getOpcode() == Instruction::BitCast) {
+                      Value *p5 = inst4->getOperand(0);
+                      if (Instruction *inst5 = dyn_cast<Instruction>(p5)) {
+                        if (inst5->getOpcode() == Instruction::Load) {
+                          Value *argVal = inst5->getOperand(0);
+                          //argVal should be _args_foron(coforall)_fn_chpl, we don't need to
+                          //check its name here since getParamsForOn(Coforall) will check it later
+                          if (argVal != NULL) {
+                            blame_info<<"we've found the _args_for"<<endl;
+                            return argVal;
                           }
-                          //Check if it's within the range, on param starts from GEP x,0,1
-                          if (whichParam <= numArgs && whichParam > 0) {
-                            if (params[whichParam-1] == NULL) {
-                              int typeMatchResult = paramTypeMatch(p4->getType(), args[whichParam-1]->argType);
-                              // Total match, simply put in p4
-                              if (typeMatchResult == 0)
-                                  params[whichParam-1] = p4;
-                              // p4 is *arg, should put in p4->storesTo instead
-                              else if (typeMatchResult == 1) {
-                                for (Value::use_iterator u_i3=p4->use_begin(), u_e3=p4->use_end(); u_i3!=u_e3; u_i3++) {
-                                  Value *p5 = *u_i3;
-                                  if (Instruction *inst5 = dyn_cast<Instruction>(p5)) {
-                                    if (inst5->getOpcode() == Instruction::Store) {
-                                      Value *p6 = inst5->getOperand(0); // store p6, p4
-                                      if (params[whichParam-1] == NULL)
-                                        params[whichParam-1] = p6;
-                                      else
-                                        blame_info<<"Check2: multiple stores to param: "<<whichParam<<endl;
-                                    }
-                                  }
-                                }
-                              }
-                              // Total Unmatch 
-                              else if (typeMatchResult == 99)
-                                blame_info<<"Check2: param type Unmatch to arg: "<<whichParam<<endl;
-                              // Otherwise, weird !
-                              else
-                                blame_info<<"Weird2! tMR="<<typeMatchResult<<" at param="<<whichParam<<endl;
-                            }
-                            else
-                              blame_info<<"Check2: old param existed: "<<whichParam<<endl;
+                        }
+                        else blame_info<<"inst5 is not load"<<endl;
+                      }
+                      else blame_info<<"inst5 is not inst"<<endl;
+                    }
+                    else blame_info<<"inst4 is not bitcast"<<endl;
+                  }
+                  else blame_info<<"inst4 is not inst"<<endl;
+                }
+                else blame_info<<"inst3 is not store"<<endl;
+              }
+              else blame_info<<"inst3 is not inst"<<endl;
+            }//end of for loop
+          }
+          else blame_info<<"p2 does not have name"<<endl;
+        }
+        else blame_info<<"inst1 is not load"<<endl;
+      }
+      else blame_info<<"inst1 is not inst"<<endl;
+    }
+    else blame_info<<"inst0 is not bitcast"<<endl;
+  }
+  else blame_info<<"inst0 is not inst"<<endl;
+
+  blame_info<<"get_args_for failed"<<endl;
+  return NULL;
+}
+ 
+
+//logic changed for Chapel 1.15
+void FunctionBFC::getParamsForOn(Instruction *pi, Value **params, int numArgs, vector<FuncFormalArg*> &args) 
+{
+  //pi->executeOn*
+  Value *p2 = get_args_for(pi);
+  if (p2->hasName()) { // it should have _args_foron_fn_chpl
+    if (p2->getName().str().find("_args_foron_fn_chpl") == string::npos) 
+      blame_info<<"Check what's the name for on: "<<p2->getName().str()<<endl;
+    // we check all use of _args*:  p3 = load _args*
+    for (Value::use_iterator u_i=p2->use_begin(), u_e=p2->use_end(); u_i!=u_e; u_i++) {
+      Value *p3 = *u_i;
+      if (Instruction *inst3 = dyn_cast<Instruction>(p3)) {
+        if (inst3->getOpcode() == Instruction::Load) {
+          // now we check use of p3: inst3 = GEP inst2, 0,..   
+          for (Value::use_iterator u_i2=p3->use_begin(), u_e2=p3->use_end(); u_i2!=u_e2; u_i2++) {
+            Value *p4 = *u_i2;
+            if (Instruction *inst4 = dyn_cast<Instruction>(p4)) {
+              if (inst4->getOpcode() == Instruction::GetElementPtr) {
+                // get the param index
+                Value *paramIdx = inst4->getOperand(2); //GEP a, 0, 8..
+                int whichParam; //starts from 1, should ignore 0
+                if (isa<ConstantInt>(paramIdx)) {
+                  ConstantInt *paramIdxVal = cast<ConstantInt>(paramIdx);
+                  whichParam= (int)(paramIdxVal->getZExtValue()) - 2; //on_fn param starts from GEP x,0,2
+                }
+                else {
+                  blame_info<<"Bad param for on, Check!"<<endl;
+                  continue;
+                }
+                //Check if it's within the range
+                if (whichParam < numArgs && whichParam >= 0) {
+                  if (params[whichParam] == NULL) {
+                    int typeMatchResult = paramTypeMatch(p4->getType(), args[whichParam]->argType);
+                    // Total match, simply put in p4 : %1 = load val; store %1, p4
+                    if (typeMatchResult == 0)
+                      params[whichParam] = p4; //TOCHECK:Should we put in p4 or val??
+                    // p4 is *arg, should put in p4->storesTo instead
+                    else if (typeMatchResult == 1) {
+                      for (Value::use_iterator u_i3=p4->use_begin(), u_e3=p4->use_end(); u_i3!=u_e3; u_i3++) {
+                        Value *p5 = *u_i3;
+                        if (Instruction *inst5 = dyn_cast<Instruction>(p5)) {
+                          if (inst5->getOpcode() == Instruction::Store) {
+                            Value *p6 = inst5->getOperand(0); // store p6, p4
+                            params[whichParam] = p6;
                           }
-                          // whichParam isn't within the range
-                          else
-                            blame_info<<"Check2: whichParam is out of the range ! p="<<whichParam<<endl;
-                        } //if inst4 is GEP
-                      } //if p4 is inst
-                    } //all uses of GEP 
-                  } //inst1 != inst3
-                } //isnt 3 is Load
-              } //p3 is inst
-            } //all uses of _args*
-          } //p2 has name: _args*
-          else
-            blame_info<<"Weird: no name for _args_foron_fn_chpl"<<endl;
-        } //inst1 is Load
-      } //p1 is inst
-    } //inst0 is bitcast
-  } //p0 is inst
+                        }
+                      }
+                    }
+                    // Total Unmatch 
+                    else if (typeMatchResult == 99)
+                      blame_info<<"Check2: param type Unmatch to arg: "<<whichParam<<endl;
+                    // Otherwise, weird !
+                    else
+                      blame_info<<"Weird2! tMR="<<typeMatchResult<<" at param="<<whichParam<<endl;
+                  }
+                  else
+                    blame_info<<"Check2: old param existed: "<<whichParam<<endl;
+                }
+                // whichParam isn't within the range
+                else
+                  blame_info<<"Check2: whichParam is out of the range ! p="<<whichParam<<endl;
+              } //if inst4 is GEP
+            } //if p4 is inst
+          } //all uses of GEP 
+        } //isnt 3 is Load
+      } //p3 is inst
+    } //all uses of _args*
+  } //p2 has name: _args*
 }
 
 
@@ -1969,13 +1927,13 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 	// op[#ops-1] = name of call (the last operand of pi)
 	// op[0,1,...] = parameters
 #ifdef DEBUG_LLVM
-	blame_info<<"LLVM__(examineInstruction)(Call) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<std::endl;
+	blame_info<<"LLVM__(examineInstruction)(Call) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<endl;
 #endif 
 	// Add the Node Props for the return value
 	if (pi->hasName() && variables.count(pi->getName().str()) == 0) {
-		std::string name = pi->getName().str();
+		string name = pi->getName().str();
 #ifdef DEBUG_VP_CREATE
-		blame_info<<"Adding NodeProps(12) for "<<name<<std::endl;
+		blame_info<<"Adding NodeProps(12) for "<<name<<endl;
 #endif 
 		NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
 		vp->fbb = fbb;
@@ -1995,20 +1953,20 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 	int opNum = 0;
     int callNameIdx = pi->getNumOperands()-1; //called func is the last operand of this callInst
 	bool isTradName = true; //is traditional name
-	std::string nonTradName; //represents embedded func names 
+	string nonTradName; //represents embedded func names 
 	
     /////added by Hui,trying to get the called function///////////
     llvm::CallInst *cpi = cast<CallInst>(pi);
     llvm::Function *calledFunc = cpi->getCalledFunction();
     if(calledFunc != NULL && calledFunc->hasName())
         blame_info<<"In ieCall, calledFunc's name = "<<calledFunc->getName().data();
-    blame_info<<"  pi->getNumOperands()="<<pi->getNumOperands()<<std::endl;
+    blame_info<<"  pi->getNumOperands()="<<pi->getNumOperands()<<endl;
     //////////////////////////////////////////////////////////
     //added by Hui 12/31/15: get the callName from the last operand first
     Value *lastOp = pi->getOperand(callNameIdx);
     if (lastOp->hasName()) {
         funcCallNames.insert(lastOp->getName().data()); //save the original function names
-        blame_info<<"Called function has a name: "<<lastOp->getName().data()<<std::endl;
+        blame_info<<"Called function has a name: "<<lastOp->getName().data()<<endl;
 #ifdef SPECIAL_FUNC_PTR //added by Hui 12/06/16
         if (lastOp->getName().str().find("chpl_executeOn")==0 ||
               lastOp->getName().str().find("chpl_taskListAddBegin")==0 || 
@@ -2022,7 +1980,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
     else { //if no name, then it's an embedded func
         if (lastOp->getValueID() == Value::ConstantExprVal) {
 #ifdef DEBUG_LLVM
-            blame_info<<"Called function is ConstantExpr"<<std::endl;
+            blame_info<<"Called function is ConstantExpr"<<endl;
 #endif
             if (isa<ConstantExpr>(lastOp)) {
                 ConstantExpr *ce = cast<ConstantExpr>(lastOp);
@@ -2032,7 +1990,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
                     if (isa<Function>(funcVal)) {
                         Function * embFunc = cast<Function>(funcVal);
 #ifdef DEBUG_LLVM
-                        blame_info<<"EMB Func "<<embFunc->getName().str()<<std::endl;
+                        blame_info<<"EMB Func "<<embFunc->getName().str()<<endl;
 #endif 
                         isTradName = false;
                         nonTradName = embFunc->getName().str();
@@ -2044,8 +2002,8 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
     }
  
     //name for each callnode: bar--51a, bar--51aa..
-    std::string callName = calcMetaFuncName(variables, lastOp, isTradName, nonTradName, currentLineNum);
-    blame_info<<"After calcMetaFuncName, callName="<<callName<<std::endl;
+    string callName = calcMetaFuncName(variables, lastOp, isTradName, nonTradName, currentLineNum);
+    blame_info<<"After calcMetaFuncName, callName="<<callName<<endl;
   
     // Assigning function name VP and VPs for all the parameters
 	for (User::op_iterator op_i = pi->op_begin(), op_e = pi->op_end(); op_i != op_e; ++op_i) {
@@ -2055,13 +2013,13 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 #ifdef DEBUG_LLVM
 			blame_info<<"In ieCall -- Call Operand No Name "<<v<<" ";
 			printValueIDName(v);
-			blame_info<<std::endl;
+			blame_info<<endl;
 #endif			
         }
         else { //v has a name
 #ifdef DEBUG_LLVM
-			blame_info<<"In ieCall -- Call Operand "<<opNum<<" "<<v->getName().str()<<std::endl;
-			blame_info<<"In ieCall -- Type "<<v->getValueID()<<std::endl;
+			blame_info<<"In ieCall -- Call Operand "<<opNum<<" "<<v->getName().str()<<endl;
+			blame_info<<"In ieCall -- Type "<<v->getValueID()<<endl;
 #endif
 		}
         // The parameter is a BitCast or GEP operation pointing to something else
@@ -2072,13 +2030,13 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 				// Overwriting 
 				v = ce->getOperand(0);//get the real one 
 #ifdef DEBUG_LLVM
-				blame_info<<"Overwriting(1) Call Param GEP for "<<v->getName().str()<<std::endl;
+				blame_info<<"Overwriting(1) Call Param GEP for "<<v->getName().str()<<endl;
 #endif 
             }	
 			else if (ce->getOpcode() == Instruction::BitCast) {
 				v = ce->getOperand(0);//get the real one
 #ifdef DEBUG_LLVM
-				blame_info<<"Overwriting(2) Call Param Bitcast for "<<v->getName().str()<<std::endl;
+				blame_info<<"Overwriting(2) Call Param Bitcast for "<<v->getName().str()<<endl;
 #endif 
 			}
 		}
@@ -2086,7 +2044,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 		// We add the VP for the actual call
 		if (variables.count(callName) == 0 && opNum == callNameIdx) { 
 #ifdef DEBUG_VP_CREATE
-			blame_info<<"Adding NodeProps(13) for "<<callName<<std::endl;
+			blame_info<<"Adding NodeProps(13) for "<<callName<<endl;
 #endif
 			NodeProps *vp = new NodeProps(varCount,callName,currentLineNum,pi);
 			vp->fbb = fbb;
@@ -2128,16 +2086,16 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 			// FORTRAN  TC: why here use addr (pi) as name ??
 			else if (pi->hasNUsesOrMore(1)) { //the return is used >=1 places
 #ifdef DEBUG_LLVM
-				blame_info<<"Call "<<callName<<" has at least one use.  Return value valid."<<std::endl;
+				blame_info<<"Call "<<callName<<" has at least one use.  Return value valid."<<endl;
 #endif 					
 				char tempBuf2[18];
 				sprintf(tempBuf2, "0x%x", /*(unsigned)*/pi);
-				std::string name(tempBuf2);
+				string name(tempBuf2);
 				
 				NodeProps *retVP;	
 				if (variables.count(name) == 0) {
 #ifdef DEBUG_VP_CREATE
-					blame_info<<"Adding NodeProps(F5) for "<<name<<std::endl;
+					blame_info<<"Adding NodeProps(F5) for "<<name<<endl;
 #endif
 					retVP = new NodeProps(varCount,name,currentLineNum,pi);
 					retVP->fbb = fbb;
@@ -2163,7 +2121,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 
 			else {
 #ifdef DEBUG_LLVM
-				blame_info<<"Call "<<callName<<" has at NO users.  Return value not valid."<<std::endl;
+				blame_info<<"Call "<<callName<<" has at NO users.  Return value not valid."<<endl;
 #endif 
 			}
 		}
@@ -2173,7 +2131,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 			fp->lineNum = currentLineNum;
 #ifdef DEBUG_LLVM
 			blame_info<<"Adding func call in "<<getSourceFuncName()<<" to "<<callName<<" p "<<opNum<<" for node ";
-			blame_info<<v->getName().str()<<"("<<std::hex<<v<<std::dec<<")"<<std::endl;
+			blame_info<<v->getName().str()<<"("<<std::hex<<v<<std::dec<<")"<<endl;
 #endif
 			if (v->hasName()) {
 				NodeProps *vp;
@@ -2184,7 +2142,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 					// If param doesn't exist, we add it to list of variables in the program
 					if (!vp) {				
 #ifdef DEBUG_VP_CREATE
-						blame_info<<"Adding NodeProps(14) for "<<v->getName().str()<<std::endl;
+						blame_info<<"Adding NodeProps(14) for "<<v->getName().str()<<endl;
 #endif						
 						vp = new NodeProps(varCount, v->getName().str(), currentLineNum, pi);
 						vp->fbb = fbb;
@@ -2202,7 +2160,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 
 				else { //Param didn't exist
 #ifdef DEBUG_VP_CREATE
-					blame_info<<"Adding NodeProps(14a) for "<<v->getName().str()<<std::endl;
+					blame_info<<"Adding NodeProps(14a) for "<<v->getName().str()<<endl;
 #endif
 					vp = new NodeProps(varCount, v->getName().str(), currentLineNum, pi);
 					vp->fbb = fbb;
@@ -2229,12 +2187,12 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
                      && valueID != Value::UndefValueVal && valueID != Value::ConstantPointerNullVal) {//v has no name and not a constant value 03/15/16
 				char tempBuf2[18];
 				sprintf(tempBuf2, "0x%x", /*(unsigned)*/v);
-				std::string name(tempBuf2);
+				string name(tempBuf2);
 				
 				NodeProps *vp;
 				if (variables.count(name) == 0){
 #ifdef DEBUG_VP_CREATE
-					blame_info<<"Adding NodeProps(F2) for "<<name<<std::endl;
+					blame_info<<"Adding NodeProps(F2) for "<<name<<endl;
 #endif
 					vp = new NodeProps(varCount,name,currentLineNum,pi);
 					vp->fbb = fbb;	
@@ -2267,7 +2225,7 @@ void FunctionBFC::ieCall(Instruction *pi, int &varCount, int &currentLineNum, Fu
 
 void FunctionBFC::ieGen_LHS_Alloca(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
 {
-	std::string name;
+	string name;
 	// Add LHS variable to list of symbols
 	if (pi->hasName())
 		name = pi->getName().str();
@@ -2278,7 +2236,7 @@ void FunctionBFC::ieGen_LHS_Alloca(Instruction *pi, int &varCount, int &currentL
 	}
 	
 #ifdef DEBUG_VP_CREATE
-	blame_info<<"Adding NodeProps(A1) for "<<name<<std::endl;
+	blame_info<<"Adding NodeProps(A1) for "<<name<<endl;
 #endif
 	NodeProps * vp = new NodeProps(varCount,name,currentLineNum,pi);
 	vp->fbb = fbb;
@@ -2295,9 +2253,9 @@ void FunctionBFC::ieGen_LHS_Alloca(Instruction *pi, int &varCount, int &currentL
 		varCount++;
 	}
 	
-	//if (name.find(".") != std::string::npos || name.find("0x") != std::string::npos)  
+	//if (name.find(".") != string::npos || name.find("0x") != string::npos)  
     //"." refers to names as: *.addr in llvm 3.3, not sure what it represents in 2.5 !
-	if (name.find(".")!=std::string::npos || name.find("0x")!=std::string::npos) {
+	if (name.find(".")!=string::npos || name.find("0x")!=string::npos) {
         LocalVar *lv = new LocalVar();
 		lv->definedLine = currentLineNum;
 		lv->varName = name;
@@ -2311,6 +2269,8 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
     //added by Hui 05/10/16: to get the opCode
     Instruction *pii;
     int opCode;
+    NodeProps *vp;
+
     if(isa<Instruction>(pi)) {
         pii = dyn_cast<Instruction>(pi);
         opCode = pii->getOpcode();
@@ -2318,18 +2278,18 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
 
     // Add LHS variable to list of symbols
 	if (pi->hasName() && variables.count(pi->getName().str()) == 0) {
-		std::string name = pi->getName().str();
+		string name = pi->getName().str();
 		
 #ifdef DEBUG_VP_CREATE
-		blame_info<<"Adding NodeProps(1) for "<<name<<" currentLineNum="<<currentLineNum<<" lnm="<<lnm[currentLineNum]<<std::endl;
+		blame_info<<"Adding NodeProps(1) for "<<name<<" currentLineNum="<<currentLineNum<<" lnm="<<lnm[currentLineNum]<<endl;
         if(isa<ConstantExpr>(pi)){
  		    char tempHui[24];
 		    sprintf(tempHui, "0x%x", /*(unsigned)*/pi);
-		    std::string Hui(tempHui);
-            blame_info<<"Hui value of this inst="<<Hui<<std::endl;
+		    string Hui(tempHui);
+            blame_info<<"Hui value of this inst="<<Hui<<endl;
         }
 #endif 
-		NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
+		vp = new NodeProps(varCount,name,currentLineNum,pi);
 		vp->fbb = fbb;
         bool lnmChanged = false; //added by Hui 05/10/16
 		if (currentLineNum != 0) {
@@ -2352,12 +2312,15 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
                 (vp->loadLineNumOrder)[currentLineNum]=lnm[currentLineNum];
         }       
 	}
-	else { //if the instruction has NO name or it's already in "variables"
+	else { //if the instruction has NO name, then it's a register, because LLVM use SSA
+           //so it's NOT in variables for sure
 		char tempBuf[18];
 		sprintf(tempBuf, "0x%x", /*(unsigned)*/pi);
-		std::string name(tempBuf); // Use the address of the instruction as its name ??
+		string name(tempBuf); // Use the address of the instruction as its name ??
 		
-		NodeProps *vp = NULL;
+		if (variables.count(name) != 0) {
+		    blame_info<<"Attention! there was an old VP: "<<name<<endl;
+        }
 		
 		if (isa<ConstantExpr>(pi)) {
 			name += ".CE";
@@ -2366,13 +2329,13 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
 			sprintf(tempBuf2, ".%d", currentLineNum);
 			name.append(tempBuf2);
 #ifdef DEBUG_VP_CREATE
-			blame_info<<"Adding NodeProps(F1CE) for "<<name<<" currentLineNum="<<currentLineNum<<" lnm="<<lnm[currentLineNum]<<std::endl;
+			blame_info<<"Adding NodeProps(F1CE) for "<<name<<" currentLineNum="<<currentLineNum<<" lnm="<<lnm[currentLineNum]<<endl;
 #endif
 			vp = new NodeProps(varCount,name,currentLineNum,pi);
 		}
 		else {
 #ifdef DEBUG_VP_CREATE
-			blame_info<<"Adding NodeProps(F1) for "<<name<<" currentLineNum="<<currentLineNum<<" lnm="<<lnm[currentLineNum]<<std::endl;
+			blame_info<<"Adding NodeProps(F1) for "<<name<<" currentLineNum="<<currentLineNum<<" lnm="<<lnm[currentLineNum]<<endl;
 #endif
 			vp = new NodeProps(varCount,name,currentLineNum,pi);
 		}
@@ -2396,7 +2359,7 @@ void FunctionBFC::ieGen_LHS(User *pi, int &varCount, int &currentLineNum, Functi
 			variables[name] = vp;
 			varCount++;
 #ifdef DEBUG_VP_CREATE
-		blame_info<<"New added variable:  "<<name<<std::endl;
+		blame_info<<"New added variable:  "<<name<<endl;
 #endif 
 	    }
 
@@ -2423,15 +2386,15 @@ void FunctionBFC::ieGen_Operands(User *pi, int &varCount, int &currentLineNum, F
 		if (!(v->hasName())) {
 			blame_info<<"Standard Operand No Name "<<" "<<v<<" ";
 			printValueIDName(v);
-			blame_info<<std::endl;
+			blame_info<<endl;
 		}
 #endif			
 		
 		if (v->hasName() && v->getValueID() != Value::BasicBlockVal) {
 			if (variables.count(v->getName().str()) == 0) {
-				std::string name = v->getName().str();
+				string name = v->getName().str();
 #ifdef DEBUG_VP_CREATE
-				blame_info<<"Adding NodeProps(2-Operands) for "<<name<<std::endl;
+				blame_info<<"Adding NodeProps(2-Operands) for "<<name<<endl;
 #endif 
 				NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
@@ -2450,11 +2413,11 @@ void FunctionBFC::ieGen_Operands(User *pi, int &varCount, int &currentLineNum, F
 		}
 		else if(v->getValueID() == Value::ConstantExprVal) { //v has no name but is a constant expression
 #ifdef DEBUG_LLVM
-			blame_info<<"ValueID is "<<v->getValueID()<<std::endl;
+			blame_info<<"ValueID is "<<v->getValueID()<<endl;
 #endif 
 			if (isa<ConstantExpr>(v)) {
 #ifdef DEBUG_LLVM
-				blame_info<<"Value is ConstantExpr"<<std::endl;
+				blame_info<<"Value is ConstantExpr"<<endl;
 #endif 
 				ConstantExpr *ce = cast<ConstantExpr>(v);	
 				createNPFromConstantExpr(ce, varCount, currentLineNum, fbb); 
@@ -2492,8 +2455,8 @@ void FunctionBFC::ieGen_Operands(User *pi, int &varCount, int &currentLineNum, F
 		        }
 		        else {
 #ifdef DEBUG_ERROR
-			      std::cerr<<"Not a float or a double FPVal"<<std::endl;
-			      blame_info<<"Not a float or a double FPVal"<<std::endl;
+			      cerr<<"Not a float or a double FPVal"<<endl;
+			      blame_info<<"Not a float or a double FPVal"<<endl;
 #endif 
 		        }
 		
@@ -2505,7 +2468,7 @@ void FunctionBFC::ieGen_Operands(User *pi, int &varCount, int &currentLineNum, F
 		        opName.insert(0, vName);
 	        }
 #ifdef DEBUG_VP_CREATE
-			blame_info<<"Adding NodeProps(hui2) for "<<opName<<std::endl;
+			blame_info<<"Adding NodeProps(hui2) for "<<opName<<endl;
 #endif 
 			NodeProps *vp = new NodeProps(varCount,opName,currentLineNum,pi);
 			vp->fbb = fbb;
@@ -2535,16 +2498,16 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
 		if (!(v->hasName())) {
 			blame_info<<"Standard Operand No Name "<<" "<<v<<" ";
 			printValueIDName(v);
-			blame_info<<std::endl;
+			blame_info<<endl;
 		}
 #endif			
 		if (v->hasName() && v->getValueID() != Value::BasicBlockVal) {
             bool lnmChanged = false;
             NodeProps *vp = NULL;
 			if (variables.count(v->getName().str()) == 0) { //Usually the operands in store are pre-declared
-				std::string name = v->getName().str();              //so it should've been in variables already
+				string name = v->getName().str();              //so it should've been in variables already
 #ifdef DEBUG_VP_CREATE
-				blame_info<<"Adding NodeProps(2-Store) for "<<name<<std::endl;
+				blame_info<<"Adding NodeProps(2-Store) for "<<name<<endl;
 #endif 
 				vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
@@ -2567,7 +2530,7 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
                 User::op_iterator op_i2 = pi->op_begin();
                 Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
 #ifdef DEBUG_LLVM
-                blame_info<<"STORE to(1) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+                blame_info<<"STORE to(1) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<endl;
 #endif 
                 FuncStores *fs = new FuncStores();
                 
@@ -2604,12 +2567,12 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
             bool lnmChanged = false;
             NodeProps *vp = NULL;
 
-            std::string vNameStr(vName);
+            string vNameStr(vName);
             if (variables.count(vNameStr) == 0) {
-				std::string name(vName);
-				//std::cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<std::endl;
+				string name(vName);
+				//cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<endl;
 #ifdef DEBUG_VP_CREATE
-				blame_info<<"Adding NodeProps(3) for "<<name<<std::endl;
+				blame_info<<"Adding NodeProps(3) for "<<name<<endl;
 #endif 
 				vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
@@ -2633,7 +2596,7 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
                 User::op_iterator op_i2 = pi->op_begin();
                 Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
 #ifdef DEBUG_LLVM
-                blame_info<<"STORE to(2) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+                blame_info<<"STORE to(2) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<endl;
 #endif 
                 FuncStores *fs = new FuncStores();
                 
@@ -2662,7 +2625,7 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
 			if(APFloat::semanticsPrecision(apf.getSemantics()) == 24) { //TC: why 24 ?
 				float floatNum = apf.convertToFloat();
 #ifdef DEBUG_LLVM
-				blame_info<<"Converted to float! "<<floatNum<<std::endl;
+				blame_info<<"Converted to float! "<<floatNum<<endl;
 #endif 
 				char tempBuf[64];
 				sprintf (tempBuf, "Constant+%g+%i+%i+%i", floatNum, currentLineNum, opNum, Instruction::Store);		
@@ -2674,12 +2637,12 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
                 bool lnmChanged = false;
 				NodeProps *vp = NULL;
 
-                std::string vNameStr(vName);
+                string vNameStr(vName);
 				if (variables.count(vNameStr) == 0) {
-					std::string name(vName);
-					//std::cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<std::endl;
+					string name(vName);
+					//cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<endl;
 #ifdef DEBUG_VP_CREATE
-					blame_info<<"Adding NodeProps(5) for "<<name<<std::endl;
+					blame_info<<"Adding NodeProps(5) for "<<name<<endl;
 #endif 
 					vp = new NodeProps(varCount,name,currentLineNum,pi);
 					vp->fbb = fbb;
@@ -2703,7 +2666,7 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
                     User::op_iterator op_i2 = pi->op_begin();
                     Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
 #ifdef DEBUG_LLVM
-                    blame_info<<"STORE to(3) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+                    blame_info<<"STORE to(3) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<endl;
 #endif 
                     FuncStores *fs = new FuncStores();
                 
@@ -2730,7 +2693,7 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
 				char tempBuf[70];
 				sprintf (tempBuf, "Constant+%g2.2+%i+%i+%i", floatNum, currentLineNum, opNum, Instruction::Store);
 #ifdef DEBUG_LLVM
-				blame_info<<"Converted to double! "<<tempBuf<<std::endl;
+				blame_info<<"Converted to double! "<<tempBuf<<endl;
 #endif 
 				
 				char * vN = (char *) malloc(sizeof(char)*(strlen(tempBuf)+1));
@@ -2741,13 +2704,13 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
                 bool lnmChanged = false;
                 NodeProps *vp = NULL;
 				
-                std::string vNameStr(vName);
+                string vNameStr(vName);
 				if (variables.count(vNameStr) == 0) {
-					std::string name(vName);
-					//std::cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<std::endl;
+					string name(vName);
+					//cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<endl;
 #ifdef DEBUG_VP_CREATE
-					blame_info<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<std::endl;
-					blame_info<<"Adding NodeProps(6) for "<<name<<std::endl;
+					blame_info<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<endl;
+					blame_info<<"Adding NodeProps(6) for "<<name<<endl;
 #endif 
 					
 					NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
@@ -2773,9 +2736,9 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
                     Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
 #ifdef DEBUG_LLVM
 /*                  if (secondStr->hasName())
-                        blame_info<<"STORE to(4) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+                        blame_info<<"STORE to(4) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<endl;
                     else 
-                        blame_info<<"STORE to(4b) no-name from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+                        blame_info<<"STORE to(4b) no-name from "<<vp->name<<" "<<lnm[currentLineNum]<<endl;
 */
 #endif 
                     FuncStores *fs = new FuncStores();
@@ -2805,13 +2768,13 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
         //else if(!v->hasName() && !isa<Constant>(v))  
  			char tempBuf2[18];
 			sprintf(tempBuf2, "0x%x", /*(unsigned)*/v);
-			std::string name(tempBuf2);
+			string name(tempBuf2);
 			bool lnmChanged = false;
             NodeProps *vp = NULL;
 
 			if (variables.count(name) == 0){
 #ifdef DEBUG_VP_CREATE
-				blame_info<<"Adding NodeProps(Store Reg Operand) for "<<name<<std::endl;
+				blame_info<<"Adding NodeProps(Store Reg Operand) for "<<name<<endl;
 #endif
 				vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;					
@@ -2834,7 +2797,7 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
                 User::op_iterator op_i2 = pi->op_begin();
                 Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
 #ifdef DEBUG_LLVM
-                blame_info<<"STORE to(5) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+                blame_info<<"STORE to(5) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<endl;
 #endif 
                 FuncStores *fs = new FuncStores();
                 
@@ -2859,11 +2822,11 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
 
 		else if(v->getValueID() == Value::ConstantExprVal) {
 #ifdef DEBUG_LLVM
-			blame_info<<"ValueID is "<<v->getValueID()<<std::endl;
+			blame_info<<"ValueID is "<<v->getValueID()<<endl;
 #endif 
 			if (isa<ConstantExpr>(v)) {
 #ifdef DEBUG_LLVM
-				blame_info<<"Value is ConstantExpr"<<std::endl;
+				blame_info<<"Value is ConstantExpr"<<endl;
 #endif 
 				ConstantExpr *ce = cast<ConstantExpr>(v);	
 				createNPFromConstantExpr(ce, varCount, currentLineNum, fbb);
@@ -2871,7 +2834,7 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
                 //---------------------------------------------------------------------------//
                 char tempBuf[18];
                 sprintf(tempBuf, "0x%x", /*(unsigned)*/pi);
-                std::string name(tempBuf); // Use the address of the instruction as its name ??
+                string name(tempBuf); // Use the address of the instruction as its name ??
                 name += ".CE";
                 
                 char tempBuf2[10];
@@ -2883,7 +2846,7 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
                 
                 if (variables.count(name) == 0){
 #ifdef DEBUG_VP_CREATE
-                    blame_info<<"Adding NodeProps(Store ConstantExpr Operand) for "<<name<<std::endl;
+                    blame_info<<"Adding NodeProps(Store ConstantExpr Operand) for "<<name<<endl;
 #endif
                     vp = new NodeProps(varCount,name,currentLineNum,pi);
                     vp->fbb = fbb;					
@@ -2905,7 +2868,7 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
                     User::op_iterator op_i2 = pi->op_begin();
                     Value  /**firstStr = *op_i2, */  *secondStr = *(++op_i2);
 #ifdef DEBUG_LLVM
-                    blame_info<<"STORE to(6) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<std::endl;
+                    blame_info<<"STORE to(6) "<<secondStr->getName().str()<<" from "<<vp->name<<" "<<lnm[currentLineNum]<<endl;
 #endif 
                     FuncStores *fs = new FuncStores();
                     
@@ -2931,26 +2894,26 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
 
 		else { //TC: ConstantExpr->getValueID != ConstantExprVal ??
 #ifdef DEBUG_LLVM
-			blame_info<<"ValueID is "<<v->getValueID()<<std::endl;
+			blame_info<<"ValueID is "<<v->getValueID()<<endl;
 #endif 
 			if (isa<ConstantExpr>(v)) {
 #ifdef DEBUG_LLVM
-				blame_info<<"Value is ConstantExpr"<<std::endl;
+				blame_info<<"Value is ConstantExpr"<<endl;
 #endif 
 				
 #ifdef DEBUG_LLVM
 				ConstantExpr *ce = cast<ConstantExpr>(v);	
-				blame_info<<"Value opcode is "<<ce->getOpcode()<<std::endl;
-				blame_info<<"Value opcodeName is "<<ce->getOpcodeName()<<std::endl;
+				blame_info<<"Value opcode is "<<ce->getOpcode()<<endl;
+				blame_info<<"Value opcodeName is "<<ce->getOpcodeName()<<endl;
 #endif 
 				
 #ifdef DEBUG_LLVM
 				for (User::op_iterator op_i2 = ce->op_begin(), op_e2 = ce->op_end(); op_i2 != op_e2; ++op_i2) {
 					Value *v2 = *op_i2;
 					if (v2->hasName())
-						blame_info<<"CE op name "<<v2->getName().str()<<std::endl;
+						blame_info<<"CE op name "<<v2->getName().str()<<endl;
 					else
-						blame_info<<"CE op has no name"<<std::endl;
+						blame_info<<"CE op has no name"<<endl;
 				}
 #endif 
 			}
@@ -2963,21 +2926,21 @@ void FunctionBFC::ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum
 {
 	int opNum = 0;
 	// Add operands to list of symbols, which are var nodes in AST
-    //blame_info<<"NumOperands="<<pi->getNumOperands()<<std::endl;
+    //blame_info<<"NumOperands="<<pi->getNumOperands()<<endl;
 	for (User::op_iterator op_i = pi->op_begin(), op_e = pi->op_end(); op_i != op_e; ++op_i) {
 		Value *v = *op_i;
 #ifdef DEBUG_LLVM
 		if (!(v->hasName())) {
 			blame_info<<"Standard Operand No Name "<<" "<<v<<" ";
 			printValueIDName(v);
-			blame_info<<std::endl;
+			blame_info<<endl;
 		}
 #endif		
 		if (v->hasName() &&  v->getValueID() != Value::BasicBlockVal) {
 			if (variables.count(v->getName().str()) == 0) {
-				std::string name = v->getName().str();
+				string name = v->getName().str();
 #ifdef DEBUG_VP_CREATE
-				blame_info<<"Adding NodeProps(2-GEP) for "<<name<<std::endl;
+				blame_info<<"Adding NodeProps(2-GEP) for "<<name<<endl;
 #endif 
 				NodeProps * vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
@@ -3013,12 +2976,12 @@ void FunctionBFC::ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum
 			vN[strlen(tempBuf)]='\0';
 			const char * vName = vN;
 			
-            std::string vNameStr(vName);
-			if (variables.count(vNameStr) == 0 && opNum == 2) { //TC: why opNum has to be 2 ?
-				std::string name(vName);
-				//std::cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<std::endl;
+            string vNameStr(vName);
+			if (variables.count(vNameStr) == 0 && opNum >= 2) { //keep nodes for second index or later
+				string name(vName);
+				//cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<endl;
 #ifdef DEBUG_VP_CREATE
-				blame_info<<"Adding NodeProps(4) for "<<name<<std::endl;
+				blame_info<<"Adding NodeProps(4) for "<<name<<endl;
 #endif 
 				NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
@@ -3037,11 +3000,187 @@ void FunctionBFC::ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum
 	    }
 		else if(v->getValueID() == Value::ConstantExprVal) {
 #ifdef DEBUG_LLVM
-			blame_info<<"ValueID is "<<v->getValueID()<<std::endl;
+			blame_info<<"ValueID is "<<v->getValueID()<<endl;
 #endif 
 			if (isa<ConstantExpr>(v)) {
 #ifdef DEBUG_LLVM
-				blame_info<<"Value is ConstantExpr"<<std::endl;
+				blame_info<<"Value is ConstantExpr"<<endl;
+#endif 
+				ConstantExpr * ce = cast<ConstantExpr>(v);	
+				createNPFromConstantExpr(ce, varCount, currentLineNum, fbb);
+			}
+		}
+		opNum++;
+	}
+}
+
+
+void FunctionBFC::ieGen_OperandsExtVal(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
+{
+	int opNum = 0;
+	// Add operands to list of symbols, which are var nodes in AST
+    //blame_info<<"NumOperands="<<pi->getNumOperands()<<endl;
+	for (User::op_iterator op_i = pi->op_begin(), op_e = pi->op_end(); op_i != op_e; ++op_i) {
+		Value *v = *op_i;
+#ifdef DEBUG_LLVM
+		if (!(v->hasName())) {
+			blame_info<<"Standard Operand No Name "<<" "<<v<<" ";
+			printValueIDName(v);
+			blame_info<<endl;
+		}
+#endif		
+		if (v->hasName() &&  v->getValueID() != Value::BasicBlockVal) {
+			if (variables.count(v->getName().str()) == 0) {
+				string name = v->getName().str();
+#ifdef DEBUG_VP_CREATE
+				blame_info<<"Adding NodeProps(16) for "<<name<<endl;
+#endif 
+				NodeProps * vp = new NodeProps(varCount,name,currentLineNum,pi);
+				vp->fbb = fbb;
+				
+				if (currentLineNum != 0)
+				{
+					int lnm_cln = lnm[currentLineNum];
+					vp->lineNumOrder = lnm_cln;
+					lnm_cln++;
+					lnm[currentLineNum] = lnm_cln;
+				}
+
+				variables[v->getName().str()] = vp;					
+				varCount++;
+			}
+		}
+		// This is for dealing with Constants, no matter v has name or not
+		else if (v->getValueID() == Value::ConstantIntVal) {
+			ConstantInt *cv = (ConstantInt *)v;	
+			int number = cv->getSExtValue();
+			
+			char tempBuf[64];
+			//sprintf (tempBuf, "Constant+%i+%i+%i+%i", number, currentLineNum, opNum, pi->getOpcode());		
+			sprintf (tempBuf, "Constant+%i+%i+%i+%i", number, currentLineNum, opNum, Instruction::ExtractValue);		
+			char * vN = (char *)malloc(sizeof(char)*(strlen(tempBuf)+1));
+			
+			strcpy(vN,tempBuf);
+			vN[strlen(tempBuf)]='\0';
+			const char * vName = vN;
+			
+            string vNameStr(vName);
+			if (variables.count(vNameStr) == 0 && opNum >= 1) { //TC: indices start from 1 in extractValue
+				string name(vName);
+				//cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<endl;
+#ifdef DEBUG_VP_CREATE
+				blame_info<<"Adding NodeProps(17) for "<<name<<endl;
+#endif 
+				NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
+				vp->fbb = fbb;
+				
+				if (currentLineNum != 0) {
+					int lnm_cln = lnm[currentLineNum];
+					vp->lineNumOrder = lnm_cln;
+					lnm_cln++;
+					lnm[currentLineNum] = lnm_cln;
+				}
+				
+				variables[vNameStr] = vp;
+				varCount++;
+				//printCurrentVariables();
+			}
+	    }
+		else if(v->getValueID() == Value::ConstantExprVal) {
+#ifdef DEBUG_LLVM
+			blame_info<<"ValueID is "<<v->getValueID()<<endl;
+#endif 
+			if (isa<ConstantExpr>(v)) {
+#ifdef DEBUG_LLVM
+				blame_info<<"Value is ConstantExpr"<<endl;
+#endif 
+				ConstantExpr * ce = cast<ConstantExpr>(v);	
+				createNPFromConstantExpr(ce, varCount, currentLineNum, fbb);
+			}
+		}
+		opNum++;
+	}
+}
+
+
+void FunctionBFC::ieGen_OperandsIstVal(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
+{
+	int opNum = 0;
+	// Add operands to list of symbols, which are var nodes in AST
+    //blame_info<<"NumOperands="<<pi->getNumOperands()<<endl;
+	for (User::op_iterator op_i = pi->op_begin(), op_e = pi->op_end(); op_i != op_e; ++op_i) {
+		Value *v = *op_i;
+#ifdef DEBUG_LLVM
+		if (!(v->hasName())) {
+			blame_info<<"Standard Operand No Name "<<" "<<v<<" ";
+			printValueIDName(v);
+			blame_info<<endl;
+		}
+#endif		
+		if (v->hasName() &&  v->getValueID() != Value::BasicBlockVal) {
+			if (variables.count(v->getName().str()) == 0) {
+				string name = v->getName().str();
+#ifdef DEBUG_VP_CREATE
+				blame_info<<"Adding NodeProps(18) for "<<name<<endl;
+#endif 
+				NodeProps * vp = new NodeProps(varCount,name,currentLineNum,pi);
+				vp->fbb = fbb;
+				
+				if (currentLineNum != 0)
+				{
+					int lnm_cln = lnm[currentLineNum];
+					vp->lineNumOrder = lnm_cln;
+					lnm_cln++;
+					lnm[currentLineNum] = lnm_cln;
+				}
+
+				variables[v->getName().str()] = vp;					
+				varCount++;
+			}
+		}
+		// This is for dealing with Constants, no matter v has name or not
+		else if (v->getValueID() == Value::ConstantIntVal) {
+			ConstantInt *cv = (ConstantInt *)v;	
+			int number = cv->getSExtValue();
+			
+			char tempBuf[64];
+			//sprintf (tempBuf, "Constant+%i+%i+%i+%i", number, currentLineNum, opNum, pi->getOpcode());		
+			sprintf (tempBuf, "Constant+%i+%i+%i+%i", number, currentLineNum, opNum, Instruction::InsertValue);		
+			char * vN = (char *)malloc(sizeof(char)*(strlen(tempBuf)+1));
+			
+			strcpy(vN,tempBuf);
+			vN[strlen(tempBuf)]='\0';
+			const char * vName = vN;
+			
+            string vNameStr(vName);
+			if (variables.count(vNameStr) == 0 && opNum >=3) { 
+				string name(vName);
+				//cout<<"Creating VP for Constant "<<vName<<" in "<<getSourceFuncName()<<endl;
+#ifdef DEBUG_VP_CREATE
+				blame_info<<"Adding NodeProps(19) for "<<name<<endl;
+#endif 
+				NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
+				vp->fbb = fbb;
+				
+				if (currentLineNum != 0) {
+					int lnm_cln = lnm[currentLineNum];
+					vp->lineNumOrder = lnm_cln;
+					lnm_cln++;
+					lnm[currentLineNum] = lnm_cln;
+				}
+				
+				variables[vNameStr] = vp;
+				varCount++;
+				//printCurrentVariables();
+			}
+	    }
+		else if(v->getValueID() == Value::ConstantExprVal) {
+#ifdef DEBUG_LLVM
+			blame_info<<"ValueID is "<<v->getValueID()<<endl;
+#endif 
+			if (isa<ConstantExpr>(v)) {
+#ifdef DEBUG_LLVM
+				blame_info<<"Value is ConstantExpr"<<endl;
 #endif 
 				ConstantExpr * ce = cast<ConstantExpr>(v);	
 				createNPFromConstantExpr(ce, varCount, currentLineNum, fbb);
@@ -3064,15 +3203,15 @@ void FunctionBFC::ieGen_OperandsAtomic(Instruction *pi, int &varCount, int &curr
 		if (!(v->hasName())) {
 			blame_info<<"Standard Operand No Name "<<" "<<v<<" ";
 			printValueIDName(v);
-			blame_info<<std::endl;
+			blame_info<<endl;
 		}
 #endif			
 		
 		if (v->hasName() && v->getValueID() != Value::BasicBlockVal) {
 			if (variables.count(v->getName().str()) == 0) {
-				std::string name = v->getName().str();
+				string name = v->getName().str();
 #ifdef DEBUG_VP_CREATE
-				blame_info<<"Adding NodeProps(2-Atomic) for "<<name<<std::endl;
+				blame_info<<"Adding NodeProps(2-Atomic) for "<<name<<endl;
 #endif 
 				NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
@@ -3091,11 +3230,11 @@ void FunctionBFC::ieGen_OperandsAtomic(Instruction *pi, int &varCount, int &curr
 		}
 		else if(v->getValueID() == Value::ConstantExprVal) { //v has no name but is a constant expression
 #ifdef DEBUG_LLVM
-			blame_info<<"ValueID is "<<v->getValueID()<<std::endl;
+			blame_info<<"ValueID is "<<v->getValueID()<<endl;
 #endif 
 			if (isa<ConstantExpr>(v)) {
 #ifdef DEBUG_LLVM
-				blame_info<<"Value is ConstantExpr"<<std::endl;
+				blame_info<<"Value is ConstantExpr"<<endl;
 #endif 
 				ConstantExpr *ce = cast<ConstantExpr>(v);	
 				createNPFromConstantExpr(ce, varCount, currentLineNum, fbb); 
@@ -3110,13 +3249,13 @@ void FunctionBFC::ieDefault(User *pi, int &varCount, int &currentLineNum, Functi
     if (isa<Instruction>(pi)) {
       Instruction *pipi = cast<Instruction>(pi);
 #ifdef DEBUG_LLVM
-	  blame_info<<"In ieDefault for "<<pipi->getOpcodeName()<<" "<<pipi->getName().str()<<std::endl;
+	  blame_info<<"In ieDefault for "<<pipi->getOpcodeName()<<" "<<pipi->getName().str()<<endl;
 #endif
     }
     else if (isa<ConstantExpr>(pi)) {
       ConstantExpr *cepi = cast<ConstantExpr>(pi);
 #ifdef DEBUG_LLVM
-	  blame_info<<"In ieDefault for "<<cepi->getOpcodeName()<<" "<<pi->getName().str()<<std::endl;
+	  blame_info<<"In ieDefault for "<<cepi->getOpcodeName()<<" "<<pi->getName().str()<<endl;
 #endif
     }
 
@@ -3129,13 +3268,13 @@ void FunctionBFC::ieDefault(User *pi, int &varCount, int &currentLineNum, Functi
 void FunctionBFC::ieLoad(Instruction * pi, int & varCount, int & currentLineNum, FunctionBFCBB * fbb)
 {
 #ifdef DEBUG_LLVM
-	blame_info<<"In ieLoad for "<<pi->getName().str()<<std::endl;
+	blame_info<<"In ieLoad for "<<pi->getName().str()<<endl;
 #endif
 	//we don't care about the node representing the global filename
     Value *op = *(pi->op_begin());
     if (op->hasName() && op->getName().str().find("_literal_")==0) {
 #ifdef DEBUG_LLVM
-        blame_info<<"Operand "<<op->getName().str()<<" is filename. Not added"<<std::endl;
+        blame_info<<"Operand "<<op->getName().str()<<" is filename. Not added"<<endl;
 #endif
         return;
     }
@@ -3148,16 +3287,37 @@ void FunctionBFC::ieLoad(Instruction * pi, int & varCount, int & currentLineNum,
 void FunctionBFC::ieGetElementPtr(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
 {
 #ifdef DEBUG_LLVM
-	blame_info<<"In ieGetElementPtr for "<<pi->getName().str()<<std::endl;
+	blame_info<<"In ieGetElementPtr for "<<pi->getName().str()<<endl;
 #endif
 	ieGen_LHS(pi, varCount, currentLineNum, fbb);
 	ieGen_OperandsGEP(pi, varCount, currentLineNum, fbb);
 }
 
+
+void FunctionBFC::ieExtractValue(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
+{
+#ifdef DEBUG_LLVM
+	blame_info<<"In ieGetElementPtr for "<<pi->getName().str()<<endl;
+#endif
+	ieGen_LHS(pi, varCount, currentLineNum, fbb);
+	ieGen_OperandsExtVal(pi, varCount, currentLineNum, fbb);
+}
+
+
+void FunctionBFC::ieInsertValue(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
+{
+#ifdef DEBUG_LLVM
+	blame_info<<"In ieGetElementPtr for "<<pi->getName().str()<<endl;
+#endif
+	ieGen_LHS(pi, varCount, currentLineNum, fbb);
+	ieGen_OperandsIstVal(pi, varCount, currentLineNum, fbb);
+}
+
+
 void FunctionBFC::ieStore(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
 {
 #ifdef DEBUG_LLVM
-	blame_info<<"In ieStore"<<std::endl;
+	blame_info<<"In ieStore"<<endl;
 #endif
 	//We'll generate allStores later after both nodes of the operands are built
 	ieGen_OperandsStore(pi, varCount, currentLineNum, fbb);
@@ -3166,17 +3326,17 @@ void FunctionBFC::ieStore(Instruction *pi, int &varCount, int &currentLineNum, F
 void FunctionBFC::ieSelect(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
 {
 #ifdef DEBUG_LLVM
-	blame_info<<"In ieSelect"<<std::endl;
+	blame_info<<"In ieSelect"<<endl;
 #endif 
 	
 #ifdef DEBUG_LLVM
-	blame_info<<"LLVM__(examineInstruction)(Select) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<std::endl;
+	blame_info<<"LLVM__(examineInstruction)(Select) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<endl;
 #endif	 	
 	// Add LHS variable to list of symbols
 	if (pi->hasName() && variables.count(pi->getName().str()) == 0) {
-		std::string name = pi->getName().str();
+		string name = pi->getName().str();
 #ifdef DEBUG_VP_CREATE
-		blame_info<<"Adding NodeProps(7) for "<<name<<std::endl;
+		blame_info<<"Adding NodeProps(7) for "<<name<<endl;
 #endif 
 		NodeProps *vp = new NodeProps(varCount,name,currentLineNum,pi);
 		vp->fbb = fbb;
@@ -3198,9 +3358,9 @@ void FunctionBFC::ieSelect(Instruction *pi, int &varCount, int &currentLineNum, 
 		Value *v = *op_i;
 		if (v->hasName() &&  v->getValueID() != Value::BasicBlockVal) {
 			if (variables.count(v->getName().str()) == 0) {
-				std::string name = v->getName().str();
+				string name = v->getName().str();
 #ifdef DEBUG_VP_CREATE
-				blame_info<<"Adding NodeProps(8) for "<<name<<std::endl;
+				blame_info<<"Adding NodeProps(8) for "<<name<<endl;
 #endif 
 				NodeProps * vp = new NodeProps(varCount,name,currentLineNum,pi);
 				vp->fbb = fbb;
@@ -3223,7 +3383,7 @@ void FunctionBFC::ieSelect(Instruction *pi, int &varCount, int &currentLineNum, 
 void FunctionBFC::ieBlank(Instruction * pi, int & currentLineNum)
 {
 #ifdef DEBUG_LLVM
-	blame_info<<"In ieBlank for opcode "<<pi->getOpcodeName()<<" "<<currentLineNum<<std::endl;
+	blame_info<<"In ieBlank for opcode "<<pi->getOpcodeName()<<" "<<currentLineNum<<endl;
 #endif
 	
 }
@@ -3232,11 +3392,11 @@ void FunctionBFC::ieBlank(Instruction * pi, int & currentLineNum)
 void FunctionBFC::ieMemAtomic(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb)
 {
 #ifdef DEBUG_LLVM
-    blame_info<<"In ieMemAtomic for opocode "<<pi->getOpcodeName()<<" at "<<currentLineNum<<std::endl;
+    blame_info<<"In ieMemAtomic for opocode "<<pi->getOpcodeName()<<" at "<<currentLineNum<<endl;
 #endif
     if (pi->getOpcode() == Instruction::AtomicCmpXchg) { // same process as "Load"
 #ifdef DEBUG_LLVM
-        blame_info<<"In ieMemAtomic for cmpxchg"<<std::endl;
+        blame_info<<"In ieMemAtomic for cmpxchg"<<endl;
 #endif                 
         ieGen_LHS(pi, varCount, currentLineNum, fbb);
         ieGen_Operands(pi, varCount, currentLineNum, fbb);
@@ -3244,7 +3404,7 @@ void FunctionBFC::ieMemAtomic(Instruction *pi, int &varCount, int &currentLineNu
 
     else if (pi->getOpcode() == Instruction::AtomicRMW) {
 #ifdef DEBUG_LLVM
-        blame_info<<"In ieMemAtomic for atomicrmw"<<std::endl;
+        blame_info<<"In ieMemAtomic for atomicrmw"<<endl;
 #endif 
         ieGen_LHS(pi, varCount, currentLineNum, fbb);
         ieGen_OperandsAtomic(pi, varCount, currentLineNum, fbb);
@@ -3255,7 +3415,7 @@ void FunctionBFC::ieBitCast(Instruction *pi, int &varCount, int &currentLineNum,
 {
   /* We need to determine which symbols deal with debug info and ignore them */	
 #ifdef DEBUG_LLVM
-	blame_info<<"LLVM__(examineInstruction)(Bitcast) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<std::endl;
+	blame_info<<"LLVM__(examineInstruction)(Bitcast) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<endl;
 #endif
 	
 	//for (Value::use_iterator use_i = pi->use_begin(), use_e = pi->use_end(); use_i != use_e; ++use_i)
@@ -3268,7 +3428,7 @@ void FunctionBFC::ieBitCast(Instruction *pi, int &varCount, int &currentLineNum,
                     Function *calledFunc = ci->getCalledFunction();
 				    if(calledFunc != NULL)
                       if(calledFunc->hasName())
-                        if(calledFunc->getName().str().find("llvm.dbg") != std::string::npos)
+                        if(calledFunc->getName().str().find("llvm.dbg") != string::npos)
 				          return;
                 }
 			}						
@@ -3295,7 +3455,7 @@ void FunctionBFC::examineInstruction(Instruction *pi, int &varCount, int &curren
 #ifdef DEBUG_LLVM
 	blame_info<<"Entering examineInstruction "<<pi->getOpcodeName()<<" "<<pi<<" "<<currentLineNum<<" ";
 	printValueIDName(pi);
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 	
     // We are interested in operands from
@@ -3307,7 +3467,7 @@ void FunctionBFC::examineInstruction(Instruction *pi, int &varCount, int &curren
 	
 #ifdef ENABLE_FORTRAN
 	if (firstGEPCheck(pi) == false) {//only useful for fortran
-        blame_info<<"firstGEPCheck return false !"<<std::endl;
+        blame_info<<"firstGEPCheck return false !"<<endl;
         return;
     }
 #endif
@@ -3396,6 +3556,7 @@ void FunctionBFC::examineInstruction(Instruction *pi, int &varCount, int &curren
         ieMemAtomic(pi, varCount, currentLineNum, fbb);
     else if (pi->getOpcode() == Instruction::AtomicRMW)    //TC
         ieMemAtomic(pi, varCount, currentLineNum, fbb);
+
 	// END MEMORY OPERATORS
 	
 	// CAST OPERATORS
@@ -3437,11 +3598,15 @@ void FunctionBFC::examineInstruction(Instruction *pi, int &varCount, int &curren
 		ieCall(pi, varCount, currentLineNum, fbb);
 	else if (pi->getOpcode() == Instruction::Select)
 		ieSelect(pi, varCount, currentLineNum, fbb);
+    else if (pi->getOpcode() == Instruction::ExtractValue)
+        ieExtractValue(pi, varCount, currentLineNum, fbb);
+    else if (pi->getOpcode() == Instruction::InsertValue)
+        ieInsertValue(pi, varCount, currentLineNum, fbb);
 	else //There're still other Insts unhandled as: UserOp1, UserOp2, VAArg,   //TC
 	{    //IExtractElement, ShuffleVector, ExtractValue, insertValue, LandingPad    
 #ifdef DEBUG_ERROR
-		std::cerr<<"Other kind of opcode(2) is : "<<pi->getOpcodeName()<<"\n";
-		blame_info<<"LLVM__(examineInstruction)(NCH) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<std::endl;
+		cerr<<"Other kind of opcode(2) is : "<<pi->getOpcodeName()<<"\n";
+		blame_info<<"LLVM__(examineInstruction)(NCH) -- pi "<<pi->getName().str()<<" "<<pi<<" "<<pi->getOpcodeName()<<endl;
 #endif			
 	}		  
 }
@@ -3451,7 +3616,7 @@ void FunctionBFC::examineInstruction(Instruction *pi, int &varCount, int &curren
 void FunctionBFC::createNPFromConstantExpr(ConstantExpr *ce, int &varCount, int &currentLineNum, FunctionBFCBB	*fbb)
 {
 #ifdef DEBUG_LLVM
-	blame_info<<"In CreateVPFromConstantExpr"<<std::endl;
+	blame_info<<"In CreateVPFromConstantExpr"<<endl;
 #endif
 	
 	if (ce->getOpcode() == Instruction::GetElementPtr)
@@ -3464,7 +3629,7 @@ void FunctionBFC::createNPFromConstantExpr(ConstantExpr *ce, int &varCount, int 
     //    ieDefault(ce, varCount, currentLineNum, fbb);
 	else {
 #ifdef DEBUG_LLVM
-		blame_info<<"Constant Expr cvpce for "<<ce->getOpcodeName()<<std::endl; //NOTHING TO DO WITH THIS ?
+		blame_info<<"Constant Expr cvpce for "<<ce->getOpcodeName()<<endl; //NOTHING TO DO WITH THIS ?
 #endif
 	}	
 }
@@ -3473,7 +3638,7 @@ void FunctionBFC::createNPFromConstantExpr(ConstantExpr *ce, int &varCount, int 
 // In LLVM, each Param has the param number appended to it.  We are interested
 // in the address of these params ".addr" appended to the name without
 //  the number, THIS FUNCTION not used anywhere
-void paramWithoutNumWithAddr(std::string & original)
+void paramWithoutNumWithAddr(string &original)
 {
 	unsigned i;
 	int startOfNum = -1;
@@ -3494,17 +3659,17 @@ bool FunctionBFC::varLengthParams()   //TO-CHECK va_arg: http://en.wikibooks.org
 	for (Function::iterator b = func->begin(), be = func->end(); b != be; ++b) {
 		for (BasicBlock::iterator i = b->begin(), ie = b->end(); i != ie; ++i) {
 			Instruction *pi = i;
-			//std::cout<<"Name - "<<pi->getName()<<std::endl;
+			//cout<<"Name - "<<pi->getName()<<endl;
 			// If we make it to the first call without seeing argptr we know it's not variable list
             //variadic functions: a function that can take unfixed # of arguments, e.g: printf
 			if (pi->getOpcode() == Instruction::Call) {
 				return false;
 			}
             // the final arg can be a list/array of args, which is called Varargs
-			//if ( pi->getName().find("argptr") != std::string::npos) { //va_list argptr
+			//if ( pi->getName().find("argptr") != string::npos) { //va_list argptr
             else if (pi->getOpcode() == Instruction::VAArg) {
 #ifdef DEBUG_LLVM
-				blame_info<<"LLVM__(varLengthParams)--Variable Length Args!"<<std::endl;
+				blame_info<<"LLVM__(varLengthParams)--Variable Length Args!"<<endl;
 #endif
 				return true;
 			}

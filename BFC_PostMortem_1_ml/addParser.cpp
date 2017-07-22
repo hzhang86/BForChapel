@@ -100,22 +100,22 @@ void getNeighborThreadInfo(StackFrame &sf, vector<Instance>::iterator inst, vect
   vector<Instance>::iterator minusOne = inst-1, plusOne = inst+1;
   //Check plusOne first
   if (plusOne != instances.end()) {
-    if (equalInstance(*inst, *plusOne) && ((*plusOne).frames)[sf.frameNumber].task_id >0) {
-      sf.task_id = ((*plusOne).frames)[sf.frameNumber].task_id;
+    if (equalInstance(*inst, *plusOne) && ((*plusOne).frames)[sf.frameNumber].func_id >0) {
+      sf.func_id = ((*plusOne).frames)[sf.frameNumber].func_id;
       return;
     }
   }
   //Check minusOne then
   if (inst != instances.begin()) {
-    if (equalInstance(*inst, *minusOne) && ((*minusOne).frames)[sf.frameNumber].task_id >0) {
-      sf.task_id = ((*minusOne).frames)[sf.frameNumber].task_id;
+    if (equalInstance(*inst, *minusOne) && ((*minusOne).frames)[sf.frameNumber].func_id >0) {
+      sf.func_id = ((*minusOne).frames)[sf.frameNumber].func_id;
       return;
     }
   }
 
   //We really have to let it be for now
   cerr<<"Fail to getNeighborThreadInfo for sf "<<sf.frameName<<" "
-      <<sf.task_id<<" in inst#"<<(*inst).instNum<<endl;
+      <<sf.func_id<<" in inst#"<<(*inst).instNum<<endl;
 }
 
 int populateFrames(Instance &inst, ifstream &ifs, BPatch_process *proc, string inputFile)
@@ -158,9 +158,10 @@ int populateFrames(Instance &inst, ifstream &ifs, BPatch_process *proc, string i
         address = address - 1; //sampled IP should points to the last instruction 
       
       ss>>frameName; // 3rd: frameName
-      //if it's from getEarlyStackTrace, we don't wanna this instance
-      if (frameName == "getEarlyStackTrace") {
-        cerr<<"We met getEarlyStackTrace "<<frameNum<<" "<<a<<" in "<<inputFile<<" of inst#"<<inst.instNum<<endl;
+      //if it's due to preSpawn or fork instrument AND it's in compute file, we don't wanna this instance
+      if (inputFile.find("fork")==string::npos && inputFile.find("preSpawn")==string::npos && 
+          (frameName == "chpl_task_do_callbacks" || frameName == "chpl_comm_do_callbacks")) {
+        cerr<<"We met "<<frameName<<" "<<a<<" in "<<inputFile<<" of inst#"<<inst.instNum<<endl;
         return 4;
       }
       //get frameName in case it's missing in libunwind
@@ -178,7 +179,7 @@ int populateFrames(Instance &inst, ifstream &ifs, BPatch_process *proc, string i
       //get extra info for special frames that "really existed" (not ***)
       else {
         int loc, rem, fID, f_num;
-        unsigned long task_id;
+        unsigned long func_id;
         if (isForkStarWrapper(frameName)) {
           ss>>loc;
           ss>>rem;
@@ -187,8 +188,8 @@ int populateFrames(Instance &inst, ifstream &ifs, BPatch_process *proc, string i
           sf.info = {loc, rem, fID, f_num};
         }
         else if (frameName == "thread_begin") {
-          ss>>task_id;
-          sf.task_id = task_id;
+          ss>>func_id;
+          sf.func_id = func_id;
         }
       }
 
@@ -259,12 +260,8 @@ void populateSamples(vector<Instance> &instances, char *exeName, std::ifstream &
       ss>>buf; //buf = file name [fork, preSpawn, compute]
       int tempVal = 0;
       if (buf.find("preSpawn") != string::npos) { //if it's preSpawn file
-        ss>>tempVal; //taskID;
-        inst.taskID = tempVal;
-        ss>>tempVal;
-        inst.minTID = tempVal;
-        ss>>tempVal;
-        inst.maxTID = tempVal;
+        ss>>tempVal; //funcID;
+        inst.funcID = tempVal;
       }
 
       //only fork file has the following fields
@@ -310,7 +307,7 @@ void outputParsedSamples(vector<Instance> &instances, string inputFile, string d
       ofs<<frameSize;
       // output TID info for preSpawn* inputFiles
       if (inputFile.find("preSpawn") == 0) {
-        ofs<<" "<<(*vec_I_i).taskID<<" "<<(*vec_I_i).minTID<<" "<<(*vec_I_i).maxTID;
+        ofs<<" "<<(*vec_I_i).funcID;
       }
       // output fork_t info for fork* inputFiles
       else if (inputFile.find("fork") == 0) {//file starts with "fork"
@@ -338,10 +335,10 @@ void outputParsedSamples(vector<Instance> &instances, string inputFile, string d
           }
           else if ((*vec_sf_i).frameName == "thread_begin") {
             // it refers to thread_begins that were not discovered by libunwind
-            if ((*vec_sf_i).task_id == 0)
+            if ((*vec_sf_i).func_id == 0)
               getNeighborThreadInfo(*vec_sf_i, vec_I_i, instances);
             
-            ofs<<" "<<(*vec_sf_i).task_id;   
+            ofs<<" "<<(*vec_sf_i).func_id;   
           }
 
           ofs<<endl;

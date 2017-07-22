@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -119,9 +119,9 @@ typedef enum {
   chpl_comm_cb_event_kind_get,       // Simple get
   chpl_comm_cb_event_kind_get_nb,    // Non-blocking get
   chpl_comm_cb_event_kind_get_strd,  // Strided get
-  chpl_comm_cb_event_kind_fork,      // regular fork
-  chpl_comm_cb_event_kind_fork_nb,   // Non-blocking fork
-  chpl_comm_cb_event_kind_fork_fast, // Fast fork
+  chpl_comm_cb_event_kind_executeOn,      // regular executeOn
+  chpl_comm_cb_event_kind_executeOn_nb,   // Non-blocking executeOn
+  chpl_comm_cb_event_kind_executeOn_fast, // Fast executeOn
   chpl_comm_cb_num_event_kinds
 } chpl_comm_cb_event_kind_t;
 
@@ -155,13 +155,13 @@ typedef struct {
       int32_t filename;         // source file of communication
     } comm_strd;
 
-    struct chpl_comm_info_comm_fork {
-      uint16_t fork_num;        //  comm_fork call serial number
+    struct chpl_comm_info_comm_executeOn {
+      uint16_t executeOn_num;   //  comm_execute_on call serial number
       c_sublocid_t subloc;      //  Sub-location
       chpl_fn_int_t fid;        //  Function ID
       void *arg;                //  Function arg pointer
       size_t arg_size;          //  Function arg size
-    } fork;
+    } executeOn;
 
   } iu;
 } chpl_comm_cb_info_t;

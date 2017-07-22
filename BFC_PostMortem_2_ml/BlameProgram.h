@@ -67,7 +67,8 @@ class BlameProgram
 	
 	void addImplicitBlamePoints();
 	void addImplicitBlamePoint(const char * checkName);
-
+    
+    void resolvePidsFromPPAs(void);
 	
 	void calcRecursiveSEAliases();
 

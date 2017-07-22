@@ -20,7 +20,7 @@ using namespace std;
 void FunctionBFC::addFuncCalls(FuncCall *fc)
 {
 	
-    std::set<FuncCall*>::iterator vec_fc_i;
+    set<FuncCall*>::iterator vec_fc_i;
     for (vec_fc_i = funcCalls.begin(); vec_fc_i != funcCalls.end(); vec_fc_i++) {
 		if ((*vec_fc_i)->funcName == fc->funcName && (*vec_fc_i)->paramNumber == fc->paramNumber) {
 			return;
@@ -30,9 +30,9 @@ void FunctionBFC::addFuncCalls(FuncCall *fc)
     funcCalls.insert(fc);
 }
 
-ExitProgram *FunctionBFC::findOrCreateExitProgram(std::string &name)
+ExitProgram *FunctionBFC::findOrCreateExitProgram(string &name)
 {
-  for (std::vector<ExitProgram *>::iterator ev_i = exitPrograms.begin(); 
+  for (vector<ExitProgram *>::iterator ev_i = exitPrograms.begin(); 
        ev_i != exitPrograms.end();  ev_i++) {
 		if ( (*ev_i)->realName == name) {
 			return *ev_i;
@@ -68,10 +68,10 @@ int FunctionBFC::checkForUnreadReturn(NodeProps *v, int v_index)
 		int opCode = get(get(edge_iore, G),*e_beg);
 		bool funcName = false;
     //Early on we attached "--" along with line number information to functions
-		std::string::size_type loc = v->name.find( "--", 0 );
+		string::size_type loc = v->name.find( "--", 0 );
 		
 		// if we find that string we are dealing with a function
-		if( loc != std::string::npos ) {
+		if( loc != string::npos ) {
 			funcName = true;   
 		}
 		
@@ -103,17 +103,17 @@ int FunctionBFC::checkForUnreadReturn(NodeProps *v, int v_index)
 
 
 // TODO 7/6/2010 Either make this much more efficient or get rid of it completely
-void FunctionBFC::goThroughAllAliases(NodeProps *oP, NodeProps *tP, std::set<NodeProps *> &visited)
+void FunctionBFC::goThroughAllAliases(NodeProps *oP, NodeProps *tP, set<NodeProps *> &visited)
 {
 	if (visited.count(tP) > 0)
 		return;
 	
 	visited.insert(tP);
-	std::set<NodeProps *>::iterator vec_vp_i;
+	set<NodeProps *>::iterator vec_vp_i;
 	for(vec_vp_i = tP->dataPtrs.begin(); vec_vp_i != tP->dataPtrs.end(); vec_vp_i++){
 		NodeProps *tsDP = (*vec_vp_i);
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN
-		blame_info<<"Checking oP "<<oP->name<<" against tsDP(2) "<<tsDP->name<<std::endl;
+		blame_info<<"Checking oP "<<oP->name<<" against tsDP(2) "<<tsDP->name<<endl;
 #endif
 		if (cfg->controlDep(tsDP, oP, blame_info)) {
 			oP->dfChildren.insert(tsDP);
@@ -137,12 +137,12 @@ void FunctionBFC::addControlFlowChildren(NodeProps * oP, NodeProps * tP)
 	if (tPSource == NULL)
 		return;
 	
-	std::set<NodeProps *>::iterator vec_vp_i;
+	set<NodeProps *>::iterator vec_vp_i;
 	for (vec_vp_i = tPSource->dataPtrs.begin(); vec_vp_i != tPSource->dataPtrs.end(); vec_vp_i++)
 	{
 		NodeProps * tsDP = (*vec_vp_i);
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN
-		blame_info<<"Checking oP "<<oP->name<<" against tsDP "<<tsDP->name<<std::endl;
+		blame_info<<"Checking oP "<<oP->name<<" against tsDP "<<tsDP->name<<endl;
 #endif
 		
 		if ( cfg->controlDep(tsDP, oP, blame_info) && tP != tsDP )
@@ -154,25 +154,25 @@ void FunctionBFC::addControlFlowChildren(NodeProps * oP, NodeProps * tP)
 }
 
 
-void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std::set<int> & visited)
+void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, set<int> & visited)
 {
 	int v_index = v->number;
 	if (visited.count(v_index) > 0)
 		return;
 	
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN
-	blame_info<<"Calling recursiveExamineChildren for "<<v->name<<" from "<<origVP->name<<std::endl;
+	blame_info<<"Calling recursiveExamineChildren for "<<v->name<<" from "<<origVP->name<<endl;
 #endif
 	visited.insert(v_index);
 	
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN	
 	blame_info<<"Line nums for "<<v->name<<" (B) ";
-	std::set<int>::iterator s_i = v->lineNumbers.begin();
+	set<int>::iterator s_i = v->lineNumbers.begin();
 	for (; s_i != v->lineNumbers.end(); s_i++) {
 		blame_info<<" "<<*s_i;
 	}
 	
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 	
 	// No edges, just get the line numbers and get out
@@ -180,12 +180,12 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std:
 	if (out_d == 0) {
 		origVP->lineNumbers.insert(v->line_num);
 #ifdef DEBUG_LINE_NUMS
-		blame_info<<"Inserting line number(6) "<<v->line_num<<" to "<<origVP->name<<std::endl;
+		blame_info<<"Inserting line number(6) "<<v->line_num<<" to "<<origVP->name<<endl;
 #endif		
-		std::set<int>::iterator ln_i = v->lineNumbers.begin();
+		set<int>::iterator ln_i = v->lineNumbers.begin();
 		for (; ln_i != v->lineNumbers.end(); ln_i++) {
 #ifdef DEBUG_LINE_NUMS		
-			blame_info<<"Inserting line number(7) "<<*ln_i<<" to "<<origVP->name<<std::endl;
+			blame_info<<"Inserting line number(7) "<<*ln_i<<" to "<<origVP->name<<endl;
 #endif
 			origVP->lineNumbers.insert(*ln_i);
 		}
@@ -213,13 +213,13 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std:
         //since it'll matter local vars like: store %1, a; %2=load a; then 'a' will lose child %1 in this case
 		
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN
-		blame_info<<"Looking at target "<<targetVP->name<<" from "<<v->name<<std::endl;
+		blame_info<<"Looking at target "<<targetVP->name<<" from "<<v->name<<endl;
 		blame_info<<"Node Props for "<<targetVP->name<<": ";
 		for (int a = 0; a < NODE_PROPS_SIZE; a++)
 			blame_info<<targetVP->nStatus[a]<<" ";
 		
-		blame_info<<std::endl;	
-        blame_info<<"Edge's opCode/edge_type="<<opCode<<std::endl;
+		blame_info<<endl;	
+        blame_info<<"Edge's opCode/edge_type="<<opCode<<endl;
 #endif 
 		
 		if ( targetVP->eStatus > 0 || targetVP->nStatus[ANY_EXIT] ) {
@@ -238,35 +238,35 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std:
 			else
 				blame_info<<origVP->dpUpPtr;
 			
-			blame_info<<std::endl;
+			blame_info<<endl;
 	*/
             
 			if (targetVP->exitV)
-				blame_info<<"TargetV->exitV - "<<targetVP->exitV->name<<std::endl;
+				blame_info<<"TargetV->exitV - "<<targetVP->exitV->name<<endl;
             else
-                blame_info<<"TargetV->exitV - NULL"<<std::endl;
+                blame_info<<"TargetV->exitV - NULL"<<endl;
 			if (origVP->exitV)
-				blame_info<<"OrigVP->exitV - "<<origVP->exitV->name<<std::endl;
+				blame_info<<"OrigVP->exitV - "<<origVP->exitV->name<<endl;
             else
-                blame_info<<"OrigVP->exitV - NULL"<<std::endl;
+                blame_info<<"OrigVP->exitV - NULL"<<endl;
 			
 			if (targetVP->pointsTo)
-				blame_info<<"TargetV->pointsTo - "<<targetVP->pointsTo->name<<std::endl;
+				blame_info<<"TargetV->pointsTo - "<<targetVP->pointsTo->name<<endl;
             else
-                blame_info<<"TargetV->pointsTo - NULL"<<std::endl;
+                blame_info<<"TargetV->pointsTo - NULL"<<endl;
 			if (origVP->pointsTo)
-				blame_info<<"OrigVP->pointsTo - "<<origVP->pointsTo->name<<std::endl;
+				blame_info<<"OrigVP->pointsTo - "<<origVP->pointsTo->name<<endl;
             else
-                blame_info<<"TargetV->pointsTo - NULL"<<std::endl;
+                blame_info<<"TargetV->pointsTo - NULL"<<endl;
 			
             if (targetVP->dpUpPtr)
-                blame_info<<"TargetV->dpUpPtr - "<<targetVP->dpUpPtr->name<<std::endl;
+                blame_info<<"TargetV->dpUpPtr - "<<targetVP->dpUpPtr->name<<endl;
             else
-                blame_info<<"TargetV->dpUpPtr - NULL"<<std::endl;
+                blame_info<<"TargetV->dpUpPtr - NULL"<<endl;
 			if (origVP->dpUpPtr)
-				blame_info<<"OrigVP->dpUpPtr - "<<origVP->dpUpPtr->name<<std::endl;
+				blame_info<<"OrigVP->dpUpPtr - "<<origVP->dpUpPtr->name<<endl;
             else
-                blame_info<<"TargetV->dpUpPtr - NULL"<<std::endl;
+                blame_info<<"TargetV->dpUpPtr - NULL"<<endl;
 #endif 			
 			
             //For v-GEP_BASE_OP->targetV, like origV->v; v=GEP targetV,...; we don't add C/P relationship between "v-targetV" and "origV-targetV"
@@ -275,14 +275,14 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std:
                 && targetVP->dpUpPtr!=origVP->dpUpPtr && opCode!=GEP_BASE_OP) // || (targetVP->dpUpPtr == NULL && origVP->dpUpPtr == NULL))) 
             {
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN			
-				blame_info<<"Adding Child/Parent relation between "<<targetVP->name<<" and "<<origVP->name<<std::endl;
+				blame_info<<"Adding Child/Parent relation between "<<targetVP->name<<" and "<<origVP->name<<endl;
 #endif
 				origVP->children.insert(targetVP);
 				targetVP->parents.insert(origVP);
 				
                 if ((origVP->nStatus[EXIT_VAR_PTR] || origVP->nStatus[LOCAL_VAR_PTR]) && (targetVP->nStatus[EXIT_VAR_PTR] || targetVP->nStatus[LOCAL_VAR_PTR])) {
 					//addControlFlowChildren(origVP, targetVP);
-					std::set<NodeProps *> visited;
+					set<NodeProps *> visited;
 					//visited.insert(targetVP->dpUpPtr);
 					
 					// If statement added 7/7/2010, don't think we really need to care about the data writes data flow ancestors
@@ -292,10 +292,10 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std:
 			}
 		}
 		
-        else if (targetVP->eStatus == EXIT_VAR_UNWRITTEN) {
-			//std::cout<<"UNWRITTEN EV "<<targetVP->name<<" is sucked in by "<<origVP->name<<std::endl;
+        else if (targetVP->eStatus >= EXIT_VAR_PARAM && !targetVP->isWritten) {
+			//cout<<"UNWRITTEN EV "<<targetVP->name<<" is sucked in by "<<origVP->name<<endl;
 #ifdef DEBUG_SIDE_EFFECTS
-			blame_info<<"UNWRITTEN EV "<<targetVP->name<<" is sucked in by "<<origVP->name<<std::endl;
+			blame_info<<"UNWRITTEN EV "<<targetVP->name<<" is sucked in by "<<origVP->name<<endl;
 #endif
 			origVP->suckedInEVs.insert(targetVP);
 		}
@@ -304,12 +304,12 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std:
 			visited.insert(v_index);
 			origVP->lineNumbers.insert(targetVP->line_num);
 #ifdef DEBUG_LINE_NUMS			
-			blame_info<<"Inserting line number(8) "<<targetVP->line_num<<" to "<<origVP->name<<std::endl;
+			blame_info<<"Inserting line number(8) "<<targetVP->line_num<<" to "<<origVP->name<<endl;
 #endif 			
-			std::set<int>::iterator ln_i = targetVP->lineNumbers.begin();
+			set<int>::iterator ln_i = targetVP->lineNumbers.begin();
 			for (; ln_i != targetVP->lineNumbers.end(); ln_i++) {
 #ifdef DEBUG_LINE_NUMS			
-				blame_info<<"Inserting line number(9) "<<*ln_i<<" to "<<origVP->name<<std::endl;
+				blame_info<<"Inserting line number(9) "<<*ln_i<<" to "<<origVP->name<<endl;
 #endif 				
 				origVP->lineNumbers.insert(*ln_i);
 			}
@@ -325,7 +325,7 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std:
 		blame_info<<" "<<*s_i;
 	}
 	
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 	
 }
@@ -342,22 +342,22 @@ void FunctionBFC::resolveIVCalls()
 		//clearAfter.clear();
 		if (ivp->nStatus[CALL_NODE]) {
 #ifdef DEBUG_IMPORTANT_VERTICES
-			blame_info<<"For CALL_NODE "<<ivp->name<<std::endl;
+			blame_info<<"For CALL_NODE "<<ivp->name<<endl;
 #endif		
-			std::set<NodeProps *>::iterator ivp_i;
+			set<NodeProps *>::iterator ivp_i;
 			for(ivp_i = ivp->parents.begin(); ivp_i != ivp->parents.end(); ivp_i++){
                 NodeProps *ivpParent = (*ivp_i);
 				//NodeProps * vp = ivpParent->vp;
-				if (ivpParent == NULL) {// || ivpParent->name.find("GLOBAL") != std::string::npos)
+				if (ivpParent == NULL) {// || ivpParent->name.find("GLOBAL") != string::npos)
 					continue;
 				}
 #ifdef DEBUG_IMPORTANT_VERTICES				
-				blame_info<<"Parent "<<ivpParent->name<<std::endl;
+				blame_info<<"Parent "<<ivpParent->name<<endl;
 #endif
 				set<FuncCall *>::iterator vfc_i;
 				for (vfc_i = ivpParent->funcCalls.begin(); vfc_i != ivpParent->funcCalls.end(); vfc_i++) {
 #ifdef DEBUG_IMPORTANT_VERTICES
-					blame_info<<"Func name "<<(*vfc_i)->funcName<<", pn "<<(*vfc_i)->paramNumber<<std::endl;
+					blame_info<<"Func name "<<(*vfc_i)->funcName<<", pn "<<(*vfc_i)->paramNumber<<endl;
 #endif
 					if ((*vfc_i)->funcName == ivp->name) {
 						ImpFuncCall *ifcCN = new ImpFuncCall((*vfc_i)->paramNumber, ivpParent);
@@ -381,7 +381,7 @@ void FunctionBFC::populateImportantVertices()
 	
 	for(tie(i,v_end) = vertices(G); i != v_end; ++i) {
 		NodeProps * targetVP = get(get(vertex_props, G),*i);
-		//std::string na("GLOBAL");
+		//string na("GLOBAL");
 		//ImpNodeProps * ivpParent = new ImpNodeProps(na);
 		targetVP->nStatus[ANY_EXIT] = false; //added by Hui 03/22/16: initialize
 
@@ -436,15 +436,15 @@ void FunctionBFC::populateImportantVertices()
 		NodeProps *targetVP = get(get(vertex_props, G),*i);
 		if (targetVP->nStatus[ANY_EXIT] || targetVP->eStatus > NO_EXIT) {
 			//populateImportantVertex(targetVP);
-			std::set<int> visited;
+			set<int> visited;
 #ifdef DEBUG_IMPORTANT_VERTICES
-			blame_info<<"In populateImportantVertices for "<<targetVP->name<<std::endl;
+			blame_info<<"In populateImportantVertices for "<<targetVP->name<<endl;
 #endif
 			
 			recursiveExamineChildren(targetVP, targetVP, visited);
 			
 #ifdef DEBUG_IMPORTANT_VERTICES
-			blame_info<<"Finished Calling recursiveExamineChildren for "<<targetVP->name<<std::endl;
+			blame_info<<"Finished Calling recursiveExamineChildren for "<<targetVP->name<<endl;
 #endif
 			impVertices.insert(targetVP);
 		}
@@ -457,12 +457,12 @@ void FunctionBFC::populateImportantVertices()
 //Destructor
 FunctionBFC::~FunctionBFC()
 {
-	std::vector<ExitVariable *>::iterator vec_ev_i;
+	vector<ExitVariable *>::iterator vec_ev_i;
 	for (vec_ev_i = exitVariables.begin();  vec_ev_i != exitVariables.end(); 
         vec_ev_i++)
 	    delete (*vec_ev_i);
 	
-	std::vector<ExitProgram *>::iterator vec_ep_i;
+	vector<ExitProgram *>::iterator vec_ep_i;
 	for (vec_ep_i = exitPrograms.begin(); vec_ep_i != exitPrograms.end(); vec_ep_i++)
 		delete (*vec_ep_i);
 	
@@ -470,14 +470,14 @@ FunctionBFC::~FunctionBFC()
 	
 	pointers.clear();
 
-	std::vector<LocalVar *>::iterator vec_lv_i;
+	vector<LocalVar *>::iterator vec_lv_i;
 	for (vec_lv_i = localVars.begin(); vec_lv_i != localVars.end(); vec_lv_i++)
 		delete (*vec_lv_i);
 	
 	localVars.clear();
 	
 	impVertices.clear();
-	//std::set<NodeProps *> vprops;
+	//set<NodeProps *> vprops;
 	graph_traits<MyGraphType>::vertex_iterator i, v_end;
     for(tie(i,v_end) = vertices(G); i != v_end; ++i) {
 		NodeProps *v = get(get(vertex_props, G),*i);
@@ -487,7 +487,7 @@ FunctionBFC::~FunctionBFC()
 		delete v;
 	}
 	
-	std::set<FuncCall *>::iterator vec_fc_i;
+	set<FuncCall *>::iterator vec_fc_i;
 	for (vec_fc_i = funcCalls.begin(); vec_fc_i != funcCalls.end(); vec_fc_i++) 
 		delete (*vec_fc_i);
 
@@ -499,10 +499,10 @@ FunctionBFC::~FunctionBFC()
 
     // free space for some new members
     blamedArgs.clear();
-    std::vector<std::pair<NodeProps*, NodeProps*>>().swap(distObjs);
-	std::vector<std::pair<NodeProps*, NodeProps*>>().swap(seAliases);
-	std::vector<std::pair<NodeProps*, NodeProps*>>().swap(seRelations);
-	std::vector<FuncCallSE *>().swap(seCalls);
+    vector<pair<NodeProps*, NodeProps*>>().swap(distObjs);
+	vector<pair<NodeProps*, NodeProps*>>().swap(seAliases);
+	vector<pair<NodeProps*, NodeProps*>>().swap(seRelations);
+	vector<FuncCallSE *>().swap(seCalls);
     knownFuncsInfo.clear();
 }
 
@@ -530,7 +530,7 @@ bool FunctionBFC::isTargetNode(NodeProps * ivp)
 void FunctionBFC::makeNewTruncGraph()
 {
 #ifdef DEBUG_GRAPH_TRUNC
-	blame_info<<"Making trunc graph for "<<getSourceFuncName()<<" "<<impVertices.size()<<std::endl;
+	blame_info<<"Making trunc graph for "<<getSourceFuncName()<<" "<<impVertices.size()<<endl;
 #endif
 	MyTruncGraphType G_new(impVertCount);
 	G_trunc.swap(G_new);
@@ -551,7 +551,7 @@ void FunctionBFC::makeNewTruncGraph()
 	property_map<MyTruncGraphType, edge_iore_t>::type edge_type2 = get(edge_iore, G_abbr);
 	
 	//ImpVertexHash::iterator ivh_i;	
-	std::set<NodeProps *>::iterator ivh_i;
+	set<NodeProps *>::iterator ivh_i;
 	int num = 0;
 	// Populate Nodes
 	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
@@ -561,7 +561,7 @@ void FunctionBFC::makeNewTruncGraph()
 			put(props2, num, ivp);
 			ivp->impNumber = num;
 #ifdef DEBUG_GRAPH_TRUNC			
-			blame_info<<"Putting IVP node "<<ivp->impNumber<<" ("<<ivp->name<<") into graph "<<ivp->eStatus<<std::endl;
+			blame_info<<"Putting IVP node "<<ivp->impNumber<<" ("<<ivp->name<<") into graph "<<ivp->eStatus<<endl;
 #endif			
 			num++;
 		}
@@ -572,24 +572,24 @@ void FunctionBFC::makeNewTruncGraph()
 		if (!ivp->isExported)
 			continue;
 		
-		std::set<NodeProps *>::iterator ivp_i;
-		std::set<NodeProps *>::iterator set_ivp_i;
+		set<NodeProps *>::iterator ivp_i;
+		set<NodeProps *>::iterator set_ivp_i;
 			
 		// PARENTS
 		for (set_ivp_i = ivp->parents.begin(); set_ivp_i != ivp->parents.end(); set_ivp_i++) {
 			NodeProps *ivpParent = (*set_ivp_i);
 			if (!ivpParent->isExported)
 				continue;
-			//if (ivpParent->name.find("GLOBAL") != std::string::npos)
+			//if (ivpParent->name.find("GLOBAL") != string::npos)
 			//	continue;
 			
-			if (ivp->name.find("--") != std::string::npos)
+			if (ivp->name.find("--") != string::npos)
 				continue;
 			
 			if (ivp->eStatus > EXIT_VAR_GLOBAL)
 				continue;
 #ifdef DEBUG_GRAPH_TRUNC			
-			blame_info<<"Adding IVP P edge ("<<ivpParent->name<<","<<ivpParent->impNumber<<") to ("<<ivp->name<<","<<ivp->impNumber<<")"<<std::endl;
+			blame_info<<"Adding IVP P edge ("<<ivpParent->name<<","<<ivpParent->impNumber<<") to ("<<ivp->name<<","<<ivp->impNumber<<")"<<endl;
 #endif
 			tie(ed, inserted) = add_edge(ivpParent->impNumber, ivp->impNumber, G_trunc);
 			if (inserted)
@@ -603,16 +603,16 @@ void FunctionBFC::makeNewTruncGraph()
 				continue;
 			
 			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) {
-				//std::cerr<<"-1 Val A for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+				//cerr<<"-1 Val A for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<endl;
 #ifdef DEBUG_GRAPH_TRUNC				
-				blame_info<<"-1 Val A for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
-				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<std::endl;
+				blame_info<<"-1 Val A for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<endl;
+				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<endl;
 #endif				
 				continue;
 			}
 			
 #ifdef DEBUG_GRAPH_TRUNC			
-			blame_info<<"Adding IVP A edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+			blame_info<<"Adding IVP A edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<endl;
 #endif
 			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_trunc);
 			if (inserted)
@@ -626,16 +626,16 @@ void FunctionBFC::makeNewTruncGraph()
 				continue;			
 			
 			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) {
-				//std::cerr<<"-1 Val D for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+				//cerr<<"-1 Val D for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<endl;
 #ifdef DEBUG_GRAPH_TRUNC				
-				blame_info<<"-1 Val D for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
-				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<std::endl;
+				blame_info<<"-1 Val D for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<endl;
+				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<endl;
 #endif				
 				continue;
 			}	
 			
 #ifdef DEBUG_GRAPH_TRUNC			
-			blame_info<<"Adding IVP D edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+			blame_info<<"Adding IVP D edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<endl;
 #endif
 			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_trunc);
 			if (inserted)
@@ -649,16 +649,16 @@ void FunctionBFC::makeNewTruncGraph()
 				continue;			
 			
 			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) {
-				//std::cerr<<"-1 Val DFA for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+				//cerr<<"-1 Val DFA for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<endl;
 #ifdef DEBUG_GRAPH_TRUNC
-				blame_info<<"-1 Val DFA for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
-				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<std::endl;
+				blame_info<<"-1 Val DFA for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<endl;
+				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<endl;
 #endif				
 				continue;
 			}	
 			
 #ifdef DEBUG_GRAPH_TRUNC
-			blame_info<<"Adding IVP DFA edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+			blame_info<<"Adding IVP DFA edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<endl;
 #endif
 			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_trunc);
 			if (inserted)
@@ -673,15 +673,15 @@ void FunctionBFC::makeNewTruncGraph()
 				continue;			
 			
 			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) {
-				//std::cerr<<"-1 Val DFC for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+				//cerr<<"-1 Val DFC for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<endl;
 #ifdef DEBUG_GRAPH_TRUNC				
-				blame_info<<"-1 Val DFC for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
-				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<std::endl;
+				blame_info<<"-1 Val DFC for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<endl;
+				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<endl;
 #endif			
 				continue;
 			}
 #ifdef DEBUG_GRAPH_TRUNC
-			blame_info<<"Adding IVP DFC edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+			blame_info<<"Adding IVP DFC edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<endl;
 #endif
 			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_trunc);
 			if (inserted)
@@ -695,10 +695,10 @@ void FunctionBFC::makeNewTruncGraph()
 				continue;			
 			
 			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) {
-				//std::cerr<<"-1 Val DFI for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+				//cerr<<"-1 Val DFI for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<endl;
 #ifdef DEBUG_GRAPH_TRUNC
-				blame_info<<"-1 Val DFI for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
-				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<std::endl;
+				blame_info<<"-1 Val DFI for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<endl;
+				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<endl;
 #endif				
 				continue;
 			}		
@@ -706,7 +706,7 @@ void FunctionBFC::makeNewTruncGraph()
 			if (ivpAlias->impNumber == -1 || ivp->impNumber == -1)
 				continue;
 #ifdef DEBUG_GRAPH_TRUNC			
-			blame_info<<"Adding IVP DFI edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+			blame_info<<"Adding IVP DFI edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<endl;
 #endif
 			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_trunc);
 			if (inserted)
@@ -721,16 +721,16 @@ void FunctionBFC::makeNewTruncGraph()
 				continue;			
 			
 			if (ivpAlias->impNumber < 0 || ivp->impNumber < 0) {
-				//std::cerr<<"-1 Val F for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
+				//cerr<<"-1 Val F for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<endl;
 #ifdef DEBUG_GRAPH_TRUNC
-				blame_info<<"-1 Val F for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<std::endl;
-				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<std::endl;
+				blame_info<<"-1 Val F for Imp Vertex "<<ivpAlias->name<<" "<<ivp->name<<endl;
+				blame_info<<ivpAlias->impNumber<<" "<<ivp->impNumber<<endl;
 #endif				
 				continue;
 			}
 			
 #ifdef DEBUG_GRAPH_TRUNC			
-			blame_info<<"Adding IVP F edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+			blame_info<<"Adding IVP F edge "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<endl;
 #endif
 			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_trunc);
 			if (inserted)
@@ -741,11 +741,11 @@ void FunctionBFC::makeNewTruncGraph()
 			continue;
 		
 		// CALLS
-		std::set<ImpFuncCall *>::iterator ifc_i;
+		set<ImpFuncCall *>::iterator ifc_i;
 		for (ifc_i = (*ivh_i)->calls.begin(); ifc_i != (*ivh_i)->calls.end(); ifc_i++) {
 			ImpFuncCall *iFunc = (*ifc_i);
 #ifdef DEBUG_GRAPH_TRUNC
-			blame_info<<"Adding IVP C edge "<<ivp->impNumber<<" to "<<iFunc->callNode->impNumber<<std::endl;
+			blame_info<<"Adding IVP C edge "<<ivp->impNumber<<" to "<<iFunc->callNode->impNumber<<endl;
 #endif
 			tie(ed, inserted) = add_edge(ivp->impNumber, iFunc->callNode->impNumber, G_trunc);
 			if (inserted)
@@ -757,7 +757,7 @@ void FunctionBFC::makeNewTruncGraph()
 	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
 		NodeProps *ivp = (*ivh_i);
 #ifdef DEBUG_GRAPH_TRUNC
-		blame_info<<"G_abbr populate edges for "<<*ivh_i<<std::endl;
+		blame_info<<"G_abbr populate edges for "<<*ivh_i<<endl;
 #endif		
 		if (!ivp->isExported)
 			continue;
@@ -766,11 +766,11 @@ void FunctionBFC::makeNewTruncGraph()
 			continue;
 		
 #ifdef DEBUG_GRAPH_TRUNC		
-		blame_info<<"G_abbr STILL populate edges for "<<*ivh_i<<std::endl;
+		blame_info<<"G_abbr STILL populate edges for "<<*ivh_i<<endl;
 #endif		
 		
-		std::set<NodeProps *>::iterator ivp_i;
-		std::set<NodeProps *>::iterator set_ivp_i;
+		set<NodeProps *>::iterator ivp_i;
+		set<NodeProps *>::iterator set_ivp_i;
 		// FIELDS
 		for (ivp_i = (*ivh_i)->fields.begin(); ivp_i != (*ivh_i)->fields.end(); ivp_i++) {
 			NodeProps *ivpAlias = (*ivp_i);
@@ -782,7 +782,7 @@ void FunctionBFC::makeNewTruncGraph()
 			}
 			
 #ifdef DEBUG_GRAPH_TRUNC			
-			blame_info<<"Adding IVP F edge(2) "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+			blame_info<<"Adding IVP F edge(2) "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<endl;
 #endif	
 			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_abbr);
 			if (inserted)
@@ -794,11 +794,11 @@ void FunctionBFC::makeNewTruncGraph()
 	
 		// CALLS
 		
-		std::set<ImpFuncCall *>::iterator ifc_i;
+		set<ImpFuncCall *>::iterator ifc_i;
 		for (ifc_i = (*ivh_i)->calls.begin(); ifc_i != (*ivh_i)->calls.end(); ifc_i++) {
 			ImpFuncCall *iFunc = (*ifc_i);
 #ifdef DEBUG_GRAPH_TRUNC					
-			blame_info<<"Adding IVP C edge(2) "<<ivp->impNumber<<" to "<<iFunc->callNode->impNumber<<std::endl;
+			blame_info<<"Adding IVP C edge(2) "<<ivp->impNumber<<" to "<<iFunc->callNode->impNumber<<endl;
 #endif
 			tie(ed, inserted) = add_edge(ivp->impNumber, iFunc->callNode->impNumber, G_abbr);
 			if (inserted)
@@ -818,7 +818,7 @@ void FunctionBFC::makeNewTruncGraph()
 				continue;
 			
 #ifdef DEBUG_GRAPH_TRUNC			
-			blame_info<<"Adding IVP CP edge(2) "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<std::endl;
+			blame_info<<"Adding IVP CP edge(2) "<<ivp->impNumber<<" to "<<ivpAlias->impNumber<<endl;
 #endif
 			
 			tie(ed, inserted) = add_edge(ivp->impNumber, ivpAlias->impNumber, G_abbr);
@@ -828,22 +828,22 @@ void FunctionBFC::makeNewTruncGraph()
 		}
 	}
 	
-	std::string ext("_REG");
+	string ext("_REG");
 	printFinalDot(true, ext);
 	printFinalDotPretty(true, ext);
 	printFinalDotAbbr(ext);
 }
 
-void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vStack_call, std::set<NodeProps *> &vRevisit_call)
+void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, set<NodeProps *> &vStack_call, set<NodeProps *> &vRevisit_call)
 {
 
 #ifdef DEBUG_CALC_RECURSIVE
-	blame_info<<"Entering calcAggCallRecursive for "<<ivp->name<<std::endl;
+	blame_info<<"Entering calcAggCallRecursive for "<<ivp->name<<endl;
 #endif
 
 	if (ivp->calcAggCall) {
 #ifdef DEBUG_CALC_RECURSIVE	
-		blame_info<<"Exiting calcAggCallRecursive(1) for "<<ivp->name<<std::endl;
+		blame_info<<"Exiting calcAggCallRecursive(1) for "<<ivp->name<<endl;
 #endif		
 		return;
 	}
@@ -853,7 +853,7 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vS
 
 	if (ivp->nStatus[CALL_NODE]) {
 #ifdef DEBUG_CALC_RECURSIVE	
-		blame_info<<"Exiting calcAggCallRecursive(2) for "<<ivp->name<<std::endl;
+		blame_info<<"Exiting calcAggCallRecursive(2) for "<<ivp->name<<endl;
 #endif
 		return;
 	}
@@ -864,7 +864,7 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vS
 		ivp->descParams.insert(ivp);
 		ivp->aliasParams.insert(ivp);
 #ifdef DEBUG_CALC_RECURSIVE		
-		blame_info<<"Exiting calcAggCallRecursive(3) for "<<ivp->name<<std::endl;
+		blame_info<<"Exiting calcAggCallRecursive(3) for "<<ivp->name<<endl;
 #endif
 		//return;
 	}
@@ -873,14 +873,14 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vS
 		ivp->descParams.insert(ivp);
 		ivp->aliasParams.insert(ivp);
 #ifdef DEBUG_CALC_RECURSIVE		
-		blame_info<<"Exiting calcAggCallRecursive(4) for "<<ivp->name<<std::endl;
+		blame_info<<"Exiting calcAggCallRecursive(4) for "<<ivp->name<<endl;
 #endif 		
 		//return;
 	}
 
 
-	std::set<NodeProps *>::iterator s_vp_i;
-	std::set<NodeProps *>::iterator v_vp_i;
+	set<NodeProps *>::iterator s_vp_i;
+	set<NodeProps *>::iterator v_vp_i;
 	
     // Add descParams for Pids from loadForCalls 04/06/17
     if (ivp->isPid) {
@@ -894,7 +894,7 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vS
             vRevisit_call.insert(ivp);
         }
 #ifdef DEBUG_CALC_RECURSIVE		
-		blame_info<<"Inserting descParams(0) for "<<ivp->name<<" from "<<child->name<<std::endl;
+		blame_info<<"Inserting descParams(0) for "<<ivp->name<<" from "<<child->name<<endl;
 #endif 		
 		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());	
 		//ivp->descCalls.insert(child->descCalls.begin(), child->descCalls.end());
@@ -912,7 +912,7 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vS
 			vRevisit_call.insert(ivp);
 		}
 #ifdef DEBUG_CALC_RECURSIVE		
-		blame_info<<"Inserting descParams(1) for "<<ivp->name<<" from "<<child->name<<std::endl;
+		blame_info<<"Inserting descParams(1) for "<<ivp->name<<" from "<<child->name<<endl;
 #endif 		
 		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());	
 		//ivp->descCalls.insert(child->descCalls.begin(), child->descCalls.end());
@@ -929,7 +929,7 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vS
 		}
 		if (child->nStatus[CALL_RETURN]) {			
 #ifdef DEBUG_CALC_RECURSIVE		
-			blame_info<<"Inserting descParams(2) for "<<ivp->name<<" from "<<child->name<<std::endl;
+			blame_info<<"Inserting descParams(2) for "<<ivp->name<<" from "<<child->name<<endl;
 #endif 				
 			ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
 		}	
@@ -946,7 +946,7 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vS
 			vRevisit_call.insert(ivp);
 		}
 #ifdef DEBUG_CALC_RECURSIVE		
-		blame_info<<"Inserting descParams(3) for "<<ivp->name<<" from "<<child->name<<std::endl;
+		blame_info<<"Inserting descParams(3) for "<<ivp->name<<" from "<<child->name<<endl;
 #endif 	
 		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
 		ivp->aliasParams.insert(child->descParams.begin(), child->descParams.end());	
@@ -963,7 +963,7 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vS
 			vRevisit_call.insert(ivp);
 		}
 #ifdef DEBUG_CALC_RECURSIVE		
-		blame_info<<"Inserting descParams(4) for "<<ivp->name<<" from "<<child->name<<std::endl;
+		blame_info<<"Inserting descParams(4) for "<<ivp->name<<" from "<<child->name<<endl;
 #endif 				
 		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
 		ivp->aliasParams.insert(child->descParams.begin(), child->descParams.end());
@@ -980,7 +980,7 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vS
 			vRevisit_call.insert(ivp);
 		}
 #ifdef DEBUG_CALC_RECURSIVE		
-		blame_info<<"Inserting descParams(5) for "<<ivp->name<<" from "<<child->name<<std::endl;
+		blame_info<<"Inserting descParams(5) for "<<ivp->name<<" from "<<child->name<<endl;
 #endif 				
 		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
 		ivp->aliasParams.insert(child->descParams.begin(), child->descParams.end());
@@ -997,7 +997,7 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vS
 			vRevisit_call.insert(ivp);
 		}
 #ifdef DEBUG_CALC_RECURSIVE		
-		blame_info<<"Inserting descParams(6) for "<<ivp->name<<" from "<<child->name<<std::endl;
+		blame_info<<"Inserting descParams(6) for "<<ivp->name<<" from "<<child->name<<endl;
 #endif 				
 		ivp->descParams.insert(child->descParams.begin(), child->descParams.end());
 		ivp->aliasParams.insert(child->descParams.begin(), child->descParams.end());
@@ -1005,7 +1005,7 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vS
 #endif
 
 #ifdef DEBUG_CALC_RECURSIVE
-	blame_info<<"Exiting calcAggCallRecursive(N) for "<<ivp->name<<std::endl;
+	blame_info<<"Exiting calcAggCallRecursive(N) for "<<ivp->name<<endl;
 #endif 		
 
     vStack_call.erase(ivp);
@@ -1016,61 +1016,61 @@ void FunctionBFC::calcAggCallRecursive(NodeProps *ivp, std::set<NodeProps *> &vS
 void FunctionBFC::debugPrintLineNumbers(NodeProps *ivp, NodeProps *target,int locale)
 {
 #ifdef DEBUG_PRINT_LINE_NUMS
-	blame_info<<"Inserting Line Numbers("<<locale<<") from "<<target->name<<" to "<<ivp->name<<std::endl;
-	std::set<int>::iterator set_i_i;
+	blame_info<<"Inserting Line Numbers("<<locale<<") from "<<target->name<<" to "<<ivp->name<<endl;
+	set<int>::iterator set_i_i;
 	
 	for (set_i_i = target->descLineNumbers.begin(); set_i_i != target->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
 	
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 }
 
 
 
-void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *> &vStack, std::set<NodeProps *> &vRevisit)
+void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, set<NodeProps *> &vStack, set<NodeProps *> &vRevisit)
 {
 	if (ivp->calcAgg)
 		return;
 
 	ivp->calcAgg = true;
 	vStack.insert(ivp);
-	std::set<int>::iterator set_i_i;
+	set<int>::iterator set_i_i;
 
 #ifdef DEBUG_PRINT_LINE_NUMS
-	blame_info<<std::endl;
-	blame_info<<"Entering calcAggregateLNRecursive for "<<ivp->name<<std::endl;
-	blame_info<<"Starting line number tally for "<<ivp->name<<" originally:"<<std::endl;
+	blame_info<<endl;
+	blame_info<<"Entering calcAggregateLNRecursive for "<<ivp->name<<endl;
+	blame_info<<"Starting line number tally for "<<ivp->name<<" originally:"<<endl;
 	
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
-    blame_info<<std::endl;
+    blame_info<<endl;
 #endif
 	
 	ivp->descLineNumbers.insert(ivp->line_num);
 #ifdef DEBUG_PRINT_LINE_NUMS
-	blame_info<<"After insert line_num of "<<ivp->name<<std::endl;
+	blame_info<<"After insert line_num of "<<ivp->name<<endl;
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif 
 
     //added by Hui 04/02/16: Constants shouldn't have extra lines from its 'related nodes'
-    if (ivp->name.find("Constant+") != std::string::npos) {
-        blame_info<<ivp->name<<" is not needed in calcAggregateLNRecursive"<<std::endl;
+    if (ivp->name.find("Constant+") != string::npos) {
+        blame_info<<ivp->name<<" is not needed in calcAggregateLNRecursive"<<endl;
         return;
     }
 
 	ivp->descLineNumbers.insert(ivp->lineNumbers.begin(), ivp->lineNumbers.end());
 #ifdef DEBUG_PRINT_LINE_NUMS
-	blame_info<<"After insert lineNumbers(-1) from baseline for "<<ivp->name<<std::endl;
+	blame_info<<"After insert lineNumbers(-1) from baseline for "<<ivp->name<<endl;
 	for (set_i_i = ivp->lineNumbers.begin(); set_i_i != ivp->lineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 	
 	// TODO: DETAILS BELOW
@@ -1078,11 +1078,11 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 #ifdef ONLY_FOR_PARAM1
     if (ivp->storeFrom != NULL && (ivp->isPtr || ivp->nStatus[LOCAL_VAR_PTR] || ivp->nStatus[EXIT_VAR_PTR])) {//changed by Hui on 08/03/15
 		//ivp->descLineNumbers.insert(ivp->storeFrom->line_num);
-        blame_info<<"ivp->eStatus="<<ivp->eStatus<<std::endl;
+        blame_info<<"ivp->eStatus="<<ivp->eStatus<<endl;
         blame_info<<"ivp->nStatus:  ";
         for(int a=0; a< NODE_PROPS_SIZE; a++)
             blame_info<<ivp->nStatus[a]<<" ";
-        blame_info<<std::endl;
+        blame_info<<endl;
         NodeProps *child = ivp->storeFrom;
 		
         if (child->calcAgg == false)
@@ -1090,7 +1090,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 		
 		if (vStack.count(child)) {
 #ifdef DEBUG_LINE_NUMS
-			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
 #endif
 			vRevisit.insert(child);
 			vRevisit.insert(ivp);
@@ -1098,21 +1098,21 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         
         ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
 #ifdef DEBUG_PRINT_LINE_NUMS
-	    blame_info<<"After storeFrom: "<<ivp->name<<std::endl;
+	    blame_info<<"After storeFrom: "<<ivp->name<<endl;
 	    for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		    blame_info<<*set_i_i<<" ";
 	    }
 	
-	    blame_info<<std::endl;
+	    blame_info<<endl;
 #endif 
     }
 #endif
 
-	std::set<NodeProps *>::iterator s_vp_i;
-	std::set<NodeProps *>::iterator s_vp_i2;
+	set<NodeProps *>::iterator s_vp_i;
+	set<NodeProps *>::iterator s_vp_i2;
 	
-	std::set<NodeProps *>::iterator v_vp_i;
-	std::set<NodeProps *>::iterator v_vp_i2;
+	set<NodeProps *>::iterator v_vp_i;
+	set<NodeProps *>::iterator v_vp_i2;
 
     //added by Hui 04/04/16: intuitively, we should add-in storesTo, not storeFrom
     for (s_vp_i = ivp->storesTo.begin(); s_vp_i != ivp->storesTo.end(); s_vp_i++) {
@@ -1122,7 +1122,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 		
 		if (vStack.count(child)) {
 		#ifdef DEBUG_LINE_NUMS
-			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
 		#endif
 			vRevisit.insert(child);
 			vRevisit.insert(ivp);
@@ -1132,11 +1132,11 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 		debugPrintLineNumbers(ivp, child, 0);
 	}
 #ifdef DEBUG_PRINT_LINE_NUMS
-    blame_info<<"After storesTo: "<<ivp->name<<std::endl;
+    blame_info<<"After storesTo: "<<ivp->name<<endl;
     for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
         blame_info<<*set_i_i<<" ";
     }
-    blame_info<<std::endl;
+    blame_info<<endl;
 #endif 
 
 	if ((ivp->nStatus[LOCAL_VAR_PTR] || ivp->nStatus[EXIT_VAR_PTR]) && ivp->isWritten == false) {		
@@ -1145,7 +1145,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 				NodeProps *cand = *s_vp_i;
 				if (cand == NULL) {
 				#ifdef DEBUG_ERROR
-					blame_info<<"Why is this NULL?"<<std::endl;
+					blame_info<<"Why is this NULL?"<<endl;
 				#endif
 					continue;
 				}
@@ -1156,7 +1156,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 				if (cfg->controlDep(cand, ivp, blame_info)) {
 					//if (cand->storePTR_Lines.count(ivp->line_num))
 #ifdef DEBUG_LINE_NUMS
-					blame_info<<"Adding lines from the dominating data write for "<<cand->name<<std::endl;
+					blame_info<<"Adding lines from the dominating data write for "<<cand->name<<endl;
 #endif
 					ivp->dataWritesFrom.insert(cand);				
 					NodeProps *child = cand;
@@ -1166,7 +1166,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 					if (vStack.count(child)) {
 #ifdef DEBUG_LINE_NUMS
 
-						blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+						blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
 						#endif 
 						vRevisit.insert(child);
 						vRevisit.insert(ivp);
@@ -1182,16 +1182,16 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 			for (v_vp_i = ivp->dpUpPtr->aliasesIn.begin(); v_vp_i != ivp->dpUpPtr->aliasesIn.end(); v_vp_i++) {			
                 NodeProps *alias = *v_vp_i;
 #ifdef DEBUG_LINE_NUMS
-				blame_info<<"Examining DPs for alias "<<alias->name<<std::endl;
+				blame_info<<"Examining DPs for alias "<<alias->name<<endl;
 #endif
 				for (s_vp_i = alias->dataPtrs.begin(); s_vp_i != alias->dataPtrs.end(); s_vp_i++) {
 					NodeProps *cand = *s_vp_i;
 				#ifdef DEBUG_LINE_NUMS
-					blame_info<<"Examining candidate "<<cand->name<<std::endl;
+					blame_info<<"Examining candidate "<<cand->name<<endl;
 				#endif
 				   	if (cand == NULL) {
 					#ifdef DEBUG_ERROR
-						blame_info<<"Why is this NULL?"<<std::endl;
+						blame_info<<"Why is this NULL?"<<endl;
 					#endif
 						continue;
 					}
@@ -1202,7 +1202,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 					if (cfg->controlDep(cand, ivp, blame_info)) {
 						//if (cand->storePTR_Lines.count(ivp->line_num))
 					#ifdef DEBUG_LINE_NUMS
-						blame_info<<"Adding lines from the dominating data write for(2) "<<cand->name<<std::endl;
+						blame_info<<"Adding lines from the dominating data write for(2) "<<cand->name<<endl;
 					#endif
 
 						ivp->dataWritesFrom.insert(cand);
@@ -1212,7 +1212,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 						
 						if (vStack.count(child)) {
 						#ifdef DEBUG_LINE_NUMS
-							blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+							blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
 						#endif
 							vRevisit.insert(child);
 							vRevisit.insert(ivp);
@@ -1231,16 +1231,16 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 				NodeProps *alias = *s_vp_i2;
 				
             #ifdef DEBUG_LINE_NUMS
-				blame_info<<"Examining DPs(2) for alias "<<alias->name<<std::endl;
+				blame_info<<"Examining DPs(2) for alias "<<alias->name<<endl;
 			#endif
     			for (s_vp_i = alias->dataPtrs.begin(); s_vp_i != alias->dataPtrs.end(); s_vp_i++) {
 					NodeProps *cand = *s_vp_i;
 				#ifdef DEBUG_LINE_NUMS
-					blame_info<<"Examining(2) candidate "<<cand->name<<std::endl;
+					blame_info<<"Examining(2) candidate "<<cand->name<<endl;
 				#endif
 					if (cand == NULL) {
 					#ifdef DEBUG_ERROR
-						blame_info<<"Why is this NULL?"<<std::endl;
+						blame_info<<"Why is this NULL?"<<endl;
 					#endif
 						continue;
 					}
@@ -1251,7 +1251,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 					if (cfg->controlDep(cand, ivp, blame_info)) {
 						//if (cand->storePTR_Lines.count(ivp->line_num))
 					#ifdef DEBUG_LINE_NUMS
-						blame_info<<"Adding lines from the dominating data write for(3) "<<cand->name<<std::endl;
+						blame_info<<"Adding lines from the dominating data write for(3) "<<cand->name<<endl;
 					#endif
 						ivp->dataWritesFrom.insert(cand);
 						NodeProps *child = cand;
@@ -1260,7 +1260,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 						
 						if (vStack.count(child)) {
 						#ifdef DEBUG_LINE_NUMS
-							blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+							blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
 						#endif
 							vRevisit.insert(child);
 							vRevisit.insert(ivp);
@@ -1277,12 +1277,12 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	}
 	
 #ifdef DEBUG_LINE_NUMS
-	blame_info<<"After DF Children "<<ivp->name<<std::endl;
+	blame_info<<"After DF Children "<<ivp->name<<endl;
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
 
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 
 	for (s_vp_i = ivp->children.begin(); s_vp_i != ivp->children.end(); s_vp_i++) {
@@ -1292,7 +1292,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 		
 		if (vStack.count(child)) {
 		#ifdef DEBUG_LINE_NUMS
-			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
 		#endif
 			vRevisit.insert(child);
 			vRevisit.insert(ivp);
@@ -1315,7 +1315,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
                 //ivp->line_num=child->line_num;
                 ivp->descLineNumbers.insert(child->line_num);
                 blame_info<<"child "<<child->name<<" is actually the parent";
-                blame_info<<", and it's line_num="<<child->line_num<<std::endl;
+                blame_info<<", and it's line_num="<<child->line_num<<endl;
                 continue; //field only blamed for struct's declaration line
             }
 #endif
@@ -1326,13 +1326,13 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	}
 	
 #ifdef DEBUG_LINE_NUMS
-	blame_info<<"After Children "<<ivp->name<<std::endl;
+	blame_info<<"After Children "<<ivp->name<<endl;
 	
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
 	
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 		
 	for (v_vp_i = ivp->dataPtrs.begin(); v_vp_i != ivp->dataPtrs.end(); v_vp_i++) {
@@ -1342,7 +1342,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 		
 		if (vStack.count(child)) {
 		#ifdef DEBUG_LINE_NUMS
-			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
 		#endif
 			vRevisit.insert(child);
 			vRevisit.insert(ivp);
@@ -1376,13 +1376,13 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	}
 
 #ifdef DEBUG_LINE_NUMS
-	blame_info<<"After Data Ptrs "<<ivp->name<<std::endl;
+	blame_info<<"After Data Ptrs "<<ivp->name<<endl;
 	
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
 
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 
 #ifdef ONLY_FOR_MINIMD_LINE_FROM_FIELDS2
@@ -1393,7 +1393,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         
         if (vStack.count(child)) {
         #ifdef DEBUG_LINE_NUMS
-            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
         #endif
             vRevisit.insert(child);
             vRevisit.insert(ivp);
@@ -1406,13 +1406,13 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
     }
 
 #ifdef DEBUG_LINE_NUMS
-	blame_info<<"After fields "<<ivp->name<<std::endl;
+	blame_info<<"After fields "<<ivp->name<<endl;
 	
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
 
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 #endif
 	
@@ -1421,11 +1421,11 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 		 
 		NodeProps *childFieldParent = child->fieldUpPtr;
 		if (childFieldParent != NULL) { //"parm" only used for Fortran
-			if (childFieldParent->name.find("parm") != std::string::npos) {
+			if (childFieldParent->name.find("parm") != string::npos) {
 				ivp->descLineNumbers.insert(childFieldParent->externCallLineNumbers.begin(), childFieldParent->externCallLineNumbers.end());
 				
 			#ifdef DEBUG_LINE_NUMS
-			    blame_info<<"Inserting some line numbers.  Booyah!"<<std::endl;
+			    blame_info<<"Inserting some line numbers.  Booyah!"<<endl;
             #endif									
 			}
 		}
@@ -1438,7 +1438,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 			
 			if (vStack.count(child2)) {
 			#ifdef DEBUG_LINE_NUMS
-				blame_info<<"Conflict in LNRecursive. Need to revisit "<<child2->name<<" and "<<ivp->name<<std::endl;
+				blame_info<<"Conflict in LNRecursive. Need to revisit "<<child2->name<<" and "<<ivp->name<<endl;
 			#endif
 				vRevisit.insert(child2);
 				vRevisit.insert(ivp);
@@ -1458,7 +1458,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 			
 			if (vStack.count(child3)) {
 			#ifdef DEBUG_LINE_NUMS
-				blame_info<<"Conflict in LNRecursive. Need to revisit "<<child3->name<<" and "<<ivp->name<<std::endl;
+				blame_info<<"Conflict in LNRecursive. Need to revisit "<<child3->name<<" and "<<ivp->name<<endl;
 			#endif
 				vRevisit.insert(child3);
 				vRevisit.insert(ivp);
@@ -1473,11 +1473,11 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	}
 
 #ifdef DEBUG_LINE_NUMS
-	blame_info<<"After aliases "<<ivp->name<<std::endl;
+	blame_info<<"After aliases "<<ivp->name<<endl;
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}	
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 
 	for (v_vp_i = ivp->dfAliases.begin(); v_vp_i != ivp->dfAliases.end(); v_vp_i++) {
@@ -1487,7 +1487,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 		
 		if (vStack.count(child)) {
 		#ifdef DEBUG_LINE_NUMS
-			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
 		#endif
 			vRevisit.insert(child);
 			vRevisit.insert(ivp);
@@ -1498,12 +1498,12 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	}
 	
 #ifdef DEBUG_LINE_NUMS
-	blame_info<<"After DF Aliases "<<ivp->name<<std::endl;
+	blame_info<<"After DF Aliases "<<ivp->name<<endl;
 	
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 
 #endif
 
@@ -1514,7 +1514,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 		
 		if (vStack.count(child)) {
 		#ifdef DEBUG_LINE_NUMS
-			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+			blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
 		#endif
 			vRevisit.insert(child);
 			vRevisit.insert(ivp);
@@ -1527,7 +1527,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 				calcAggregateLNRecursive(sECause, vStack,  vRevisit);
 			
 #ifdef DEBUG_IMPORTANT_VERTICES
-			blame_info<<"ivp - "<<ivp->name<<" adding RLSE lines from "<<sECause->name<<std::endl;	
+			blame_info<<"ivp - "<<ivp->name<<" adding RLSE lines from "<<sECause->name<<endl;	
 #endif 			
 			// TODO:  This technically only happens if sECause dominates ivp
 			ivp->descLineNumbers.insert(sECause->descLineNumbers.begin(), sECause->descLineNumbers.end());
@@ -1536,11 +1536,11 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 	}
 	
 #ifdef DEBUG_LINE_NUMS
-	blame_info<<"After Resolved LS From "<<ivp->name<<std::endl;
+	blame_info<<"After Resolved LS From "<<ivp->name<<endl;
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 
 #ifdef ONLY_FOR_MINIMD_LINE_FROM_LOADFORCALLS
@@ -1551,7 +1551,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         
         if (vStack.count(child)) {
         #ifdef DEBUG_LINE_NUMS
-            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
         #endif
             vRevisit.insert(child);
             vRevisit.insert(ivp);
@@ -1567,11 +1567,11 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         }
     }
 #ifdef DEBUG_LINE_NUMS
-	blame_info<<"After loadForCalls "<<ivp->name<<std::endl;
+	blame_info<<"After loadForCalls "<<ivp->name<<endl;
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 #endif
 
@@ -1583,7 +1583,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         
         if (vStack.count(child)) {
         #ifdef DEBUG_LINE_NUMS
-            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
         #endif
             vRevisit.insert(child);
             vRevisit.insert(ivp);
@@ -1597,11 +1597,11 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 #endif
 
 #ifdef DEBUG_LINE_NUMS
-	blame_info<<"After aliasesOut "<<ivp->name<<std::endl;
+	blame_info<<"After aliasesOut "<<ivp->name<<endl;
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 
 #ifdef ADD_MULTI_LOCALE
@@ -1613,7 +1613,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         
         if (vStack.count(child)) {
 #ifdef DEBUG_LINE_NUMS
-            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
 #endif
             vRevisit.insert(child);
             vRevisit.insert(ivp);
@@ -1625,11 +1625,11 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         }
       }
 #ifdef DEBUG_LINE_NUMS
-	  blame_info<<"After objAliases "<<ivp->name<<std::endl;
+	  blame_info<<"After objAliases "<<ivp->name<<endl;
 	  for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	  }
-	  blame_info<<std::endl;
+	  blame_info<<endl;
 #endif
     }
 
@@ -1642,7 +1642,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         
         if (vStack.count(child)) {
 #ifdef DEBUG_LINE_NUMS
-            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
 #endif
             vRevisit.insert(child);
             vRevisit.insert(ivp);
@@ -1654,11 +1654,11 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         }
 
 #ifdef DEBUG_LINE_NUMS
-	    blame_info<<"After myObj "<<ivp->name<<std::endl;
+	    blame_info<<"After myObj "<<ivp->name<<endl;
 	    for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		    blame_info<<*set_i_i<<" ";
 	    }
-	    blame_info<<std::endl;
+	    blame_info<<endl;
 #endif
       }
       //Now add pidAliases
@@ -1669,7 +1669,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         
         if (vStack.count(child)) {
 #ifdef DEBUG_LINE_NUMS
-            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
 #endif
             vRevisit.insert(child);
             vRevisit.insert(ivp);
@@ -1681,11 +1681,11 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         }
       }
 #ifdef DEBUG_LINE_NUMS
-	  blame_info<<"After pidAliasesOut "<<ivp->name<<std::endl;
+	  blame_info<<"After pidAliasesOut "<<ivp->name<<endl;
 	  for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 	    blame_info<<*set_i_i<<" ";
 	  }
-	  blame_info<<std::endl;
+	  blame_info<<endl;
 #endif
     }
     
@@ -1698,7 +1698,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
         
         if (vStack.count(child)) {
         #ifdef DEBUG_LINE_NUMS
-            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<std::endl;
+            blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
         #endif
             vRevisit.insert(child);
             vRevisit.insert(ivp);
@@ -1711,17 +1711,17 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
       }
     }
 #ifdef DEBUG_LINE_NUMS
-	blame_info<<"After pid GEPs "<<ivp->name<<std::endl;
+	blame_info<<"After pid GEPs "<<ivp->name<<endl;
 	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif
 
 #endif //ADD_MULTI_LOCALE
 
 #ifdef DEBUG_LINE_NUMS
-	blame_info<<"Exiting calcAggregateLNRecursive for "<<ivp->name<<std::endl;
+	blame_info<<"Exiting calcAggregateLNRecursive for "<<ivp->name<<endl;
 #endif
 	
 	vStack.erase(ivp);
@@ -1730,12 +1730,12 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *>
 
 void FunctionBFC::calcAggregateLN()
 {
-	std::set<NodeProps *>::iterator ivh_i;
-	std::set<NodeProps *> vStack;
-	std::set<NodeProps *> vRevisit;
+	set<NodeProps *>::iterator ivh_i;
+	set<NodeProps *> vStack;
+	set<NodeProps *> vRevisit;
 
-	std::set<NodeProps *> vStack_call;
-	std::set<NodeProps *> vRevisit_call;
+	set<NodeProps *> vStack_call;
+	set<NodeProps *> vRevisit_call;
 	// Populate Edges
 	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
 		NodeProps *ivp = (*ivh_i);
@@ -1748,9 +1748,9 @@ void FunctionBFC::calcAggregateLN()
 	
 	// Revisit the ones that had conflicts for calcAggregateLNRecursive
 	#ifdef DEBUG_LINE_NUMS
-	blame_info<<"Revisiting some of the conflicted agg LN values."<<std::endl;
+	blame_info<<"Revisiting some of the conflicted agg LN values."<<endl;
 	#endif
-	std::set<NodeProps *>::iterator set_vp_i;
+	set<NodeProps *>::iterator set_vp_i;
 	for (set_vp_i = vRevisit.begin(); set_vp_i != vRevisit.end(); set_vp_i++)
 		(*set_vp_i)->calcAgg = false;
 		
@@ -1758,7 +1758,7 @@ void FunctionBFC::calcAggregateLN()
 		calcAggregateLNRecursive(*set_vp_i, vStack, vRevisit);
 		
 	// Reverse-visit them again to take care of cases when "early nodes" needs "later" nodes' blame lines		
-    std::set<NodeProps *>::reverse_iterator r_si;
+    set<NodeProps *>::reverse_iterator r_si;
     for (r_si = impVertices.rbegin(); r_si != impVertices.rend(); ++r_si)
 		(*r_si)->calcAgg = false;
 		
@@ -1771,7 +1771,7 @@ void FunctionBFC::calcAggregateLN()
 //mainly because of the aliasesOut line# insertion, it'll have to wait for the later nodes
 //to finish before the earlier nodes to be complete
 #ifdef TEMP_FOR_MINIMD
-/*    std::set<NodeProps *>::reverse_iterator r_si;
+/*    set<NodeProps *>::reverse_iterator r_si;
     cerr<<"\nReverse order:"<<endl;
     for (r_si = impVertices.rbegin(); r_si != impVertices.rend(); ++r_si)
 		cerr<<(*r_si)->name<<" ";
@@ -1816,7 +1816,7 @@ void FunctionBFC::calcAggregateLN()
 #endif
 	// Revisit the ones that had conflicts for calcAggCallRecursive, added by Hui
 	#ifdef DEBUG_LINE_NUMS
-	blame_info<<"Revisiting some of the conflicted agg Call values."<<std::endl;
+	blame_info<<"Revisiting some of the conflicted agg Call values."<<endl;
 	#endif
 	for (set_vp_i = vRevisit_call.begin(); set_vp_i != vRevisit_call.end(); set_vp_i++)
 		(*set_vp_i)->calcAggCall = false;
@@ -1839,7 +1839,7 @@ void FunctionBFC::calcAggregateLN()
 
 void FunctionBFC::trimLocalVarPointers()
 {
-	std::set<NodeProps *>::iterator ivh_i;
+	set<NodeProps *>::iterator ivh_i;
 	
 	
 	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++)
@@ -1865,26 +1865,26 @@ void FunctionBFC::trimLocalVarPointers()
 			//continue;		
 			
 #ifdef DEBUG_IMPORTANT_VERTICES		
-			blame_info<<"Trimming "<<ivp->name<<std::endl;
+			blame_info<<"Trimming "<<ivp->name<<endl;
 #endif
 			ivp->isExported = false;
 			impVertCount--;
 			
 			//if (ivp->pointsTo == NULL)
 			//{
-			//std::cerr<<"Why does data ptr have NULL points to?"<<std::endl;
+			//cerr<<"Why does data ptr have NULL points to?"<<endl;
 			//continue;
 			//	}
 			
 			
-			std::set<NodeProps *>::iterator set_vp_i;
-			std::set<int>::iterator set_int_i;
+			set<NodeProps *>::iterator set_vp_i;
+			set<int>::iterator set_int_i;
 			
 #ifdef DEBUG_IMPORTANT_VERTICES		
-			blame_info<<"DF up ptr is "<<ivp->dpUpPtr->name<<std::endl;
+			blame_info<<"DF up ptr is "<<ivp->dpUpPtr->name<<endl;
 #endif
 #ifdef DEBUG_LINE_NUMS
-			blame_info<<"Inserting line number(10) "<<ivp->line_num<<" to "<<ivp->dpUpPtr->name<<std::endl;
+			blame_info<<"Inserting line number(10) "<<ivp->line_num<<" to "<<ivp->dpUpPtr->name<<endl;
 			#endif
 			
 			ivp->dpUpPtr->lineNumbers.insert(ivp->lineNumbers.begin(), ivp->lineNumbers.end());
@@ -1897,10 +1897,10 @@ void FunctionBFC::trimLocalVarPointers()
 
 int FunctionBFC::checkCompleteness()
 {
-	std::set<NodeProps *>::iterator ivh_i;
+	set<NodeProps *>::iterator ivh_i;
 	
-	std::set<int> firstCheck;
-	std::set<int> secondCheck;
+	set<int> firstCheck;
+	set<int> secondCheck;
 	
 	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
 		NodeProps *ivp = (*ivh_i);
@@ -1911,27 +1911,27 @@ int FunctionBFC::checkCompleteness()
 			secondCheck.insert(ivp->descLineNumbers.begin(), ivp->descLineNumbers.end());
 			secondCheck.insert(ivp->line_num);	
 			
-			std::set<NodeProps *>::iterator s_vp_i;
+			set<NodeProps *>::iterator s_vp_i;
 			for(s_vp_i = ivp->descParams.begin(); s_vp_i != ivp->descParams.end(); s_vp_i++) {
 				NodeProps *param = *s_vp_i;
 #ifdef DEBUG_COMPLETENESS			
-				blame_info<<"Param(1) "<<param->name<<" from IVP "<<ivp->name<<std::endl;
+				blame_info<<"Param(1) "<<param->name<<" from IVP "<<ivp->name<<endl;
 #endif			
-				std::set<ImpFuncCall *>::iterator v_ifc_i;
+				set<ImpFuncCall *>::iterator v_ifc_i;
 				for (v_ifc_i = param->calls.begin(); v_ifc_i != param->calls.end(); v_ifc_i++) {
 					ImpFuncCall *ifc = *v_ifc_i;
 					NodeProps *cNode = ifc->callNode;
 #ifdef DEBUG_COMPLETENESS								
-					blame_info<<"Call Node(1) "<<cNode->name<<" from Param "<<param->name<<std::endl;
+					blame_info<<"Call Node(1) "<<cNode->name<<" from Param "<<param->name<<endl;
 #endif				
 					secondCheck.insert(cNode->line_num);
-					std::set<ImpFuncCall *>::iterator v_ifc_i2;
+					set<ImpFuncCall *>::iterator v_ifc_i2;
 					
 					for (v_ifc_i2 = cNode->calls.begin(); v_ifc_i2 != cNode->calls.end(); v_ifc_i2++) {
 						ImpFuncCall *ifc2 = *v_ifc_i2;
 						NodeProps *cNode2 = ifc2->callNode;
 #ifdef DEBUG_COMPLETENESS									
-						blame_info<<"Param Node(2) "<<cNode2->name<<" from Call Node "<<cNode->name<<std::endl;
+						blame_info<<"Param Node(2) "<<cNode2->name<<" from Call Node "<<cNode->name<<endl;
 #endif
 						secondCheck.insert(cNode2->line_num);
 						secondCheck.insert(cNode2->descLineNumbers.begin(), cNode2->descLineNumbers.end());
@@ -1947,19 +1947,19 @@ int FunctionBFC::checkCompleteness()
 			secondCheck.insert(ivp->descLineNumbers.begin(), ivp->descLineNumbers.end());
 			secondCheck.insert(ivp->line_num);	
 			
-			std::set<NodeProps *>::iterator s_vp_i;
+			set<NodeProps *>::iterator s_vp_i;
 			for(s_vp_i = ivp->descParams.begin(); s_vp_i != ivp->descParams.end(); s_vp_i++) {
 				NodeProps *param = *s_vp_i;
 #ifdef DEBUG_COMPLETENESS													
-				blame_info<<"Param(2) "<<param->name<<" from IVP "<<ivp->name<<std::endl;
+				blame_info<<"Param(2) "<<param->name<<" from IVP "<<ivp->name<<endl;
 #endif			
-				std::set<ImpFuncCall *>::iterator v_ifc_i;
+				set<ImpFuncCall *>::iterator v_ifc_i;
 				
 				for (v_ifc_i = param->calls.begin(); v_ifc_i != param->calls.end(); v_ifc_i++) {
 					ImpFuncCall *ifc = *v_ifc_i;
 					NodeProps *cNode = ifc->callNode;
 #ifdef DEBUG_COMPLETENESS									
-					blame_info<<"Call Node(2) "<<cNode->name<<" from Param "<<param->name<<std::endl;
+					blame_info<<"Call Node(2) "<<cNode->name<<" from Param "<<param->name<<endl;
 #endif 
 					secondCheck.insert(cNode->line_num);
 				}
@@ -1972,13 +1972,13 @@ int FunctionBFC::checkCompleteness()
 		if (ivp->nStatus[CALL_NODE]) {
 			secondCheck.insert(ivp->line_num);
 			secondCheck.insert(ivp->descLineNumbers.begin(), ivp->descLineNumbers.end());
-			std::set<ImpFuncCall *>::iterator v_ifc_i;
+			set<ImpFuncCall *>::iterator v_ifc_i;
 			
 			for (v_ifc_i = ivp->calls.begin(); v_ifc_i != ivp->calls.end(); v_ifc_i++) {
 				ImpFuncCall *ifc = *v_ifc_i;
 				NodeProps *cNode = ifc->callNode;
 #ifdef DEBUG_COMPLETENESS									
-				blame_info<<"Param Node(1) "<<cNode->name<<" from Call Node "<<ivp->name<<std::endl;
+				blame_info<<"Param Node(1) "<<cNode->name<<" from Call Node "<<ivp->name<<endl;
 #endif
 				secondCheck.insert(cNode->line_num);
 				secondCheck.insert(cNode->descLineNumbers.begin(), cNode->descLineNumbers.end());
@@ -1991,49 +1991,49 @@ int FunctionBFC::checkCompleteness()
 	
 	int isMissing = 0;
 #ifdef DEBUG_COMPLETENESS									
-	blame_info<<"All line Nums"<<std::endl;
-	std::set<int>::iterator s_i_i;
+	blame_info<<"All line Nums"<<endl;
+	set<int>::iterator s_i_i;
 	
 	for (s_i_i = allLineNums.begin(); s_i_i != allLineNums.end(); s_i_i++)
 		blame_info<<*s_i_i<<" ";
-	blame_info<<std::endl;
+	blame_info<<endl;
 	
-	blame_info<<"First Check"<<std::endl;
+	blame_info<<"First Check"<<endl;
 	for (s_i_i = firstCheck.begin(); s_i_i != firstCheck.end(); s_i_i++)
 		blame_info<<*s_i_i<<" ";
-	blame_info<<std::endl;
+	blame_info<<endl;
 	
-	blame_info<<"Second Check"<<std::endl;
+	blame_info<<"Second Check"<<endl;
 	for (s_i_i = secondCheck.begin(); s_i_i != secondCheck.end(); s_i_i++)
 		blame_info<<*s_i_i<<" ";
-	blame_info<<std::endl;
+	blame_info<<endl;
 	
 	if (firstCheck == allLineNums)
-		blame_info<<"FC_All line numbers accounted for "<<std::endl;
+		blame_info<<"FC_All line numbers accounted for "<<endl;
 	else
-		blame_info<<"FC_MISSING a line number"<<std::endl;
+		blame_info<<"FC_MISSING a line number"<<endl;
 #endif	
 	if (secondCheck == firstCheck) {
 #ifdef DEBUG_COMPLETENESS									
-		blame_info<<"SC_All line numbers accounted for "<<std::endl;
+		blame_info<<"SC_All line numbers accounted for "<<endl;
 #endif
 	}
 	else {
 		isMissing = 1;
 #ifdef DEBUG_SUMMARY_CC									
-		std::cout<<"SC_MISSING a line number"<<std::endl;
-		blame_info<<"SC_MISSING a line number"<<std::endl;
+		cout<<"SC_MISSING a line number"<<endl;
+		blame_info<<"SC_MISSING a line number"<<endl;
 #endif
 	}	
 	
 #ifdef DEBUG_SUMMARY_CC
-	std::set<int> setDiff;
+	set<int> setDiff;
 	if (isMissing) {
-		std::cout<<"Set Diff is "<<std::endl;
+		cout<<"Set Diff is "<<endl;
 		set_difference(firstCheck.begin(), firstCheck.end(),//It's a std template func
-	    secondCheck.begin(), secondCheck.end(), ostream_iterator<int>(std::cout, " "));
+	    secondCheck.begin(), secondCheck.end(), ostream_iterator<int>(cout, " "));
 		
-		std::cout<<std::endl<<std::endl;		
+		cout<<endl<<endl;		
 	}
 #endif
 	return isMissing;
@@ -2042,7 +2042,7 @@ int FunctionBFC::checkCompleteness()
 
 void FunctionBFC::moreThanOneEV(int &numMultipleEV, int &afterOp1, int &afterOp2)
 {
-	std::vector<ExitVariable *>::iterator v_ev_i;
+	vector<ExitVariable *>::iterator v_ev_i;
 	
 	int numEV = 0;
 	int numEV2 = 0;
@@ -2050,7 +2050,7 @@ void FunctionBFC::moreThanOneEV(int &numMultipleEV, int &afterOp1, int &afterOp2
 	
 	for (v_ev_i = exitVariables.begin(); v_ev_i != exitVariables.end(); v_ev_i++) {
 		ExitVariable *ev = *v_ev_i;
-		if (ev->whichParam >= 0 && (ev->vertex != NULL && ev->vertex->eStatus != EXIT_VAR_UNWRITTEN)) { //changed by Hui from >0 to >=0
+		if (ev->whichParam >= 0 && ev->vertex != NULL ) { //changed by Hui from >0 to >=0
 			numEV++;
 			if (ev->vertex->descLineNumbers.size() > 1) {
 				numEV2++;
@@ -2073,10 +2073,10 @@ void FunctionBFC::moreThanOneEV(int &numMultipleEV, int &afterOp1, int &afterOp2
 }
 
 
-NodeProps *FunctionBFC::resolveSideEffectsCheckParentEV(NodeProps *vp, std::set<NodeProps *> &visited)
+NodeProps *FunctionBFC::resolveSideEffectsCheckParentEV(NodeProps *vp, set<NodeProps *> &visited)
 {
 #ifdef DEBUG_SIDE_EFFECTS
-	blame_info<<"In resolveSideEffectsCheckParentEV for "<<vp->name<<std::endl;
+	blame_info<<"In resolveSideEffectsCheckParentEV for "<<vp->name<<endl;
 #endif
 	if (visited.count(vp) > 0)
 		return NULL;
@@ -2096,10 +2096,10 @@ NodeProps *FunctionBFC::resolveSideEffectsCheckParentEV(NodeProps *vp, std::set<
 }
 
 
-NodeProps * FunctionBFC::resolveSideEffectsCheckParentLV(NodeProps * vp, std::set<NodeProps *> & visited)
+NodeProps * FunctionBFC::resolveSideEffectsCheckParentLV(NodeProps * vp, set<NodeProps *> & visited)
 {
 #ifdef DEBUG_SIDE_EFFECTS
-	blame_info<<"In resolveSideEffectsCheckParentLV for "<<vp->name<<" "<<vp->name<<std::endl;
+	blame_info<<"In resolveSideEffectsCheckParentLV for "<<vp->name<<" "<<vp->name<<endl;
 #endif
 	if (visited.count(vp) > 0)
 		return NULL;
@@ -2122,30 +2122,30 @@ NodeProps * FunctionBFC::resolveSideEffectsCheckParentLV(NodeProps * vp, std::se
 
 // TODO: We need to cover side effect relations where the EVs that are "sucked in" are 
 // written to as well
-void FunctionBFC::resolveSideEffectsHelper(NodeProps *rootVP, NodeProps *vp, std::set<NodeProps *> &visited)
+void FunctionBFC::resolveSideEffectsHelper(NodeProps *rootVP, NodeProps *vp, set<NodeProps *> &visited)
 {
 #ifdef DEBUG_SIDE_EFFECTS
-	blame_info<<"Entering resolveSideEffectsHelper for "<<rootVP->name<<" "<<vp->name<<std::endl;
+	blame_info<<"Entering resolveSideEffectsHelper for "<<rootVP->name<<" "<<vp->name<<endl;
 #endif
 	
 	if (visited.count(vp) > 0) {
 #ifdef DEBUG_SIDE_EFFECTS	
-		blame_info<<"Exiting(V) resolveSideEffectsHelper for "<<rootVP->name<<" "<<vp->name<<std::endl;
+		blame_info<<"Exiting(V) resolveSideEffectsHelper for "<<rootVP->name<<" "<<vp->name<<endl;
 #endif		
 		return;
 	}
 	
 	visited.insert(vp);
-	std::set<NodeProps *>::iterator set_ivp_i;
+	set<NodeProps *>::iterator set_ivp_i;
 	if (vp->suckedInEVs.size() > 0) {
 #ifdef DEBUG_SIDE_EFFECTS		
-		blame_info<<"Sucked in EV match(0) for "<<rootVP->name<<" and "<<vp->name<<std::endl;
+		blame_info<<"Sucked in EV match(0) for "<<rootVP->name<<" and "<<vp->name<<endl;
 #endif			
-		std::set<NodeProps *>::iterator set_ivp_i2;
+		set<NodeProps *>::iterator set_ivp_i2;
 		for (set_ivp_i2 = vp->suckedInEVs.begin(); set_ivp_i2 != vp->suckedInEVs.end();
 				 set_ivp_i2++) {
 #ifdef DEBUG_SIDE_EFFECTS
-			blame_info<<"Match(0) between "<<rootVP->name<<" and "<<(*set_ivp_i2)->name<<std::endl;
+			blame_info<<"Match(0) between "<<rootVP->name<<" and "<<(*set_ivp_i2)->name<<endl;
 #endif
 			addSERelation(rootVP, (*set_ivp_i2));	
 		}
@@ -2153,7 +2153,7 @@ void FunctionBFC::resolveSideEffectsHelper(NodeProps *rootVP, NodeProps *vp, std
 	
 	for (set_ivp_i = vp->dataPtrs.begin(); set_ivp_i != vp->dataPtrs.end(); set_ivp_i++) {
 #ifdef DEBUG_SIDE_EFFECTS
-		blame_info<<"rSEH - DP "<<(*set_ivp_i)->name<<" for "<<vp->name<<std::endl;
+		blame_info<<"rSEH - DP "<<(*set_ivp_i)->name<<" for "<<vp->name<<endl;
 #endif
 		if ((*set_ivp_i)->isWritten)
 			resolveSideEffectsHelper(rootVP, *set_ivp_i, visited);
@@ -2161,17 +2161,17 @@ void FunctionBFC::resolveSideEffectsHelper(NodeProps *rootVP, NodeProps *vp, std
 	
 	for (set_ivp_i = vp->children.begin(); set_ivp_i != vp->children.end(); set_ivp_i++) {
 #ifdef DEBUG_SIDE_EFFECTS
-		blame_info<<"rSEH - Child "<<(*set_ivp_i)->name<<" for "<<vp->name<<std::endl;
+		blame_info<<"rSEH - Child "<<(*set_ivp_i)->name<<" for "<<vp->name<<endl;
 #endif
 		if ((*set_ivp_i)->suckedInEVs.size() > 0) {
 #ifdef DEBUG_SIDE_EFFECTS
-			blame_info<<"Sucked in EV match(1) for "<<rootVP->name<<" and "<<(*set_ivp_i)->name<<std::endl;
+			blame_info<<"Sucked in EV match(1) for "<<rootVP->name<<" and "<<(*set_ivp_i)->name<<endl;
 #endif
-			std::set<NodeProps *>::iterator set_ivp_i2;
+			set<NodeProps *>::iterator set_ivp_i2;
 			for (set_ivp_i2 = (*set_ivp_i)->suckedInEVs.begin(); set_ivp_i2 != (*set_ivp_i)->suckedInEVs.end();
 					 set_ivp_i2++) {
 #ifdef DEBUG_SIDE_EFFECTS
-				blame_info<<"Match(1) between "<<rootVP->name<<" and "<<(*set_ivp_i2)->name<<std::endl;
+				blame_info<<"Match(1) between "<<rootVP->name<<" and "<<(*set_ivp_i2)->name<<endl;
 #endif
 				addSERelation(rootVP, (*set_ivp_i2));
 			}
@@ -2179,7 +2179,7 @@ void FunctionBFC::resolveSideEffectsHelper(NodeProps *rootVP, NodeProps *vp, std
 		//recursively call itself
 		resolveSideEffectsHelper(rootVP, *set_ivp_i, visited);
 	
-		std::set<NodeProps *> visited2;
+		set<NodeProps *> visited2;
 		NodeProps *match = resolveSideEffectsCheckParentEV(*set_ivp_i, visited2);
 		
 		if (match == NULL)
@@ -2187,7 +2187,7 @@ void FunctionBFC::resolveSideEffectsHelper(NodeProps *rootVP, NodeProps *vp, std
 		
 		if (match != NULL && match != rootVP) {
 #ifdef DEBUG_SIDE_EFFECTS
-			blame_info<<"Match(2) between "<<rootVP->name<<" and "<<match->name<<std::endl;
+			blame_info<<"Match(2) between "<<rootVP->name<<" and "<<match->name<<endl;
 #endif
 			addSERelation(rootVP, match);
 		}
@@ -2195,18 +2195,18 @@ void FunctionBFC::resolveSideEffectsHelper(NodeProps *rootVP, NodeProps *vp, std
 	
 	for (set_ivp_i = vp->dfChildren.begin(); set_ivp_i != vp->dfChildren.end(); set_ivp_i++) {
 #ifdef DEBUG_SIDE_EFFECTS
-		blame_info<<"rSEH - dfChild "<<(*set_ivp_i)->name<<" for "<<vp->name<<std::endl;
+		blame_info<<"rSEH - dfChild "<<(*set_ivp_i)->name<<" for "<<vp->name<<endl;
 #endif
 		
 		if ((*set_ivp_i)->suckedInEVs.size() > 0) {
 #ifdef DEBUG_SIDE_EFFECTS
-			blame_info<<"Sucked in EV match (3) for "<<rootVP->name<<" and "<<(*set_ivp_i)->name<<std::endl;
+			blame_info<<"Sucked in EV match (3) for "<<rootVP->name<<" and "<<(*set_ivp_i)->name<<endl;
 #endif
-			std::set<NodeProps *>::iterator set_ivp_i2;
+			set<NodeProps *>::iterator set_ivp_i2;
 			for (set_ivp_i2 = (*set_ivp_i)->suckedInEVs.begin(); set_ivp_i2 != (*set_ivp_i)->suckedInEVs.end();
 					 set_ivp_i2++) {
 #ifdef DEBUG_SIDE_EFFECTS
-				blame_info<<"Match(3) between "<<rootVP->name<<" and "<<(*set_ivp_i2)->name<<std::endl;
+				blame_info<<"Match(3) between "<<rootVP->name<<" and "<<(*set_ivp_i2)->name<<endl;
 #endif
 				addSERelation(rootVP, (*set_ivp_i2));
 			}
@@ -2214,7 +2214,7 @@ void FunctionBFC::resolveSideEffectsHelper(NodeProps *rootVP, NodeProps *vp, std
 		
 		resolveSideEffectsHelper(rootVP, *set_ivp_i, visited);
 		
-		std::set<NodeProps *> visited2;
+		set<NodeProps *> visited2;
 		NodeProps *match = resolveSideEffectsCheckParentEV(*set_ivp_i, visited2);//TC
 		
 		if (match == NULL)
@@ -2222,19 +2222,19 @@ void FunctionBFC::resolveSideEffectsHelper(NodeProps *rootVP, NodeProps *vp, std
 		
 		if (match != NULL && rootVP != match) {
 #ifdef DEBUG_SIDE_EFFECTS
-			blame_info<<"Match(4) between "<<rootVP->name<<" and "<<match->name<<std::endl;
+			blame_info<<"Match(4) between "<<rootVP->name<<" and "<<match->name<<endl;
 #endif
 			addSERelation(rootVP, match);
 		}
 	}
 #ifdef DEBUG_SIDE_EFFECTS
-	blame_info<<"Exiting resolveSideEffectsHelper for "<<rootVP->name<<" "<<vp->name<<std::endl;
+	blame_info<<"Exiting resolveSideEffectsHelper for "<<rootVP->name<<" "<<vp->name<<endl;
 #endif
 }
 
 void FunctionBFC::addSEAlias(NodeProps *source, NodeProps *target)
 {
-	std::vector< std::pair<NodeProps *, NodeProps *> >::iterator vec_pair_i;
+	vector< pair<NodeProps *, NodeProps *> >::iterator vec_pair_i;
 	
 	if (source == target)
 		return;
@@ -2254,15 +2254,15 @@ void FunctionBFC::addSEAlias(NodeProps *source, NodeProps *target)
 			return;
 		
 	}
-	std::pair<NodeProps *, NodeProps *> newOne(source, target);
+	pair<NodeProps *, NodeProps *> newOne(source, target);
 	seAliases.push_back(newOne);
 }
 
 
-void NodeProps::getStructName(std::string & structName, std::set<NodeProps *> & visited)
+void NodeProps::getStructName(string & structName, set<NodeProps *> & visited)
 {
-	//std::cout<<"Entering getStructName"<<std::endl;
-	//std::cout<<"Here "<<structName<<std::endl;
+	//cout<<"Entering getStructName"<<endl;
+	//cout<<"Here "<<structName<<endl;
 	
 	if (visited.count(this) > 0)
 	{
@@ -2274,7 +2274,7 @@ void NodeProps::getStructName(std::string & structName, std::set<NodeProps *> & 
 	
 	if (fieldUpPtr == NULL)
 	{
-		//std::cout<<"Here 2 "<<structName<<std::endl;
+		//cout<<"Here 2 "<<structName<<endl;
 		structName.insert(0, name);
 		//structName.insert(0,".");
 		return;
@@ -2283,7 +2283,7 @@ void NodeProps::getStructName(std::string & structName, std::set<NodeProps *> & 
 	{
 		if (sField == NULL)
 		{
-			//std::cout<<"Here 3 "<<structName<<std::endl;
+			//cout<<"Here 3 "<<structName<<endl;
 			structName.insert(0, name);
 			structName.insert(0,"NFP_");
 			structName.insert(0,".");
@@ -2291,30 +2291,30 @@ void NodeProps::getStructName(std::string & structName, std::set<NodeProps *> & 
 		}
 		else
 		{
-			//std::cout<<"Here 4 "<<structName<<std::endl;
+			//cout<<"Here 4 "<<structName<<endl;
 			structName.insert(0,sField->fieldName);
 			structName.insert(0,".");
 			
 		}				
-		//std::cout<<"Here 5 "<<structName<<std::endl;
+		//cout<<"Here 5 "<<structName<<endl;
 		fieldUpPtr->getStructName(structName, visited); 
 	}
-	//std::cout<<"Exiting getStructName"<<std::endl;
+	//cout<<"Exiting getStructName"<<endl;
 }
 
 
 
-std::string & NodeProps::getFullName()
+string & NodeProps::getFullName()
 {
-	//std::cout<<"Entering getStructName"<<std::endl;
-	//std::cout<<"Here "<<structName<<std::endl;
+	//cout<<"Entering getStructName"<<endl;
+	//cout<<"Here "<<structName<<endl;
 	
 	if (calcName) {
-		//std::cout<<"Exiting(1) getFullName"<<std::endl;
+		//cout<<"Exiting(1) getFullName"<<endl;
 		return fullName;
 	}
 	
-	std::set<NodeProps *> visited;
+	set<NodeProps *> visited;
 	
 	if (nStatus[EXIT_VAR_FIELD])
 		getStructName(fullName, visited);
@@ -2322,14 +2322,14 @@ std::string & NodeProps::getFullName()
 		fullName = name;
 	
 	calcName = true;
-	//std::cout<<"Exiting getFullName"<<std::endl;
+	//cout<<"Exiting getFullName"<<endl;
 	return fullName;
 }
 
-int NodeProps::getParamNum(std::set<NodeProps *> & visited)
+int NodeProps::getParamNum(set<NodeProps *> & visited)
 {
-	//std::cout<<"Entering getStructName"<<std::endl;
-	//std::cout<<"Here "<<structName<<std::endl;
+	//cout<<"Entering getStructName"<<endl;
+	//cout<<"Here "<<structName<<endl;
 	
 	if (paramNum)
 		return paramNum;
@@ -2350,13 +2350,13 @@ int NodeProps::getParamNum(std::set<NodeProps *> & visited)
 
 void FunctionBFC::addSERelation(NodeProps *source, NodeProps *target)
 {
-	//blame_info<<"Entering addSERelation for "<<source->name<<" to "<<target->name<<std::endl;
-	//std::cout<<"Entering addSERelation for "<<source->name<<" to "<<target->name<<std::endl;
+	//blame_info<<"Entering addSERelation for "<<source->name<<" to "<<target->name<<endl;
+	//cout<<"Entering addSERelation for "<<source->name<<" to "<<target->name<<endl;
 	
-	std::vector< std::pair<NodeProps *, NodeProps *> >::iterator vec_pair_i;
+	vector< pair<NodeProps *, NodeProps *> >::iterator vec_pair_i;
 	
-	//blame_info<<"asr(1)"<<std::endl;
-	//std::cout<<"asr(1) "<<getSourceFuncName()<<std::endl;
+	//blame_info<<"asr(1)"<<endl;
+	//cout<<"asr(1) "<<getSourceFuncName()<<endl;
 	
 	if (source == target)
 		return;
@@ -2364,50 +2364,50 @@ void FunctionBFC::addSERelation(NodeProps *source, NodeProps *target)
 	if (source->getFullName().compare(target->getFullName()) == 0)
 		return;
 	
-	//blame_info<<"asr(2)"<<std::endl;
-	//std::cout<<"asr(2) "<<getSourceFuncName()<<std::endl;
+	//blame_info<<"asr(2)"<<endl;
+	//cout<<"asr(2) "<<getSourceFuncName()<<endl;
 	for (vec_pair_i = seRelations.begin(); vec_pair_i != seRelations.end(); vec_pair_i++) {
-		//blame_info<<"asr(3)"<<std::endl;
-		//std::cout<<"asr(3) "<<getSourceFuncName()<<std::endl;
+		//blame_info<<"asr(3)"<<endl;
+		//cout<<"asr(3) "<<getSourceFuncName()<<endl;
 		NodeProps *fir = (*vec_pair_i).first;
 		NodeProps *sec = (*vec_pair_i).second;
 		
 		if (fir == source && sec == target)
 			return;
 		
-		//blame_info<<"asr(4)"<<std::endl;
-		//std::cout<<"asr(4) "<<getSourceFuncName()<<std::endl;
+		//blame_info<<"asr(4)"<<endl;
+		//cout<<"asr(4) "<<getSourceFuncName()<<endl;
 		
 		if (fir->getFullName().compare(source->getFullName()) == 0 &&
 				sec->getFullName().compare(target->getFullName()) == 0)
 			return;
-		//blame_info<<"asr(5)"<<std::endl;
-		//std::cout<<"asr(5) "<<getSourceFuncName()<<std::endl;
+		//blame_info<<"asr(5)"<<endl;
+		//cout<<"asr(5) "<<getSourceFuncName()<<endl;
 	}
 	
-	std::pair<NodeProps *, NodeProps *> newOne(source, target);
+	pair<NodeProps *, NodeProps *> newOne(source, target);
 	seRelations.push_back(newOne);
-	//blame_info<<"Exiting addSERelation for "<<source->name<<" to "<<target->name<<std::endl;
+	//blame_info<<"Exiting addSERelation for "<<source->name<<" to "<<target->name<<endl;
 }
 
 
 // We go until we hit a field or an exit variable
-void FunctionBFC::recursiveSEAliasHelper(std::set<NodeProps *> &visited, NodeProps *orig, NodeProps *target)
+void FunctionBFC::recursiveSEAliasHelper(set<NodeProps *> &visited, NodeProps *orig, NodeProps *target)
 {
 	if (target == NULL)
 		return;
 
-	//blame_info<<"Examining rSEAH for "<<orig->name<<" and "<<target->name<<std::endl;
+	//blame_info<<"Examining rSEAH for "<<orig->name<<" and "<<target->name<<endl;
 	if (visited.count(target))
 		return;
 	
 	visited.insert(target);
 
-	std::set<NodeProps*>::iterator set_vp_i;
+	set<NodeProps*>::iterator set_vp_i;
 	
 	if (target->eStatus >= EXIT_VAR_PARAM || target->nStatus[EXIT_VAR_FIELD]) {
 	#ifdef DEBUG_SIDE_EFFECTS
-		blame_info<<"Adding alias(19) between "<<orig->name<<" and "<<target->name<<std::endl;
+		blame_info<<"Adding alias(19) between "<<orig->name<<" and "<<target->name<<endl;
 	#endif 
 		addSEAlias(orig, target);
 		return;
@@ -2426,7 +2426,7 @@ void FunctionBFC::recursiveSEAliasHelper(std::set<NodeProps *> &visited, NodePro
 void FunctionBFC::resolveSideEffects()
 {
 #ifdef DEBUG_SIDE_EFFECTS
-	blame_info<<"In resolveSideEffects "<<std::endl;
+	blame_info<<"In resolveSideEffects "<<endl;
 #endif
 	set<NodeProps *>::iterator ivh_i;
 	
@@ -2435,22 +2435,22 @@ void FunctionBFC::resolveSideEffects()
 		//clearAfter.clear();
 		if (ivp->eStatus >= EXIT_VAR_PARAM || ivp->nStatus[EXIT_VAR_FIELD] || ivp->nStatus[EXIT_VAR_PTR]) {
 			#ifdef DEBUG_SIDE_EFFECTS
-			blame_info<<"Creating SE Info for "<<ivp->name<<std::endl;
+			blame_info<<"Creating SE Info for "<<ivp->name<<endl;
 			#endif 
 		
-			std::set<NodeProps *>::iterator vec_vp_i;
-			std::set<NodeProps *> visited;
+			set<NodeProps *>::iterator vec_vp_i;
+			set<NodeProps *> visited;
 			for (vec_vp_i = ivp->dfAliases.begin(); vec_vp_i != ivp->dfAliases.end(); vec_vp_i++) {
 				resolveSideEffectsHelper(ivp, *vec_vp_i, visited);
 				if ((*vec_vp_i)->eStatus >= EXIT_VAR_PARAM || (*vec_vp_i)->nStatus[EXIT_VAR_FIELD]) {//changed by Hui 03/15/16
 #ifdef DEBUG_SIDE_EFFECTS		                                                                    //from >EXIT_VAR_PARAM to >=...
-					blame_info<<"Match(DFA) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<std::endl;
+					blame_info<<"Match(DFA) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<endl;
 #endif
 					addSEAlias(ivp, (*vec_vp_i));
 				}
 				else {
 #ifdef DEBUG_SIDE_EFFECTS
-					blame_info<<"Match(DFA)(N/A) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<std::endl;			 
+					blame_info<<"Match(DFA)(N/A) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<endl;			 
 #endif
 				}
 			}
@@ -2458,21 +2458,21 @@ void FunctionBFC::resolveSideEffects()
 			for (vec_vp_i = ivp->aliases.begin(); vec_vp_i != ivp->aliases.end(); vec_vp_i++) {
 				if ((*vec_vp_i)->eStatus >= EXIT_VAR_PARAM || (*vec_vp_i)->nStatus[EXIT_VAR_FIELD]  ||(*vec_vp_i)->nStatus[EXIT_VAR_PTR]) {
 #ifdef DEBUG_SIDE_EFFECTS                                                               //changed by Hui 03/15/16 from >EXIT_VAR_PARAM to >=...
-					blame_info<<"Match(A) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<std::endl;
+					blame_info<<"Match(A) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<endl;
 #endif
 					addSEAlias(ivp, (*vec_vp_i));
 				}
 				else {
 #ifdef DEBUG_SIDE_EFFECTS
-					blame_info<<"Match(A)(N/A) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<std::endl;
+					blame_info<<"Match(A)(N/A) between "<<ivp->name<<" and "<<(*vec_vp_i)->name<<endl;
 					blame_info<<"Node Props for matched node "<<(*vec_vp_i)->name<<": ";
 					for (int a = 0; a < NODE_PROPS_SIZE; a++)
 						blame_info<<(*vec_vp_i)->nStatus[a]<<" ";
-					blame_info<<std::endl;
+					blame_info<<endl;
 #endif
 					
 					if ((*vec_vp_i)->nStatus[EXIT_VAR_FIELD_ALIAS] || (*vec_vp_i)->nStatus[EXIT_VAR_ALIAS]) {
-						std::set<NodeProps *> visited;
+						set<NodeProps *> visited;
 						visited.insert(ivp);
 						recursiveSEAliasHelper(visited, ivp, (*vec_vp_i));
 					}
@@ -2491,17 +2491,17 @@ void FunctionBFC::resolveSideEffects()
 void FunctionBFC::resolveSideEffectCalls()
 {
 #ifdef DEBUG_SIDE_EFFECTS
-	blame_info<<"In resolveSideEffectCalls "<<std::endl;
+	blame_info<<"In resolveSideEffectCalls "<<endl;
 #endif
 	
-	std::set<NodeProps *>::iterator ivh_i;
+	set<NodeProps *>::iterator ivh_i;
 	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++) {
 		NodeProps *ivp = (*ivh_i);
 		if (ivp->nStatus[CALL_NODE]) {
-			std::set<ImpFuncCall *>::iterator v_ifc_i;
+			set<ImpFuncCall *>::iterator v_ifc_i;
 	
-			std::set<NodeProps *> parameters;
-			std::set<NodeProps *> LVparameters;
+			set<NodeProps *> parameters;
+			set<NodeProps *> LVparameters;
 			
 			FuncCallSEElement *fcseElement = NULL;
 			FuncCallSE *fcse = new FuncCallSE();
@@ -2510,7 +2510,7 @@ void FunctionBFC::resolveSideEffectCalls()
 			for (v_ifc_i = ivp->calls.begin(); v_ifc_i != ivp->calls.end(); v_ifc_i++) {
 				ImpFuncCall *ifc = *v_ifc_i;
 				NodeProps *cNode = ifc->callNode;
-				std::set<NodeProps *> visited2;
+				set<NodeProps *> visited2;
 				NodeProps *match = resolveSideEffectsCheckParentEV(cNode, visited2);	
 				
 				if (match != NULL) {
@@ -2542,10 +2542,10 @@ void FunctionBFC::resolveSideEffectCalls()
 			
 			if (parameters.size() > 1) {
 #ifdef DEBUG_SIDE_EFFECTS
-				blame_info<<"Call has more than 1 EVs as parameters :"<<std::endl;
-				std::set<NodeProps *>::iterator set_vp_i;
+				blame_info<<"Call has more than 1 EVs as parameters :"<<endl;
+				set<NodeProps *>::iterator set_vp_i;
 				for (set_vp_i = parameters.begin(); set_vp_i != parameters.end(); set_vp_i++) {
-					blame_info<<(*set_vp_i)->name<<std::endl;
+					blame_info<<(*set_vp_i)->name<<endl;
 				}	
 #endif
 	    		seCalls.push_back(fcse);
@@ -2581,7 +2581,7 @@ void FunctionBFC::resolveLooseStructs()
 	  NodeProps *ivp = (*ivh_i);
 	
 #ifdef DEBUG_STRUCTS
-  	  blame_info<<"Looking at IVP "<<ivp->name<<" in resolveLooseStructs. "<<ivp->llvm_inst<<std::endl;
+  	  blame_info<<"Looking at IVP "<<ivp->name<<" in resolveLooseStructs. "<<ivp->llvm_inst<<endl;
 #endif 			
 	  //clearAfter.clear();
 	  if (ivp->llvm_inst != NULL) {
@@ -2591,31 +2591,31 @@ void FunctionBFC::resolveLooseStructs()
 		  origT = pi->getType();	
 		  //newPtrLevel = pointerLevel(origT,0);
 		
-		  std::string origTStr = returnTypeName(origT, std::string(""));
+		  string origTStr = returnTypeName(origT, string(""));
 #ifdef DEBUG_STRUCTS
-          blame_info<<"Type name (resolveLooseStructs) "<<origTStr<<std::endl;
+          blame_info<<"Type name (resolveLooseStructs) "<<origTStr<<endl;
 #endif 
-    	  if (origTStr.find("Struct") != std::string::npos) {
+    	  if (origTStr.find("Struct") != string::npos) {
 #ifdef DEBUG_STRUCTS
-			blame_info<<"ivp->sBFC (resolveLooseStructs)"<<ivp->sBFC<<std::endl;
+			blame_info<<"ivp->sBFC (resolveLooseStructs)"<<ivp->sBFC<<endl;
 #endif 
             if (ivp->sBFC == NULL) {
 #ifdef DEBUG_STRUCTS
-			  blame_info<<"Struct "<<ivp->name<<" has no sBFC"<<std::endl;
+			  blame_info<<"Struct "<<ivp->name<<" has no sBFC"<<endl;
 #endif
 			  Value *v = cast<Value>(ivp->llvm_inst);	
 			  const llvm::Type *pointT = v->getType();
 			  unsigned typeVal = pointT->getTypeID();
 #ifdef DEBUG_STRUCTS
-              blame_info<<"Before while, typeVal="<<typeVal<<std::endl;
+              blame_info<<"Before while, typeVal="<<typeVal<<endl;
 #endif
 	 		  while (typeVal == Type::PointerTyID) {		
 			    pointT = cast<PointerType>(pointT)->getElementType();
-			    //std::string origTStr = returnTypeName(pointT, std::string(" "));
+			    //string origTStr = returnTypeName(pointT, string(" "));
 			    typeVal = pointT->getTypeID();
               }
 #ifdef DEBUG_STRUCTS
-              blame_info<<"After while, typeVal="<<typeVal<<std::endl;
+              blame_info<<"After while, typeVal="<<typeVal<<endl;
 #endif
 			  if (typeVal == Type::StructTyID) {
 			    const llvm::StructType *type = cast<StructType>(pointT);
@@ -2623,9 +2623,9 @@ void FunctionBFC::resolveLooseStructs()
                   string structNameFull = type->getName().str();
 				  //TO CONTINUE: 08/19/15
 #ifdef USE_LLVM25
-                  if (structNameFull.find("struct.") == std::string::npos){
+                  if (structNameFull.find("struct.") == string::npos){
 #ifdef DEBUG_ERROR
-				    blame_info<<"Error: structName(2) is incomplete -- "<<structNameFull<<std::endl;
+				    blame_info<<"Error: structName(2) is incomplete -- "<<structNameFull<<endl;
 #endif 
 				    continue;
 				  }
@@ -2637,12 +2637,12 @@ void FunctionBFC::resolveLooseStructs()
 #endif
      			  if (sb == NULL) {
 #ifdef DEBUG_STRUCTS
-	                blame_info<<"SB is NULL for "<<structNameFull<<" for IVP "<<ivp->name<<std::endl;
+	                blame_info<<"SB is NULL for "<<structNameFull<<" for IVP "<<ivp->name<<endl;
 #endif
 				    continue;
 				  }
 #ifdef DEBUG_STRUCTS
-				  blame_info<<"Found sb for "<<structNameFull<<" assiging sBFC to "<<ivp->name<<std::endl;
+				  blame_info<<"Found sb for "<<structNameFull<<" assiging sBFC to "<<ivp->name<<endl;
 #endif
 				  ivp->sBFC = sb;
                 }
@@ -2651,7 +2651,7 @@ void FunctionBFC::resolveLooseStructs()
            
             else {
 #ifdef DEBUG_STRUCTS
-			  blame_info<<"Struct  "<<ivp->name<<" already has sBFC "<<std::endl;
+			  blame_info<<"Struct  "<<ivp->name<<" already has sBFC "<<endl;
 #endif
 		    }
 		  } //struct
@@ -2670,12 +2670,12 @@ int FunctionBFC::pointerLevel(const llvm::Type *t, int counter)
 		return counter;
 }
 
-void FunctionBFC::setModuleName(std::string rawName)
+void FunctionBFC::setModuleName(string rawName)
 {
 	moduleName = rawName.substr(0, rawName.length() - 1);
 }
 
-void FunctionBFC::setModulePathName(std::string rawName)
+void FunctionBFC::setModulePathName(string rawName)
 {
 	modulePathName = rawName.substr(0, rawName.length() - 1);
 }
@@ -2714,10 +2714,10 @@ FunctionBFC::FunctionBFC(Function * F, FuncSigHash &kFI)
 // Tweak blamedArgs for this function, may add-in more in the future
 void FunctionBFC::tweakBlamedArgs()
 {
-    std::string fname = getSourceFuncName();
-    if (fname.find("chpl__autoCopy") != std::string::npos)
+    string fname = getSourceFuncName();
+    if (fname.find("chpl__autoCopy") != string::npos)
       blamedArgs.clear();
-    else if (fname.find("chpl__autoDestroy") != std::string::npos) {
+    else if (fname.find("chpl__autoDestroy") != string::npos) {
       blamedArgs.clear();
       blamedArgs.insert(0);
     }
@@ -2778,7 +2778,7 @@ void FunctionBFC::tweakBlamedArgs()
     for (Function::arg_iterator af_i = func->arg_begin(); af_i != func->arg_end(); af_i++) {
       Value *v = af_i;
       if (v->hasName()) {
-        std::string argName = v->getName().str();
+        string argName = v->getName().str();
         if (argName.compare("_fn")==0 || argName.compare("_ln")==0) {
           if (blamedArgs.find(whichParam) != blamedArgs.end()) //if it's already in blamedParams
             blamedArgs.erase(whichParam);
@@ -2792,10 +2792,10 @@ void FunctionBFC::tweakBlamedArgs()
 
 
 // Pass on Chapel internal module functions to get the chapel_internals.bs file
-void FunctionBFC::externFuncPass(Function *F, std::vector<NodeProps *> &globalVars, 
-        ExternFuncBFCHash &efInfo, std::ostream &args_file)
+void FunctionBFC::externFuncPass(Function *F, vector<NodeProps *> &globalVars, 
+        ExternFuncBFCHash &efInfo, ostream &args_file)
 {
-  std::string infoO("OUTPUT/MODULES/");
+  string infoO("OUTPUT/MODULES/");
   infoO += getSourceFuncName();
   blame_info.open(infoO.c_str());
 
@@ -2811,34 +2811,34 @@ void FunctionBFC::externFuncPass(Function *F, std::vector<NodeProps *> &globalVa
   
   //output blamed arguments to args_file only if size>0
   if (blamedArgs.size()>0) {
-    std::set<int>::iterator si;
+    set<int>::iterator si;
     args_file<<getSourceFuncName();
     for (si=blamedArgs.begin(); si!=blamedArgs.end(); si++) 
       args_file<<"\t"<<(*si);
     args_file<<"\n";
   }
-  std::cout<<"End of externFuncPass on "<<getSourceFuncName()
-           <<", bA.size="<<blamedArgs.size()<<std::endl;
+  cout<<"End of externFuncPass on "<<getSourceFuncName()
+           <<", bA.size="<<blamedArgs.size()<<endl;
 } 
   
 
 /* LLVM pass that is ran on each function, calculates explicit/implicit relationships
  and generates transfer function for each */
-void FunctionBFC::firstPass(Function *F, std::vector<NodeProps *> &globalVars,
-        ExternFuncBFCHash &efInfo, std::ostream &blame_file, std::ostream &blame_se_file,
-		std::ostream &call_file, int &numMissing) 
+void FunctionBFC::firstPass(Function *F, vector<NodeProps *> &globalVars,
+        ExternFuncBFCHash &efInfo, ostream &blame_file, ostream &blame_se_file,
+		ostream &call_file, int &numMissing) 
 {
-    std::string infoO("OUTPUT/");
+    string infoO("OUTPUT/");
 	infoO += getSourceFuncName(); //llvm func name
 	blame_info.open(infoO.c_str());
 	time_t start, end;
 	double dif;
 	time(&start);
-	//std::cout<<"Starting first pass for "<<getSourceFuncName()<<std::endl;
+	//cout<<"Starting first pass for "<<getSourceFuncName()<<endl;
 	
-	std::string cInfo("CALLS/");
+	string cInfo("CALLS/");
 	cInfo += getSourceFuncName();
-	std::ofstream call_info;
+	ofstream call_info;
 	call_info.open(cInfo.c_str());
 	
 	
@@ -2863,10 +2863,9 @@ void FunctionBFC::firstPass(Function *F, std::vector<NodeProps *> &globalVars,
 	resolveLooseStructs();
 	
 	// Calc aggregate line numbers (and calls)
-	calcAggregateLN(); //TOCHECK: why it's called before makeNewTruncGraph ?
-	
-	makeNewTruncGraph();
-	//calcAggregateLN();
+	calcAggregateLN(); //result doesn't depend on the new Graph since that's for .dot
+	//makeNewTruncGraph();//Removed by Hui 07/12/17:cause infinite loop on advance22
+	                      //we don't use .dot files for now, so delete it temp
 
 	resolveSideEffects();
 	resolveSideEffectCalls();
@@ -2895,9 +2894,9 @@ void FunctionBFC::firstPass(Function *F, std::vector<NodeProps *> &globalVars,
 	dif = difftime(end,start);
 	int dif_i = (int) dif;
 	
-	std::cout<<getSourceFuncName()<<" -- "<<dif_i<<std::endl;
+	cout<<getSourceFuncName()<<" -- "<<dif_i<<endl;
 	//printf("  -- %d\n", dif);
-	std::cout<<"End of firstPass on "<<getSourceFuncName()<<std::endl;
+	cout<<"End of firstPass on "<<getSourceFuncName()<<endl;
 	//if (moreThanOneEV())
 	//numMultipleEV++;
 }

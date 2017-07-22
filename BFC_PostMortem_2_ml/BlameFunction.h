@@ -133,7 +133,7 @@ class BlameFunction
 	VertexProps * resolveSideEffectsCheckParentLV(VertexProps * vp, std::set<VertexProps *> & visited);
 																					
 	void handleTransferFunction(VertexProps * callNode, set<VertexProps *> & blamedParams);
-
+    void resolvePAForParamNode(VertexProps *param);
 	bool fieldApplies(SideEffectParam * matchSEP, std::set<VertexProps *> & blamees);
 
 	BlameFunction * parseBlameFunction(ifstream & bI);
@@ -150,7 +150,7 @@ class BlameFunction
 
 	void calcParamInfo(std::set<VertexProps *> & blamees, VertexProps * callNode);
 	
-    void addPidAliasesToBlamees(std::set<VertexProps *> &blamees);
+    void addPidAliasesToBlamees(std::set<VertexProps *> &blamees, std::set<VertexProps *> &localBlamees);
 	
     void calcAggCallRecursive(VertexProps * ivp);
 
@@ -291,7 +291,7 @@ class BlameFunction
 
 	std::vector<VertexProps *>  callNodes;//nodes that call other funcs in 
                                           //this BlameFunction
- private:
+// private: //07/18/17 for the ease use of these variables
 	short blamePoint;
   	std::vector<VertexProps *>  exitVariables;
   	std::vector<VertexProps *>  exitPrograms;

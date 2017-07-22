@@ -69,7 +69,7 @@ struct StackFrame
   bool toRemove = false;
   std::string frameName;
 
-  unsigned long task_id = 0;
+  unsigned long func_id = 0;
   fork_t info;
 };
 
@@ -81,9 +81,7 @@ struct Instance
   //needGlueFork and needGluePre should NOT be both true at the same time
   bool needGlueFork = false; //has fork*wrapper frame
   bool needGluePre  = false; //has thread_begin frame but NO fork*wrapper frame
-  unsigned long taskID = 0; 
-  unsigned long minTID = 0; //if minTID != taskID (from processTaskLIst) then maxTID = taskID-1
-  unsigned long maxTID = 0; 
+  unsigned long funcID = 0; 
   fork_t info; //Specifically for fork* samples
   //std::ofstream stackDebug = stack_info;
   
@@ -119,10 +117,6 @@ typedef std::unordered_map<std::string, std::vector<Instance>, std::hash<std::st
 
 //we keep a map between the chpl_nodeID and real compute node names
 typedef std::unordered_map<int, std::string> nodeHash;
-//we keep a map between node name and taskIDs, for the use of prespawn (optimized runtime) 
-//first = taskID of this prespawn stacktrace, second = parent(leader) taskID of this one when calling gluePreStacktraces
-typedef std::unordered_map<int, int> taskHash;
-typedef std::unordered_map<std::string, taskHash, std::hash<std::string>, eqstr> globalTaskIDHash;
 
 //fork hash using fork_t as the key_type
 struct key_hash : public std::unary_function<fork_t, std::size_t>

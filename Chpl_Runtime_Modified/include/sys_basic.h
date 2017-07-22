@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -53,7 +53,7 @@
 #endif
 
 #ifndef _DEFAULT_SOURCE
-// Quiets warnings about _BSD_SOURCE being deprecated in glbic >= 2.20
+// Quiets warnings about _BSD_SOURCE being deprecated in glibc >= 2.20
 // This define enables everything _BSD_SOURCE does (and more) with glibc >= 2.19
 #define _DEFAULT_SOURCE
 #endif
@@ -62,15 +62,21 @@
 // The following breaks #include of "glob.h" with the Cray CCE
 // compiler and also complicates things for the #inclusion of dirent.h
 // with most PrgEnv-* options on Crays, as seen in chpldirent.h.
-// As I understand it, Michael added this in order to permit the
-// support of files larger than 4GB.
+// Michael added this in order to permit the support of files larger than 4GB
+// on 32-bit platforms.
+// Note that it's necessary to set this flag for Ubuntu 14.04 32-bit to get a
+// working preadv/pwritev, so we set that in a Makefile. One possibility
+// would be to set it here for 32-bit platforms only (e.g. using
+// __SIZEOF_POINTER__ == 4 which would work in GCC).
 //
 //#ifndef _FILE_OFFSET_BITS
 //#define _FILE_OFFSET_BITS 64
 //#endif
 
 // Ask a C++ compiler if it would please include e.g. INT64_MAX
+#ifndef __STDC_CONSTANT_MACROS
 #define __STDC_CONSTANT_MACROS
+#endif
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -100,7 +106,7 @@
 
 
 #ifdef __cplusplus
-// g++ supports restrict in C++ with the name __restrict. For other compliers,
+// g++ supports restrict in C++ with the name __restrict. For other compilers,
 // we just #define-out restrict.
 #if defined(__GNUC__) && ((__GNUC__ > 3) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
 #define restrict __restrict

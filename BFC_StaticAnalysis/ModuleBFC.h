@@ -51,7 +51,6 @@
 
 #include "Parameters.h"
 //#include "FunctionBFC.h"
-//using namespace std;
 using namespace llvm;
 
 struct StructBFC;

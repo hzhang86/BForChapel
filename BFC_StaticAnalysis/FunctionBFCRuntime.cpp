@@ -118,36 +118,61 @@ void FunctionBFC::spGetPrivatizedCopy(Instruction *pi)
         }
       }
     }
-      // get objectPid
-    Value *pid = *(pi->op_begin());
-    if (Instruction *pidInst = dyn_cast<Instruction>(pid)) {
-      if (pidInst->getOpcode() == Instruction::Load) {
-        Value *first = *(pidInst->op_begin());
-        string firstName;
-        if (first->hasName()) 
-          firstName = first->getName().str();
-        else {
-          char tempBuf[20];
-          sprintf(tempBuf, "0x%x", first);
-          string name(tempBuf);
-          firstName.insert(0, name.c_str());
+    // get objectPid
+    Value *argPid = *(pi->op_begin()); //the param value passed to getPrivatized* calls
+    if (Instruction *argPidInst = dyn_cast<Instruction>(argPid)) {
+      if (argPidInst->getOpcode() == Instruction::Load) {
+        //Chapel 1.15 may have multiple S-L chain before getting to the getPrivatized* calls
+        Value *pid = getValueFromOrig(argPidInst); //get the original pid (RLS op)
+        if (Instruction *pidInst = dyn_cast<Instruction>(pid)) {
+          if (pidInst->getOpcode() == Instruction::Load) {
+            Value *first = *(pidInst->op_begin());
+            string firstName; //keep the name of realPid, not first
+            
+            //Chapel 1.15 use a wrapper struct of pid to reference distributed array
+            //So the Node(with source var name) should follow:
+            //realPid-GEP->Load->pid to get the realPid
+            if (Instruction *firstInst = dyn_cast<Instruction>(first)) {
+              if (firstInst->getOpcode() == Instruction::GetElementPtr) {
+                Value *realPid = *(firstInst->op_begin());
+                if (realPid->hasName()) 
+                  firstName = realPid->getName().str();
+                else {
+                  char tempBuf[20];
+                  sprintf(tempBuf, "0x%x", realPid);
+                  string name(tempBuf);
+                  firstName.insert(0, name.c_str());
 #ifdef DEBUG_SPECIAL_PROC
-          blame_info<<"Weird: unamed pid from object: "<<firstName<<endl;
+                  blame_info<<"Weird: unamed pid: "<<firstName<<endl;
 #endif
-        }
+                }
 
-        if (variables.count(firstName) >0)
-          objectPid = variables[firstName];
-        else {
+                if (variables.count(firstName) >0) {
+                  objectPid = variables[firstName];
 #ifdef DEBUG_SPECIAL_PROC
-          blame_info<<"Error:(objectPid)"<<firstName<<" Unfound in vars"<<endl;
+                  blame_info<<"We found pid (getPrivatizedCopy): "<<firstName<<endl;
 #endif
-          return;
+                }
+                else {
+#ifdef DEBUG_SPECIAL_PROC
+                  blame_info<<"Error:(objectPid)"<<firstName<<" Unfound in vars"<<endl;
+#endif
+                  return;
+                }
+              }
+              else blame_info<<"CHECK ERROR: firstInst isn't GEP"<<endl;
+            }
+            else blame_info<<"CHECK ERROR: firstInst isn't inst"<<endl;
+          }
+          else blame_info<<"CHECK ERROR: pidInst isn't Load"<<endl;
         }
+        else blame_info<<"CHECK ERROR: pidInst isn't inst"<<endl;
       }
+      else blame_info<<"CHECK ERROR: argPidInst isn't Load"<<endl;
     }
+    else blame_info<<"CHECK ERROR: argPidInst isn't inst"<<endl;
 
-    std::pair<NodeProps*, NodeProps*> pidToObj(objectPid, pidObject);
+    pair<NodeProps*, NodeProps*> pidToObj(objectPid, pidObject);
     distObjs.push_back(pidToObj);
     objectPid->isPid = true;
     objectPid->myObj = pidObject;
@@ -208,35 +233,60 @@ void FunctionBFC::spGetPrivatizedClass(Instruction *pi)
       }
     }
     // get objectPid
-    Value *pid = *(pi->op_begin());
-    if (Instruction *pidInst = dyn_cast<Instruction>(pid)) {
-      if (pidInst->getOpcode() == Instruction::Load) {
-        Value *first = *(pidInst->op_begin());
-        string firstName;
-        if (first->hasName()) 
-          firstName = first->getName().str();
-        else {
-          char tempBuf[20];
-          sprintf(tempBuf, "0x%x", first);
-          string name(tempBuf);
-          firstName.insert(0, name.c_str());
+    Value *argPid = *(pi->op_begin()); //the param value passed to getPrivatized* calls
+    if (Instruction *argPidInst = dyn_cast<Instruction>(argPid)) {
+      if (argPidInst->getOpcode() == Instruction::Load) {
+        //Chapel 1.15 may have multiple S-L chain before getting to the getPrivatized* calls
+        Value *pid = getValueFromOrig(argPidInst); //get the original pid (RLS op)
+        if (Instruction *pidInst = dyn_cast<Instruction>(pid)) {
+          if (pidInst->getOpcode() == Instruction::Load) {
+            Value *first = *(pidInst->op_begin());
+            string firstName; //keep the name of realPid, not first
+            
+            //Chapel 1.15 use a wrapper struct of pid to reference distributed array
+            //So the Node(with source var name) should follow:
+            //realPid-GEP->Load->pid to get the realPid
+            if (Instruction *firstInst = dyn_cast<Instruction>(first)) {
+              if (firstInst->getOpcode() == Instruction::GetElementPtr) {
+                Value *realPid = *(firstInst->op_begin());
+                if (realPid->hasName()) 
+                  firstName = realPid->getName().str();
+                else {
+                  char tempBuf[20];
+                  sprintf(tempBuf, "0x%x", realPid);
+                  string name(tempBuf);
+                  firstName.insert(0, name.c_str());
 #ifdef DEBUG_SPECIAL_PROC
-          blame_info<<"Weird2: unamed pid from object: "<<firstName<<endl;
+                  blame_info<<"Weird2: unamed pid from object: "<<firstName<<endl;
 #endif
-        }
+                }
 
-        if (variables.count(firstName) >0)
-          objectPid = variables[firstName];
-        else {
+                if (variables.count(firstName) >0) {
+                  objectPid = variables[firstName];
 #ifdef DEBUG_SPECIAL_PROC
-          blame_info<<"Error2:(objectPid)"<<firstName<<" Unfound"<<endl;
+                  blame_info<<"We found pid (getPrivatizedClass): "<<firstName<<endl;
 #endif
-          return;
+                }
+                else {
+#ifdef DEBUG_SPECIAL_PROC
+                  blame_info<<"Error2:(objectPid)"<<firstName<<" Unfound in vars"<<endl;
+#endif
+                  return;
+                }
+              }
+              else blame_info<<"CHECK ERROR2: firstInst isn't GEP"<<endl;
+            }
+            else blame_info<<"CHECK ERROR2: firstInst isn't inst"<<endl;
+          }
+          else blame_info<<"CHECK ERROR2: pidInst isn't Load"<<endl;
         }
+        else blame_info<<"CHECK ERROR2: pidInst isn't inst"<<endl;
       }
+      else blame_info<<"CHECK ERROR2: argPidInst isn't Load"<<endl;
     }
+    else blame_info<<"CHECK ERROR2: argPidInst isn't inst"<<endl;
 
-    std::pair<NodeProps*, NodeProps*> pidToObj(objectPid, pidObject);
+    pair<NodeProps*, NodeProps*> pidToObj(objectPid, pidObject);
     distObjs.push_back(pidToObj);
     objectPid->isPid = true;
     objectPid->myObj = pidObject;
@@ -260,8 +310,9 @@ void FunctionBFC::spConvertRTTypeToValue(Instruction *pi)
 
   //basically pidTemp is the RLS from pid, but we dont hv that info at this time
   Value *pidTemp = pi->getOperand(1);
-  string typeName = returnTypeName(pidTemp->getType(), std::string("")); 
-  if (typeName == "*Int") { //pid should always be i64*
+  string typeName = returnTypeName(pidTemp->getType(), string("")); 
+  //In Chapel 1.15, pid is NOT i64*, it's generated complex type
+  //if (typeName == "*Int") { //pid should always be i64*
     NodeProps *pidTempNode = NULL, *pidNode = NULL;
     Value *pid = NULL;
     string pidTempName, pidName;
@@ -316,21 +367,24 @@ void FunctionBFC::spConvertRTTypeToValue(Instruction *pi)
         pidNode = variables[pidName];
         pidTempNode = variables[pidTempName];
         if (pidNode && pidTempNode) {
-          pidNode->isPid = true;
           pidTempNode->isPid = true;
+          pidNode->isPid = true;
+          //This pid is discovered by checking convertRuntimeTypeToValue
+          //so we need to do extra forward alias resolving for this later
+          pidNode->isPidFromT2V = true; 
 #ifdef DEBUG_SPECIAL_PROC
-          blame_info<<"New pid added: "<<pidName<<" "<<pidTempName<<endl;
+          blame_info<<"New pids added: "<<pidName<<" "<<pidTempName<<endl;
 #endif
         }
       }
     }
-  }
+  //}
 
-  else {
+  /*else {
 #ifdef DEBUG_SPECIAL_PROC
-    blame_info<<"This is not the convertRuntimeTypeToValue we are looking for"<<endl;
+  //  blame_info<<"This is not the convertRuntimeTypeToValue we are looking for"<<endl;
 #endif
-  }
+  }*/
 }
 
 
@@ -451,9 +505,10 @@ void FunctionBFC::resolvePidAliases()
       if (!v)
         continue;
 
-      if (v->isPid) {
-        std::set<int> visited;
-        resolvePidAliasForNode_bw(v, visited);
+      if (v->isTempPid || v->isPid) {
+        v->isPid = true; //set all temp pid from 0th round to be real pid
+        set<int> visited;
+        resolvePidAliasForNode_bw_new(v, visited);
       }
     }
 
@@ -467,8 +522,8 @@ void FunctionBFC::resolvePidAliases()
       
       if (v->isTempPid || v->isPid) {
         v->isPid = true; //set all temp pid from 1st round to be real pid
-        std::set<int> visited;
-        resolvePidAliasForNode_fw(v, visited);
+        set<int> visited;
+        resolvePidAliasForNode_fw_new(v, visited);
       }
     } 
 
@@ -481,7 +536,7 @@ void FunctionBFC::resolvePidAliases()
         v->isPid = true; //set new temp pids gotten from the 2nd round search above
       //merge all pidAliasesIn&pidAliasesOut in to pidAliases
       if (v->isPid) {
-        std::set<NodeProps *>::iterator si, se;
+        set<NodeProps *>::iterator si, se;
         for (si=v->pidAliasesIn.begin(), se=v->pidAliasesIn.end(); si!=se; si++)
           v->pidAliases.insert(*si);
         for (si=v->pidAliasesOut.begin(), se=v->pidAliasesOut.end(); si!=se; si++)
@@ -509,6 +564,9 @@ void FunctionBFC::resolveObjAliases()
 
       if (v->isObj) {
         //Get the pointer level of obj
+#ifdef DEBUG_SPECIAL_PROC
+        blame_info<<"Met obj "<<v->name<<" here1"<<endl;
+#endif
         int origPtrLevel=0;
 	    if (v->llvm_inst != NULL) {
 	      if (isa<Instruction>(v->llvm_inst)) {
@@ -528,22 +586,134 @@ void FunctionBFC::resolveObjAliases()
 #endif
           continue;
         }
+#ifdef DEBUG_SPECIAL_PROC
+        blame_info<<"Met obj "<<v->name<<" here2"<<endl;
+#endif
         v->objAliasesIn = v->aliasesIn;
         v->objAliasesOut = v->aliasesOut;
         v->objAliases = v->aliases;
       }
     }
+#ifdef DEBUG_SPECIAL_PROC
+    blame_info<<"Arrive here for "<<getSourceFuncName()<<endl;
+#endif
 
     // Transitive objAliases, just like processing aliases
     resolveTransitiveObjAliases();
 }
 
 
-// Backward search
-void FunctionBFC::resolvePidAliasForNode_bw(NodeProps *currNode, std::set<int> &visited)
+// Resolve potential pid aliases for formalArgs(not detected as pid in "this" func
+// maybe used in postmortem2 later once pid params reflected by a callee
+void FunctionBFC::resolvePPA()
+{
+    RegHashProps::iterator begin, end;
+    for (begin = variables.begin(), end = variables.end(); begin != end; begin++) {
+      NodeProps *v = begin->second;
+      //we only care about the EVs that aren't Pids (not detected by this func)
+      if (v->isFormalArg && !v->isPid) {
+        int ptrlvl = pointerLevel(v->llvm_inst->getType(), 0);
+        if (ptrlvl >= 1) { 
+          //first, we add all preRLS to PPAs
+          set<int> visited1;
+          resolvePreRLS(v, v, visited1);
+          v->PPAs.insert(v->preRLS.begin(), v->preRLS.end());
+          //second, we add preRLS or 'aliases' of each preRLS to PPAs
+          set<NodeProps *>::iterator ivp;
+          for (ivp = v->preRLS.begin(); ivp != v->preRLS.end(); ivp++) {
+            NodeProps *rls = *ivp;
+            set<int> visited2;
+            resolvePPAFromRLSNode(v, rls, visited2); //very similar to "v->isPidFromT2V"
+          }
+        }
+      }
+    }
+}
+
+
+// Helper function 1 for resolvePPA
+void FunctionBFC::resolvePreRLS(NodeProps *origV, NodeProps *currNode, set<int> &visited)
+{
+#ifdef DEBUG_RESOLVEPPA
+    blame_info<<"Entering resolvePreRLS for "<<origV->name<<" from "<<currNode->name<<endl;
+#endif
+    if (visited.count(currNode->number))
+      return;
+    visited.insert(currNode->number);
+
+    boost::graph_traits<MyGraphType>::in_edge_iterator e_beg, e_end;
+	e_beg = boost::in_edges(currNode->number, G).first;	//edge iterator begin
+	e_end = boost::in_edges(currNode->number, G).second; // edge iterator end
+    // farward tracing for pidAliases
+    for (; e_beg!=e_end; e_beg++) {
+      int opCode = get(get(edge_iore, G), *e_beg);
+      if (opCode == Instruction::Store) {  
+        NodeProps *sourceV = get(get(vertex_props,G), source(*e_beg,G));
+  
+        boost::graph_traits<MyGraphType>::in_edge_iterator e_beg2, e_end2;
+	    e_beg2 = boost::in_edges(sourceV->number, G).first;	//edge iterator begin
+	    e_end2 = boost::in_edges(sourceV->number, G).second; // edge iterator end
+
+        for (; e_beg2!=e_end2; e_beg2++) {
+          int opCode2 = get(get(edge_iore, G), *e_beg2);
+          if (opCode2 == Instruction::Load) {
+            NodeProps *targetV = get(get(vertex_props,G), source(*e_beg2,G));
+            // Insert targetV to the origV !!! Not currNode!!!
+            origV->preRLS.insert(targetV); //we found one forward 'alias' of origV
+            //Start recursion on targetV
+            resolvePreRLS(origV, targetV, visited);
+          } //if opCode2=Load
+        }//for edges2
+      }//if opCode=Store
+    }//for edges
+}
+
+
+// Helper function 2 for resolvePPA
+void FunctionBFC::resolvePPAFromRLSNode(NodeProps *origV, NodeProps *currNode, set<int> &visited)
+{
+#ifdef DEBUG_RESOLVEPPA
+    blame_info<<"Entering resolvePPAFromRLSNode for "<<origV->name<<" from "<<currNode->name<<endl;
+#endif
+    if (visited.count(currNode->number))
+      return;
+    visited.insert(currNode->number);
+
+    boost::graph_traits<MyGraphType>::in_edge_iterator e_beg, e_end;
+	e_beg = boost::in_edges(currNode->number, G).first;	//edge iterator begin
+	e_end = boost::in_edges(currNode->number, G).second; // edge iterator end
+    // farward tracing for pidAliases
+    for (; e_beg!=e_end; e_beg++) {
+      int opCode = get(get(edge_iore, G), *e_beg);
+      if (opCode == Instruction::Load) {  
+        NodeProps *sourceV = get(get(vertex_props,G), source(*e_beg,G));
+  
+        boost::graph_traits<MyGraphType>::in_edge_iterator e_beg2, e_end2;
+	    e_beg2 = boost::in_edges(sourceV->number, G).first;	//edge iterator begin
+	    e_end2 = boost::in_edges(sourceV->number, G).second; // edge iterator end
+
+        for (; e_beg2!=e_end2; e_beg2++) {
+          int opCode2 = get(get(edge_iore, G), *e_beg2);
+          if (opCode2 == Instruction::Store) {
+            NodeProps *targetV = get(get(vertex_props,G), source(*e_beg2,G));
+            // Insert targetV to the origV !!! Not currNode!!!
+            origV->PPAs.insert(targetV); //we found one forward 'alias' of origV
+            //Start recursion on targetV
+            resolvePPAFromRLSNode(origV, targetV, visited);
+          } //if opCode2=Store
+        }//for edges2
+      }//if opCode=Load
+    }//for edges
+}     
+
+            
+// Backward search new: Chapel 1.15 establish pidAliases NOT based on aliases mechanism
+// but based on RLS mechanism: A-store->C-load->B, so backward search from B should
+// first check out_edge(LD) to C, then out_edge(ST) to A from C
+void FunctionBFC::resolvePidAliasForNode_bw_new(NodeProps *currNode, set<int> &visited)
 {
 #ifdef DEBUG_SPECIAL_PROC
-    blame_info<<"Entering recursively resolvePidAliasForNode_bw for "<<currNode->name<<endl;
+    blame_info<<"Entering recursively resolvePidAliasForNode_bw_new for "<<currNode->name<<endl;
 #endif
     if (visited.count(currNode->number)) 
       return;
@@ -555,7 +725,37 @@ void FunctionBFC::resolvePidAliasForNode_bw(NodeProps *currNode, std::set<int> &
     // Backward tracing for pidAliases
     for (; e_beg!=e_end; e_beg++) {
       int opCode = get(get(edge_iore, G), *e_beg);
-      if (opCode == Instruction::Store) {  
+      // if the bw propagation follows LD->ST chain
+      if (opCode == Instruction::Load) {  
+        NodeProps *sourceV = get(get(vertex_props,G), target(*e_beg,G));
+  
+        boost::graph_traits<MyGraphType>::out_edge_iterator e_beg2, e_end2;
+	    e_beg2 = boost::out_edges(sourceV->number, G).first;	//edge iterator begin
+	    e_end2 = boost::out_edges(sourceV->number, G).second; // edge iterator end
+
+        for (; e_beg2!=e_end2; e_beg2++) {
+          int opCode2 = get(get(edge_iore, G), *e_beg2);
+          if (opCode2 == Instruction::Store) {
+            NodeProps *targetV = get(get(vertex_props,G), target(*e_beg2,G));
+            // For pid, their type should always be i64* as far as I know
+#ifdef DEBUG_SPECIAL_PROC
+            blame_info<<"We find a pidAliasIn(1): "<<targetV->name<<" for "<<currNode->name<<endl;
+#endif
+            //Copy some atrributes from currNode
+            if (!targetV->isPid && (currNode->isPid||currNode->isTempPid))
+              targetV->isTempPid = true; //Later, we'll change all tempPid to pid
+            if (!targetV->isWritten && currNode->isWritten)
+              targetV->isWritten = true;
+
+            currNode->pidAliasesIn.insert(targetV);
+            targetV->pidAliasesOut.insert(currNode);
+            //Start recursion on targetV
+            resolvePidAliasForNode_bw_new(targetV, visited);
+          } //if opCode2=Load
+        }//for edges2
+      }//if opCode=Store
+      // if the bw propagation follows ST->LD chain
+      else if (opCode == Instruction::Store) {  
         NodeProps *sourceV = get(get(vertex_props,G), target(*e_beg,G));
   
         boost::graph_traits<MyGraphType>::out_edge_iterator e_beg2, e_end2;
@@ -568,7 +768,7 @@ void FunctionBFC::resolvePidAliasForNode_bw(NodeProps *currNode, std::set<int> &
             NodeProps *targetV = get(get(vertex_props,G), target(*e_beg2,G));
             // For pid, their type should always be i64* as far as I know
 #ifdef DEBUG_SPECIAL_PROC
-            blame_info<<"We find a pidAliasIn: "<<targetV->name<<" for "<<currNode->name<<endl;
+            blame_info<<"We find a pidAliasIn(2): "<<targetV->name<<" for "<<currNode->name<<endl;
 #endif
             //Copy some atrributes from currNode
             if (!targetV->isPid && (currNode->isPid||currNode->isTempPid))
@@ -579,7 +779,7 @@ void FunctionBFC::resolvePidAliasForNode_bw(NodeProps *currNode, std::set<int> &
             currNode->pidAliasesIn.insert(targetV);
             targetV->pidAliasesOut.insert(currNode);
             //Start recursion on targetV
-            resolvePidAliasForNode_bw(targetV, visited);
+            resolvePidAliasForNode_bw_new(targetV, visited);
           } //if opCode2=Load
         }//for edges2
       }//if opCode=Store
@@ -587,8 +787,8 @@ void FunctionBFC::resolvePidAliasForNode_bw(NodeProps *currNode, std::set<int> &
 }
 
 
-// Forward search
-void FunctionBFC::resolvePidAliasForNode_fw(NodeProps *currNode, std::set<int> &visited)
+/* Foward Search Old
+void FunctionBFC::resolvePidAliasForNode_fw(NodeProps *currNode, set<int> &visited)
 {
 #ifdef DEBUG_SPECIAL_PROC
     blame_info<<"Entering recursively resolvePidAliasForNode_fw for "<<currNode->name<<endl;
@@ -643,8 +843,8 @@ void FunctionBFC::resolvePidAliasForNode_fw(NodeProps *currNode, std::set<int> &
     if (!fieldName.empty()) {
       if (cpHash.count(fieldName) >0) {
         if (currNode == cpHash[fieldName]) { //currNode is destVertex
-          std::set<NodeProps *>::iterator si = currNode->collapseNodes.begin();
-          std::set<NodeProps *>::iterator se = currNode->collapseNodes.end();
+          set<NodeProps *>::iterator si = currNode->collapseNodes.begin();
+          set<NodeProps *>::iterator se = currNode->collapseNodes.end();
           for (; si != se; si++) {
             NodeProps *cpNode = *si;
             int v_index = cpNode->number;
@@ -671,6 +871,125 @@ void FunctionBFC::resolvePidAliasForNode_fw(NodeProps *currNode, std::set<int> &
       } // if the collapsable pair exists
     } // if currNode is a field
 }
+*/
+
+// Forward search new: Chapel 1.15 establish pidAliases NOT based on aliases mechanism
+// but based on RLS mechanism: A-store->C-load->B, so forward search from A should
+// first check in_edge(ST) from C, then in_edge(LD) from A
+void FunctionBFC::resolvePidAliasForNode_fw_new(NodeProps *currNode, set<int> &visited)
+{
+#ifdef DEBUG_SPECIAL_PROC
+    blame_info<<"Entering recursively resolvePidAliasForNode_fw_new for "<<currNode->name<<endl;
+#endif
+    if (visited.count(currNode->number)) 
+      return;
+    visited.insert(currNode->number);
+
+    boost::graph_traits<MyGraphType>::in_edge_iterator e_beg, e_end;
+	e_beg = boost::in_edges(currNode->number, G).first;	//edge iterator begin
+	e_end = boost::in_edges(currNode->number, G).second; // edge iterator end
+    // farward tracing for pidAliases
+    for (; e_beg!=e_end; e_beg++) {
+      int opCode = get(get(edge_iore, G), *e_beg);
+      // if the propagation follows ST->LD chain
+      if (opCode == Instruction::Store) {  
+        NodeProps *sourceV = get(get(vertex_props,G), source(*e_beg,G));
+  
+        boost::graph_traits<MyGraphType>::in_edge_iterator e_beg2, e_end2;
+	    e_beg2 = boost::in_edges(sourceV->number, G).first;	//edge iterator begin
+	    e_end2 = boost::in_edges(sourceV->number, G).second; // edge iterator end
+
+        for (; e_beg2!=e_end2; e_beg2++) {
+          int opCode2 = get(get(edge_iore, G), *e_beg2);
+          if (opCode2 == Instruction::Load) {
+            NodeProps *targetV = get(get(vertex_props,G), source(*e_beg2,G));
+            // For pid, their type should always be i64* as far as I know
+#ifdef DEBUG_SPECIAL_PROC
+            blame_info<<"We find a pidAliasOut(1): "<<targetV->name<<" for "<<currNode->name<<endl;
+#endif
+            //Copy some atrributes from currNode
+            if (!targetV->isPid && (currNode->isPid||currNode->isTempPid))
+              targetV->isTempPid = true; //Later, we'll change all tempPid to pid
+            if (!targetV->isWritten && currNode->isWritten)
+              targetV->isWritten = true;
+
+            currNode->pidAliasesOut.insert(targetV);
+            targetV->pidAliasesIn.insert(currNode);
+            
+            //Start recursion on targetV
+            resolvePidAliasForNode_fw_new(targetV, visited);
+          } //if opCode2=Store
+        }//for edges2
+      }//if opCode=Load
+      // if the propagattion follows LD->ST chain 
+      else if (opCode == Instruction::Load) {  
+        NodeProps *sourceV = get(get(vertex_props,G), source(*e_beg,G));
+  
+        boost::graph_traits<MyGraphType>::in_edge_iterator e_beg2, e_end2;
+	    e_beg2 = boost::in_edges(sourceV->number, G).first;	//edge iterator begin
+	    e_end2 = boost::in_edges(sourceV->number, G).second; // edge iterator end
+
+        for (; e_beg2!=e_end2; e_beg2++) {
+          int opCode2 = get(get(edge_iore, G), *e_beg2);
+          if (opCode2 == Instruction::Store) {
+            NodeProps *targetV = get(get(vertex_props,G), source(*e_beg2,G));
+            // For pid, their type should always be i64* as far as I know
+#ifdef DEBUG_SPECIAL_PROC
+            blame_info<<"We find a pidAliasOut(2): "<<targetV->name<<" for "<<currNode->name<<endl;
+#endif
+            //Copy some atrributes from currNode
+            if (!targetV->isPid && (currNode->isPid||currNode->isTempPid))
+              targetV->isTempPid = true; //Later, we'll change all tempPid to pid
+            if (!targetV->isWritten && currNode->isWritten)
+              targetV->isWritten = true;
+
+            currNode->pidAliasesOut.insert(targetV);
+            targetV->pidAliasesIn.insert(currNode);
+            
+            //Start recursion on targetV
+            resolvePidAliasForNode_fw_new(targetV, visited);
+          } //if opCode2=Store
+        }//for edges2
+      }//if opCode=Load
+    }//for edges
+
+    //03/30/17: we need to take care of some special case: a/b are fields
+    //When a(early) and b(late) are collapsePair, and b is not finally deleted
+    //due to some reasons we added, then we need to mark b as Pid if a is Pid
+    string fieldName;
+    if (currNode->uniqueNameAsField)
+      fieldName = string(currNode->uniqueNameAsField);
+    if (!fieldName.empty()) {
+      if (cpHash.count(fieldName) >0) {
+        if (currNode == cpHash[fieldName]) { //currNode is destVertex
+          set<NodeProps *>::iterator si = currNode->collapseNodes.begin();
+          set<NodeProps *>::iterator se = currNode->collapseNodes.end();
+          for (; si != se; si++) {
+            NodeProps *cpNode = *si;
+            int v_index = cpNode->number;
+            int in_d = in_degree(v_index, G);
+            int out_d = out_degree(v_index, G);
+            // if collapseVertex still has edges attached, then it wasn't deleted
+            if ((in_d+out_d) > 0) {
+#ifdef DEBUG_SPECIAL_PROC
+              blame_info<<"We find a pidAliasOut(cp): "<<cpNode->name<<" for "<<currNode->name<<endl;
+#endif
+              //Copy some atrributes from currNode
+              if (!cpNode->isPid && (currNode->isPid||currNode->isTempPid))
+                cpNode->isTempPid = true; //Later, we'll change all tempPid to pid
+              //We set cpNode as currNode's pidAliasOut because destVertex always
+              //appears early than the collapseVertex
+              currNode->pidAliasesOut.insert(cpNode);
+              cpNode->pidAliasesIn.insert(currNode);
+            
+              //Start recursion on targetV
+              resolvePidAliasForNode_fw_new(cpNode, visited);
+            } // cpNode not actually deleted
+          } // iterate all collapseNodes
+        } // currNode exists as destVertex (the one that's retained)
+      } // if the collapsable pair exists
+    } // if currNode is a field
+}
 
 
 void FunctionBFC::resolveTransitivePidAliases()
@@ -681,7 +1000,7 @@ void FunctionBFC::resolveTransitivePidAliases()
       if (!v)
         continue;
       
-      std::set<NodeProps*>::iterator si, si2;
+      set<NodeProps*>::iterator si, si2;
       for (si=v->pidAliases.begin(); si!=v->pidAliases.end(); si++) {
         NodeProps *al1 = *si;
         for (si2=si; si2!=v->pidAliases.end(); si2++) {
@@ -708,19 +1027,25 @@ void FunctionBFC::resolveTransitivePidAliases()
 // Since objAliases was computed before, we just do the copy
 void FunctionBFC::resolveTransitiveObjAliases()
 {
+    set<int> visited;
     graph_traits<MyGraphType>::vertex_iterator i, v_end;
     for (tie(i, v_end)=vertices(G); i!=v_end; i++) {
       NodeProps *v = get(get(vertex_props, G), *i);
       if (!v)
         continue;
+      if (visited.count(v->number)) //set visited to avoid infinite loop
+        continue;                   //skip this loop if any of its aliases is processed
+
       if (v->isObj) {
-        std::set<NodeProps*>::iterator si;
+        visited.insert(v->number); //add v to visited
+        set<NodeProps*>::iterator si;
         for (si=v->objAliases.begin(); si!=v->objAliases.end(); si++) {
           NodeProps *vA = *si;
           vA->isObj = true;
           vA->objAliasesIn = vA->aliasesIn;
           vA->objAliasesOut = vA->aliasesOut;
           vA->objAliases = vA->aliases;
+          visited.insert(vA->number); //add vA to visited
         }
       }
     }

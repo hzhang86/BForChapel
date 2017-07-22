@@ -1,269 +1,271 @@
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/arg.c,761
-static int gdbFlag 41,1058
-int32_t blockreport 42,1082
-int32_t taskreport 43,1156
-typedef struct _flagType 46,1220
-  const char* flagDash;47,1247
-  const char* subArg;48,1271
-  const char* flagDashDash;49,1293
-  const char* description;50,1321
-  const char headerType;51,1348
-} flagType;52,1373
-static const flagType flagList[flagList54,1386
-const int numFlags 75,2252
-int _runInGDB(78,2315
-#undef malloc89,2638
-static void defineEnvVar(91,2653
-#define malloc 123,4083
-static void parseDashEArgs(126,4147
-static void printHeaders(174,5552
-void printHelpTable(193,5949
-static int32_t _argNumLocales 253,7643
-void parseNumLocales(255,7679
-int32_t getArgNumLocales(269,8195
-void parseArgs(279,8402
-int chpl_specify_locales_error(508,14473
+/lustre/hzhang86/bin/chapel-15/runtime/src/arg.c,714
+static int gdbFlag 42,1093
+int32_t blockreport 43,1117
+int32_t taskreport 44,1191
+typedef struct _flagType 47,1255
+  const char* flagDash;48,1282
+  const char* subArg;49,1306
+  const char* flagDashDash;50,1328
+  const char* description;51,1356
+  const char headerType;52,1383
+} flagType;53,1408
+static const flagType flagList[flagList55,1421
+const int numFlags 76,2287
+int _runInGDB(79,2350
+static void defineEnvVar(84,2394
+static void parseDashEArgs(117,3824
+static void printHeaders(165,5241
+void printHelpTable(184,5638
+static int32_t _argNumLocales 244,7332
+void parseNumLocales(246,7368
+int32_t getArgNumLocales(260,7883
+void parseArgs(270,8090
+int chpl_specify_locales_error(499,14173
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-bitops.c,136
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-bitops.c,136
 const uint8_t chpl_bitops_debruijn32[chpl_bitops_debruijn3223,747
 const uint8_t chpl_bitops_debruijn64[chpl_bitops_debruijn6428,918
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-blame.c,705
-int chpl_vdebug_fd 69,2420
-int chpl_vdebug 70,2445
-int chpl_dprintf 72,2467
-void chpl_vdebug_start 100,3097
-void chpl_vdebug_stop 107,3268
-void chpl_vdebug_mark 116,3545
-void chpl_vdebug_tagname 121,3612
-void chpl_vdebug_tag 126,3741
-void chpl_vdebug_pause 131,3846
-void cb_comm_put_nb 144,4312
-void cb_comm_get_nb 164,5152
-void cb_comm_put 183,5940
-void cb_comm_get 203,6779
-void cb_comm_put_strd 221,7567
-void cb_comm_get_strd 243,8508
-void cb_comm_fork 261,9342
-void  cb_comm_fork_nb 355,12030
-void cb_comm_fork_fast 447,14727
-int install_callbacks 540,17373
-int uninstall_callbacks 604,19509
-void cb_task_create 635,21124
-void cb_task_begin 657,22055
-void cb_task_end 671,22480
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-blame.c,995
+int chpl_vdebug_fd 83,2985
+int chpl_vdebug 84,3010
+#define TID_STRING(86,3032
+int chpl_dprintf 88,3126
+static int chpl_make_vdebug_file 105,3465
+void chpl_vdebug_start 143,4550
+void chpl_vdebug_stop 217,7167
+void chpl_vdebug_mark 252,8330
+void chpl_vdebug_tagname 263,8703
+void chpl_vdebug_tag 269,8899
+void chpl_vdebug_pause 293,9697
+void cb_comm_put_nb 326,10937
+void cb_comm_get_nb 347,11822
+void cb_comm_put 367,12656
+void cb_comm_get 388,13540
+void cb_comm_put_strd 407,14373
+void cb_comm_get_strd 430,15359
+void cb_comm_executeOn 449,16237
+void cb_comm_executeOn_blame 468,16967
+void  cb_comm_executeOn_nb 546,19428
+void  cb_comm_executeOn_nb_blame 562,20123
+void cb_comm_executeOn_fast 640,22614
+void  cb_comm_executeOn_fast_blame 658,23334
+int install_callbacks 735,25784
+int uninstall_callbacks 804,28152
+void PAPIhandler(840,29905
+void cb_task_create 920,32385
+void cb_task_create_blame 941,33328
+void cb_task_begin 1015,35644
+void cb_task_end 1029,36069
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-cache-support.c,926
-typedef int64_t cache_seqn_t;26,823
-#define NO_SEQUENCE_NUMBER 27,853
-cache_seqn_t seqn_min(29,896
-cache_seqn_t seqn_max(35,1031
-uintptr_t round_down_to_mask(62,1727
-unsigned char* round_down_to_mask_ptr(67,1827
-uintptr_t round_up_to_mask(75,2071
-unsigned char* round_up_to_mask_ptr(81,2226
-#define SINGLE_POP_HEAD(88,2394
-#define SINGLE_PUSH_HEAD(93,2523
-#define DOUBLE_REMOVE_TAIL(99,2676
-#define DOUBLE_REMOVE(116,3311
-#define DOUBLE_PUSH_HEAD(135,3995
-#define DOUBLE_PUSH_TAIL(150,4531
-int fifo_circleb_push(180,5692
-int fifo_circleb_pop(214,6837
-int fifo_circleb_count(242,7518
-int fifo_circleb_isfull(262,8035
-void set_valid_bits64(270,8268
-void set_valids_for_skip_len(280,8483
-void unset_valids_for_skip_len(309,9366
-int get_skip_len_for_valids(326,9980
-int any_set_for_skip_len(371,11260
-int all_set_for_skip_len(386,11780
-int count_valid_before(397,12187
-int count_valid_at_after(419,12683
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-cache-support.c,759
+typedef int64_t cache_seqn_t;27,847
+#define NO_SEQUENCE_NUMBER 28,877
+cache_seqn_t seqn_min(30,920
+cache_seqn_t seqn_max(36,1055
+#define SINGLE_POP_HEAD(62,1677
+#define SINGLE_PUSH_HEAD(67,1806
+#define DOUBLE_REMOVE_TAIL(73,1959
+#define DOUBLE_REMOVE(90,2594
+#define DOUBLE_PUSH_HEAD(109,3278
+#define DOUBLE_PUSH_TAIL(124,3814
+int fifo_circleb_push(154,4975
+int fifo_circleb_pop(188,6120
+int fifo_circleb_count(216,6801
+int fifo_circleb_isfull(236,7318
+void set_valid_bits64(244,7551
+void set_valids_for_skip_len(254,7766
+void unset_valids_for_skip_len(283,8649
+int get_skip_len_for_valids(300,9263
+int any_set_for_skip_len(345,10543
+int all_set_for_skip_len(360,11063
+int count_valid_before(371,11470
+int count_valid_at_after(393,11966
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-cache.c,6916
-#define VERIFY 292,14234
-#define CACHE_PAGES_PER_NODE 297,14394
-#define MIN_CACHE_DATA_SIZE 298,14425
-#define MAX_CACHE_DATA_SIZE 299,14465
-#define MAX_PENDING 302,14562
-#define CACHEPAGE_BITS 312,14978
-#define CACHEPAGE_SIZE 313,15004
-#define CACHEPAGE_MASK 314,15049
-#define CACHELINE_BITS 322,15343
-#define CACHELINE_SIZE 323,15368
-#define CACHELINE_MASK 324,15413
-typedef int8_t line_per_page_t;327,15522
-typedef int16_t readahead_distance_t;329,15605
-#define MAX_PAGES_PER_PREFETCH 334,15805
-#define ENABLE_READAHEAD 338,15925
-#define ENABLE_READAHEAD_TRIGGER_WITHIN_PAGE 339,15952
-#define ENABLE_READAHEAD_TRIGGER_SEQUENTIAL 340,15999
-#define MAX_SEQUENTIAL_READAHEAD_BYTES 341,16045
-static void print_time(353,16259
-static long time_duration(360,16396
-#define TIME_PRINT(366,16582
-#define TIME_PRINT(368,16651
-#define TRACE_PRINT(373,16711
-#define TRACE_PRINT(375,16749
-#define DEBUG_PRINT(379,16808
-#define DEBUG_PRINT(381,16846
-#define INFO_PRINT(385,16904
-#define INFO_PRINT(387,16941
-#define TOP_BITS 432,18574
-#define BOTTOM_BITS 433,18594
-#define OTHER_BITS 434,18617
-#define HALF_BITS 435,18681
-#define TOP_SIZE 437,18722
-#define BOTTOM_SIZE 438,18755
-#define HALF_SIZE 439,18794
-#define CACHEPAGE_BITMASK_WORDS 443,18956
-#define CACHE_LINES_PER_PAGE 446,19054
-#define CACHE_LINES_PER_PAGE_BITMASK_WORDS 450,19245
-struct cache_entry_base_s 452,19331
-  uint32_t index_bits;453,19359
-  c_nodeid_t node;454,19382
-  struct cache_entry_base_s* next;455,19401
-struct page_list_s 458,19482
-  struct page_list_s* next;459,19503
-  unsigned char* page;460,19531
-struct dirty_entry_s 466,19725
-  struct dirty_entry_s* next;468,19790
-  struct dirty_entry_s* prev;469,19820
-  struct cache_entry_s* entry;471,19900
-  uint64_t dirty[dirty473,19973
-#define QUEUE_FREE 476,20066
-#define QUEUE_AIN 477,20087
-#define QUEUE_AOUT 478,20107
-#define QUEUE_AM 479,20128
-typedef uintptr_t raddr_t;482,20203
-raddr_t raddr_max(484,20244
-raddr_t raddr_min(489,20324
-struct cache_entry_s 495,20425
-  struct cache_entry_base_s base;496,20448
-  raddr_t raddr;497,20515
-  int queue;499,20671
-  readahead_distance_t readahead_skip;501,20712
-  readahead_distance_t readahead_len;502,20751
-  struct cache_entry_s* next;504,20905
-  struct cache_entry_s* prev;505,20964
-  unsigned char* page;508,21111
-  uint64_t valid_lines[valid_lines510,21189
-  struct dirty_entry_s* dirty;512,21310
-  cache_seqn_t min_sequence_number;515,21503
-  cache_seqn_t max_put_sequence_number;520,21811
-  cache_seqn_t max_prefetch_sequence_number;523,22013
-static int check_valid_lines(530,22276
-static int any_valid_lines(536,22499
-static int set_valid_lines(541,22719
-static void unset_valid_lines(547,22944
-struct top_entry_s 563,23481
-  struct cache_entry_base_s base;564,23502
-  size_t num_entries;565,23569
-  struct cache_entry_s* bottom_index[bottom_index566,23591
-struct rdcache_s 569,23646
-  cache_seqn_t next_request_number;577,23972
-  cache_seqn_t completed_request_number;579,24060
-  c_nodeid_t last_cache_miss_read_node;583,24210
-  raddr_t last_cache_miss_read_addr;584,24250
-  int max_pages;620,26248
-  int max_entries;621,26265
-  int max_top_nodes;622,26284
-  struct page_list_s* free_pages_head;625,26322
-  struct page_list_s* free_page_list_entries_head;627,26446
-  struct cache_entry_base_s* free_entries_head;629,26535
-  unsigned int ain_max;632,26671
-  unsigned int ain_current;633,26726
-  struct cache_entry_s *ain_head;ain_head634,26784
-  struct cache_entry_s *ain_tail;ain_tail635,26818
-  unsigned int aout_max;639,26962
-  unsigned int aout_current;640,27019
-  struct cache_entry_s *aout_head;aout_head641,27079
-  struct cache_entry_s *aout_tail;aout_tail642,27114
-  unsigned int am_current;646,27304
-  struct cache_entry_s* am_lru_head;647,27360
-  struct cache_entry_s* am_lru_tail;648,27397
-  int num_dirty_pages;651,27482
-  struct dirty_entry_s *dirty_lru_head;dirty_lru_head652,27505
-  struct dirty_entry_s *dirty_lru_tail;dirty_lru_tail653,27545
-  unsigned int pending_len;657,27692
-  int pending_first_entry;658,27751
-  int pending_last_entry;659,27778
-  chpl_comm_nb_handle_t *pending;pending660,27804
-  cache_seqn_t *pending_sequence_numbers;pending_sequence_numbers661,27838
-  int max_top_entries;664,27914
-  struct cache_entry_base_s* free_top_nodes_head;665,27937
-  struct top_entry_s* top_index_list[top_index_list668,28066
-struct rdcache_s* cache_create(675,28179
-void cache_destroy(856,34276
-void cache_entry_print(862,34353
-void rdcache_print(921,36374
-int get_top_bits(948,37123
-int get_bottom_bits(960,37379
-uint32_t get_high_bits(968,37608
-uint32_t get_low_bits(974,37746
-struct cache_entry_base_s* list_search(979,37847
-struct top_entry_s* top_list_search(1000,38302
-struct cache_entry_s* bottom_list_search(1008,38659
-void top_entry_free(1016,39029
-void tree_remove(1028,39425
-#define FLUSH_DO_PAGE 1094,41400
-#define FLUSH_DO_CLEAR_DIRTY 1096,41467
-#define FLUSH_DO_PENDING 1098,41561
-#define FLUSH_DO_INVALIDATE 1100,41653
-#define FLUSH_DO_EVICT 1102,41744
-#define FLUSH_EVICT 1105,41815
-#define FLUSH_INVALIDATE_REGION 1106,41904
-#define FLUSH_INVALIDATE_PAGE 1107,41996
-#define FLUSH_PREPARE_PUT 1108,42100
-#define FLUSH_PREPARE_GET 1109,42145
-void aout_evict(1119,42568
-void ain_evict(1143,43053
-void am_evict(1187,44239
-struct top_entry_s* top_entry_allocate(1223,45232
-void reclaim(1256,46152
-struct cache_entry_s* allocate_entry(1273,46703
-void ensure_free_page(1295,47292
-unsigned char* allocate_page(1308,47570
-void ensure_free_dirty(1326,47992
-static struct dirty_entry_s* allocate_dirty(1337,48250
-static void use_dirty(1360,48878
-void wait_for(1371,49129
-cache_seqn_t pending_push(1379,49326
-struct cache_entry_s* find_in_tree(1412,50433
-int find_in_dirty(1439,51243
-int find_in_queue(1450,51501
-int validate_queue(1460,51710
-void validate_cache(1506,52921
-void do_wait_for(1620,56677
-void flush_entry(1675,58724
-void use_entry(1806,63394
-struct cache_entry_s* make_entry(1823,64025
-void cache_put(1929,67849
-int is_congested(2079,73236
-void cache_get_trigger_readahead(2096,73784
-int should_readahead_extend(2215,78580
-void cache_get(2230,78957
-void cache_invalidate(2592,92254
-void cache_clean_dirty(2641,93804
-void wait_all(2654,94130
-static pthread_key_t pthread_cache_info_key;2675,94650
-struct rdcache_s* tls_cache_remote_data(2678,94731
-chpl_cache_taskPrvData_t* task_private_cache_data(2689,95037
-void destroy_pthread_local_cache(2696,95209
-void chpl_cache_do_init(2703,95334
-void chpl_cache_init(2727,96133
-void chpl_cache_exit(2751,96822
-void chpl_cache_fence(2757,96893
-void chpl_cache_comm_put(2791,98134
-void chpl_cache_comm_get(2813,99102
-void chpl_cache_comm_prefetch(2834,100003
-void  chpl_cache_comm_get_strd(2848,100718
-void  chpl_cache_comm_put_strd(2869,101796
-void chpl_cache_print(2891,102863
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-cache.c,6959
+#define VERIFY 293,14270
+#define CACHE_PAGES_PER_NODE 298,14430
+#define MIN_CACHE_DATA_SIZE 299,14461
+#define MAX_CACHE_DATA_SIZE 300,14501
+#define MAX_PENDING 303,14598
+#define CACHEPAGE_BITS 313,15014
+#define CACHEPAGE_SIZE 314,15040
+#define CACHEPAGE_MASK 315,15085
+#define CACHELINE_BITS 323,15379
+#define CACHELINE_SIZE 324,15404
+#define CACHELINE_MASK 325,15449
+typedef int8_t line_per_page_t;328,15558
+typedef int16_t readahead_distance_t;330,15641
+#define MAX_PAGES_PER_PREFETCH 335,15841
+#define ENABLE_READAHEAD 339,15961
+#define ENABLE_READAHEAD_TRIGGER_WITHIN_PAGE 340,15988
+#define ENABLE_READAHEAD_TRIGGER_SEQUENTIAL 341,16035
+#define MAX_SEQUENTIAL_READAHEAD_BYTES 342,16081
+static void print_time(354,16295
+static long time_duration(361,16432
+#define TIME_PRINT(367,16618
+#define TIME_PRINT(369,16687
+#define TRACE_PRINT(374,16747
+#define TRACE_PRINT(376,16785
+#define DEBUG_PRINT(380,16844
+#define DEBUG_PRINT(382,16882
+#define INFO_PRINT(386,16940
+#define INFO_PRINT(388,16977
+#define TOP_BITS 433,18610
+#define BOTTOM_BITS 434,18630
+#define OTHER_BITS 435,18653
+#define HALF_BITS 436,18717
+#define TOP_SIZE 438,18758
+#define BOTTOM_SIZE 439,18791
+#define HALF_SIZE 440,18830
+#define CACHEPAGE_BITMASK_WORDS 444,18992
+#define CACHE_LINES_PER_PAGE 447,19090
+#define CACHE_LINES_PER_PAGE_BITMASK_WORDS 451,19281
+struct cache_entry_base_s 453,19367
+  uint32_t index_bits;454,19395
+  c_nodeid_t node;455,19418
+  struct cache_entry_base_s* next;456,19437
+struct page_list_s 459,19518
+  struct page_list_s* next;460,19539
+  unsigned char* page;461,19567
+struct dirty_entry_s 467,19761
+  struct dirty_entry_s* next;469,19826
+  struct dirty_entry_s* prev;470,19856
+  struct cache_entry_s* entry;472,19936
+  uint64_t dirty[dirty474,20009
+#define QUEUE_FREE 477,20102
+#define QUEUE_AIN 478,20123
+#define QUEUE_AOUT 479,20143
+#define QUEUE_AM 480,20164
+typedef uintptr_t raddr_t;483,20239
+raddr_t raddr_max(485,20280
+raddr_t raddr_min(490,20360
+struct cache_entry_s 496,20461
+  struct cache_entry_base_s base;497,20484
+  raddr_t raddr;498,20551
+  int queue;500,20707
+  readahead_distance_t readahead_skip;502,20748
+  readahead_distance_t readahead_len;503,20787
+  struct cache_entry_s* next;505,20941
+  struct cache_entry_s* prev;506,21000
+  unsigned char* page;509,21147
+  uint64_t valid_lines[valid_lines511,21225
+  struct dirty_entry_s* dirty;513,21346
+  cache_seqn_t min_sequence_number;516,21537
+  cache_seqn_t max_put_sequence_number;521,21845
+  cache_seqn_t max_prefetch_sequence_number;524,22047
+static int check_valid_lines(531,22310
+static int any_valid_lines(537,22533
+static int set_valid_lines(542,22753
+static void unset_valid_lines(548,22978
+struct top_entry_s 564,23515
+  struct cache_entry_base_s base;565,23536
+  size_t num_entries;566,23603
+  struct cache_entry_s* bottom_index[bottom_index567,23625
+struct rdcache_s 570,23680
+  cache_seqn_t next_request_number;578,24006
+  cache_seqn_t completed_request_number;580,24094
+  c_nodeid_t last_cache_miss_read_node;584,24244
+  raddr_t last_cache_miss_read_addr;585,24284
+  int max_pages;621,26282
+  int max_entries;622,26299
+  int max_top_nodes;623,26318
+  struct page_list_s* free_pages_head;626,26356
+  struct page_list_s* free_page_list_entries_head;628,26480
+  struct cache_entry_base_s* free_entries_head;630,26569
+  unsigned int ain_max;633,26705
+  unsigned int ain_current;634,26760
+  struct cache_entry_s *ain_head;ain_head635,26818
+  struct cache_entry_s *ain_tail;ain_tail636,26852
+  unsigned int aout_max;640,26996
+  unsigned int aout_current;641,27053
+  struct cache_entry_s *aout_head;aout_head642,27113
+  struct cache_entry_s *aout_tail;aout_tail643,27148
+  unsigned int am_current;647,27338
+  struct cache_entry_s* am_lru_head;648,27394
+  struct cache_entry_s* am_lru_tail;649,27431
+  int num_dirty_pages;652,27516
+  struct dirty_entry_s *dirty_lru_head;dirty_lru_head653,27539
+  struct dirty_entry_s *dirty_lru_tail;dirty_lru_tail654,27579
+  unsigned int pending_len;658,27726
+  int pending_first_entry;659,27785
+  int pending_last_entry;660,27812
+  chpl_comm_nb_handle_t *pending;pending661,27838
+  cache_seqn_t *pending_sequence_numbers;pending_sequence_numbers662,27872
+  int max_top_entries;665,27948
+  struct cache_entry_base_s* free_top_nodes_head;666,27971
+  struct top_entry_s* top_index_list[top_index_list669,28100
+struct rdcache_s* cache_create(676,28213
+void cache_destroy(857,34311
+void cache_entry_print(863,34388
+void rdcache_print(922,36409
+int get_top_bits(949,37158
+int get_bottom_bits(961,37414
+uint32_t get_high_bits(969,37643
+uint32_t get_low_bits(975,37781
+struct cache_entry_base_s* list_search(980,37882
+struct top_entry_s* top_list_search(1001,38337
+struct cache_entry_s* bottom_list_search(1009,38694
+void top_entry_free(1017,39064
+void tree_remove(1029,39460
+#define FLUSH_DO_PAGE 1095,41435
+#define FLUSH_DO_CLEAR_DIRTY 1097,41502
+#define FLUSH_DO_PENDING 1099,41596
+#define FLUSH_DO_INVALIDATE 1101,41688
+#define FLUSH_DO_EVICT 1103,41779
+#define FLUSH_EVICT 1106,41850
+#define FLUSH_INVALIDATE_REGION 1107,41939
+#define FLUSH_INVALIDATE_PAGE 1108,42031
+#define FLUSH_PREPARE_PUT 1109,42135
+#define FLUSH_PREPARE_GET 1110,42180
+void aout_evict(1120,42603
+void ain_evict(1144,43088
+void am_evict(1188,44274
+struct top_entry_s* top_entry_allocate(1224,45267
+void reclaim(1257,46187
+struct cache_entry_s* allocate_entry(1274,46738
+void ensure_free_page(1296,47327
+unsigned char* allocate_page(1309,47605
+void ensure_free_dirty(1327,48027
+static struct dirty_entry_s* allocate_dirty(1338,48285
+static void use_dirty(1361,48913
+void wait_for(1372,49164
+cache_seqn_t pending_push(1380,49361
+struct cache_entry_s* find_in_tree(1413,50468
+int find_in_dirty(1440,51278
+int find_in_queue(1451,51536
+int validate_queue(1461,51745
+void validate_cache(1507,52956
+void do_wait_for(1621,56712
+void flush_entry(1679,58839
+void use_entry(1810,63540
+struct cache_entry_s* make_entry(1827,64171
+void cache_put(1933,67995
+int is_congested(2078,73305
+void cache_get_trigger_readahead(2095,73851
+int should_readahead_extend(2214,78645
+void cache_get(2229,79022
+void cache_invalidate(2591,92358
+void cache_clean_dirty(2640,93907
+void wait_all(2653,94233
+static pthread_key_t pthread_cache_info_key;2674,94753
+struct rdcache_s* tls_cache_remote_data(2677,94834
+chpl_cache_taskPrvData_t* task_private_cache_data(2688,95143
+void destroy_pthread_local_cache(2695,95315
+void chpl_cache_do_init(2702,95440
+void chpl_cache_init(2726,96239
+void chpl_cache_exit(2750,96931
+void chpl_cache_fence(2756,97002
+void chpl_cache_comm_put(2790,98241
+void chpl_cache_comm_get(2816,99257
+void chpl_cache_comm_prefetch(2842,100207
+void chpl_cache_comm_get_strd(2857,100909
+void chpl_cache_comm_put_strd(2879,102043
+void chpl_cache_print(2903,103180
+void chpl_cache_assert_released(2912,103475
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-comm-callbacks.c,312
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-comm-callbacks.c,312
 #define MAX_CBS_PER_EVENT 32,901
 static struct cb_info 38,975
   chpl_comm_cb_fn_t fns[fns39,999
@@ -273,114 +275,159 @@ int chpl_comm_install_callback(48,1195
 int chpl_comm_uninstall_callback(71,1639
 void chpl_comm_do_callbacks(102,2319
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-comm.c,380
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-comm.c,380
 int32_t chpl_nodeID 33,961
 int32_t chpl_numNodes 34,987
 int chpl_verbose_comm;36,1016
 int chpl_comm_diagnostics;37,1039
 int chpl_verbose_mem;38,1066
 void chpl_gen_startCommDiagnostics(51,1602
-void chpl_gen_stopCommDiagnostics(58,1846
-void chpl_gen_startCommDiagnosticsHere(65,2087
-void chpl_gen_stopCommDiagnosticsHere(72,2339
-size_t chpl_comm_getenvMaxHeapSize(80,2589
+void chpl_gen_stopCommDiagnostics(58,1832
+void chpl_gen_startCommDiagnosticsHere(65,2059
+void chpl_gen_stopCommDiagnosticsHere(72,2297
+size_t chpl_comm_getenvMaxHeapSize(80,2533
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-file-utils.c,800
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-env.c,76
+const char* chpl_get_rt_env(30,829
+chpl_bool chpl_get_rt_env_bool(44,1169
+
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-file-utils.c,834
 #define _FILE_UTILS_C20,701
 qioerr chpl_fs_chdir(35,957
 qioerr chpl_fs_chmod(43,1114
 qioerr chpl_fs_chown(51,1287
 qioerr chpl_fs_copy_metadata(59,1472
 qioerr chpl_fs_cwd(82,2282
-qioerr chpl_fs_exists(95,2596
-qioerr chpl_fs_get_uid(114,3160
-qioerr chpl_fs_get_gid(123,3355
-qioerr _chpl_fs_check_mode(132,3550
-qioerr chpl_fs_is_dir(141,3782
-qioerr chpl_fs_is_file(145,3887
-qioerr chpl_fs_is_link(149,3993
-qioerr chpl_fs_is_mount(161,4416
-qioerr chpl_fs_mkdir(256,8179
-qioerr chpl_fs_realpath(319,10680
-qioerr chpl_fs_realpath_file(330,10992
-qioerr chpl_fs_rename(348,11589
-qioerr chpl_fs_remove(358,11899
-qioerr chpl_fs_samefile(366,12058
-qioerr chpl_fs_samefile_string(394,12741
-qioerr chpl_fs_symlink(422,13476
-mode_t chpl_fs_umask(431,13670
-qioerr chpl_fs_viewmode(436,13797
+qioerr chpl_fs_exists(97,2629
+qioerr chpl_fs_get_size(116,3193
+qioerr chpl_fs_get_uid(125,3394
+qioerr chpl_fs_get_gid(134,3589
+qioerr _chpl_fs_check_mode(143,3784
+qioerr chpl_fs_is_dir(152,4016
+qioerr chpl_fs_is_file(156,4121
+qioerr chpl_fs_is_link(160,4227
+qioerr chpl_fs_is_mount(177,4790
+qioerr chpl_fs_mkdir(272,8553
+qioerr chpl_fs_realpath(335,11056
+qioerr chpl_fs_realpath_file(353,11524
+qioerr chpl_fs_rename(371,12121
+qioerr chpl_fs_remove(381,12431
+qioerr chpl_fs_samefile(389,12590
+qioerr chpl_fs_samefile_string(417,13273
+qioerr chpl_fs_symlink(445,14008
+mode_t chpl_fs_umask(454,14202
+qioerr chpl_fs_viewmode(459,14329
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-init.c,559
-static const char myFilename[myFilename44,1171
-char host_name[host_name56,1480
-chpl_main_argument chpl_gen_main_arg;59,1557
-char* chpl_executionCommand;61,1596
-int handleNonstandardArg(63,1626
-void printAdditionalHelp(78,2031
-static void recordExecutionCommand(82,2068
-void chpl_rt_preUserCodeHook(105,2784
-void chpl_rt_postUserCodeHook(125,3247
-void chpl_rt_init(140,3525
-void chpl_rt_finalize(220,5640
-void chpl_std_module_init(231,5960
-void chpl_executable_init(274,7238
-void chpl_library_init(340,8867
-void chpl_library_finalize(348,9216
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-init.c,942
+static const int32_t myFilename 47,1266
+chpl_main_argument chpl_gen_main_arg;49,1325
+char* chpl_executionCommand;51,1364
+FILE *preFile;preFile54,1419
+FILE *execute_onFile;execute_onFile55,1434
+FILE *execute_on_nbFile;execute_on_nbFile56,1456
+FILE *execute_on_fastFile;execute_on_fastFile57,1481
+FILE *compFile;compFile58,1508
+char host_name[host_name59,1524
+int THRESHOLD 60,1545
+static int EventSet 61,1628
+static void chpl_files_init(63,1662
+static void chpl_files_close(106,2821
+int handleNonstandardArg(125,3205
+void printAdditionalHelp(140,3609
+static void recordExecutionCommand(144,3646
+void chpl_rt_preUserCodeHook(167,4362
+void chpl_rt_postUserCodeHook(186,4822
+void chpl_rt_init(201,5110
+void chpl_rt_finalize(282,7310
+void chpl_std_module_init(294,7730
+void chpl_executable_init(341,9208
+void chpl_execute_module_deinit(385,10552
+void chpl_library_init(409,11032
+void chpl_library_finalize(417,11381
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-mem-desc.c,128
-#define CHPL_MEMDESC_DESC(39,1038
-static const char* rt_memDescs[rt_memDescs40,1091
-const char* chpl_mem_descString(44,1174
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-linefile-support.c,164
+static const char *savedFilename;savedFilename30,898
+typedef char fileBuff[fileBuff32,933
+void chpl_saveFilename(36,1044
+c_string chpl_lookupFilename(39,1168
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-mem-hook.c,74
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-mem-desc.c,283
+#define CHPL_MEMDESC_MACRO(41,1084
+struct md_desc_type 43,1151
+  const char* string;44,1173
+  chpl_bool track;45,1195
+static struct md_desc_type rt_md[rt_md48,1218
+#undef CHPL_MEMDESC_MACRO52,1304
+const char* chpl_mem_descString(55,1332
+chpl_bool chpl_mem_descTrack(62,1497
+
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-mem-hook.c,74
 void chpl_memhook_check_pre(34,919
-void chpl_memhook_check_post(47,1393
+void chpl_memhook_check_post(47,1392
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-mem.c,118
-static int heapInitialized 30,865
-void chpl_mem_init(33,899
-void chpl_mem_exit(39,977
-int chpl_mem_inited(44,1032
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-mem-replace-malloc.c,554
+#define DEBUG_REPLACE_MALLOC 35,1063
+struct system_allocated_ptr 40,1192
+  struct system_allocated_ptr* next;41,1222
+  void* ptr;42,1259
+  size_t len;43,1272
+static struct system_allocated_ptr* system_allocated_head;46,1290
+static void track_system_allocated(49,1400
+static int is_system_allocated(63,1744
+void* calloc(107,2846
+void* malloc(128,3345
+void* memalign(149,3818
+void* realloc(164,4235
+void free(208,5520
+int posix_memalign(227,5991
+void* valloc(255,6779
+void* pvalloc(276,7252
+void chpl_mem_replace_malloc_if_needed(297,7688
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-privatization.c,250
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-mem.c,252
+static int heapInitialized 30,885
+void chpl_mem_init(33,919
+void chpl_mem_exit(39,997
+int chpl_mem_inited(44,1052
+int chpl_posix_memalign_check_valid(48,1109
+int chpl_posix_memalign(77,1785
+void* chpl_valloc(95,2170
+void* chpl_pvalloc(100,2260
+
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-privatization.c,369
 static int64_t chpl_capPrivateObjects 25,800
 static chpl_sync_aux_t privatizationSync;26,843
-void** chpl_privateObjects;28,886
-void chpl_privatization_init(30,915
-void chpl_newPrivatizedClass(34,998
-extern void* chpl_getPrivatizedClass(63,2206
+static void** chpl_privateObjects 28,886
+void chpl_privatization_init(30,929
+static inline int64_t max(34,1012
+void chpl_newPrivatizedClass(42,1385
+void* chpl_getPrivatizedClass(74,2514
+void chpl_clearPrivatizedClass(79,2594
+int64_t chpl_numPrivatizedClasses(86,2801
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-string-support.c,242
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-string-support.c,242
 char* chpl_glom_strings(44,1472
 c_string_copy chpl_format(68,1962
 chpltypes_malloc(86,2438
-string_copy(97,2687
-string_concat(112,3078
-int string_index_of(142,4053
-string_select(152,4449
-string_index(188,5348
-string_contains(202,5671
+string_copy(97,2686
+string_concat(112,3073
+int string_index_of(142,4044
+string_select(152,4440
+string_index(188,5335
+string_contains(202,5654
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-string.c,613
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-string.c,347
 struct chpl_chpl____wide_chpl_string_s 24,778
   chpl_localeID_t locale;25,819
   chpl_string addr;26,845
   int64_t size;27,865
 typedef struct chpl_chpl____wide_chpl_string_s chpl____wide_chpl_string;29,884
 chpl_wide_string_copy(32,970
-void chpl_gen_comm_wide_string_get(54,2020
-chpl_string_widen(81,2993
-chpl_comm_wide_get_string(101,3488
-void string_from_c_string(123,4167
-string_from_c_string_copy(145,4820
-void wide_string_from_c_string(152,4957
-void c_string_from_string(172,5473
-void c_string_from_wide_string(177,5590
-c_string_copy stringMove(199,6336
-c_string_copy remoteStringCopy(230,7431
+void chpl_gen_comm_wide_string_get(54,2016
+chpl_string_widen(80,3016
+chpl_comm_wide_get_string(100,3510
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-tasks-callbacks.c,314
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-tasks-callbacks.c,314
 #define MAX_CBS_PER_EVENT 34,922
 static struct cb_info 36,952
   chpl_task_cb_fn_t fns[fns37,976
@@ -390,349 +437,434 @@ int chpl_task_install_callback(45,1156
 int chpl_task_uninstall_callback(71,1717
 void chpl_task_do_callbacks_internal(104,2477
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-tasks.c,189
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-tasks.c,189
 int32_t chpl_task_getenvNumThreadsPerLocale(39,1061
-static size_t stack_size_max(89,2315
-size_t chpl_task_getEnvCallStackSize(119,2873
-size_t chpl_task_getDefaultCallStackSize(171,4039
+static size_t stack_size_max(89,2302
+size_t chpl_task_getEnvCallStackSize(119,2860
+size_t chpl_task_getDefaultCallStackSize(171,4017
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpl-timers.c,197
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-timers.c,197
 _timevalue chpl_null_timevalue(28,806
 _timevalue chpl_now_timevalue(35,917
 int64_t chpl_timevalue_seconds(41,1018
 int64_t chpl_timevalue_microseconds(42,1084
 void chpl_timevalue_parts(44,1157
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chplcast.c,791
-static int scanningNCounts(34,926
-static int illegalFirstUnsChar(51,1305
-#define _type(59,1544
-#define _define_string_to_int_precise(61,1588
-#define _define_string_to_bigint_precise(77,2641
-_define_string_to_int_precise(109,4807
-#define _real_type(134,5611
-#define _define_string_to_float_precise(136,5659
-_define_string_to_float_precise(162,7461
-#define _define_string_to_imag_precise(165,7559
-#define _define_string_to_complex_precise(204,9976
-#define _define_string_to_type(279,15099
-#define _define_string_to_real_type(314,17377
-  enum {UNSIGNED UNSIGNED353,19780
-  enum {UNSIGNED = 0<<16, SIGNED 353,19780
-static char* ensureDecimal(376,20471
-#define NANSTRING 385,20671
-#define NEGINFSTRING 386,20695
-#define POSINFSTRING 387,20723
-real_to_c_string_copy(392,20918
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpl-topo.c,1235
+#define _DBG_P(50,1228
+#define _DBG_P(55,1476
+static chpl_bool haveTopology;58,1507
+static hwloc_topology_t topology;60,1539
+static const struct hwloc_topology_support* topoSupport;62,1574
+static chpl_bool do_set_area_membind;63,1631
+static int topoDepth;65,1670
+static int numaLevel;67,1693
+static int numNumaDomains;68,1715
+void chpl_topo_init(79,2075
+void chpl_topo_exit(164,4456
+int chpl_topo_getNumNumaDomains(173,4564
+void chpl_topo_setThreadLocality(178,4633
+c_sublocid_t chpl_topo_getThreadLocality(207,5301
+void chpl_topo_setMemLocality(245,6083
+void chpl_topo_setMemSubchunkLocality(270,6711
+void chpl_topo_touchMemFromSubloc(309,7757
+hwloc_obj_t getNumaObj(362,9039
+void alignAddrSize(373,9415
+void chpl_topo_setMemLocalityByPages(403,10216
+c_sublocid_t chpl_topo_getMemLocality(427,10930
+void report_error(465,11652
+void chpl_topo_init(478,11919
+void chpl_topo_exit(479,11949
+int chpl_topo_getNumNumaDomains(480,11979
+void chpl_topo_setThreadLocality(481,12031
+c_sublocid_t chpl_topo_getThreadLocality(482,12089
+void chpl_topo_setMemLocality(483,12163
+void chpl_topo_setMemSubchunkLocality(485,12292
+void chpl_topo_touchMemFromSubloc(488,12477
+c_sublocid_t chpl_topo_getMemLocality(490,12614
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chplexit.c,112
-#undef exit32,907
-static void chpl_exit_common(34,920
-void chpl_exit_all(51,1226
-void chpl_exit_any(56,1294
+/lustre/hzhang86/bin/chapel-15/runtime/src/chplcast.c,792
+static int scanningNCounts(35,947
+static int illegalFirstUnsChar(52,1326
+#define _type(60,1565
+#define _define_string_to_int_precise(62,1609
+#define _define_string_to_bigint_precise(88,3195
+_define_string_to_int_precise(125,5731
+#define _real_type(150,6534
+#define _define_string_to_float_precise(152,6582
+_define_string_to_float_precise(182,8678
+#define _define_string_to_imag_precise(185,8776
+#define _define_string_to_complex_precise(229,11563
+#define _define_string_to_type(313,17333
+#define _define_string_to_real_type(354,20032
+  enum {UNSIGNED UNSIGNED393,22395
+  enum {UNSIGNED = 0<<16, SIGNED 393,22395
+static char* ensureDecimal(416,23082
+#define NANSTRING 425,23282
+#define NEGINFSTRING 426,23306
+#define POSINFSTRING 427,23334
+real_to_c_string_copy(432,23529
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chplgmp.c,321
-static void* chpl_gmp_alloc(36,931
-static void* chpl_gmp_realloc(39,1039
-static void chpl_gmp_free(42,1197
-void chpl_gmp_init(46,1299
-void chpl_gmp_get_mpz(50,1405
-void chpl_gmp_get_randstate(65,1921
-uint64_t chpl_gmp_mpz_nlimbs(76,2333
-void chpl_gmp_mpz_print(81,2424
-c_string_copy chpl_gmp_mpz_get_str(89,2554
+/lustre/hzhang86/bin/chapel-15/runtime/src/chplexit.c,112
+#undef exit33,930
+static void chpl_exit_common(35,943
+void chpl_exit_all(53,1269
+void chpl_exit_any(58,1337
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chplio.c,79
+/lustre/hzhang86/bin/chapel-15/runtime/src/chplgmp.c,467
+static void* chpl_gmp_alloc(36,927
+static void* chpl_gmp_realloc(40,1022
+static void chpl_gmp_free(44,1167
+void chpl_gmp_init(48,1255
+void chpl_gmp_get_mpz(52,1361
+void chpl_gmp_get_randstate(70,1949
+uint64_t chpl_gmp_mpz_nlimbs(83,2440
+void chpl_gmp_mpz_print(87,2531
+c_string_copy chpl_gmp_mpz_get_str(93,2660
+int chpl_mpz_cmp_si(110,3209
+int chpl_mpz_cmp_ui(114,3292
+int chpl_mpz_sgn(118,3384
+int chpl_mpz_odd_p(122,3444
+int chpl_mpz_even_p(126,3508
+
+/lustre/hzhang86/bin/chapel-15/runtime/src/chplio.c,79
 chpl_string chpl_refToString(30,891
-chpl_string chpl_wideRefToString(37,1019
+chpl_string chpl_wideRefToString(37,1016
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chplmemtrack.c,1860
-chpl_bool chpl_memTrack 54,1605
-#undef malloc56,1639
-#undef calloc57,1653
-#undef free58,1667
-typedef struct memTableEntry_struct 60,1680
-  size_t number;61,1736
-  size_t size;62,1753
-  chpl_mem_descInt_t description;63,1768
-  void* memAlloc;64,1802
-  int32_t lineno;65,1820
-  c_string filename;66,1838
-  struct memTableEntry_struct* nextInBucket;67,1859
-} memTableEntry;68,1904
-#define NUM_HASH_SIZE_INDICES 70,1922
-static int hashSizes[hashSizes72,1956
-static int hashSizeIndex 76,2321
-static int hashSize 77,2351
-static memTableEntry** memTable 79,2377
-static _Bool memLeaks 81,2418
-static _Bool memLeaksTable 82,2449
-static _Bool memStats 83,2485
-static size_t memMax 84,2516
-static size_t memThreshold 85,2542
-static c_string memLog 86,2574
-static FILE* memLogFile 87,2603
-static c_string memLeaksLog 88,2635
-static size_t totalMem 90,2670
-static size_t maxMem 91,2743
-static size_t totalAllocated 92,2816
-static size_t totalFreed 93,2879
-static size_t totalEntries 94,2938
-static chpl_sync_aux_t memTrack_sync;96,3013
-void chpl_setMemFlags(99,3053
-static unsigned hash(157,5018
-static void increaseMemStat(169,5294
-static void decreaseMemStat(180,5575
-resizeTable(187,5717
-static void addMemTableEntry(214,6427
-static memTableEntry* removeMemTableEntry(241,7336
-uint64_t chpl_memoryUsed(275,8368
-void chpl_printMemStat(283,8589
-static int leakedMemTableEntryCmp(320,10778
-void chpl_printLeakedMemTable(324,10887
-void chpl_reportMemInfo(364,12308
-static int descCmp(391,13026
-void chpl_printMemTable(404,13472
-void chpl_track_malloc(492,16269
-void chpl_track_free(512,16981
-void chpl_track_realloc_pre(537,17852
-void chpl_track_realloc_post(554,18309
-void chpl_startVerboseMem(574,19065
-void chpl_stopVerboseMem(580,19261
-void chpl_startVerboseMemHere(586,19456
-void chpl_stopVerboseMemHere(590,19517
+/lustre/hzhang86/bin/chapel-15/runtime/src/chplmemtrack.c,1975
+chpl_bool chpl_memTrack 61,1923
+typedef struct memTableEntry_struct 66,2072
+  size_t number;67,2128
+  size_t size;68,2145
+  chpl_mem_descInt_t description;69,2160
+  void* memAlloc;70,2194
+  int32_t lineno;71,2212
+  int32_t filename;72,2230
+  struct memTableEntry_struct* nextInBucket;73,2250
+} memTableEntry;74,2295
+#define NUM_HASH_SIZE_INDICES 76,2313
+static int hashSizes[hashSizes78,2347
+static int hashSizeIndex 82,2712
+static int hashSize 83,2742
+static memTableEntry** memTable 85,2768
+static _Bool memStats 87,2809
+static _Bool memLeaksByType 88,2840
+static c_string memLeaksByDesc 89,2877
+static _Bool memLeaks 90,2914
+static size_t memMax 91,2945
+static size_t memThreshold 92,2971
+static c_string memLog 93,3003
+static FILE* memLogFile 94,3034
+static c_string memLeaksLog 95,3066
+static size_t totalMem 97,3103
+static size_t maxMem 98,3176
+static size_t totalAllocated 99,3249
+static size_t totalFreed 100,3312
+static size_t totalEntries 101,3371
+static chpl_sync_aux_t memTrack_sync;103,3446
+void chpl_setMemFlags(106,3486
+static unsigned hash(166,5537
+static void increaseMemStat(178,5813
+static void decreaseMemStat(189,6093
+resizeTable(196,6235
+static void addMemTableEntry(222,6944
+static memTableEntry* removeMemTableEntry(251,7875
+uint64_t chpl_memoryUsed(285,8907
+void chpl_printMemAllocStats(296,9152
+static int memTableEntryCmp(337,11364
+static void printMemAllocsByType(342,11468
+void chpl_printMemAllocsByType(400,13522
+find_desc(406,13683
+void chpl_printMemAllocsByDesc(419,14112
+static int descCmp(427,14375
+void chpl_printMemAllocs(448,15138
+printMemAllocs(453,15284
+void chpl_reportMemInfo(554,18512
+void chpl_track_malloc(585,19452
+void chpl_track_free(605,20233
+void chpl_track_realloc_pre(629,21143
+void chpl_track_realloc_post(646,21599
+void chpl_startVerboseMem(666,22422
+void chpl_stopVerboseMem(672,22618
+void chpl_startVerboseMemHere(678,22813
+void chpl_stopVerboseMemHere(682,22874
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chplsys.c,326
-#define _GNU_SOURCE30,897
-size_t chpl_getSysPageSize(55,1295
-size_t chpl_getHeapPageSize(72,1628
-uint64_t chpl_bytesPerLocale(107,2466
-size_t chpl_bytesAvailOnThisLocale(149,3871
-static void getCpuInfo(179,4722
-int chpl_getNumPhysicalCpus(234,6300
-int chpl_getNumLogicalCpus(319,8611
-c_string chpl_nodeName(402,10785
+/lustre/hzhang86/bin/chapel-15/runtime/src/chplsys.c,874
+#define _GNU_SOURCE23,808
+size_t chpl_getSysPageSize(80,1740
+static size_t heapPageSize 101,2170
+static volatile unsigned char* check_page_size_ptr;103,2203
+static unsigned char* check_page_size_base;104,2255
+static size_t check_page_size_guess;105,2299
+static unsigned char check_page_size_fault;106,2336
+static struct sigaction check_page_size_oldact;107,2380
+void check_page_size_segv_handler(110,2436
+int check_page_size(136,3379
+static int fitsInHeap(217,6150
+static void computeHeapPageSizeByGuessing(235,6717
+static void computeHeapPageSize(309,9081
+size_t chpl_getHeapPageSize(344,9960
+uint64_t chpl_bytesPerLocale(361,10275
+size_t chpl_bytesAvailOnThisLocale(403,11680
+static void getCpuInfo(433,12531
+int chpl_getNumPhysicalCpus(497,14377
+int chpl_getNumLogicalCpus(588,16713
+void chpl_moveToLastCPU(679,18826
+c_string chpl_nodeName(711,19796
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/chpltypes.c,134
-int64_t real2int(38,1036
-    _real64 r;42,1180
-    uint64_t u;43,1195
-object2int(52,1280
-const char* chpl_get_argument_i(57,1406
+/lustre/hzhang86/bin/chapel-15/runtime/src/chpltypes.c,208
+_complex128 _chpl_complex128(39,1057
+_complex64 _chpl_complex64(43,1144
+int64_t real2int(47,1229
+    _real64 r;51,1373
+    uint64_t u;52,1388
+object2int(61,1473
+const char* chpl_get_argument_i(66,1599
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/config.c,1213
-#define HASHSIZE 35,927
-typedef struct _configVarType 37,949
-  char* varName;38,999
-  const char* moduleName;39,1016
-  char* defaultValue;40,1042
-  char* setValue;41,1064
-  struct _configVarType* nextInBucket;43,1083
-  struct _configVarType* nextInstalled;44,1122
-} configVarType;45,1162
-static configVarType* configVarTable[configVarTable49,1198
-static configVarType* firstInTable 50,1247
-static configVarType* lastInTable 51,1290
-static configVarType _ambiguousConfigVar;53,1333
-static configVarType* ambiguousConfigVar 54,1375
-static void parseModVarName(64,1811
-static int aParsedString(81,2221
-void initConfigVarTable(153,4331
-static unsigned hash(162,4468
-void printConfigVarTable(171,4669
-static configVarType* lookupConfigVar(229,6322
-static void handleDeprecatedConfig(262,7269
-static void checkDeprecatedConfig(281,7949
-void initSetValue(290,8313
-const char* lookupSetValue(310,8972
-void installConfigVar(327,9390
-static configVarType* breakIntoPiecesAndLookup(350,10170
-static void handleUnexpectedConfigVar(377,11344
-int handlePossibleConfigVar(394,11993
-void parseConfigFile(439,13807
-chpl_bool chpl_config_has_value(486,15800
-c_string chpl_config_get_value(493,16017
+/lustre/hzhang86/bin/chapel-15/runtime/src/config.c,1214
+#define HASHSIZE 36,962
+typedef struct _configVarType 38,984
+  char* varName;39,1034
+  const char* moduleName;40,1051
+  char* defaultValue;41,1077
+  char* setValue;42,1099
+  struct _configVarType* nextInBucket;44,1118
+  struct _configVarType* nextInstalled;45,1157
+} configVarType;46,1197
+static configVarType* configVarTable[configVarTable50,1233
+static configVarType* firstInTable 51,1282
+static configVarType* lastInTable 52,1325
+static configVarType _ambiguousConfigVar;54,1368
+static configVarType* ambiguousConfigVar 55,1410
+static void parseModVarName(65,1846
+static int aParsedString(82,2256
+void initConfigVarTable(154,4365
+static unsigned hash(163,4502
+void printConfigVarTable(172,4703
+static configVarType* lookupConfigVar(230,6356
+static void handleDeprecatedConfig(263,7303
+static void checkDeprecatedConfig(282,7983
+void initSetValue(291,8347
+const char* lookupSetValue(311,9005
+void installConfigVar(328,9423
+static configVarType* breakIntoPiecesAndLookup(351,10199
+static void handleUnexpectedConfigVar(378,11372
+int handlePossibleConfigVar(395,12020
+void parseConfigFile(440,13850
+chpl_bool chpl_config_has_value(493,16007
+c_string chpl_config_get_value(500,16224
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/error.c,298
-int verbosity 35,917
-void chpl_warning(37,937
-static atomic_flag thisLocaleAlreadyExiting;53,1372
-void chpl_error_init(54,1417
-static void spinhaltIfAlreadyExiting(59,1510
-static void chpl_error_common(70,1757
-void chpl_error(82,2120
-void chpl_internal_error(89,2291
-void chpl_msg(97,2463
+/lustre/hzhang86/bin/chapel-15/runtime/src/error.c,495
+#define CHPL_UNWIND_NOT_LAUNCHER37,1011
+#define UNW_LOCAL_ONLY43,1156
+static int chpl_unwind_getLineNum(49,1343
+static void chpl_stack_unwind(80,2066
+int verbosity 149,4401
+void chpl_warning(151,4421
+void chpl_warning_explicit(162,4743
+static atomic_bool thisLocaleAlreadyExiting;178,5216
+void chpl_error_init(179,5261
+static void spinhaltIfAlreadyExiting(184,5354
+void chpl_error_explicit(195,5603
+void chpl_error(214,6097
+void chpl_internal_error(222,6330
+void chpl_msg(230,6502
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/gdb.c,32
+/lustre/hzhang86/bin/chapel-15/runtime/src/gdb.c,32
 void gdbShouldBreakHere(27,761
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/main.c,17
+/lustre/hzhang86/bin/chapel-15/runtime/src/main.c,17
 int main(26,821
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/main_launcher.c,653
+/lustre/hzhang86/bin/chapel-15/runtime/src/main_launcher.c,653
 chpl_main_argument chpl_gen_main_arg;41,1189
 static void chpl_launch_sanity_checks(47,1347
 chpl_run_utility1K(68,2085
 char** chpl_bundle_exec_args(195,5730
-int chpl_launch_using_exec(234,6891
-int chpl_launch_using_fork_exec(257,7406
-int chpl_launch_using_system(282,7998
-char* chpl_get_enviro_keys(294,8309
-int handleNonstandardArg(333,9320
-void printAdditionalHelp(358,10108
-#define BIN_NAME_SIZE 367,10393
-static char chpl_real_binary_name[chpl_real_binary_name368,10419
-void chpl_compute_real_binary_name(370,10470
-const char* chpl_get_real_binary_wrapper(403,11737
-const char* chpl_get_real_binary_name(412,11941
-int main(416,12026
+int chpl_launch_using_exec(234,6890
+int chpl_launch_using_fork_exec(257,7405
+int chpl_launch_using_system(282,7997
+char* chpl_get_enviro_keys(294,8308
+int handleNonstandardArg(333,9318
+void printAdditionalHelp(358,10105
+#define BIN_NAME_SIZE 367,10390
+static char chpl_real_binary_name[chpl_real_binary_name368,10416
+void chpl_compute_real_binary_name(370,10467
+const char* chpl_get_real_binary_wrapper(403,11734
+const char* chpl_get_real_binary_name(412,11938
+int main(416,12023
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/tasks/fifo/tasks-fifo.c,3873
-#define ENABLE_FORK45,1216
-#define ENABLE_PRE46,1236
-#define UNW_LOCAL_ONLY 48,1271
-static chpl_bool        initialized 55,1402
-static volatile chpl_bool canCountRunningTasks 57,1448
-static chpl_thread_mutex_t threading_lock;59,1505
-static chpl_thread_mutex_t extra_task_lock;60,1577
-static chpl_thread_mutex_t task_id_lock;61,1649
-static chpl_thread_mutex_t task_list_lock;62,1721
-                           task_pool_head;64,1821
-                           task_pool_tail;66,1917
-static int                 queued_task_cnt;68,1986
-static int                 running_task_cnt;69,2065
-static int64_t             extra_task_cnt;70,2139
-static int                 waking_thread_cnt;72,2295
-static int                 blocked_thread_cnt;74,2443
-static int                 idle_thread_cnt;76,2589
-static uint64_t            progress_cnt;78,2726
-static chpl_thread_mutex_t block_report_lock;81,2883
-static lockReport_t* lockReportHead 82,2956
-static lockReport_t* lockReportTail 83,3000
-static chpl_bool do_taskReport 85,3045
-static chpl_thread_mutex_t taskTable_lock;86,3085
-static c_string idleTaskName 88,3158
-static chpl_fn_p comm_task_fn;90,3200
-int THRESHOLD 134,5377
-static FILE *pFile;pFile139,5715
-static char buffer[buffer140,5735
-static chpl_thread_mutex_t stack_unwind_lock;141,5759
-__thread task_pool_p task_pool_node 147,6006
-void PAPIhandler_empty(149,6051
-static void enablePAPI(154,6186
-static void getEarlyStackTrace(173,6675
-static void adjustMinMaxTID(261,9546
-static void sync_wait_and_lock(281,9913
-void chpl_sync_lock(340,11747
-void chpl_sync_unlock(344,11827
-void chpl_sync_waitFullAndLock(348,11911
-void chpl_sync_waitEmptyAndLock(353,12085
-static chpl_bool chpl_thread_sync_suspend(358,12262
-static void chpl_thread_sync_awaken(376,12812
-void chpl_sync_markAndSignalFull(382,13032
-void chpl_sync_markAndSignalEmpty(388,13164
-chpl_bool chpl_sync_isFull(394,13298
-static void chpl_thread_condvar_init(399,13414
-void chpl_sync_initAux(404,13591
-void chpl_sync_destroyAux(411,13787
-void chpl_task_init(415,13848
-void chpl_task_exit(499,16428
-void chpl_task_callMain(514,16656
-void chpl_task_stdModulesInitialized(520,16727
-int chpl_task_createCommTask(558,17907
-static void comm_task_wrapper(564,18051
-void chpl_task_addToTaskList(599,19103
-void chpl_task_processTaskList(653,20937
-void chpl_task_executeTasksInList(771,24451
-void chpl_task_freeTaskList(881,27920
-void chpl_task_startMovedTask(901,28581
-static void movedTaskWrapper(941,29729
-chpl_taskID_t chpl_task_getId(967,30189
-void chpl_task_yield(972,30265
-void chpl_task_sleep(977,30321
-chpl_bool chpl_task_getSerial(981,30372
-void chpl_task_setSerial(985,30475
-uint32_t chpl_task_getMaxPar(989,30585
-c_sublocid_t chpl_task_getNumSublocales(1007,31149
-chpl_task_prvData_t* chpl_task_getPrvData(1011,31212
-size_t chpl_task_getCallStackSize(1015,31316
-uint32_t chpl_task_getNumQueuedTasks(1019,31402
-uint32_t chpl_task_getNumRunningTasks(1021,31474
-int32_t  chpl_task_getNumBlockedTasks(1026,31599
-static chpl_taskID_t get_next_task_id(1053,32169
-static thread_private_data_t* get_thread_private_data(1069,32497
-static task_pool_p get_current_ptask(1084,32806
-static void set_current_ptask(1092,32965
-static void report_locked_threads(1102,33239
-static void report_all_tasks(1126,33813
-static void SIGINT_handler(1152,34452
-static void initializeLockReportForThread(1177,35198
-static chpl_bool set_block_loc(1212,36320
-static void unset_block_loc(1245,37098
-static void check_for_deadlock(1264,37479
-thread_begin(1291,38170
-static void thread_end(1467,43833
-void begin_task(1496,44435
-launch_next_task_in_new_thread(1539,45518
-static void schedule_next_task(1587,47131
-static task_pool_p add_to_task_pool(1613,48049
-uint32_t chpl_task_getNumThreads(1661,49396
-uint32_t chpl_task_getNumIdleThreads(1665,49478
+/lustre/hzhang86/bin/chapel-15/runtime/src/tasks/fifo/tasks-fifo.c,3812
+static chpl_bool        initialized 51,1370
+static volatile chpl_bool canCountRunningTasks 53,1416
+static chpl_thread_mutex_t threading_lock;55,1473
+static chpl_thread_mutex_t extra_task_lock;56,1545
+static chpl_thread_mutex_t task_id_lock;57,1617
+static chpl_thread_mutex_t task_list_lock;58,1689
+                           task_pool_head;60,1789
+                           task_pool_tail;62,1885
+static int                 queued_task_cnt;64,1954
+static int                 running_task_cnt;65,2033
+static int64_t             extra_task_cnt;66,2107
+static int                 blocked_thread_cnt;68,2263
+static int                 idle_thread_cnt;70,2409
+static uint64_t            progress_cnt;72,2546
+static chpl_thread_mutex_t block_report_lock;75,2703
+static lockReport_t* lockReportHead 76,2776
+static lockReport_t* lockReportTail 77,2820
+static chpl_bool do_taskReport 79,2865
+static chpl_thread_mutex_t taskTable_lock;80,2905
+static chpl_fn_p comm_task_fn;82,2978
+__thread task_pool_p task_pool_node 132,5315
+chpl_thread_mutex_t stack_unwind_lock;133,5359
+#define NUMFID 134,5423
+static chpl_fn_int_t fidArray[fidArray135,5479
+static int zeroFid;136,5562
+static int findOldFid(138,5622
+static void enablePAPI(163,6073
+static void sync_wait_and_lock(288,9880
+void chpl_sync_lock(347,11713
+void chpl_sync_unlock(351,11793
+void chpl_sync_waitFullAndLock(355,11877
+void chpl_sync_waitEmptyAndLock(360,12050
+static chpl_bool chpl_thread_sync_suspend(365,12226
+static void chpl_thread_sync_awaken(383,12776
+void chpl_sync_markAndSignalFull(389,12996
+void chpl_sync_markAndSignalEmpty(395,13128
+chpl_bool chpl_sync_isFull(401,13262
+static void chpl_thread_condvar_init(406,13378
+void chpl_sync_initAux(411,13555
+static void chpl_thread_condvar_destroy(418,13751
+void chpl_sync_destroyAux(428,14182
+static void setup_main_thread_private_data(434,14368
+void chpl_task_init(473,15713
+void chpl_task_exit(523,17119
+typedef void (*main_ptr_t)main_ptr_t536,17356
+static void* do_callMain(537,17390
+void chpl_task_callMain(562,18095
+void chpl_task_stdModulesInitialized(615,19417
+int chpl_task_createCommTask(653,20683
+static void comm_task_wrapper(659,20827
+void enqueue_task(699,22159
+void dequeue_task(730,22791
+void chpl_task_addToTaskList(764,23559
+void chpl_task_executeTasksInList(809,25070
+void chpl_task_taskCallFTable(903,27759
+void taskCallBody(912,28080
+void chpl_task_startMovedTask(930,28651
+chpl_taskID_t chpl_task_getId(963,29500
+chpl_bool chpl_task_idEquals(967,29582
+char* chpl_task_idToString(971,29675
+void chpl_task_yield(979,29864
+void chpl_task_sleep(984,29920
+chpl_bool chpl_task_getSerial(1008,30549
+void chpl_task_setSerial(1012,30641
+uint32_t chpl_task_getMaxPar(1016,30740
+c_sublocid_t chpl_task_getNumSublocales(1034,31304
+chpl_task_prvData_t* chpl_task_getPrvData(1038,31367
+size_t chpl_task_getCallStackSize(1042,31471
+uint32_t chpl_task_getNumQueuedTasks(1046,31557
+uint32_t chpl_task_getNumRunningTasks(1048,31629
+int32_t  chpl_task_getNumBlockedTasks(1053,31754
+static chpl_taskID_t get_next_task_id(1080,32324
+static thread_private_data_t* get_thread_private_data(1096,32652
+static task_pool_p get_current_ptask(1111,32961
+static void set_current_ptask(1119,33120
+static void report_locked_threads(1129,33394
+static void report_all_tasks(1154,34009
+static void SIGINT_handler(1178,34592
+static void initializeLockReportForThread(1203,35338
+static chpl_bool set_block_loc(1238,36460
+static void unset_block_loc(1271,37237
+static void check_for_deadlock(1290,37618
+thread_begin(1317,38309
+static void thread_end(1495,44095
+static void maybe_add_thread(1523,44796
+task_pool_p add_to_task_pool(1555,45779
+uint32_t chpl_task_getNumThreads(1632,48496
+uint32_t chpl_task_getNumIdleThreads(1636,48578
 
-include/tasks/fifo/tasks-fifo.h,678
+include/tasks/fifo/tasks-fifo.h,1151
 #define _tasks_fifo_h_21,724
-#define CHPL_TASK_STD_MODULES_INITIALIZED 33,957
-typedef uint64_t chpl_taskID_t;47,1375
-#define chpl_nullTaskID 48,1407
-typedef pthread_cond_t chpl_thread_condvar_t;53,1463
-  volatile chpl_bool  is_full;60,1552
-  chpl_thread_mutex_t lock;61,1583
-  chpl_thread_condvar_t signal_full;62,1611
-  chpl_thread_condvar_t signal_empty;63,1689
-} chpl_sync_aux_t;65,1806
-#define CHPL_TASK_GETSUBLOC_IMPL_DECL 77,2125
-c_sublocid_t chpl_task_getSubloc(80,2186
-#define CHPL_TASK_SETSUBLOC_IMPL_DECL 88,2345
-void chpl_task_setSubloc(91,2406
-#define CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL 99,2597
-c_sublocid_t chpl_task_getRequestedSubloc(102,2667
+#define CHPL_TASK_STD_MODULES_INITIALIZED 37,997
+typedef uint64_t chpl_taskID_t;51,1415
+#define chpl_nullTaskID 52,1447
+#define CHPL_TASK_ID_STRING_MAX_LEN 54,1509
+  chpl_bool serial_state;61,1629
+  chpl_bool countRunning;62,1655
+  chpl_bool is_executeOn;63,1681
+  int lineno;64,1707
+  int filename;65,1721
+  c_sublocid_t requestedSubloc;66,1737
+  chpl_fn_int_t requested_fid;67,1771
+  chpl_fn_p requested_fn;68,1802
+  chpl_taskID_t id;69,1828
+} chpl_task_bundle_t;70,1848
+typedef pthread_cond_t chpl_thread_condvar_t;76,1901
+  volatile chpl_bool  is_full;83,1990
+  chpl_thread_mutex_t lock;84,2021
+  chpl_thread_condvar_t signal_full;85,2049
+  chpl_thread_condvar_t signal_empty;86,2127
+} chpl_sync_aux_t;88,2244
+#define CHPL_TASK_GETSUBLOC_IMPL_DECL 100,2563
+c_sublocid_t chpl_task_getSubloc(103,2624
+#define CHPL_TASK_SETSUBLOC_IMPL_DECL 111,2783
+void chpl_task_setSubloc(114,2844
+#define CHPL_TASK_GETREQUESTEDSUBLOC_IMPL_DECL 122,3035
+c_sublocid_t chpl_task_getRequestedSubloc(125,3105
+#define CHPL_TASK_SUPPORTS_REMOTE_CACHE_IMPL_DECL 133,3310
+int chpl_task_supportsRemoteCache(136,3383
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/threads/pthreads/threads-pthreads.c,1359
-  void* (*fn)fn44,1160
-  void* arg;45,1182
-} thread_func_t;46,1195
-typedef struct thread_list* thread_list_p;52,1268
-struct thread_list 53,1311
-  pthread_t     thread;54,1332
-  thread_list_p next;55,1356
-static chpl_bool       exiting 58,1382
-static pthread_mutex_t thread_info_lock;60,1456
-static int64_t         curr_thread_id 62,1530
-static thread_list_p   thread_list_head 64,1574
-static thread_list_p   thread_list_tail 65,1645
-static pthread_attr_t  thread_attributes;67,1717
-static int32_t         maxThreads 72,1849
-static uint32_t        numThreads 73,1888
-static pthread_mutex_t numThreadsLock;74,1927
-static size_t          threadCallStackSize 76,1967
-void chpl_thread_mutexInit(87,2232
-chpl_thread_mutex_p chpl_thread_mutexNew(93,2456
-void chpl_thread_mutexLock(101,2713
-void chpl_thread_mutexUnlock(107,2903
-chpl_thread_id_t chpl_thread_getId(116,3122
-void chpl_thread_yield(125,3333
-void chpl_thread_init(151,4124
-static void* initial_pthread_func(261,7596
-int chpl_thread_createCommThread(275,7811
-void chpl_thread_exit(280,7976
-chpl_bool chpl_thread_canCreate(313,8876
-int chpl_thread_create(318,8995
-static void* pthread_func(358,10523
-void chpl_thread_destroy(407,11760
-uint32_t chpl_thread_getMaxThreads(431,12433
-uint32_t chpl_thread_getNumThreads(435,12500
-size_t chpl_thread_getCallStackSize(439,12567
+/lustre/hzhang86/bin/chapel-15/runtime/src/threads/pthreads/threads-pthreads.c,2037
+  void* (*fn)fn47,1226
+  void* arg;48,1248
+} thread_func_t;49,1261
+typedef struct thread_list* thread_list_p;55,1334
+struct thread_list 56,1377
+  pthread_t     thread;57,1398
+  thread_list_p next;58,1422
+typedef struct thread_stack_list* thread_stack_list_p;62,1474
+struct thread_stack_list 63,1529
+  void*               stack;64,1556
+  pthread_t           owner_pthread;65,1585
+  thread_stack_list_p next;67,1623
+  thread_stack_list_p prec;68,1651
+chpl_bool              chpl_use_guard_page;71,1683
+chpl_bool              chpl_alloc_stack_in_heap;72,1762
+static chpl_bool       exiting 74,1842
+static pthread_mutex_t thread_info_lock;76,1916
+static pthread_mutex_t thread_stack_list_lock;77,1989
+static int64_t         curr_thread_id 79,2066
+static thread_list_p   thread_list_head 81,2110
+static thread_list_p   thread_list_tail 82,2181
+static thread_stack_list_p   thread_stack_list_head 84,2253
+static pthread_attr_t  thread_attributes;86,2314
+static int32_t         maxThreads 91,2446
+static uint32_t        numThreads 92,2485
+static pthread_mutex_t numThreadsLock;93,2524
+static size_t          threadCallStackSize 95,2564
+void chpl_init_heap_stack(112,3156
+void* chpl_alloc_pthread_stack(141,3934
+void chpl_free_pthread_stack(181,4979
+static int do_pthread_create(198,5372
+void chpl_thread_mutexInit(266,7203
+chpl_thread_mutex_p chpl_thread_mutexNew(272,7427
+void chpl_thread_mutexLock(280,7684
+void chpl_thread_mutexUnlock(286,7874
+void chpl_thread_mutexDestroy(292,8070
+chpl_thread_id_t chpl_thread_getId(300,8291
+void chpl_thread_yield(309,8502
+void chpl_thread_init(335,9293
+static void* initial_pthread_func(448,12842
+int chpl_thread_createCommThread(462,13057
+void chpl_thread_exit(467,13239
+chpl_bool chpl_thread_canCreate(526,14956
+int chpl_thread_create(531,15075
+static void* pthread_func(571,16606
+void chpl_thread_destroy(618,17830
+uint32_t chpl_thread_getMaxThreads(642,18503
+uint32_t chpl_thread_getNumThreads(646,18570
+size_t chpl_thread_getCallStackSize(650,18637
 
 include/threads/pthreads/threads-pthreads.h,364
 #define _threads_pthreads_h_21,730
@@ -744,236 +876,304 @@ void* chpl_thread_getPrivateData(49,1556
 #define CHPL_THREAD_SETPRIVATEDATA_IMPL_DECL 56,1757
 void chpl_thread_setPrivateData(59,1825
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/timers/generic/timers-generic.c,30
+/lustre/hzhang86/bin/chapel-15/runtime/src/timers/generic/timers-generic.c,30
 _real64 chpl_now_time(27,788
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/comm/gasnet/comm-gasnet-locales.c,88
+/lustre/hzhang86/bin/chapel-15/runtime/src/comm/gasnet/comm-gasnet-locales.c,88
 int64_t chpl_comm_default_num_locales(25,789
 void chpl_comm_verify_num_locales(34,951
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/comm/gasnet/comm-gasnet.c,4528
-static chpl_sync_aux_t chpl_comm_diagnostics_sync;50,1418
-static chpl_commDiagnostics chpl_comm_commDiagnostics;51,1469
-static int chpl_comm_no_debug_private 52,1524
-static gasnet_seginfo_t* seginfo_table 53,1567
-static uint16_t fork_serial_number 55,1615
-__thread fork_t *param_plain;param_plain56,1704
-__thread fork_t *param_nb;param_nb57,1734
-__thread fork_t *param_large;param_large58,1761
-__thread fork_t *param_nb_large;param_nb_large59,1791
-#define NUMFORK 60,1824
-  int caller;62,1931
-  int callee;63,1945
-  chpl_fn_int_t fid;64,1959
-} forkID_t;65,1980
-static forkID_t forkInfoArray[forkInfoArray67,2055
-static int zeroFork;68,2095
-static int findOldForkInfo(72,2206
-#define AckArg0(103,3179
-#define AckArg1(105,3301
-#define GASNET_Safe(111,3482
-#define GASNET_Safe_Retval(130,4536
-  atomic_uint_least32_t count;154,5833
-  uint_least32_t        target;155,5864
-  volatile int          flag;156,5896
-} done_t;157,5926
-#define INIT_DONE_OBJ(162,5975
-  void*   ack;182,6809
-  int     id;183,6824
-  int     size;184,6887
-  char    data[data185,6923
-} priv_bcast_t;186,6951
-  void* ack;189,6985
-  int   id;190,6998
-  int   size;191,7059
-  int   offset;192,7093
-  char  data[data193,7138
-} priv_bcast_large_t;194,7164
-#define FORK 199,7209
-#define FORK_LARGE 200,7255
-#define FORK_NB 201,7322
-#define FORK_NB_LARGE 202,7370
-#define FORK_FAST 203,7438
-#define SIGNAL 204,7515
-#define PRIV_BCAST 205,7568
-#define PRIV_BCAST_LARGE 206,7643
-#define FREE 207,7721
-#define EXIT_ANY 208,7768
-#define BCAST_SEGINFO 209,7815
-static void AM_fork_fast(211,7878
-static void fork_wrapper(224,8242
-static void AM_fork(239,8679
-static void fork_large_wrapper(248,9090
-static void AM_fork_large(278,10316
-static void fork_nb_wrapper(288,10776
-static void AM_fork_nb(300,11083
-static void fork_nb_large_wrapper(312,11613
-static void AM_fork_nb_large(335,12456
-static void AM_signal(345,12925
-static void AM_priv_bcast(356,13379
-static void AM_priv_bcast_large(365,13730
-static void AM_free(374,14119
-static void AM_exit_any(388,14533
-static int bcast_seginfo_done 401,15155
-static void AM_bcast_seginfo(402,15190
-static gasnet_handlerentry_t ftable[ftable409,15425
-chpl_comm_nb_handle_t chpl_comm_put_nb(426,15875
-chpl_comm_nb_handle_t chpl_comm_get_nb(445,16506
-int chpl_comm_test_nb_complete(464,17137
-void chpl_comm_wait_nb_some(469,17227
-int chpl_comm_try_nb_some(475,17435
-int chpl_comm_is_in_segment(481,17660
-int32_t chpl_comm_getMaxThreads(506,18157
-static volatile int pollingRunning;520,18769
-static volatile int pollingQuit;521,18805
-static void polling(523,18839
-static void set_max_segsize_env_var(532,18997
-static void set_max_segsize(541,19306
-void chpl_comm_init(568,19967
-#undef malloc582,20477
-#define malloc 645,23337
-void chpl_comm_post_mem_init(651,23446
-int chpl_comm_numPollingTasks(653,23486
-int chpl_comm_run_in_gdb(660,23575
-void chpl_comm_post_task_init(664,23669
-void chpl_comm_rollcall(683,24132
-void chpl_comm_desired_shared_heap(689,24333
-void chpl_comm_broadcast_global_vars(701,24767
-void chpl_comm_broadcast_private(712,25097
-void chpl_comm_barrier(769,27315
-void chpl_comm_pre_task_exit(793,28147
-static void exit_common(807,28403
-static void exit_any_dirty(823,28792
-static void exit_any_clean(843,29270
-void chpl_comm_exit(859,29773
-void  chpl_comm_put(869,29971
-void  chpl_comm_get(890,30840
-void  chpl_comm_get_strd(915,31871
-void  chpl_comm_put_strd(966,34104
-void  chpl_comm_fork(1018,36414
-void  chpl_comm_fork_nb(1091,38681
-void  chpl_comm_fork_fast(1171,41569
-void chpl_comm_make_progress(1240,43786
-void chpl_startVerboseComm(1246,43846
-void chpl_stopVerboseComm(1254,44101
-void chpl_startVerboseCommHere(1262,44355
-void chpl_stopVerboseCommHere(1266,44418
-void chpl_startCommDiagnostics(1270,44480
-void chpl_stopCommDiagnostics(1278,44747
-void chpl_startCommDiagnosticsHere(1286,45013
-void chpl_stopCommDiagnosticsHere(1290,45084
-void chpl_resetCommDiagnosticsHere(1294,45154
-void chpl_getCommDiagnosticsHere(1300,45363
-uint64_t chpl_numCommGets(1306,45600
-uint64_t chpl_numCommNBGets(1310,45677
-uint64_t chpl_numCommPuts(1314,45759
-uint64_t chpl_numCommNBPuts(1318,45836
-uint64_t chpl_numCommTestNB(1322,45918
-uint64_t chpl_numCommWaitNB(1326,46001
-uint64_t chpl_numCommTryNB(1330,46084
-uint64_t chpl_numCommFastForks(1334,46165
-uint64_t chpl_numCommForks(1338,46253
-uint64_t chpl_numCommNBForks(1342,46332
-void chpl_comm_gasnet_help_register_global_var(1347,46417
+/lustre/hzhang86/bin/chapel-15/runtime/src/comm/gasnet/comm-gasnet.c,5773
+static chpl_sync_aux_t chpl_comm_diagnostics_sync;52,1505
+static chpl_commDiagnostics chpl_comm_commDiagnostics;53,1556
+static int chpl_comm_no_debug_private 54,1611
+static gasnet_seginfo_t* seginfo_table 55,1654
+static uint16_t fork_serial_number 57,1702
+__thread chpl_comm_on_bundle_t *param_plain;param_plain58,1791
+__thread chpl_comm_on_bundle_t *param_nb;param_nb59,1836
+__thread chpl_comm_on_bundle_t *param_large;param_large60,1878
+__thread chpl_comm_on_bundle_t *param_nb_large;param_nb_large61,1923
+#define NUMFORK 62,1971
+  int caller;64,2069
+  int callee;65,2083
+  chpl_fn_int_t fid;66,2097
+} forkID_t;67,2118
+static forkID_t forkInfoArray[forkInfoArray69,2193
+static int zeroFork;70,2233
+static int findOldForkInfo(74,2344
+gasnet_handlerarg_t get_arg_from_ptr0(107,3444
+gasnet_handlerarg_t get_arg_from_ptr1(114,3644
+uintptr_t get_uintptr_from_args(121,3831
+void* get_ptr_from_args(128,4043
+#define Arg0(137,4249
+#define Arg1(138,4303
+#define GASNET_Safe(143,4426
+#define GASNET_Safe_Retval(162,5480
+  atomic_uint_least32_t count;186,6777
+  uint_least32_t        target;187,6808
+  volatile int          flag;188,6840
+} done_t;189,6870
+void init_done_obj(195,6933
+void wait_done_obj(202,7087
+  c_nodeid_t    caller;215,7310
+  c_sublocid_t  subloc;216,7334
+  void*         ack;218,7359
+  chpl_bool     serial_state;220,7381
+  chpl_fn_int_t fid;221,7455
+  uint16_t      payload_size;222,7476
+} small_fork_hdr_t;224,7507
+  small_fork_hdr_t hdr;227,7545
+  void*            arg;228,7569
+  size_t           arg_size;229,7593
+} large_fork_t;230,7622
+#define MAX_SMALL_FORK_SIZE 232,7639
+  unsigned char space[space235,7689
+} small_fork_space_t;236,7733
+  small_fork_hdr_t   small;239,7772
+  large_fork_t       large;240,7800
+  small_fork_space_t space;241,7828
+} special_fork_t;242,7856
+  chpl_comm_on_bundle_t bundle;245,7892
+  special_fork_t        space;246,7924
+} small_fork_task_t;247,7955
+  chpl_comm_on_bundle_t bundle;250,7994
+  large_fork_t          large;251,8026
+} large_fork_task_t;252,8057
+  void*   ack;255,8096
+  int     id;256,8111
+  int     size;257,8174
+  char    data[data258,8210
+} priv_bcast_t;259,8238
+  void* ack;262,8272
+  int   id;263,8285
+  int   size;264,8346
+  int   offset;265,8380
+  char  data[data266,8425
+} priv_bcast_large_t;267,8451
+  void* ack;270,8491
+  void* tgt;271,8530
+  void* src;272,8568
+  size_t size;273,8606
+} xfer_info_t;274,8641
+  FORK 281,8695
+  FORK_SMALL,282,8739
+  FORK_LARGE,283,8789
+  FORK_NB,284,8854
+  FORK_NB_SMALL,285,8899
+  FORK_NB_LARGE,286,8950
+  FORK_FAST,287,9016
+  FORK_FAST_SMALL,288,9091
+  SIGNAL,290,9167
+  SIGNAL_LONG,291,9237
+  PRIV_BCAST,292,9306
+  PRIV_BCAST_LARGE,293,9379
+  FREE,294,9452
+  EXIT_ANY,295,9497
+  BCAST_SEGINFO,296,9567
+  DO_REPLY_PUT,297,9627
+  DO_COPY_PAYLOAD 298,9688
+} AM_handler_function_idx_t;299,9750
+static void AM_fork_fast(301,9780
+size_t setup_small_fork_task(314,10197
+size_t setup_large_fork_task(332,10742
+static void AM_fork_fast_small(347,11183
+static void fork_wrapper(365,11718
+static void AM_fork(374,12026
+static void AM_fork_small(383,12471
+static void fork_large_wrapper(400,13027
+static void AM_fork_large(440,14242
+static void fork_nb_wrapper(455,14783
+static void AM_fork_nb(461,14952
+static void AM_fork_nb_small(473,15474
+static void fork_nb_large_wrapper(491,16087
+static void AM_fork_nb_large(527,17144
+static void AM_signal(542,17691
+static void AM_signal_long(551,18057
+static void AM_priv_bcast(561,18481
+static void AM_priv_bcast_large(570,18826
+static void AM_free(579,19209
+static void AM_exit_any(587,19491
+static int bcast_seginfo_done 600,20115
+static void AM_bcast_seginfo(601,20150
+static void AM_reply_put(611,20567
+void AM_copy_payload(623,20952
+static gasnet_handlerentry_t ftable[ftable634,21311
+chpl_comm_nb_handle_t chpl_comm_put_nb(657,21979
+chpl_comm_nb_handle_t chpl_comm_get_nb(695,23133
+int chpl_comm_test_nb_complete(733,24291
+void chpl_comm_wait_nb_some(738,24381
+int chpl_comm_try_nb_some(744,24589
+int chpl_comm_addr_gettable(750,24814
+int32_t chpl_comm_getMaxThreads(775,25311
+static volatile int pollingRunning;789,25923
+static volatile int pollingQuit;790,25959
+static void polling(792,25993
+static void set_max_segsize_env_var(801,26151
+static void set_max_segsize(810,26457
+void chpl_comm_init(837,27118
+void chpl_comm_post_mem_init(923,30798
+int chpl_comm_numPollingTasks(925,30838
+int chpl_comm_run_in_gdb(932,30927
+void chpl_comm_post_task_init(936,31021
+void chpl_comm_rollcall(955,31484
+void chpl_comm_desired_shared_heap(961,31685
+void chpl_comm_broadcast_global_vars(973,32119
+void chpl_comm_broadcast_private(984,32445
+void chpl_comm_barrier(1041,34656
+void chpl_comm_pre_task_exit(1065,35488
+static void exit_common(1079,35744
+static void exit_any_dirty(1095,36133
+static void exit_any_clean(1115,36611
+void chpl_comm_exit(1131,37114
+void  chpl_comm_put(1141,37312
+void  chpl_comm_get(1223,40352
+void  chpl_comm_get_strd(1352,44656
+void  chpl_comm_put_strd(1419,47258
+void  execute_on_common(1483,49838
+void  chpl_comm_execute_on(1597,53491
+void  chpl_comm_execute_on_nb(1634,54752
+void  chpl_comm_execute_on_fast(1681,56457
+void chpl_comm_make_progress(1719,57765
+void chpl_startVerboseComm(1725,57825
+void chpl_stopVerboseComm(1733,58080
+void chpl_startVerboseCommHere(1741,58334
+void chpl_stopVerboseCommHere(1745,58397
+void chpl_startCommDiagnostics(1749,58459
+void chpl_stopCommDiagnostics(1757,58726
+void chpl_startCommDiagnosticsHere(1765,58992
+void chpl_stopCommDiagnosticsHere(1769,59063
+void chpl_resetCommDiagnosticsHere(1773,59133
+void chpl_getCommDiagnosticsHere(1779,59342
+void chpl_comm_gasnet_help_register_global_var(1785,59579
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/launch/gasnetrun_ibv/launch-gasnetrun_ibv.c,262
+/lustre/hzhang86/bin/chapel-15/runtime/src/launch/gasnetrun_ibv/launch-gasnetrun_ibv.c,262
 #define LAUNCH_PATH_HELP 26,806
 #define WRAP_TO_STR(27,856
 #define TO_STR(28,889
 static char _nlbuf[_nlbuf32,946
 static char** chpl_launch_create_argv(33,970
 int chpl_launch(50,1450
-int chpl_launch_handle_arg(62,1963
-void chpl_launch_print_help(68,2106
+int chpl_launch_handle_arg(62,1962
+void chpl_launch_print_help(68,2104
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/mem/dlmalloc/mem-dlmalloc.c,99
-mspace chpl_dlmalloc_heap;34,938
-void chpl_mem_layerInit(37,967
-void chpl_mem_layerExit(49,1272
+/lustre/hzhang86/bin/chapel-15/runtime/src/mem/jemalloc/mem-jemalloc.c,1273
+typedef struct shared_heap 40,1046
+  void* base;41,1075
+  size_t size;42,1089
+  size_t cur_offset;43,1104
+  pthread_mutex_t alloc_lock;44,1125
+} shared_heap_t;45,1155
+static shared_heap_t* heaps;47,1173
+static int get_num_heaps(49,1203
+static inline int get_nearby_heap(77,1896
+static void setupLocalizedHeaps(91,2231
+static inline void* alignHelper(145,3945
+static void* chunk_alloc(160,4504
+static bool null_dalloc(217,6397
+static bool null_commit(220,6502
+static bool null_decommit(223,6621
+static bool null_purge(226,6742
+static bool null_split(229,6860
+static bool null_merge(232,6994
+#define DECLARE_GET_MALLCTL_VALUE(239,7217
+#undef DECLARE_GET_MALLCTL_VALUE253,7721
+static unsigned get_num_arenas(257,7784
+static void initialize_arenas(262,7956
+static void replaceChunkHooks(288,8902
+static unsigned get_num_small_classes(315,9610
+static unsigned get_num_large_classes(319,9712
+static unsigned get_num_small_and_large_classes(323,9815
+static void get_small_and_large_class_sizes(328,10010
+static bool addressNotInAnyHeap(349,10711
+static void useUpMemNotInHeap(373,11637
+static void initializeSharedHeap(404,13016
+void chpl_mem_layerInit(415,13207
+void chpl_mem_layerExit(442,14068
+chpl_bool chpl_mem_impl_alloc_localizes(455,14350
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/qio/regexp/re2/re2-interface.cc,1303
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/regexp/re2/re2-interface.cc,1302
 #define CHPL_RE24,73
-  #undef printf20,416
-struct re_t 30,523
-  RE2 re;re_t::re31,537
-  qbytes_refcnt_t ref_cnt;re_t::ref_cnt32,547
-  re_t(re_t::re_t35,674
-#define REGEXP_CACHE_SIZE 45,958
-struct cache_elem 46,986
-  int64_t date;cache_elem::date47,1006
-  re_t* re;cache_elem::re48,1022
-struct re_cache 51,1038
-  int64_t date;re_cache::date52,1056
-  cache_elem elems[re_cache::elems53,1072
-static pthread_key_t key;55,1114
-static pthread_once_t key_once 56,1140
-void make_key(59,1200
-re_cache* local_cache(65,1280
-void qio_re_options_to_re2_options(78,1592
-void re2_options_to_qio_re_options(91,2034
-bool equal_options(104,2469
-void re_free(117,2980
-re_t* local_cache_get(125,3067
-void qio_regexp_init_default_options(174,4666
-void qio_regexp_create_compile(187,5014
-void qio_regexp_create_compile_flags(198,5537
-void qio_regexp_retain(214,6118
-void qio_regexp_release(221,6272
-void qio_regexp_get_options(229,6459
-void qio_regexp_get_pattern(236,6681
-int64_t qio_regexp_get_ncaptures(242,6849
-qio_bool qio_regexp_ok(247,6991
-const char* qio_regexp_error(253,7103
-qio_bool qio_regexp_match(259,7244
-int64_t qio_regexp_replace(301,8647
-int qio_regexp_channel_read_byte(331,9619
-void qio_regexp_channel_discard(339,9831
-qioerr qio_regexp_channel_match(367,10605
+  #undef printf19,407
+struct re_t 28,512
+  RE2 re;re_t::re29,526
+  qbytes_refcnt_t ref_cnt;re_t::ref_cnt30,536
+  re_t(re_t::re_t33,663
+#define REGEXP_CACHE_SIZE 43,947
+struct cache_elem 44,975
+  int64_t date;cache_elem::date45,995
+  re_t* re;cache_elem::re46,1011
+struct re_cache 49,1027
+  int64_t date;re_cache::date50,1045
+  cache_elem elems[re_cache::elems51,1061
+static pthread_key_t key;53,1103
+static pthread_once_t key_once 54,1129
+void make_key(57,1189
+re_cache* local_cache(63,1269
+void qio_re_options_to_re2_options(76,1581
+void re2_options_to_qio_re_options(89,2023
+bool equal_options(102,2458
+void re_free(115,2969
+re_t* local_cache_get(123,3056
+void qio_regexp_init_default_options(172,4655
+void qio_regexp_create_compile(185,5003
+void qio_regexp_create_compile_flags(196,5526
+void qio_regexp_retain(212,6107
+void qio_regexp_release(219,6261
+void qio_regexp_get_options(227,6448
+void qio_regexp_get_pattern(234,6670
+int64_t qio_regexp_get_ncaptures(240,6838
+qio_bool qio_regexp_ok(245,6980
+const char* qio_regexp_error(251,7092
+qio_bool qio_regexp_match(257,7233
+int64_t qio_regexp_replace(299,8651
+int qio_regexp_channel_read_byte(329,9623
+void qio_regexp_channel_discard(337,9835
+qioerr qio_regexp_channel_match(365,10609
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/qio/auxFilesys/hdfs/qio_plugin_hdfs.c,1381
-#define QIOPLUGIN_HDFS_C21,775
-#define _DARWIN_C_SOURCE25,850
-#define _GNU_SOURCE30,932
-#define to_hdfs_file(43,1171
-#define to_hdfs_fs(44,1211
-#define CREATE_ERROR(46,1248
-#define EREMOTEIO 55,1466
-struct hdfs_file 59,1517
-  hdfsFile file;60,1536
-  const char* pathnm;61,1571
-struct hdfs_fs 65,1655
-  qbytes_refcnt_t ref_cnt;66,1672
-  hdfsFS          hfs;67,1729
-  const char*     fs_name;68,1782
-  int             fs_port;69,1832
-qioerr hdfs_readv 72,1871
-qioerr hdfs_pwritev(105,2616
-qioerr hdfs_writev(113,2914
-qioerr hdfs_preadv 141,3522
-qioerr hdfs_disconnect_and_free(177,4317
-void hdfs_do_release(195,4621
-qioerr hdfs_close(200,4713
-qioerr hdfs_connect(215,5036
-qioerr hdfs_disconnect(238,5506
-qioerr hdfs_open(250,6100
-qioerr hdfs_seek(293,7108
-qioerr hdfs_getlength(315,7665
-qioerr hdfs_fsync(325,7980
-qioerr hdfs_getcwd(340,8238
-qioerr hdfs_getpath(379,9187
-qioerr hdfs_get_chunk(416,10142
-int hdfs_get_fs_type(429,10471
-qio_file_functions_t hdfs_function_struct 434,10539
-const qio_file_functions_ptr_t hdfs_function_struct_ptr 451,10843
-char* get_locale_name(456,10962
-qioerr hdfs_locales_for_range(464,11114
-void hdfs_create_locale_mapping(498,11963
-char **hdfs_alloc_array(hdfs_alloc_array503,12087
-qioerr hdfs_get_owners_for_bytes(508,12190
-qioerr hdfs_get_owners(563,14046
-hdfs_block_byte_map_t hdfs_index_array(568,14287
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/auxFilesys/hdfs/qio_plugin_hdfs.c,1382
+#define QIOPLUGIN_HDFS_C21,773
+#define _DARWIN_C_SOURCE25,848
+#define _GNU_SOURCE30,930
+#define to_hdfs_file(43,1169
+#define to_hdfs_fs(44,1209
+#define CREATE_ERROR(46,1246
+#define EREMOTEIO 55,1464
+struct hdfs_file 59,1515
+  hdfsFile file;60,1534
+  const char* pathnm;61,1569
+struct hdfs_fs 65,1653
+  qbytes_refcnt_t ref_cnt;66,1670
+  hdfsFS          hfs;67,1727
+  const char*     fs_name;68,1780
+  int             fs_port;69,1830
+qioerr hdfs_readv 72,1869
+qioerr hdfs_pwritev(105,2614
+qioerr hdfs_writev(113,2912
+qioerr hdfs_preadv 141,3520
+qioerr hdfs_disconnect_and_free(214,5117
+void hdfs_do_release(232,5421
+qioerr hdfs_close(237,5513
+qioerr hdfs_connect(252,5836
+qioerr hdfs_disconnect(275,6306
+qioerr hdfs_open(287,6900
+qioerr hdfs_seek(330,7907
+qioerr hdfs_getlength(353,8564
+qioerr hdfs_fsync(363,8879
+qioerr hdfs_getcwd(378,9137
+qioerr hdfs_getpath(417,10086
+qioerr hdfs_get_chunk(454,11041
+int hdfs_get_fs_type(467,11370
+qio_file_functions_t hdfs_function_struct 472,11438
+const qio_file_functions_ptr_t hdfs_function_struct_ptr 489,11742
+char* get_locale_name(494,11861
+qioerr hdfs_locales_for_range(502,12013
+void hdfs_create_locale_mapping(536,12862
+char **hdfs_alloc_array(hdfs_alloc_array541,12986
+qioerr hdfs_get_owners_for_bytes(546,13089
+qioerr hdfs_get_owners(601,14945
+hdfs_block_byte_map_t hdfs_index_array(606,15186
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/qio/auxFilesys/hdfs/qio_plugin_hdfs_stubs.c,212
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/auxFilesys/hdfs/qio_plugin_hdfs_stubs.c,212
 #define QIOPLUGIN_HDFS_C20,701
 #define _DARWIN_C_SOURCE24,776
 #define _GNU_SOURCE29,858
@@ -981,7 +1181,7 @@ hdfs_block_byte_map_t hdfs_index_array(568,14287
 qioerr hdfs_readv(51,1171
 const qio_file_functions_ptr_t hdfs_function_struct_ptr 115,3873
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/qio/auxFilesys/curl/qio_plugin_curl.c,8189
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/auxFilesys/curl/qio_plugin_curl.c,8189
 #define to_curl_handle(28,828
 struct str_t 30,873
   char*  mem;31,888
@@ -1001,195 +1201,195 @@ struct curl_iovec_t 55,2170
   int     curr;61,2581
 size_t buf_writer(69,2928
 size_t read_data(128,5465
-size_t chpl_curl_write_string(170,7254
-qioerr  curl_preadv_internal(188,7676
-qioerr curl_readv(238,9139
-qioerr curl_preadv(244,9327
-qioerr curl_writev(250,9534
-int startWith(288,10845
-int curl_seekable(294,10970
-qioerr curl_open(340,12612
-qioerr curl_close(405,14281
-qioerr curl_seek(428,15171
-qioerr curl_getpath(455,15967
-qioerr curl_getlength(462,16104
-int curl_get_fs_type(475,16418
-qioerr chpl_curl_set_opt(485,16768
-qioerr chpl_curl_perform(508,17519
-qioerr chpl_curl_slist_append(517,17719
-void chpl_curl_slist_free(524,17899
-qio_file_functions_t curl_function_struct 528,17976
-const qio_file_functions_ptr_t curl_function_struct_ptr 543,18393
-const int curlopt_file 545,18475
-const int curlopt_url 546,18536
-const int curlopt_port 547,18596
-const int curlopt_proxy 548,18657
-const int curlopt_userpwd 549,18719
-const int curlopt_proxyuserpwd 550,18783
-const int curlopt_range 551,18852
-const int curlopt_infile 552,18914
-const int curlopt_errorbuffer 553,18977
-const int curlopt_writefunction 554,19045
-const int curlopt_readfunction 555,19115
-const int curlopt_timeout 556,19184
-const int curlopt_infilesize 557,19248
-const int curlopt_postfields 558,19315
-const int curlopt_referer 559,19382
-const int curlopt_ftpport 560,19446
-const int curlopt_useragent 561,19510
-const int curlopt_low_speed_limit 562,19576
-const int curlopt_low_speed_time 563,19648
-const int curlopt_resume_from 564,19719
-const int curlopt_cookie 565,19787
-const int curlopt_httpheader 566,19850
-const int curlopt_httppost 567,19917
-const int curlopt_sslcert 568,19982
-const int curlopt_keypasswd 569,20046
-const int curlopt_crlf 570,20112
-const int curlopt_quote 571,20173
-const int curlopt_writeheader 572,20235
-const int curlopt_cookiefile 573,20303
-const int curlopt_sslversion 574,20370
-const int curlopt_timecondition 575,20437
-const int curlopt_timevalue 576,20507
-const int curlopt_customrequest 577,20573
-const int curlopt_stderr 578,20643
-const int curlopt_postquote 579,20706
-const int curlopt_writeinfo 580,20772
-const int curlopt_verbose 581,20838
-const int curlopt_header 582,20902
-const int curlopt_noprogress 583,20965
-const int curlopt_nobody 584,21032
-const int curlopt_failonerror 585,21095
-const int curlopt_upload 586,21163
-const int curlopt_post 587,21226
-const int curlopt_dirlistonly 588,21287
-const int curlopt_append 589,21355
-const int curlopt_netrc 590,21418
-const int curlopt_followlocation 591,21480
-const int curlopt_transfertext 592,21551
-const int curlopt_put 593,21620
-const int curlopt_progressfunction 594,21680
-const int curlopt_progressdata 595,21753
-const int curlopt_autoreferer 596,21822
-const int curlopt_proxyport 597,21890
-const int curlopt_postfieldsize 598,21956
-const int curlopt_httpproxytunnel 599,22026
-const int curlopt_interface 600,22098
-const int curlopt_krblevel 601,22164
-const int curlopt_ssl_verifypeer 602,22229
-const int curlopt_cainfo 603,22300
-const int curlopt_maxredirs 604,22363
-const int curlopt_filetime 605,22429
-const int curlopt_telnetoptions 606,22494
-const int curlopt_maxconnects 607,22564
-const int curlopt_closepolicy 608,22632
-const int curlopt_fresh_connect 609,22700
-const int curlopt_forbid_reuse 610,22770
-const int curlopt_random_file 611,22839
-const int curlopt_egdsocket 612,22907
-const int curlopt_connecttimeout 613,22973
-const int curlopt_headerfunction 614,23044
-const int curlopt_httpget 615,23115
-const int curlopt_ssl_verifyhost 616,23179
-const int curlopt_cookiejar 617,23250
-const int curlopt_ssl_cipher_list 618,23316
-const int curlopt_http_version 619,23388
-const int curlopt_ftp_use_epsv 620,23457
-const int curlopt_sslcerttype 621,23526
-const int curlopt_sslkey 622,23594
-const int curlopt_sslkeytype 623,23657
-const int curlopt_sslengine 624,23724
-const int curlopt_sslengine_default 625,23790
-const int curlopt_dns_use_global_cache 626,23864
-const int curlopt_dns_cache_timeout 627,23941
-const int curlopt_prequote 628,24015
-const int curlopt_debugfunction 629,24080
-const int curlopt_debugdata 630,24150
-const int curlopt_cookiesession 631,24216
-const int curlopt_capath 632,24286
-const int curlopt_buffersize 633,24349
-const int curlopt_nosignal 634,24416
-const int curlopt_share 635,24481
-const int curlopt_proxytype 636,24543
-const int curlopt_encoding 637,24609
-const int curlopt_private 638,24674
-const int curlopt_http200aliases 639,24738
-const int curlopt_unrestricted_auth 640,24809
-const int curlopt_ftp_use_eprt 641,24883
-const int curlopt_httpauth 642,24952
-const int curlopt_ssl_ctx_function 643,25017
-const int curlopt_ssl_ctx_data 644,25090
-const int curlopt_ftp_create_missing_dirs 645,25159
-const int curlopt_proxyauth 646,25239
-const int curlopt_ftp_response_timeout 647,25305
-const int curlopt_ipresolve 648,25382
-const int curlopt_maxfilesize 649,25448
-const int curlopt_infilesize_large 650,25516
-const int curlopt_resume_from_large 651,25589
-const int curlopt_maxfilesize_large 652,25663
-const int curlopt_netrc_file 653,25737
-const int curlopt_use_ssl 654,25804
-const int curlopt_postfieldsize_large 655,25868
-const int curlopt_tcp_nodelay 656,25944
-const int curlopt_ftpsslauth 657,26012
-const int curlopt_ioctlfunction 658,26079
-const int curlopt_ioctldata 659,26149
-const int curlopt_ftp_account 660,26215
-const int curlopt_cookielist 661,26283
-const int curlopt_ignore_content_length 662,26350
-const int curlopt_ftp_skip_pasv_ip 663,26428
-const int curlopt_ftp_filemethod 664,26501
-const int curlopt_localport 665,26572
-const int curlopt_localportrange 666,26638
-const int curlopt_connect_only 667,26709
-const int curlopt_conv_from_network_function 668,26778
-const int curlopt_conv_to_network_function 669,26861
-const int curlopt_conv_from_utf8_function 670,26942
-const int curlopt_max_send_speed_large 671,27022
-const int curlopt_max_recv_speed_large 672,27099
-const int curlopt_ftp_alternative_to_user 673,27176
-const int curlopt_sockoptfunction 674,27256
-const int curlopt_sockoptdata 675,27328
-const int curlopt_ssl_sessionid_cache 676,27396
-const int curlopt_ssh_auth_types 677,27472
-const int curlopt_ssh_public_keyfile 678,27543
-const int curlopt_ssh_private_keyfile 679,27618
-const int curlopt_ftp_ssl_ccc 680,27694
-const int curlopt_timeout_ms 681,27762
-const int curlopt_connecttimeout_ms 682,27829
-const int curlopt_http_transfer_decoding 683,27903
-const int curlopt_http_content_decoding 684,27982
-const int curlopt_new_file_perms 685,28060
-const int curlopt_new_directory_perms 686,28131
-const int curlopt_postredir 687,28207
-const int curlopt_ssh_host_public_key_md5 688,28273
-const int curlopt_opensocketfunction 689,28353
-const int curlopt_opensocketdata 690,28428
-const int curlopt_copypostfields 691,28499
-const int curlopt_proxy_transfer_mode 692,28570
-const int curlopt_seekfunction 693,28646
-const int curlopt_seekdata 694,28715
-const int curlopt_crlfile 695,28780
-const int curlopt_issuercert 696,28844
-const int curlopt_address_scope 697,28911
-const int curlopt_certinfo 698,28981
-const int curlopt_username 699,29046
-const int curlopt_password 700,29111
-const int curlopt_proxyusername 701,29176
-const int curlopt_proxypassword 702,29246
-const int curlopt_noproxy 703,29316
-const int curlopt_tftp_blksize 704,29380
-const int curlopt_socks5_gssapi_service 705,29449
-const int curlopt_socks5_gssapi_nec 706,29527
-const int curlopt_protocols 707,29601
-const int curlopt_redir_protocols 708,29667
-const int curlopt_lastentry 709,29739
-const int curlopt_mail_from 710,29805
-const int curlopt_mail_rcpt 711,29871
-const int curlopt_mail_auth 712,29937
+size_t chpl_curl_write_string(170,7252
+qioerr  curl_preadv_internal(188,7674
+qioerr curl_readv(238,9137
+qioerr curl_preadv(244,9325
+qioerr curl_writev(250,9532
+int startWith(288,10843
+int curl_seekable(294,10968
+qioerr curl_open(340,12610
+qioerr curl_close(405,14279
+qioerr curl_seek(428,15169
+qioerr curl_getpath(455,15966
+qioerr curl_getlength(462,16103
+int curl_get_fs_type(475,16417
+qioerr chpl_curl_set_opt(485,16767
+qioerr chpl_curl_perform(508,17518
+qioerr chpl_curl_slist_append(517,17718
+void chpl_curl_slist_free(524,17898
+qio_file_functions_t curl_function_struct 528,17975
+const qio_file_functions_ptr_t curl_function_struct_ptr 543,18392
+const int curlopt_file 545,18474
+const int curlopt_url 546,18535
+const int curlopt_port 547,18595
+const int curlopt_proxy 548,18656
+const int curlopt_userpwd 549,18718
+const int curlopt_proxyuserpwd 550,18782
+const int curlopt_range 551,18851
+const int curlopt_infile 552,18913
+const int curlopt_errorbuffer 553,18976
+const int curlopt_writefunction 554,19044
+const int curlopt_readfunction 555,19114
+const int curlopt_timeout 556,19183
+const int curlopt_infilesize 557,19247
+const int curlopt_postfields 558,19314
+const int curlopt_referer 559,19381
+const int curlopt_ftpport 560,19445
+const int curlopt_useragent 561,19509
+const int curlopt_low_speed_limit 562,19575
+const int curlopt_low_speed_time 563,19647
+const int curlopt_resume_from 564,19718
+const int curlopt_cookie 565,19786
+const int curlopt_httpheader 566,19849
+const int curlopt_httppost 567,19916
+const int curlopt_sslcert 568,19981
+const int curlopt_keypasswd 569,20045
+const int curlopt_crlf 570,20111
+const int curlopt_quote 571,20172
+const int curlopt_writeheader 572,20234
+const int curlopt_cookiefile 573,20302
+const int curlopt_sslversion 574,20369
+const int curlopt_timecondition 575,20436
+const int curlopt_timevalue 576,20506
+const int curlopt_customrequest 577,20572
+const int curlopt_stderr 578,20642
+const int curlopt_postquote 579,20705
+const int curlopt_writeinfo 580,20771
+const int curlopt_verbose 581,20837
+const int curlopt_header 582,20901
+const int curlopt_noprogress 583,20964
+const int curlopt_nobody 584,21031
+const int curlopt_failonerror 585,21094
+const int curlopt_upload 586,21162
+const int curlopt_post 587,21225
+const int curlopt_dirlistonly 588,21286
+const int curlopt_append 589,21354
+const int curlopt_netrc 590,21417
+const int curlopt_followlocation 591,21479
+const int curlopt_transfertext 592,21550
+const int curlopt_put 593,21619
+const int curlopt_progressfunction 594,21679
+const int curlopt_progressdata 595,21752
+const int curlopt_autoreferer 596,21821
+const int curlopt_proxyport 597,21889
+const int curlopt_postfieldsize 598,21955
+const int curlopt_httpproxytunnel 599,22025
+const int curlopt_interface 600,22097
+const int curlopt_krblevel 601,22163
+const int curlopt_ssl_verifypeer 602,22228
+const int curlopt_cainfo 603,22299
+const int curlopt_maxredirs 604,22362
+const int curlopt_filetime 605,22428
+const int curlopt_telnetoptions 606,22493
+const int curlopt_maxconnects 607,22563
+const int curlopt_closepolicy 608,22631
+const int curlopt_fresh_connect 609,22699
+const int curlopt_forbid_reuse 610,22769
+const int curlopt_random_file 611,22838
+const int curlopt_egdsocket 612,22906
+const int curlopt_connecttimeout 613,22972
+const int curlopt_headerfunction 614,23043
+const int curlopt_httpget 615,23114
+const int curlopt_ssl_verifyhost 616,23178
+const int curlopt_cookiejar 617,23249
+const int curlopt_ssl_cipher_list 618,23315
+const int curlopt_http_version 619,23387
+const int curlopt_ftp_use_epsv 620,23456
+const int curlopt_sslcerttype 621,23525
+const int curlopt_sslkey 622,23593
+const int curlopt_sslkeytype 623,23656
+const int curlopt_sslengine 624,23723
+const int curlopt_sslengine_default 625,23789
+const int curlopt_dns_use_global_cache 626,23863
+const int curlopt_dns_cache_timeout 627,23940
+const int curlopt_prequote 628,24014
+const int curlopt_debugfunction 629,24079
+const int curlopt_debugdata 630,24149
+const int curlopt_cookiesession 631,24215
+const int curlopt_capath 632,24285
+const int curlopt_buffersize 633,24348
+const int curlopt_nosignal 634,24415
+const int curlopt_share 635,24480
+const int curlopt_proxytype 636,24542
+const int curlopt_encoding 637,24608
+const int curlopt_private 638,24673
+const int curlopt_http200aliases 639,24737
+const int curlopt_unrestricted_auth 640,24808
+const int curlopt_ftp_use_eprt 641,24882
+const int curlopt_httpauth 642,24951
+const int curlopt_ssl_ctx_function 643,25016
+const int curlopt_ssl_ctx_data 644,25089
+const int curlopt_ftp_create_missing_dirs 645,25158
+const int curlopt_proxyauth 646,25238
+const int curlopt_ftp_response_timeout 647,25304
+const int curlopt_ipresolve 648,25381
+const int curlopt_maxfilesize 649,25447
+const int curlopt_infilesize_large 650,25515
+const int curlopt_resume_from_large 651,25588
+const int curlopt_maxfilesize_large 652,25662
+const int curlopt_netrc_file 653,25736
+const int curlopt_use_ssl 654,25803
+const int curlopt_postfieldsize_large 655,25867
+const int curlopt_tcp_nodelay 656,25943
+const int curlopt_ftpsslauth 657,26011
+const int curlopt_ioctlfunction 658,26078
+const int curlopt_ioctldata 659,26148
+const int curlopt_ftp_account 660,26214
+const int curlopt_cookielist 661,26282
+const int curlopt_ignore_content_length 662,26349
+const int curlopt_ftp_skip_pasv_ip 663,26427
+const int curlopt_ftp_filemethod 664,26500
+const int curlopt_localport 665,26571
+const int curlopt_localportrange 666,26637
+const int curlopt_connect_only 667,26708
+const int curlopt_conv_from_network_function 668,26777
+const int curlopt_conv_to_network_function 669,26860
+const int curlopt_conv_from_utf8_function 670,26941
+const int curlopt_max_send_speed_large 671,27021
+const int curlopt_max_recv_speed_large 672,27098
+const int curlopt_ftp_alternative_to_user 673,27175
+const int curlopt_sockoptfunction 674,27255
+const int curlopt_sockoptdata 675,27327
+const int curlopt_ssl_sessionid_cache 676,27395
+const int curlopt_ssh_auth_types 677,27471
+const int curlopt_ssh_public_keyfile 678,27542
+const int curlopt_ssh_private_keyfile 679,27617
+const int curlopt_ftp_ssl_ccc 680,27693
+const int curlopt_timeout_ms 681,27761
+const int curlopt_connecttimeout_ms 682,27828
+const int curlopt_http_transfer_decoding 683,27902
+const int curlopt_http_content_decoding 684,27981
+const int curlopt_new_file_perms 685,28059
+const int curlopt_new_directory_perms 686,28130
+const int curlopt_postredir 687,28206
+const int curlopt_ssh_host_public_key_md5 688,28272
+const int curlopt_opensocketfunction 689,28352
+const int curlopt_opensocketdata 690,28427
+const int curlopt_copypostfields 691,28498
+const int curlopt_proxy_transfer_mode 692,28569
+const int curlopt_seekfunction 693,28645
+const int curlopt_seekdata 694,28714
+const int curlopt_crlfile 695,28779
+const int curlopt_issuercert 696,28843
+const int curlopt_address_scope 697,28910
+const int curlopt_certinfo 698,28980
+const int curlopt_username 699,29045
+const int curlopt_password 700,29110
+const int curlopt_proxyusername 701,29175
+const int curlopt_proxypassword 702,29245
+const int curlopt_noproxy 703,29315
+const int curlopt_tftp_blksize 704,29379
+const int curlopt_socks5_gssapi_service 705,29448
+const int curlopt_socks5_gssapi_nec 706,29526
+const int curlopt_protocols 707,29600
+const int curlopt_redir_protocols 708,29666
+const int curlopt_lastentry 709,29738
+const int curlopt_mail_from 710,29804
+const int curlopt_mail_rcpt 711,29870
+const int curlopt_mail_auth 712,29936
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/qio/auxFilesys/curl/qio_plugin_curl_stubs.c,6979
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/auxFilesys/curl/qio_plugin_curl_stubs.c,6979
 #define CURL_ERROR(28,806
 const qio_file_functions_ptr_t curl_function_struct_ptr 33,893
 qioerr curl_readv(36,982
@@ -1363,168 +1563,172 @@ const int curlopt_mail_from 253,10684
 const int curlopt_mail_rcpt 254,10734
 const int curlopt_mail_auth 255,10784
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/qio/bulkget.c,65
-qbytes_t* bulk_get_bytes(28,938
-qioerr bulk_put_buffer(60,1829
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/bulkget.c,65
+qbytes_t* bulk_get_bytes(29,973
+qioerr bulk_put_buffer(64,1944
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/qio/deque.c,150
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/deque.c,150
 void debug_print_deque_iter(27,776
 void _deque_map_copy_forward(32,924
 void _deque_map_copy_backward(40,1110
 qioerr _deque_reallocate_map(50,1316
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/qio/qbuffer.c,1607
-size_t qbytes_iobuf_size 40,1027
-void _qbytes_free_qbytes(51,1303
-void qbytes_free_null(60,1444
-void qbytes_free_munmap(64,1510
-void qbytes_free_qio_free(83,1954
-void qbytes_free_sys_free(87,2044
-void qbytes_free_iobuf(93,2188
-void debug_print_bytes(98,2309
-void _qbytes_init_generic(107,2660
-qioerr qbytes_create_generic(117,2921
-qioerr _qbytes_init_iobuf(135,3393
-qioerr qbytes_create_iobuf(156,4007
-qioerr qbytes_create_calloc(195,4682
-void qbuffer_clear_cached(253,5889
-void debug_print_qbuffer_iter(257,5936
-void debug_print_qbuffer(263,6098
-qioerr qbuffer_init(287,6968
-qioerr qbuffer_destroy(295,7145
-qioerr qbuffer_create(321,7723
-qioerr qbuffer_destroy_free(344,8045
-qioerr qbuffer_init_part(352,8169
-void qbuffer_extend_back(370,8724
-void qbuffer_extend_front(384,9279
-qioerr qbuffer_append(398,9769
-qioerr qbuffer_append_buffer(423,10355
-qioerr qbuffer_prepend(445,10921
-void qbuffer_trim_front(472,11558
-void qbuffer_trim_back(514,12891
-qioerr qbuffer_pop_front(556,14256
-qioerr qbuffer_pop_back(576,14678
-void qbuffer_reposition(597,15135
-qbuffer_iter_t qbuffer_begin(617,15651
-qbuffer_iter_t qbuffer_end(625,15811
-void qbuffer_iter_next_part(633,15967
-void qbuffer_iter_prev_part(648,16464
-void qbuffer_iter_floor_part(658,16754
-void qbuffer_iter_ceil_part(681,17422
-void qbuffer_iter_advance(697,17898
-qbuffer_iter_t qbuffer_iter_at(751,19646
-qioerr qbuffer_to_iov(791,20749
-qioerr qbuffer_flatten(882,24127
-qioerr qbuffer_copyout(990,27015
-qioerr qbuffer_copyin(1028,28139
-qioerr qbuffer_copyin_buffer(1066,29268
-qioerr qbuffer_memset(1108,30980
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/qbuffer.c,1606
+size_t qbytes_iobuf_size 41,1017
+void _qbytes_free_qbytes(52,1293
+void qbytes_free_null(61,1434
+void qbytes_free_munmap(65,1500
+void qbytes_free_qio_free(84,1944
+void qbytes_free_iobuf(88,2034
+void debug_print_bytes(93,2155
+void debug_print_iovec(100,2395
+void _qbytes_init_generic(119,2884
+qioerr qbytes_create_generic(129,3145
+qioerr _qbytes_init_iobuf(147,3617
+qioerr qbytes_create_iobuf(168,4235
+qioerr qbytes_create_calloc(207,4910
+void qbuffer_clear_cached(265,6117
+void debug_print_qbuffer_iter(269,6164
+void debug_print_qbuffer(275,6326
+qioerr qbuffer_init(299,7196
+qioerr qbuffer_destroy(307,7373
+qioerr qbuffer_create(333,7951
+qioerr qbuffer_destroy_free(356,8273
+qioerr qbuffer_init_part(364,8397
+void qbuffer_extend_back(382,8952
+void qbuffer_extend_front(396,9507
+qioerr qbuffer_append(410,9997
+qioerr qbuffer_append_buffer(435,10583
+qioerr qbuffer_prepend(457,11149
+void qbuffer_trim_front(484,11786
+void qbuffer_trim_back(526,13119
+qioerr qbuffer_pop_front(568,14484
+qioerr qbuffer_pop_back(588,14906
+void qbuffer_reposition(609,15363
+qbuffer_iter_t qbuffer_begin(629,15879
+qbuffer_iter_t qbuffer_end(637,16039
+void qbuffer_iter_next_part(645,16195
+void qbuffer_iter_prev_part(660,16692
+void qbuffer_iter_floor_part(670,16982
+void qbuffer_iter_ceil_part(693,17650
+void qbuffer_iter_advance(709,18126
+qbuffer_iter_t qbuffer_iter_at(763,19874
+qioerr qbuffer_to_iov(803,20977
+qioerr qbuffer_flatten(894,24355
+qioerr qbuffer_copyout(1002,27243
+qioerr qbuffer_copyin(1040,28367
+qioerr qbuffer_copyin_buffer(1078,29496
+qioerr qbuffer_memset(1120,31208
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/qio/qio.c,4093
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/qio.c,4212
 #define _QIO_C20,701
 #define _DARWIN_C_SOURCE24,766
 #define _GNU_SOURCE29,848
-ssize_t qio_too_small_for_default_mmap 60,1380
-ssize_t qio_too_large_for_default_mmap 61,1430
-ssize_t qio_mmap_chunk_iobufs 62,1500
-ssize_t qio_initial_mmap_max 65,1619
-bool qio_allow_default_mmap 66,1663
-qioerr qio_lock(69,1718
-void qio_unlock(91,2155
-qioerr qio_readv(109,2464
-qioerr qio_writev(154,3797
-qioerr qio_preadv(199,5136
-qioerr qio_freadv(244,6479
-qioerr qio_fwritev(292,7622
-qioerr qio_pwritev(341,8763
-qioerr qio_recv(386,10183
-qioerr qio_send(443,11812
-qio_hint_t choose_io_method(498,13259
-qioerr qio_fadvise_for_hints(587,16437
-qioerr qio_madvise_for_hints(633,17585
-qioerr qio_mmap_initial(655,18124
-qioerr qio_file_init(712,19618
-qioerr qio_file_init_usr(854,23659
-qioerr _qio_file_do_close(942,26084
-qioerr qio_file_close(1004,27398
-qioerr qio_file_sync(1020,27744
-void _qio_file_destroy(1040,28186
-qioerr open_flags_for_string(1065,28659
-const char* string_for_open_flags(1086,29293
-int flags_for_mmap_open(1101,29793
-qioerr qio_file_open(1115,30079
-qioerr qio_file_open_usr(1145,31051
-qioerr qio_file_open_mem_ext(1172,32245
-qioerr qio_file_open_mem(1230,33902
-qioerr qio_file_open_access(1235,34132
-qioerr qio_file_open_access_usr(1247,34536
-qioerr qio_file_open_tmp(1259,35006
-qioerr qio_file_path_for_fd(1310,36121
-qioerr qio_file_path_for_fp(1342,36905
-qioerr qio_file_path(1349,37139
-qioerr qio_file_length(1362,37543
-qioerr _qio_channel_init(1392,38324
-qioerr _qio_channel_init_file_internal(1407,38633
-qioerr _qio_channel_makebuffer_unlocked(1471,40411
-qioerr _qio_channel_needbuffer_unlocked(1527,42130
-qioerr _qio_channel_init_file(1536,42315
-qioerr qio_channel_create(1590,43907
-qioerr qio_relative_path(1613,44606
-qioerr qio_shortest_path(1690,46764
-qioerr qio_channel_path_offset(1726,47685
-qioerr _qio_channel_final_flush_unlocked(1756,48254
-void _qio_channel_destroy(1825,50576
-qbuffer_iter_t _av_end_iter(1849,51029
-qbuffer_iter_t _av_start_iter(1859,51259
-int64_t _right_mark_start(1869,51500
-void _add_right_mark_start(1875,51603
-void _set_right_mark_start(1881,51720
-qbuffer_iter_t _right_mark_start_iter(1887,51829
-qioerr _buffered_allocate_bufferspace(1907,52305
-qioerr _buffered_makespace_atleast(1940,53093
-qioerr _buffered_get_memory_file_lock_held(1968,53681
-qioerr _buffered_get_memory(2057,56197
-qioerr _buffered_get_mmap(2076,56609
-qioerr _buffered_read_atleast(2202,60256
-qioerr _qio_flush_bits_if_needed_unlocked(2277,62276
-void _qio_buffered_advance_cached(2333,63934
-void _qio_buffered_setup_cached(2374,65265
-qioerr _qio_buffered_behind(2420,66686
-qioerr _qio_channel_require_unlocked(2519,69857
-qioerr _qio_buffered_read(2562,71042
-qioerr _qio_buffered_write(2618,72385
-qioerr _qio_unbuffered_write(2661,73538
-qioerr _qio_unbuffered_read(2750,76520
-qioerr _qio_channel_flush_qio_unlocked(2838,79407
-qioerr _qio_channel_flush_unlocked(2872,80379
-int _use_buffered(2891,80859
-qioerr _qio_slow_write(2921,82068
-qioerr _qio_slow_read(2936,82464
-qioerr qio_channel_offset(2964,83098
-qioerr qio_channel_end_offset(2985,83442
-qioerr _qio_channel_put_bytes_unlocked(3007,83801
-qioerr qio_channel_put_bytes(3130,87766
-qioerr _qio_channel_put_buffer_unlocked(3158,88409
-qioerr qio_channel_put_buffer(3274,92044
-qioerr qio_channel_begin_peek_buffer(3296,92591
-qioerr qio_channel_end_peek_buffer(3329,93325
-qioerr qio_channel_mark_maybe_flush_bits(3351,93762
-qioerr qio_channel_mark(3429,95903
-qioerr qio_channel_advance_unlocked(3441,96303
-void qio_channel_revert_unlocked(3480,97289
-void qio_channel_commit_unlocked(3528,98790
-qioerr qio_channel_advance(3550,99319
-void _qio_channel_write_bits_cached_realign(3575,99794
-qioerr _qio_channel_write_bits_slow(3649,102520
-qioerr qio_channel_flush_bits(3756,105759
-void _qio_channel_read_bits_cached_realign(3779,106131
-qioerr _qio_channel_read_bits_slow(3857,108375
-int64_t qio_channel_style_element(3941,110498
-qioerr qio_get_fs_type(3963,111471
-qioerr qio_get_chunk(3994,112079
-qioerr qio_locales_for_region(4031,113038
+#define QIO_OCLOEXEC 62,1460
+#define QIO_OCLOEXEC 64,1497
+#define QIO_FOPEN_CLOEXEC71,1650
+#undef QIO_FOPEN_CLOEXEC76,1760
+#define QIO_FOPEN_CLOEXEC 77,1785
+ssize_t qio_too_small_for_default_mmap 88,2097
+ssize_t qio_mmap_chunk_iobufs 89,2147
+ssize_t qio_initial_mmap_max 92,2266
+bool qio_allow_default_mmap 93,2310
+qioerr qio_lock(96,2365
+void qio_unlock(118,2864
+qioerr qio_readv(136,3199
+qioerr qio_writev(181,4532
+qioerr qio_preadv(226,5871
+qioerr qio_freadv(271,7214
+qioerr qio_fwritev(319,8357
+qioerr qio_pwritev(368,9498
+qioerr qio_recv(413,10918
+qioerr qio_send(470,12547
+qio_hint_t choose_io_method(525,13994
+qioerr qio_fadvise_for_hints(612,17069
+qioerr qio_madvise_for_hints(658,18217
+qioerr qio_mmap_initial(680,18756
+qioerr qio_file_init(737,20250
+qioerr qio_file_init_usr(879,24291
+qioerr _qio_file_do_close(967,26716
+qioerr qio_file_close(1029,28030
+qioerr qio_file_sync(1046,28377
+void _qio_file_destroy(1066,28819
+qioerr open_flags_for_string(1091,29292
+const char* string_for_open_flags(1112,29926
+int flags_for_mmap_open(1135,30690
+qioerr qio_file_open(1149,30976
+qioerr qio_file_open_usr(1180,31975
+qioerr qio_file_open_mem_ext(1211,33186
+qioerr qio_file_open_mem(1269,34843
+qioerr qio_file_open_access(1274,35073
+qioerr qio_file_open_access_usr(1286,35477
+qioerr qio_file_open_tmp(1302,35966
+qioerr qio_file_path_for_fd(1353,37081
+qioerr qio_file_path_for_fp(1385,37865
+qioerr qio_file_path(1392,38099
+qioerr qio_file_length(1405,38503
+qioerr _qio_channel_init(1435,39284
+qioerr _qio_channel_init_file_internal(1450,39593
+qioerr _qio_channel_makebuffer_unlocked(1514,41371
+qioerr _qio_channel_needbuffer_unlocked(1576,43271
+qioerr _qio_channel_init_file(1585,43456
+qioerr qio_channel_create(1639,45046
+qioerr qio_relative_path(1662,45745
+qioerr qio_shortest_path(1739,47903
+qioerr qio_channel_path_offset(1777,48896
+qioerr _qio_channel_final_flush_unlocked(1807,49465
+void _qio_channel_destroy(1902,52777
+qbuffer_iter_t _av_end_iter(1926,53232
+qbuffer_iter_t _av_start_iter(1936,53462
+int64_t _right_mark_start(1946,53703
+void _add_right_mark_start(1952,53806
+void _set_right_mark_start(1958,53923
+qbuffer_iter_t _right_mark_start_iter(1964,54032
+qioerr _buffered_allocate_bufferspace(1984,54508
+qioerr _buffered_makespace_atleast(2017,55296
+qioerr _buffered_get_memory_file_lock_held(2045,55884
+qioerr _buffered_get_memory(2134,58400
+qioerr _buffered_get_mmap(2153,58812
+qioerr _buffered_read_atleast(2279,62459
+qioerr _qio_flush_bits_if_needed_unlocked(2357,64593
+void _qio_buffered_advance_cached(2413,66251
+void _qio_buffered_setup_cached(2455,67610
+qioerr _qio_buffered_behind(2501,69029
+qioerr _qio_channel_require_unlocked(2604,72320
+qioerr _qio_buffered_read(2647,73505
+qioerr _qio_buffered_write(2703,74848
+qioerr _qio_unbuffered_write(2746,76001
+qioerr _qio_unbuffered_read(2835,78989
+qioerr _qio_channel_flush_qio_unlocked(2923,81874
+qioerr _qio_channel_flush_unlocked(2957,82846
+int _use_buffered(2976,83326
+qioerr _qio_slow_write(3006,84535
+qioerr _qio_slow_read(3021,84931
+qioerr qio_channel_offset(3051,85596
+qioerr qio_channel_end_offset(3072,85940
+qioerr _qio_channel_put_bytes_unlocked(3094,86299
+qioerr qio_channel_put_bytes(3217,90263
+qioerr _qio_channel_put_buffer_unlocked(3245,90906
+qioerr qio_channel_put_buffer(3361,94541
+qioerr qio_channel_begin_peek_buffer(3383,95088
+qioerr qio_channel_end_peek_buffer(3416,95822
+qioerr qio_channel_mark_maybe_flush_bits(3438,96259
+qioerr qio_channel_mark(3516,98400
+qioerr qio_channel_advance_unlocked(3534,99076
+void qio_channel_revert_unlocked(3600,100902
+void qio_channel_commit_unlocked(3648,102401
+qioerr qio_channel_advance(3670,102930
+void _qio_channel_write_bits_cached_realign(3695,103405
+qioerr _qio_channel_write_bits_slow(3770,106144
+qioerr qio_channel_flush_bits(3877,109383
+void _qio_channel_read_bits_cached_realign(3900,109755
+qioerr _qio_channel_read_bits_slow(3979,112011
+int64_t qio_channel_style_element(4063,114135
+qioerr qio_get_fs_type(4087,115207
+qioerr qio_get_chunk(4118,115815
+qioerr qio_locales_for_region(4155,116774
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/qio/qio_error.c,240
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/qio_error.c,240
 const struct qio_err_s* qio_error_get_base(28,803
 const struct qio_err_s* qio_err_local_ptr(34,939
 qioerr qio_err_local_ptr_to_err(41,1110
@@ -1532,7 +1736,7 @@ const char* qio_err_msg(49,1289
 qioerr qio_int_to_err(58,1515
 qioerr qio_mkerror_errno(68,1707
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/qio/qio_formatted.c,3692
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/qio_formatted.c,4142
 int qio_glocale_utf8 39,1071
 void qio_set_glocale(41,1098
 static int towlower(59,1599
@@ -1548,93 +1752,125 @@ qioerr _peek_until_len(194,4503
 qioerr _getc_after_whitespace(225,5127
 qioerr _append_char(281,6332
 qioerr qio_channel_read_string(334,8034
-qioerr qio_channel_scan_string(466,11624
-qioerr qio_channel_scan_literal(757,20041
-qioerr qio_channel_scan_literal_2(882,23186
-qioerr qio_channel_print_literal(888,23390
-qioerr qio_channel_print_literal_2(893,23575
-qioerr qio_channel_write_string(909,24394
-#define MB_LEN_MAX_OR_6 1008,27423
-#define MB_LEN_MAX_OR_6 1010,27455
-#define JSON_ESC_MAX 1013,27498
-char _qio_tohex(1016,27556
-int _qio_chr_escape(1028,27917
-#define WRITEC(1038,28167
-#undef WRITEC1151,31395
-qioerr qio_channel_print_string(1154,31412
-qioerr qio_quote_string_length(1290,35313
-qioerr qio_quote_string(1406,38768
-#define WRITEC(1446,39846
-#undef WRITEC1493,40948
-typedef struct number_reading_state_s 1503,41206
-  int base;1504,41246
-  char allow_base;1506,41320
-  char allow_pos_sign;1508,41458
-  char allow_neg_sign;1509,41481
-  char positive_char;1510,41504
-  char negative_char;1511,41542
-  char allow_real;1513,41581
-  char point_char;1514,41600
-  char exponent_char;1515,41672
-  char other_exponent_char;1516,41729
-  char allow_i_after;1518,41799
-  char i_char;1519,41855
-  int usebase;1521,41871
-  signed char sign;1523,41887
-  char is_nan;1524,41947
-  char is_inf;1525,41985
-  int gotbase;1526,42032
-  int64_t digits_start;1527,42047
-  int64_t point;1528,42101
-  int64_t exponent;1529,42149
-  int64_t i_after;1530,42214
-  int64_t end;1531,42290
-} number_reading_state_t;1533,42389
-qioerr _peek_number_unlocked(1536,42423
-#define NEXT_CHR 1538,42544
-#define NEXT_CHR_OR_EOF 1544,42680
-#define ACCEPT 1551,42878
-#define UNGET_ACCEPT 1556,42970
-#define START_DIGITS 1562,43073
-qioerr qio_channel_scan_int(1746,47906
-qioerr qio_channel_scan_float_or_imag(1889,51625
-qioerr qio_channel_scan_float(2064,56207
-qioerr qio_channel_scan_imag(2068,56392
-static inline int _ltoa_convert(2078,56776
-int _ltoa(2105,57599
-int _ftoa(2205,60429
-qioerr qio_channel_print_int(2488,68500
-#define MAX_DOUBLE_DIGITS 2620,71625
-qioerr qio_channel_print_float_or_imag(2624,71731
-qioerr qio_channel_print_float(2722,74232
-qioerr qio_channel_print_imag(2726,74430
-qioerr qio_channel_scan_complex(2732,74628
-qioerr qio_channel_skip_past_newline(2892,78983
-qioerr qio_channel_write_newline(2939,80122
-static qioerr maybe_left_pad(2945,80282
-static qioerr maybe_right_pad(2958,80654
-qioerr qio_channel_print_complex(2971,80950
-qioerr _qio_channel_read_char_slow_unlocked(3189,87595
-c_string_copy qio_encode_to_string(3370,93285
-qioerr _qio_channel_write_char_slow_unlocked(3394,93649
-static const char* space 3458,95681
-static const char* dec_num 3461,95803
-static const char* lit_chars 3467,96054
-static const char* regexp_flag_chars 3468,96102
-static inline int istype(3470,96150
-void qio_conv_destroy(3479,96288
-void qio_conv_init(3486,96431
-int _qio_regexp_flags_then_rcurly(3499,96784
-qioerr qio_conv_parse(3516,97067
-#define WIDTH_IN_ARG 3529,97468
-#define WIDTH_NOT_SET 3530,97492
-qioerr qio_format_error_too_many_args(4129,117850
-qioerr qio_format_error_too_few_args(4136,118006
-qioerr qio_format_error_arg_mismatch(4143,118163
-qioerr qio_format_error_bad_regexp(4166,119104
-qioerr qio_format_error_write_regexp(4173,119263
+qioerr qio_channel_scan_string(466,11599
+qioerr qio_channel_scan_literal(771,20452
+qioerr qio_channel_scan_literal_2(908,24133
+qioerr qio_channel_print_literal(914,24349
+qioerr qio_channel_print_literal_2(919,24534
+qioerr qio_channel_write_string(935,25353
+#define MB_LEN_MAX_OR_6 1037,28418
+#define MB_LEN_MAX_OR_6 1039,28450
+#define JSON_ESC_MAX 1042,28493
+char _qio_tohex(1045,28551
+int _qio_chr_escape(1057,28912
+#define WRITEC(1067,29162
+#undef WRITEC1180,32390
+qioerr qio_channel_print_string(1183,32407
+qioerr qio_quote_string_length(1326,36455
+qioerr qio_quote_string(1442,39921
+#define WRITEC(1482,40999
+#undef WRITEC1529,42101
+static inline bool is_json_whitespace(1532,42118
+int32_t qio_skip_json_object_unlocked(1540,42412
+int32_t qio_skip_json_array_unlocked(1575,43253
+int32_t qio_skip_json_value_unlocked(1612,44142
+int32_t qio_skip_json_string_unlocked(1735,47501
+int32_t qio_skip_json_field_unlocked(1763,48275
+qioerr qio_channel_skip_json_field(1810,49182
+typedef struct number_reading_state_s 1863,50369
+  int base;1864,50409
+  char allow_base;1866,50484
+  char allow_pos_sign;1868,50622
+  char allow_neg_sign;1869,50645
+  char positive_char;1870,50668
+  char negative_char;1871,50706
+  char allow_real;1873,50745
+  char allow_point;1874,50804
+  char point_char;1875,50851
+  char exponent_char;1876,50923
+  char other_exponent_char;1877,50980
+  char allow_i_after;1879,51050
+  char i_char;1880,51106
+  int usebase;1882,51122
+  signed char sign;1884,51138
+  char is_nan;1885,51198
+  char is_inf;1886,51236
+  int gotbase;1887,51283
+  int64_t digits_start;1888,51298
+  int64_t point;1889,51352
+  int64_t exponent;1890,51400
+  int64_t i_after;1891,51465
+  int64_t end;1892,51541
+} number_reading_state_t;1894,51640
+qioerr _peek_number_unlocked(1897,51674
+#define NEXT_CHR 1899,51795
+#define NEXT_CHR_OR_EOF 1905,51931
+#define ACCEPT 1912,52129
+#define UNGET_ACCEPT 1917,52221
+#define START_DIGITS 1923,52324
+qioerr qio_channel_scan_int(2109,57201
+qioerr qio_channel_scan_float_or_imag(2265,61279
+qioerr qio_channel_scan_float(2440,65855
+qioerr qio_channel_scan_imag(2444,66040
+static inline int _ltoa_convert(2454,66424
+int _ltoa(2481,67247
+static int _find_prec(2598,70710
+int _ftoa_core(2637,72185
+int _ftoa(2767,76662
+qioerr qio_channel_print_int(2966,82183
+#define MAX_DOUBLE_DIGITS 3099,85381
+qioerr qio_channel_print_float_or_imag(3103,85487
+qioerr qio_channel_print_float(3206,88126
+qioerr qio_channel_print_imag(3210,88324
+qioerr qio_channel_scan_complex(3216,88522
+qioerr qio_channel_skip_past_newline(3376,92877
+qioerr qio_channel_write_newline(3423,94016
+static qioerr maybe_left_pad(3429,94176
+static qioerr maybe_right_pad(3442,94548
+qioerr qio_channel_print_complex(3455,94844
+qioerr _qio_channel_read_char_slow_unlocked(3677,101764
+c_string_copy qio_encode_to_string(3858,107459
+qioerr _qio_channel_write_char_slow_unlocked(3882,107823
+static const char* space 3946,109855
+static const char* dec_num 3949,109977
+static const char* lit_chars 3955,110228
+static const char* regexp_flag_chars 3956,110275
+static inline int istype(3958,110323
+void qio_conv_destroy(3967,110461
+void qio_conv_init(3974,110604
+int _qio_regexp_flags_then_rcurly(3981,110757
+qioerr qio_conv_parse(3998,111040
+#define WIDTH_IN_ARG 4011,111441
+#define WIDTH_NOT_SET 4012,111465
+qioerr qio_format_error_too_many_args(4620,132216
+qioerr qio_format_error_too_few_args(4627,132372
+qioerr qio_format_error_arg_mismatch(4634,132529
+qioerr qio_format_error_bad_regexp(4657,133470
+qioerr qio_format_error_write_regexp(4664,133629
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/qio/sys.c,2699
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/qio_popen.c,656
+const char* qio_spawn_strdup(57,1509
+const char** qio_spawn_allocate_ptrvec(66,1708
+void qio_spawn_free_ptrvec(72,1840
+void qio_spawn_free_str(77,1913
+static qioerr setup_actions(90,2307
+qioerr qio_do_openproc(162,4770
+struct openproc_args_s 327,9545
+  const char** argv;328,9570
+  const char** envp;329,9591
+  const char* executable;330,9612
+  int* stdin_fd;331,9638
+  int* stdout_fd;332,9655
+  int* stderr_fd;333,9673
+  int64_t* pid_out;334,9691
+  qioerr err;335,9711
+void* qio_openproc_wrapper(339,9736
+qioerr qio_openproc(348,10023
+qioerr qio_waitpid(395,11303
+qioerr qio_proc_communicate(431,12235
+qioerr qio_send_signal(665,18765
+
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/sys.c,2975
 #undef _POSIX_C_SOURCE22,755
 #define _POSIX_C_SOURCE 24,785
 #define SYS_HAS_STATFS 49,1267
@@ -1642,88 +1878,96 @@ qioerr qio_format_error_write_regexp(4173,119263
 #define SYS_HAS_STATFS 54,1392
 #define HAS_PREADV68,1682
 #define HAS_PWRITEV69,1701
-void sys_init_sys_sockaddr(77,1860
-size_t sys_page_size(85,2079
-err_t sys_fseeko(112,2573
-err_t sys_ftello(127,2795
-err_t sys_fopen(144,3051
-err_t sys_fdopen(161,3311
-err_t sys_fclose(178,3562
-err_t sys_fread(196,3812
-err_t sys_fwrite(216,4204
-err_t sys_fflush(236,4610
-err_t sys_feof(255,4855
-err_t sys_ferror(261,4938
-err_t sys_posix_fadvise(268,5007
-err_t sys_posix_madvise(284,5302
-const char* extended_errors[extended_errors301,5526
-err_t sys_strerror_internal(314,5862
-err_t sys_strerror(382,7508
-const char* sys_strerror_syserr_str(387,7633
-err_t sys_readlink(413,8280
-int sys_getenv(453,9201
-err_t sys_open(466,9385
-err_t sys_close(483,9660
-err_t sys_lseek(501,9907
-err_t sys_stat(518,10195
-err_t sys_fstat(533,10399
-err_t sys_lstat(548,10594
-err_t sys_lustre_get_stripe_size(563,10820
-#define safe_inode_cast(598,11929
-err_t sys_fstatfs(600,11983
-err_t sys_mkstemp(655,13689
-err_t sys_ftruncate(672,13929
-err_t sys_sysconf(687,14128
-err_t sys_posix_fallocate(704,14360
-err_t sys_mmap(717,14602
-err_t sys_munmap(733,14933
-err_t sys_read(748,15124
-err_t sys_write(768,15503
-err_t sys_pread(787,15845
-err_t sys_pwrite(810,16324
-int64_t sys_iov_total_bytes(830,16742
-err_t sys_readv(838,16909
-err_t sys_writev(876,17729
-err_t sys_preadv(913,18479
-err_t sys_preadv(956,19441
-err_t sys_pwritev(994,20225
-err_t sys_pwritev(1032,21017
-err_t sys_fsync(1066,21613
-err_t sys_fcntl(1083,21829
-err_t sys_fcntl_long(1100,22066
-err_t sys_fcntl_ptr(1117,22323
-err_t sys_dup(1134,22580
-err_t sys_dup2(1151,22803
-err_t sys_pipe(1168,23045
-err_t sys_accept(1195,23410
-err_t sys_bind(1221,23977
-err_t sys_connect(1240,24280
-int sys_getaddrinfo_flags(1293,25583
-int sys_getaddrinfo_family(1294,25653
-int sys_getaddrinfo_socktype(1295,25725
-int sys_getaddrinfo_protocol(1296,25801
-sys_sockaddr_t sys_getaddrinfo_addr(1297,25877
-sys_addrinfo_ptr_t sys_getaddrinfo_next(1303,26054
-void sys_freeaddr_info(1305,26138
-err_t sys_getnameinfo(1311,26222
-err_t sys_getpeername(1370,27547
-err_t sys_getsockname(1385,27805
-err_t sys_getsockopt(1401,28064
-err_t sys_setsockopt(1416,28341
-err_t sys_listen(1432,28618
-err_t sys_recv(1447,28820
-err_t sys_recvfrom(1466,29171
-err_t sys_recvmsg(1485,29621
-err_t sys_send(1507,29973
-err_t sys_sendto(1526,30332
-err_t sys_sendmsg(1545,30787
-err_t sys_shutdown(1565,31144
-err_t sys_socket(1584,31421
-err_t sys_socketpair(1602,31704
-err_t sys_unlink(1624,32113
-err_t sys_getcwd(1638,32403
+#undef HAS_PREADV75,1761
+#undef HAS_PWRITEV76,1779
+#undef PAGE_SIZE80,1934
+#define REPLACE_CYGWIN_PREADWRITE 91,2162
+void sys_init_sys_sockaddr(100,2326
+size_t sys_page_size(108,2545
+err_t sys_fseeko(135,3039
+err_t sys_ftello(150,3261
+err_t sys_fopen(167,3517
+err_t sys_fdopen(184,3777
+err_t sys_fclose(201,4028
+err_t sys_fread(219,4278
+err_t sys_fwrite(239,4670
+err_t sys_fflush(259,5076
+err_t sys_feof(278,5321
+err_t sys_ferror(284,5404
+err_t sys_posix_fadvise(291,5473
+err_t sys_posix_madvise(307,5768
+static const char* error_string_no_error 327,6173
+const char* extended_errors[extended_errors330,6236
+err_t sys_strerror_internal(345,6636
+err_t sys_strerror(415,8364
+const char* sys_strerror_syserr_str(420,8489
+err_t sys_readlink(446,9136
+int sys_getenv(486,10057
+err_t sys_open(499,10241
+err_t sys_close(516,10516
+err_t sys_lseek(534,10763
+err_t sys_stat(551,11051
+err_t sys_fstat(566,11255
+err_t sys_lstat(581,11450
+err_t sys_lustre_get_stripe_size(596,11676
+#define safe_inode_cast(631,12785
+err_t sys_fstatfs(633,12839
+err_t sys_mkstemp(688,14546
+err_t sys_ftruncate(705,14786
+err_t sys_sysconf(720,14985
+err_t sys_posix_fallocate(737,15217
+err_t sys_mmap(750,15459
+err_t sys_munmap(766,15790
+err_t sys_read(781,15981
+err_t sys_write(801,16359
+err_t get_errcode_from_winerr(823,16726
+err_t do_pread(833,16963
+err_t do_pwrite(886,18328
+err_t sys_pread(930,19423
+err_t sys_pwrite(950,19829
+int64_t sys_iov_total_bytes(970,20250
+err_t sys_readv(978,20417
+err_t sys_writev(1016,21237
+err_t sys_preadv(1053,21987
+err_t sys_preadv(1096,22949
+err_t sys_pwritev(1131,23662
+err_t sys_pwritev(1169,24454
+err_t sys_fsync(1203,25061
+err_t sys_fcntl(1220,25277
+err_t sys_fcntl_long(1237,25514
+err_t sys_fcntl_ptr(1254,25771
+err_t sys_dup(1271,26028
+err_t sys_dup2(1288,26251
+err_t sys_pipe(1305,26493
+err_t sys_accept(1332,26858
+err_t sys_bind(1358,27437
+err_t sys_connect(1377,27740
+int sys_getaddrinfo_flags(1430,29043
+int sys_getaddrinfo_family(1431,29113
+int sys_getaddrinfo_socktype(1432,29185
+int sys_getaddrinfo_protocol(1433,29261
+sys_sockaddr_t sys_getaddrinfo_addr(1434,29337
+sys_addrinfo_ptr_t sys_getaddrinfo_next(1440,29514
+void sys_freeaddr_info(1442,29598
+err_t sys_getnameinfo(1448,29682
+err_t sys_getpeername(1519,31143
+err_t sys_getsockname(1534,31401
+err_t sys_getsockopt(1550,31660
+err_t sys_setsockopt(1565,31937
+err_t sys_listen(1581,32214
+err_t sys_recv(1596,32416
+err_t sys_recvfrom(1615,32767
+err_t sys_recvmsg(1634,33217
+err_t sys_send(1656,33569
+err_t sys_sendto(1675,33928
+err_t sys_sendmsg(1694,34383
+err_t sys_shutdown(1714,34740
+err_t sys_socket(1733,35017
+err_t sys_socketpair(1751,35300
+err_t sys_unlink(1773,35709
+err_t sys_getcwd(1787,35999
 
-/lustre/hzhang86/bin/chapel-11/runtime/src/qio/sys_xsi_strerror_r.c,183
+/lustre/hzhang86/bin/chapel-15/runtime/src/qio/sys_xsi_strerror_r.c,183
 #undef _POSIX_C_SOURCE29,946
 #define _POSIX_C_SOURCE 32,977
 #define _XOPEN_SOURCE 33,1008
@@ -1731,53 +1975,62 @@ err_t sys_getcwd(1638,32403
 #define HAS_STRERROR_R39,1094
 int sys_xsi_strerror_r(44,1182
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/arg.h,101
-#define _arg_H_21,718
-  parse_normally,34,908
-  parse_dash_E35,926
-} chpl_parseArgsMode_t;36,941
+/lustre/hzhang86/bin/chapel-15/runtime/include/arg.h,101
+#define _arg_H_21,717
+  parse_normally,34,907
+  parse_dash_E35,925
+} chpl_parseArgsMode_t;36,940
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-bitops.h,700
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-align.h,195
+#define _chpl_align_h_21,724
+uintptr_t round_down_to_mask(32,954
+unsigned char* round_down_to_mask_ptr(37,1055
+uintptr_t round_up_to_mask(45,1299
+unsigned char* round_up_to_mask_ptr(50,1402
+
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-bitops.h,700
 #define _chpl_bitops_h_29,1048
-static inline uint32_t chpl_bitops_popcount_32(44,1476
-static inline uint64_t chpl_bitops_popcount_64(59,2063
-#define T 64,2271
-#undef T69,2495
-static inline uint32_t chpl_bitops_clz_32(81,2816
-static inline uint64_t chpl_bitops_clz_64(104,3851
-static inline uint32_t chpl_bitops_ctz_32(132,4745
-static inline uint64_t chpl_bitops_ctz_64(151,5567
-static inline uint32_t chpl_bitops_parity_32(170,6244
-static inline uint64_t chpl_bitops_parity_64(192,7020
-#define UI(211,7581
-#define CHPL_BITOPS_ROTL(212,7613
-CHPL_BITOPS_ROTL(218,7874
-#undef CHPL_BITOPS_ROTL223,7958
-#define CHPL_BITOPS_ROTR(234,8258
-#undef CHPL_BITOPS_ROTR245,8603
-#undef UI246,8627
+static inline uint32_t chpl_bitops_popcount_32(44,1477
+static inline uint64_t chpl_bitops_popcount_64(59,2064
+#define T 64,2272
+#undef T69,2496
+static inline uint32_t chpl_bitops_clz_32(81,2817
+static inline uint64_t chpl_bitops_clz_64(104,3852
+static inline uint32_t chpl_bitops_ctz_32(132,4746
+static inline uint64_t chpl_bitops_ctz_64(151,5568
+static inline uint32_t chpl_bitops_parity_32(170,6245
+static inline uint64_t chpl_bitops_parity_64(192,7021
+#define UI(211,7582
+#define CHPL_BITOPS_ROTL(212,7614
+CHPL_BITOPS_ROTL(218,7875
+#undef CHPL_BITOPS_ROTL223,7959
+#define CHPL_BITOPS_ROTR(234,8259
+#undef CHPL_BITOPS_ROTR245,8604
+#undef UI246,8628
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-blame.h,94
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-blame.h,131
 #define _chpl_blame_h_25,774
-#define UNW_LOCAL_ONLY 34,953
-extern int chpl_dprintf(36,1082
+#define UNW_LOCAL_ONLY 32,918
+#define ENABLE_OUTPUT_TO_FILE33,975
+extern int chpl_dprintf(38,1217
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-cache-task-decls.h,107
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-cache-task-decls.h,107
 #define _chpl_cache_task_decls_h_21,735
   int64_t last_acquire;25,850
 } chpl_cache_taskPrvData_t;26,909
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-cache.h,128
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-cache.h,128
 #define _chpl_cache_h_21,724
-int chpl_cache_enabled(34,1038
-void chpl_cache_acquire(51,1514
-void chpl_cache_release(57,1692
+int chpl_cache_enabled(35,1062
+void chpl_cache_acquire(52,1572
+void chpl_cache_release(58,1749
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-comm-callbacks-internal.h,86
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-comm-callbacks-internal.h,151
 #define _chpl_comm_callbacks_internal_h_21,742
-int chpl_comm_have_callbacks(43,1267
+int chpl_comm_callback_counts[chpl_comm_callback_counts40,1184
+int chpl_comm_have_callbacks(43,1260
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-comm-callbacks.h,1599
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-comm-callbacks.h,1629
 #define _chpl_comm_callbacks_h_21,733
   chpl_comm_cb_event_kind_put,116,4157
   chpl_comm_cb_event_kind_put_nb,117,4208
@@ -1785,109 +2038,111 @@ int chpl_comm_have_callbacks(43,1267
   chpl_comm_cb_event_kind_get,119,4317
   chpl_comm_cb_event_kind_get_nb,120,4368
   chpl_comm_cb_event_kind_get_strd,121,4425
-  chpl_comm_cb_event_kind_fork,122,4477
-  chpl_comm_cb_event_kind_fork_nb,123,4530
-  chpl_comm_cb_event_kind_fork_fast,124,4588
-  chpl_comm_cb_num_event_kinds125,4638
-} chpl_comm_cb_event_kind_t;126,4669
-             event_kind;130,4745
-  c_nodeid_t localNodeID;131,4811
-  c_nodeid_t remoteNodeID;132,4881
-    struct chpl_comm_info_comm 135,4974
-      void *addr;addr136,5035
-      void *raddr;raddr137,5086
-      size_t size;138,5142
-      int32_t typeIndex;139,5200
-      int lineno;140,5262
-      int32_t filename;141,5327
-    } comm;142,5392
-    struct chpl_comm_info_comm_strd 144,5405
-      void* srcaddr;145,5465
-      void* srcstrides;146,5515
-      void* dstaddr;148,5566
-      void* dststrides;149,5621
-      size_t *count;count150,5676
-      int32_t stridelevels;151,5732
-      size_t elemSize;152,5760
-      int32_t typeIndex;153,5783
-      int lineno;154,5808
-      int32_t filename;155,5872
-    } comm_strd;156,5936
-    struct chpl_comm_info_comm_fork 158,5954
-      uint16_t fork_num;159,5992
-      c_sublocid_t subloc;160,6057
-      chpl_fn_int_t fid;161,6106
-      void *arg;arg162,6154
-      size_t arg_size;163,6211
-    } fork;164,6265
-  } iu;166,6278
-} chpl_comm_cb_info_t;167,6286
-typedef void (*chpl_comm_cb_fn_t)chpl_comm_cb_fn_t169,6310
+  chpl_comm_cb_event_kind_executeOn,122,4477
+  chpl_comm_cb_event_kind_executeOn_nb,123,4540
+  chpl_comm_cb_event_kind_executeOn_fast,124,4608
+  chpl_comm_cb_num_event_kinds125,4668
+} chpl_comm_cb_event_kind_t;126,4699
+             event_kind;130,4775
+  c_nodeid_t localNodeID;131,4841
+  c_nodeid_t remoteNodeID;132,4911
+    struct chpl_comm_info_comm 135,5004
+      void *addr;addr136,5065
+      void *raddr;raddr137,5116
+      size_t size;138,5172
+      int32_t typeIndex;139,5230
+      int lineno;140,5292
+      int32_t filename;141,5357
+    } comm;142,5422
+    struct chpl_comm_info_comm_strd 144,5435
+      void* srcaddr;145,5495
+      void* srcstrides;146,5545
+      void* dstaddr;148,5596
+      void* dststrides;149,5651
+      size_t *count;count150,5706
+      int32_t stridelevels;151,5762
+      size_t elemSize;152,5790
+      int32_t typeIndex;153,5813
+      int lineno;154,5838
+      int32_t filename;155,5902
+    } comm_strd;156,5966
+    struct chpl_comm_info_comm_executeOn 158,5984
+      uint16_t executeOn_num;159,6027
+      c_sublocid_t subloc;160,6098
+      chpl_fn_int_t fid;161,6147
+      void *arg;arg162,6195
+      size_t arg_size;163,6252
+    } executeOn;164,6306
+  } iu;166,6324
+} chpl_comm_cb_info_t;167,6332
+typedef void (*chpl_comm_cb_fn_t)chpl_comm_cb_fn_t169,6356
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-comm-compiler-llvm-support.h,193
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-comm-compiler-llvm-support.h,193
 #define _chpl_comm_compiler_llvm_support_h_21,745
 void chpl_gen_comm_get_ctl(39,1244
-void chpl_gen_comm_put_ctl(47,1548
-void chpl_gen_comm_getput(59,2110
-void chpl_gen_comm_memset(88,3065
+void chpl_gen_comm_put_ctl(47,1546
+void chpl_gen_comm_getput(59,2106
+void chpl_gen_comm_memset(88,3061
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-comm-compiler-macros.h,669
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-comm-compiler-macros.h,531
 #define _chpl_comm_compiler_macros_h_21,739
 void chpl_gen_comm_get(44,1264
-void chpl_gen_comm_prefetch(64,1890
-void chpl_gen_comm_put(92,2732
-void chpl_gen_comm_get_strd(112,3358
-void chpl_gen_comm_put_strd(132,4102
-chpl_bool chpl_is_node_local(154,4941
-void chpl_check_local(162,5283
-void chpl_heap_register_global_var(169,5457
-#define CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(176,5662
-#define CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(180,5876
-void chpl_gen_comm_broadcast_global_vars(184,5958
-void chpl_check_nil(193,6254
-void* chpl_array_alloc(200,6424
-void* chpl_wide_array_alloc(205,6628
-void chpl_array_free(212,6920
-void chpl_wide_array_free(218,7045
+void chpl_gen_comm_prefetch(64,1836
+void chpl_gen_comm_put(91,2617
+void chpl_gen_comm_get_strd(111,3189
+void chpl_gen_comm_put_strd(131,3931
+chpl_bool chpl_is_node_local(153,4768
+void chpl_check_local(161,5110
+void chpl_heap_register_global_var(168,5280
+#define CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(175,5485
+#define CHPL_COMM_DEBUG_BROADCAST_GLOBAL_VARS(179,5699
+void chpl_gen_comm_broadcast_global_vars(183,5781
+void chpl_check_nil(192,6077
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-comm-launch.h,71
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-comm-launch.h,71
 #define _chpl_comm_launch_h21,729
 #define CHPL_COMM_PRELAUNCH(29,999
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-comm-locales.h,37
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-comm-locales.h,37
 #define _chpl_comm_locales_h_21,731
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-comm-no-warning-macros.h,123
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-comm-no-warning-macros.h,123
 #undef chpl_comm_put26,935
 #undef chpl_comm_get27,956
 #undef chpl_comm_put_strd28,977
 #undef chpl_comm_get_strd29,1003
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-comm-warning-macros.h,130
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-comm-warning-macros.h,130
 #define chpl_comm_put 20,701
 #define chpl_comm_get 21,745
 #define chpl_comm_put_strd 22,789
 #define chpl_comm_get_strd 23,843
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-comm.h,512
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-comm.h,829
 #define _chpl_comm_h_21,723
-typedef struct _chpl_commDiagnostics 357,14101
-  uint64_t get;358,14140
-  uint64_t get_nb;359,14156
-  uint64_t put;360,14175
-  uint64_t put_nb;361,14191
-  uint64_t test_nb;362,14210
-  uint64_t wait_nb;363,14230
-  uint64_t try_nb;364,14250
-  uint64_t fork;365,14269
-  uint64_t fork_fast;366,14286
-  uint64_t fork_nb;367,14308
-} chpl_commDiagnostics;368,14328
-#define chpl_comm_barrier(403,15474
-#define chpl_comm_exit_all(404,15503
-#define chpl_comm_exit_any(405,15541
+  chpl_task_bundle_t task_bundle;86,2798
+  chpl_comm_bundleData_t comm;90,2984
+} chpl_comm_on_bundle_t;91,3015
+typedef chpl_comm_on_bundle_t *chpl_comm_on_bundle_p;chpl_comm_on_bundle_p93,3041
+chpl_task_bundle_t* chpl_comm_on_bundle_task_bundle(96,3110
+void chpl_comm_taskCallFTable(108,3422
+typedef struct _chpl_commDiagnostics 414,16400
+  uint64_t get;415,16439
+  uint64_t get_nb;416,16455
+  uint64_t put;417,16474
+  uint64_t put_nb;418,16490
+  uint64_t test_nb;419,16509
+  uint64_t wait_nb;420,16529
+  uint64_t try_nb;421,16549
+  uint64_t execute_on;422,16568
+  uint64_t execute_on_fast;423,16591
+  uint64_t execute_on_nb;424,16619
+} chpl_commDiagnostics;425,16645
+#define chpl_comm_barrier(445,17345
+#define chpl_comm_exit_all(446,17374
+#define chpl_comm_exit_any(447,17412
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-comp-detect-macros.h,805
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-comp-detect-macros.h,805
 #define _chpl_rt_comp_detect_h_21,733
 #define RT_COMP_UNKNOWN 23,766
 #define RT_COMP_CRAY 24,792
@@ -1912,137 +2167,135 @@ typedef struct _chpl_commDiagnostics 357,14101
 #define RT_COMP_GCC_VERSION_PATCH 91,3361
 #define RT_COMP_GCC_VERSION 94,3536
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-fifo-gasnet.h,1666
-#define _chpl_fifo_gasnet_h_9,143
-  int           callee;19,368
-  uint16_t      fork_num;20,458
-  int           caller;21,548
-  c_sublocid_t  subloc;22,572
-  void*         ack;23,596
-  chpl_bool     serial_state;24,617
-  chpl_fn_int_t fid;25,691
-  int           arg_size;26,712
-  char          arg[arg27,738
-} fork_t;28,796
-typedef struct task_pool_struct* task_pool_p;36,932
-  chpl_task_prvData_t prvdata;39,996
-} chpl_task_prvDataImpl_t;40,1027
-typedef struct task_pool_struct 42,1055
-  chpl_taskID_t    id;43,1089
-  chpl_fn_p        fun;44,1141
-  void*            arg;45,1203
-  chpl_bool        begun;46,1264
-  chpl_task_list_p ltask;47,1341
-  c_string         filename;48,1424
-  int              lineno;49,1453
-  chpl_task_prvDataImpl_t chpl_data;50,1480
-  task_pool_p      next;51,1517
-  task_pool_p      prev;52,1542
-} task_pool_t;53,1567
-struct chpl_task_list 61,1937
-  chpl_fn_p fun;62,1961
-  void* arg;63,1978
-  chpl_task_prvDataImpl_t chpl_data;64,1991
-  volatile task_pool_p ptask;65,2028
-  c_string filename;66,2115
-  int lineno;67,2136
-  chpl_task_list_p next;68,2150
-  chpl_fn_p fp;76,2251
-  void* arg;77,2267
-  chpl_bool countRunning;78,2280
-  chpl_task_prvDataImpl_t chpl_data;79,2306
-} movedTaskWrapperDesc_t;80,2343
-typedef struct lockReport 83,2371
-  const char*        filename;84,2399
-  int                lineno;85,2430
-  uint64_t           prev_progress_cnt;86,2459
-  chpl_bool          maybeLocked;87,2499
-  struct lockReport* next;88,2533
-} lockReport_t;89,2560
-  task_pool_p   ptask;94,2647
-  lockReport_t* lockRprt;95,2670
-  int           EventSet;97,2712
-} thread_private_data_t;99,2751
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-env.h,28
+#define _CHPL_ENV_H_21,722
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-file-utils.h,30
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-fifo-gasnet.h,868
+#define _chpl_fifo_gasnet_h_9,143
+typedef struct task_pool_struct* task_pool_p;21,399
+  chpl_task_prvData_t prvdata;24,463
+} chpl_task_prvDataImpl_t;25,494
+typedef struct task_pool_struct 27,522
+  task_pool_p*     p_list_head;28,556
+  task_pool_p      list_next;29,619
+  task_pool_p      list_prev;30,685
+  task_pool_p      next;31,715
+  task_pool_p      prev;32,781
+  chpl_task_prvDataImpl_t chpl_data;34,807
+  chpl_task_bundle_t bundle;36,845
+} task_pool_t;37,909
+typedef struct lockReport 40,926
+  int32_t            filename;41,954
+  int                lineno;42,985
+  uint64_t           prev_progress_cnt;43,1014
+  chpl_bool          maybeLocked;44,1054
+  struct lockReport* next;45,1088
+} lockReport_t;46,1115
+  task_pool_p   ptask;51,1202
+  lockReport_t* lockRprt;52,1225
+  int           EventSet;53,1251
+} thread_private_data_t;54,1298
+
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-file-utils.h,30
 #define _FILE_UTILS_H_21,724
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-gen-includes.h,144
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-gen-includes.h,144
 void chpl_ftable_call(38,1112
-c_localeid_t id_pub2rt(47,1345
-chpl_localeID_t id_rt2pub(55,1537
-chpl_localeID_t chpl_gen_getLocaleID(61,1740
+c_localeid_t id_pub2rt(47,1368
+chpl_localeID_t id_rt2pub(55,1560
+chpl_localeID_t chpl_gen_getLocaleID(61,1762
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-init.h,29
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-init.h,29
 #define _CHPL_INIT_H_21,723
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-mem-consistency.h,251
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-linefile-support.h,507
+#define _chpl_linefile_support_h_21,731
+#define CHPL_FILE_IDX_INTERNAL 25,790
+#define CHPL_FILE_IDX_COMMAND_LINE 27,838
+#define CHPL_FILE_IDX_COMMAND_LINE_ARG 28,898
+#define CHPL_FILE_IDX_FORK_LARGE 29,962
+#define CHPL_FILE_IDX_MAIN_PROGRAM 30,1020
+#define CHPL_FILE_IDX_UNKNOWN 31,1080
+#define CHPL_FILE_IDX_IDLE_TASK 32,1137
+#define CHPL_FILE_IDX_COMM_TASK 33,1191
+#define CHPL_FILE_IDX_MAIN_TASK 34,1252
+#define CHPL_FILE_IDX_ON_BODY_TASK 35,1311
+#define CHPL_FILE_IDX_SAVED_FILENAME 36,1371
+
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-mem-consistency.h,251
 #define _chpl_mem_consistency_h_21,734
 void chpl_rmem_consist_release(61,2297
-void chpl_rmem_consist_acquire(69,2431
-void chpl_rmem_consist_maybe_release(83,2820
-void chpl_rmem_consist_maybe_acquire(93,3201
-void chpl_rmem_consist_fence(104,3588
+void chpl_rmem_consist_acquire(69,2430
+void chpl_rmem_consist_maybe_release(83,2817
+void chpl_rmem_consist_maybe_acquire(93,3196
+void chpl_rmem_consist_fence(104,3581
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-mem-desc.h,269
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-mem-desc.h,301
 #define _chpl_mem_desc_H_21,727
-#define CHPL_MD_ALL_MEMDESCS(42,1739
-#define CHPL_MEMDESC_ENUM(141,8767
-  CHPL_MD_ALL_MEMDESCS(143,8850
-  CHPL_MD_ALL_MEMDESCS(CHPL_MEMDESC_ENUM)143,8850
-} chpl_mem_rtMemDesc_t;144,8892
-typedef int16_t chpl_mem_descInt_t;158,9328
+#define CHPL_MD_ALL_MEMDESCS(44,1763
+#define CHPL_MEMDESC_MACRO(91,5192
+  CHPL_MD_ALL_MEMDESCS(93,5277
+  CHPL_MD_ALL_MEMDESCS(CHPL_MEMDESC_MACRO)93,5277
+} chpl_mem_rtMemDesc_t;94,5320
+#undef CHPL_MEMDESC_MACRO96,5345
+typedef int16_t chpl_mem_descInt_t;110,5783
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-mem-hook.h,389
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-mem-hook.h,389
 #define _chpl_mem_hook_H_21,727
-#define CHPL_MEMHOOKS_ACTIVE 44,1366
-#define CHPL_MEMHOOKS_ACTIVE 47,1424
-#define CHPL_MEMHOOKS_ACTIVE 49,1473
-chpl_mem_descInt_t chpl_memhook_md_num(57,1619
-void chpl_memhook_malloc_pre(72,2062
-void chpl_memhook_malloc_post(81,2365
-void chpl_memhook_free_pre(93,2840
-void chpl_memhook_realloc_pre(104,3159
-void chpl_memhook_realloc_post(115,3542
+#define CHPL_MEMHOOKS_ACTIVE 48,1406
+#define CHPL_MEMHOOKS_ACTIVE 51,1464
+#define CHPL_MEMHOOKS_ACTIVE 53,1513
+chpl_mem_descInt_t chpl_memhook_md_num(61,1659
+void chpl_memhook_malloc_pre(76,2100
+void chpl_memhook_malloc_post(85,2402
+void chpl_memhook_free_pre(97,2876
+void chpl_memhook_realloc_pre(108,3194
+void chpl_memhook_realloc_post(119,3576
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-mem-no-warning-macros.h,131
-#define _chpl_mem_no_warning_macros_h_21,740
-#undef malloc27,981
-#undef calloc28,995
-#undef free29,1009
-#undef realloc30,1021
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-mem-no-warning-macros.h,87
+#undef malloc29,1091
+#undef calloc30,1105
+#undef free31,1119
+#undef realloc32,1131
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-mem-warning-macros.h,225
-#define _chpl_mem_warning_macros_h_21,737
-#define _chpl_mem_warning_macros_really_h_26,922
-static inline void sys_free(31,1210
-#define malloc 34,1272
-#define calloc 35,1335
-#define free 36,1398
-#define realloc 37,1454
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-mem-warning-macros.h,182
+#define _chpl_mem_warning_macros_really_h_28,997
+static inline void sys_free(33,1285
+#define malloc 36,1347
+#define calloc 37,1410
+#define free 38,1473
+#define realloc 39,1529
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-mem.h,398
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-mem.h,753
 #define _chpl_mem_H_21,722
-void* chpl_mem_allocMany(49,1271
-void* chpl_mem_alloc(61,1718
-void* chpl_mem_allocManyZero(67,1928
-void* chpl_mem_calloc(79,2388
-void* chpl_mem_realloc(85,2604
-void chpl_mem_free(104,3221
-void* chpl_memcpy(111,3444
-void chpl_rt_free_c_string_copy(121,3721
-void chpl_rt_free_c_string(132,4137
-#define chpl_mem_allocMany(150,4731
-#define chpl_mem_free(153,4839
+void* chpl_mem_allocMany(74,2230
+void* chpl_mem_alloc(86,2676
+void* chpl_mem_allocManyZero(92,2885
+void* chpl_mem_calloc(104,3344
+void* chpl_mem_realloc(111,3601
+void chpl_mem_free(130,4217
+void* chpl_mem_array_alloc(136,4381
+void* chpl_mem_wide_array_alloc(157,5159
+void chpl_mem_array_free(168,5657
+void chpl_mem_wide_array_free(174,5807
+void* chpl_memcpy(183,6146
+static inline size_t chpl_mem_good_alloc_size(195,6573
+void chpl_rt_free_c_string_copy(203,6871
+void chpl_rt_free_c_string(214,7286
+  #define CHPL_MEM_IMPL_ALLOC_LOCALIZES(237,8337
+chpl_bool chpl_mem_alloc_localizes(241,8407
+size_t chpl_mem_localizationThreshold(246,8509
+#define chpl_mem_allocMany(255,8684
+#define chpl_mem_free(258,8792
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-prefetch.h,74
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-prefetch.h,74
 #define _chpl_prefetch_h_21,727
 static inline void chpl_prefetch(25,792
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-privatization.h,38
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-privatization.h,38
 #define _chpl_privatization_h_21,732
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-string-support.h,240
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-string-support.h,240
 #define _chpl_string_support_h_21,733
 typedef const char* c_string;41,1546
 typedef const char* c_string_copy;49,1979
@@ -2051,68 +2304,68 @@ int64_t string_length(60,2139
 int32_t string_compare(67,2243
 c_string_copy chpl_format(77,2434
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-string.h,110
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-string.h,71
 #define _chpl_string_h_21,725
 typedef const char* chpl_string;25,784
-chpl_string defaultStringValue=29,878
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-tasks-callbacks-internal.h,188
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-tasks-callbacks-internal.h,188
 #define _chpl_tasks_callbacks_internal_h_21,743
 int chpl_task_callback_counts[chpl_task_callback_counts33,989
-int chpl_task_have_callbacks(45,1393
-void chpl_task_do_callbacks(52,1587
+int chpl_task_have_callbacks(45,1398
+void chpl_task_do_callbacks(52,1592
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-tasks-callbacks.h,909
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-tasks-callbacks.h,914
 #define _chpl_tasks_callbacks_h_21,734
-  chpl_task_cb_event_kind_create,123,4620
-  chpl_task_cb_event_kind_begin,124,4654
-  chpl_task_cb_event_kind_end,125,4687
-  chpl_task_cb_num_event_kinds126,4718
-} chpl_task_cb_event_kind_t;127,4749
-  chpl_task_cb_info_kind_full,130,4794
-  chpl_task_cb_info_kind_id_only,131,4825
-  chpl_task_cb_num_info_kinds132,4859
-} chpl_task_cb_info_kind_t;133,4889
-  uint64_t nodeID;136,4935
-          event_kind;138,5016
-          info_kind;140,5107
-    struct chpl_task_info_full 143,5181
-      chpl_fn_int_t fid;145,5278
-      int32_t filename;146,5342
-      int lineno;147,5410
-      uint64_t id;148,5478
-      int is_fork;149,5540
-    } full;150,5599
-    struct chpl_task_info_id_only 151,5611
-      uint64_t id;153,5714
-    } id_only;154,5776
-  } iu;155,5791
-} chpl_task_cb_info_t;156,5799
-typedef void (*chpl_task_cb_fn_t)chpl_task_cb_fn_t158,5823
+  chpl_task_cb_event_kind_create,124,4643
+  chpl_task_cb_event_kind_begin,125,4677
+  chpl_task_cb_event_kind_end,126,4710
+  chpl_task_cb_num_event_kinds127,4741
+} chpl_task_cb_event_kind_t;128,4772
+  chpl_task_cb_info_kind_full,131,4817
+  chpl_task_cb_info_kind_id_only,132,4848
+  chpl_task_cb_num_info_kinds133,4882
+} chpl_task_cb_info_kind_t;134,4912
+  uint64_t nodeID;137,4958
+          event_kind;139,5039
+          info_kind;141,5130
+    struct chpl_task_info_full 144,5204
+      chpl_fn_int_t fid;146,5301
+      int32_t filename;147,5365
+      int lineno;148,5433
+      uint64_t id;149,5501
+      int is_executeOn;150,5563
+    } full;151,5632
+    struct chpl_task_info_id_only 152,5644
+      uint64_t id;154,5747
+    } id_only;155,5809
+  } iu;156,5824
+} chpl_task_cb_info_t;157,5832
+typedef void (*chpl_task_cb_fn_t)chpl_task_cb_fn_t159,5856
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-tasks-prvdata.h,146
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-tasks-prvdata.h,112
 #define _chpl_tasks_prvdata_h_21,732
-  chpl_bool serial_state;28,903
-  chpl_comm_taskPrvData_t comm_data;29,963
-} chpl_task_prvData_t;30,1000
+  chpl_comm_taskPrvData_t comm_data;28,903
+} chpl_task_prvData_t;29,940
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-tasks.h,577
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-tasks.h,660
 #define _chpl_tasks_h_21,724
-typedef chpl_sync_aux_t chpl_single_aux_t;65,2122
-void chpl_single_lock(68,2180
-void chpl_single_unlock(70,2260
-void chpl_single_waitFullAndLock(72,2344
-void chpl_single_markAndSignalFull(77,2532
-chpl_bool chpl_single_isFull(81,2640
-void chpl_single_initAux(85,2761
-void chpl_single_destroyAux(87,2847
-#define CHPL_TASK_STD_MODULES_INITIALIZED(125,4206
-typedef struct chpl_task_list* chpl_task_list_p;129,4259
-typedef void chpl_sync_aux_t;308,10055
-typedef chpl_sync_aux_t chpl_single_aux_t;309,10085
-#define chpl_task_exit(310,10128
+typedef chpl_task_bundle_t* chpl_task_bundle_p;36,1013
+typedef chpl_sync_aux_t chpl_single_aux_t;74,2318
+void chpl_single_lock(77,2376
+void chpl_single_unlock(79,2456
+void chpl_single_waitFullAndLock(81,2540
+void chpl_single_markAndSignalFull(86,2727
+chpl_bool chpl_single_isFull(90,2835
+void chpl_single_initAux(94,2956
+void chpl_single_destroyAux(96,3042
+#define CHPL_TASK_STD_MODULES_INITIALIZED(137,4563
+typedef struct chpl_task_list* chpl_task_list_p;141,4616
+#define FID_NONE 183,6632
+typedef void chpl_sync_aux_t;389,12977
+typedef chpl_sync_aux_t chpl_single_aux_t;390,13007
+#define chpl_task_exit(391,13050
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-thread-local-storage.h,623
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-thread-local-storage.h,623
 #define _chpl_thread_local_storage_h_21,739
 #define CHPL_TLS 30,1061
 #define CHPL_TLS 35,1222
@@ -2133,11 +2386,14 @@ static inline void chpl_tlschk(52,1782
 # define CHPL_TLS_INIT2(64,2299
 # define CHPL_TLS_DELETE(65,2391
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-threads.h,91
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-threads.h,91
 #define _chpl_threads_h_21,726
 typedef chpl_thread_mutex_t* chpl_thread_mutex_p;118,3054
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-vector-marcos.h,246
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-topo.h,29
+#define _chpl_topo_h_21,723
+
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-vector-macros.h,246
 #define _chpl_rt_vector_macro_h_21,734
 #define CHPL_PRAGMA_IVDEP27,913
 #define CHPL_PRAGMA_IVDEP 32,1156
@@ -2146,7 +2402,7 @@ typedef chpl_thread_mutex_t* chpl_thread_mutex_p;118,3054
 #define CHPL_PRAGMA_IVDEP 48,1947
 #define CHPL_PRAGMA_IVDEP51,2002
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl-wide-ptr-fns.h,622
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl-wide-ptr-fns.h,622
 #define _chpl_wide_ptr_impl_h_21,732
   #define CHPL_WIDE_PTR_MARK_BITS 48,1531
   #define CHPL_WIDE_PTR_MARK 49,1567
@@ -2163,46 +2419,44 @@ chpl_localeID_t chpl_wide_ptr_get_localeID(149,4122
 void chpl_wide_ptr_read_localeID(163,4443
 wide_ptr_t chpl_return_wide_ptr_add(171,4609
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl_md.h,27
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl_md.h,27
 #define _CHPL_MD_H_21,721
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpl_rt_utils_static.h,40
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpl_rt_utils_static.h,40
 #define _chpl_rt_utils_static_H_21,734
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chplcast.h,324
+/lustre/hzhang86/bin/chapel-15/runtime/include/chplcast.h,236
 #define _chplcast_h_21,722
-c_string chpl_bool_to_c_string(80,4162
-c_string chpl_bool8_to_c_string(84,4255
-c_string chpl_bool16_to_c_string(88,4350
-c_string chpl_bool32_to_c_string(92,4447
-c_string chpl_bool64_to_c_string(96,4544
-c_string chpl_string_to_c_string(107,4936
-chpl_string c_string_to_chpl_string(117,5314
+c_string chpl_bool_to_c_string(84,4201
+c_string chpl_bool8_to_c_string(88,4294
+c_string chpl_bool16_to_c_string(92,4389
+c_string chpl_bool32_to_c_string(96,4486
+c_string chpl_bool64_to_c_string(100,4583
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chplcgfns.h,39
+/lustre/hzhang86/bin/chapel-15/runtime/include/chplcgfns.h,39
 #define _CHPL_GEN_INTERFACE_H_30,1066
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpldirent.h,146
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpldirent.h,146
 #define _CHPL_DIRENT_H_21,725
 typedef DIR* DIRptr;25,771
 typedef struct dirent* direntptr;27,793
 const char* chpl_rt_direntptr_getname(30,842
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chplexit.h,59
+/lustre/hzhang86/bin/chapel-15/runtime/include/chplexit.h,59
 #define _CHPL_EXIT_H_21,723
 #define chpl_exit_any(32,991
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chplfp.h,27
+/lustre/hzhang86/bin/chapel-15/runtime/include/chplfp.h,27
 #define _CHPL_FP_H_21,721
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chplglob.h,162
+/lustre/hzhang86/bin/chapel-15/runtime/include/chplglob.h,162
 int chpl_glob(30,884
 size_t chpl_glob_num(35,1014
 const char* chpl_glob_index(40,1095
 size_t chpl_wordexp_num(45,1196
 const char* chpl_wordexp_index(50,1285
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chplio.h,343
+/lustre/hzhang86/bin/chapel-15/runtime/include/chplio.h,343
 #define _chplio_H_21,720
 #define _default_string_length 36,987
 #define _default_format_read_string 37,1034
@@ -2213,10 +2467,10 @@ static inline c_file chpl_cstdin(51,1450
 static inline c_file chpl_cstdout(52,1507
 static inline c_file chpl_cstderr(53,1566
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpllaunch.h,31
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpllaunch.h,31
 #define _CHPL_LAUNCH_H_21,725
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chplmath.h,1203
+/lustre/hzhang86/bin/chapel-15/runtime/include/chplmath.h,1203
 #define _CHPL_MATH_H_21,723
 static inline double chpl_macro_INFINITY(23,746
 static inline double chpl_macro_NAN(29,902
@@ -2260,183 +2514,200 @@ static inline int chpl_macro_float_isnan(40,1418
 #define nearbyintf(75,2529
 #define tgammaf(76,2571
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chplmemtrack.h,166
+/lustre/hzhang86/bin/chapel-15/runtime/include/chplmemtrack.h,166
 #define _chplmemtrack_H_21,726
-#define chpl_setMemmax(60,2047
-#define chpl_setMemstat(61,2077
-#define chpl_setMemreport(62,2103
-#define chpl_setMemtrack(63,2131
+#define chpl_setMemmax(75,2584
+#define chpl_setMemstat(76,2614
+#define chpl_setMemreport(77,2640
+#define chpl_setMemtrack(78,2668
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chplrt.h,72
+/lustre/hzhang86/bin/chapel-15/runtime/include/chplrt.h,72
 #define _chplrt_H_33,1229
 #define _noop(39,1291
 #define exit 43,1347
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chplsys.h,28
+/lustre/hzhang86/bin/chapel-15/runtime/include/chplsys.h,28
 #define _CHPL_SYS_H_21,722
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpltimers.h,72
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpltimers.h,72
 #define _chpltimers_h_21,724
 typedef struct timeval _timevalue;27,837
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chpltypes.h,4669
+/lustre/hzhang86/bin/chapel-15/runtime/include/chpltypes.h,5282
 #define _chpltypes_H_21,723
-typedef char c_char;32,942
-typedef signed char c_schar;33,963
-typedef unsigned char c_uchar;34,992
-typedef short c_short;35,1023
-typedef unsigned short c_ushort;36,1046
-typedef int c_int;37,1079
-typedef unsigned int c_uint;38,1098
-typedef long c_long;39,1127
-typedef unsigned long c_ulong;40,1148
-typedef long long c_longlong;41,1179
-typedef unsigned long long c_ulonglong;42,1209
-typedef float c_float;43,1249
-typedef double c_double;44,1272
-typedef void* c_void_ptr;45,1297
-typedef uintptr_t c_uintptr;46,1323
-typedef intptr_t c_intptr;47,1352
-typedef ptrdiff_t c_ptrdiff;48,1379
-typedef _Bool chpl_bool;52,1463
-typedef bool chpl_bool;54,1494
-#define c_nil 57,1526
-static inline chpl_bool is_c_nil(58,1545
-static inline void* c_pointer_return(59,1621
-  CHPL_TYPE_chpl_bool,62,1697
-  CHPL_TYPE_chpl_bool8,63,1720
-  CHPL_TYPE_chpl_bool16,64,1744
-  CHPL_TYPE_chpl_bool32,65,1769
-  CHPL_TYPE_chpl_bool64,66,1794
-  CHPL_TYPE_enum,67,1819
-  CHPL_TYPE_int8_t,68,1837
-  CHPL_TYPE_int16_t,69,1857
-  CHPL_TYPE_int32_t,70,1878
-  CHPL_TYPE_int64_t,71,1899
-  CHPL_TYPE_uint8_t,72,1920
-  CHPL_TYPE_uint16_t,73,1941
-  CHPL_TYPE_uint32_t,74,1963
-  CHPL_TYPE_uint64_t,75,1985
-  CHPL_TYPE__real32,76,2007
-  CHPL_TYPE__real64,77,2028
-  CHPL_TYPE__imag32,78,2049
-  CHPL_TYPE__imag64,79,2070
-  CHPL_TYPE__complex64,80,2091
-  CHPL_TYPE__complex128,81,2115
-  CHPL_TYPE_chpl_string,82,2140
-  CHPL_TYPE_wide_string,83,2165
-  CHPL_TYPE__cfile,84,2190
-  CHPL_TYPE_chpl_task_list_p,85,2210
-  CHPL_TYPE__timevalue,86,2240
-  CHPL_TYPE_chpl_sync_aux_t,87,2264
-  CHPL_TYPE_chpl_single_aux_t,88,2293
-  CHPL_TYPE_chpl_taskID_t,89,2324
-  CHPL_TYPE__symbol,90,2351
-  CHPL_TYPE_CLASS_REFERENCE,91,2372
-  CHPL_TYPE_DONE92,2401
-} chplType;93,2418
-typedef struct _chpl_fieldType 95,2431
-  chplType type;96,2464
-  size_t offset;97,2481
-} chpl_fieldType;98,2498
-typedef int32_t c_nodeid_t;103,2707
-#define FORMAT_c_nodeid_t 104,2735
-typedef int32_t c_sublocid_t;105,2768
-#define FORMAT_c_sublocid_t 106,2798
-typedef int64_t c_localeid_t;107,2833
-#define c_sublocid_none_val 110,2937
-#define c_sublocid_any_val 111,2968
-static const c_sublocid_t c_sublocid_none 113,3000
-static const c_sublocid_t c_sublocid_any 114,3065
-typedef struct wide_ptr_s 129,3693
-  chpl_localeID_t locale;130,3721
-  void* addr;131,3747
-} wide_ptr_t;132,3761
-typedef wide_ptr_t* ptr_wide_ptr_t;133,3775
-typedef void * wide_ptr_t;140,4036
-typedef wide_ptr_t* ptr_wide_ptr_t;141,4063
-typedef void* ptr_wide_ptr_t;155,4599
-#define nil 162,4665
-typedef void* _nilType;163,4680
-typedef void* _nilRefType;164,4704
-typedef void* _chpl_object;165,4731
-typedef void* _chpl_value;166,4759
-typedef void* chpl_opaque;167,4786
-#define nilRef 169,4814
-#define INT8(172,4884
-#define INT16(173,4925
-#define INT32(174,4968
-#define INT64(175,5011
-#define UINT8(176,5054
-#define UINT16(177,5097
-#define UINT32(178,5142
-#define UINT64(179,5187
-typedef int8_t chpl_bool8;182,5234
-typedef int16_t chpl_bool16;183,5261
-typedef int32_t chpl_bool32;184,5290
-typedef int64_t chpl_bool64;185,5319
-typedef void (*chpl_fn_p)chpl_fn_p187,5349
-typedef int16_t chpl_fn_int_t;188,5422
-#define false 193,5668
-#define  true 196,5705
-typedef float               _real32;199,5729
-typedef double              _real64;200,5766
-typedef float               _imag32;201,5803
-typedef double              _imag64;202,5840
-typedef struct __complex64 203,5877
-typedef struct __complex64 { _real32 re;203,5877
-typedef struct __complex64 { _real32 re; _real32 im;203,5877
-typedef struct __complex64 { _real32 re; _real32 im; } _complex64;203,5877
-typedef struct __complex128 204,5944
-typedef struct __complex128 { _real64 re;204,5944
-typedef struct __complex128 { _real64 re; _real64 im;204,5944
-typedef struct __complex128 { _real64 re; _real64 im; } _complex128;204,5944
-typedef int64_t              _symbol;205,6013
-#define MIN_INT8 208,6115
-#define MIN_INT16 209,6152
-#define MIN_INT32 210,6190
-#define MIN_INT64 211,6228
-#define MAX_INT8 212,6266
-#define MAX_INT16 213,6303
-#define MAX_INT32 214,6341
-#define MAX_INT64 215,6379
-#define MIN_UINT8 217,6418
-#define MIN_UINT16 218,6450
-#define MIN_UINT32 219,6482
-#define MIN_UINT64 220,6514
-#define MAX_UINT8 221,6546
-#define MAX_UINT16 222,6584
-#define MAX_UINT32 223,6623
-#define MAX_UINT64 224,6662
-#define MAX_FLOAT32 228,6852
-#define MAX_FLOAT64 229,6888
-typedef int32_t chpl__class_id;234,7055
-typedef struct chpl_main_argument_s 236,7088
-  int64_t argc;237,7126
-  const char **argv;argv238,7142
-  int32_t return_value;239,7163
-} chpl_main_argument;240,7187
+typedef char c_char;35,990
+typedef signed char c_schar;36,1011
+typedef unsigned char c_uchar;37,1040
+typedef short c_short;38,1071
+typedef unsigned short c_ushort;39,1094
+typedef int c_int;40,1127
+typedef unsigned int c_uint;41,1146
+typedef long c_long;42,1175
+typedef unsigned long c_ulong;43,1196
+typedef long long c_longlong;44,1227
+typedef unsigned long long c_ulonglong;45,1257
+typedef float c_float;46,1297
+typedef double c_double;47,1320
+typedef void* c_void_ptr;48,1345
+typedef void* c_fn_ptr;49,1371
+typedef uintptr_t c_uintptr;50,1411
+typedef intptr_t c_intptr;51,1440
+typedef ptrdiff_t c_ptrdiff;52,1467
+typedef _Bool chpl_bool;56,1551
+typedef bool chpl_bool;58,1582
+#define c_nil 61,1614
+static inline chpl_bool is_c_nil(62,1633
+static inline void* c_pointer_return(63,1709
+  CHPL_TYPE_chpl_bool,66,1785
+  CHPL_TYPE_chpl_bool8,67,1808
+  CHPL_TYPE_chpl_bool16,68,1832
+  CHPL_TYPE_chpl_bool32,69,1857
+  CHPL_TYPE_chpl_bool64,70,1882
+  CHPL_TYPE_enum,71,1907
+  CHPL_TYPE_int8_t,72,1925
+  CHPL_TYPE_int16_t,73,1945
+  CHPL_TYPE_int32_t,74,1966
+  CHPL_TYPE_int64_t,75,1987
+  CHPL_TYPE_uint8_t,76,2008
+  CHPL_TYPE_uint16_t,77,2029
+  CHPL_TYPE_uint32_t,78,2051
+  CHPL_TYPE_uint64_t,79,2073
+  CHPL_TYPE__real32,80,2095
+  CHPL_TYPE__real64,81,2116
+  CHPL_TYPE__imag32,82,2137
+  CHPL_TYPE__imag64,83,2158
+  CHPL_TYPE__complex64,84,2179
+  CHPL_TYPE__complex128,85,2203
+  CHPL_TYPE_chpl_string,86,2228
+  CHPL_TYPE_wide_string,87,2253
+  CHPL_TYPE__cfile,88,2278
+  CHPL_TYPE_chpl_task_list_p,89,2298
+  CHPL_TYPE__timevalue,90,2328
+  CHPL_TYPE_chpl_sync_aux_t,91,2352
+  CHPL_TYPE_chpl_single_aux_t,92,2381
+  CHPL_TYPE_chpl_taskID_t,93,2412
+  CHPL_TYPE__symbol,94,2439
+  CHPL_TYPE_CLASS_REFERENCE,95,2460
+  CHPL_TYPE_DONE96,2489
+} chplType;97,2506
+typedef struct _chpl_fieldType 99,2519
+  chplType type;100,2552
+  size_t offset;101,2569
+} chpl_fieldType;102,2586
+typedef int32_t c_nodeid_t;107,2795
+#define FORMAT_c_nodeid_t 108,2823
+typedef int32_t c_sublocid_t;109,2856
+#define FORMAT_c_sublocid_t 110,2886
+typedef int64_t c_localeid_t;111,2921
+#define c_sublocid_none_val 114,3025
+#define c_sublocid_any_val 115,3056
+static const c_sublocid_t c_sublocid_none 117,3088
+static const c_sublocid_t c_sublocid_any 118,3153
+static inline int isActualSublocID(120,3218
+typedef struct wide_ptr_s 137,3864
+  chpl_localeID_t locale;138,3892
+  void* addr;139,3918
+} wide_ptr_t;140,3932
+typedef wide_ptr_t* ptr_wide_ptr_t;141,3946
+typedef void * wide_ptr_t;148,4207
+typedef wide_ptr_t* ptr_wide_ptr_t;149,4234
+typedef void* ptr_wide_ptr_t;163,4770
+#define nil 170,4836
+typedef void* _nilType;171,4851
+typedef void* _nilRefType;172,4875
+typedef void* _chpl_object;173,4902
+typedef void* _chpl_value;174,4930
+typedef void* chpl_opaque;175,4957
+#define nilRef 177,4985
+#define INT8(180,5055
+#define INT16(181,5096
+#define INT32(182,5139
+#define INT64(183,5182
+#define UINT8(184,5225
+#define UINT16(185,5268
+#define UINT32(186,5313
+#define UINT64(187,5358
+typedef int8_t chpl_bool8;190,5405
+typedef int16_t chpl_bool16;191,5432
+typedef int32_t chpl_bool32;192,5461
+typedef int64_t chpl_bool64;193,5490
+typedef void (*chpl_fn_p)chpl_fn_p195,5520
+typedef int16_t chpl_fn_int_t;196,5593
+typedef struct _chpl_fn_info 199,5721
+  const char *name;name200,5752
+  int fileno;201,5772
+  int lineno;202,5786
+} chpl_fn_info;203,5800
+#define false 208,5996
+#define  true 211,6033
+typedef float               _real32;214,6057
+typedef double              _real64;215,6094
+typedef float               _imag32;216,6131
+typedef double              _imag64;217,6168
+typedef float complex       _complex64;219,6225
+typedef double complex      _complex128;220,6265
+typedef int64_t             _symbol;222,6313
+#define MIN_INT8 225,6414
+#define MIN_INT16 226,6451
+#define MIN_INT32 227,6489
+#define MIN_INT64 228,6527
+#define MAX_INT8 229,6565
+#define MAX_INT16 230,6602
+#define MAX_INT32 231,6640
+#define MAX_INT64 232,6678
+#define MIN_UINT8 234,6717
+#define MIN_UINT16 235,6749
+#define MIN_UINT32 236,6781
+#define MIN_UINT64 237,6813
+#define MAX_UINT8 238,6845
+#define MAX_UINT16 239,6883
+#define MAX_UINT32 240,6922
+#define MAX_UINT64 241,6961
+#define MAX_FLOAT32 245,7151
+#define MAX_FLOAT64 246,7187
+typedef int32_t chpl__class_id;251,7354
+typedef struct chpl_main_argument_s 253,7387
+  int64_t argc;254,7425
+  const char **argv;argv255,7441
+  int32_t return_value;256,7462
+} chpl_main_argument;257,7486
+static inline _real64* complex128GetRealRef(263,7636
+static inline _real64* complex128GetImagRef(266,7734
+static inline _real32* complex64GetRealRef(269,7832
+static inline _real32* complex64GetImagRef(272,7928
+static inline _complex128 complexMultiply128(277,8070
+static inline _complex128 complexDivide128(280,8167
+static inline _complex128 complexAdd128(283,8262
+static inline _complex128 complexSubtract128(286,8354
+static inline _complex128 complexUnaryMinus128(289,8451
+static inline _complex64 complexMultiply64(294,8577
+static inline _complex64 complexDivide64(297,8670
+static inline _complex64 complexAdd64(300,8761
+static inline _complex64 complexSubtract64(303,8849
+static inline _complex64 complexUnaryMinus64(306,8942
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/config.h,26
+/lustre/hzhang86/bin/chapel-15/runtime/include/config.h,26
 #define _config_H_21,720
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/error.h,143
+/lustre/hzhang86/bin/chapel-15/runtime/include/error.h,219
 #define _error_H_21,719
-#define chpl_warning(33,1032
-#define chpl_error(39,1284
-#define chpl_internal_error(46,1576
-void chpl_msg(53,1813
+#define chpl_warning(42,1608
+#define chpl_warning_explicit(48,1947
+#define chpl_error(55,2367
+#define chpl_error_explicit(62,2787
+#define chpl_internal_error(69,3207
+void chpl_msg(76,3633
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/gdb.h,23
+/lustre/hzhang86/bin/chapel-15/runtime/include/gdb.h,23
 #define _GDB_H_21,717
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/stdchpl.h,27
+/lustre/hzhang86/bin/chapel-15/runtime/include/stdchpl.h,27
 #define _stdchpl_H_21,721
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/stdchplrt.h,29
+/lustre/hzhang86/bin/chapel-15/runtime/include/stdchplrt.h,29
 #define _stdchplrt_H_21,723
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/sys_basic.h,478
+/lustre/hzhang86/bin/chapel-15/runtime/include/sys_basic.h,480
 #define _SYS_BASIC_H21,722
 #define _BSD_SOURCE25,801
 #define _DARWIN_C_SOURCE30,889
@@ -2445,13 +2716,13 @@ void chpl_msg(53,1813
 #define _XOPEN_SOURCE 48,1391
 #define _POSIX_C_SOURCE 52,1449
 #define _DEFAULT_SOURCE58,1665
-#define __STDC_CONSTANT_MACROS73,2137
-#define PTR_ADDBYTES(83,2311
-#define PTR_DIFFBYTES(85,2389
-#define ULLONG_MAX 89,2584
-#define UINT32_MAX 95,2762
-#define INT64_MAX 98,2818
-#define restrict 106,3081
-#define restrict 108,3115
+#define __STDC_CONSTANT_MACROS78,2437
+#define PTR_ADDBYTES(89,2618
+#define PTR_DIFFBYTES(91,2696
+#define ULLONG_MAX 95,2891
+#define UINT32_MAX 101,3069
+#define INT64_MAX 104,3125
+#define restrict 112,3388
+#define restrict 114,3422
 
-/lustre/hzhang86/bin/chapel-11/runtime/include/chplgmp.h,0
+/lustre/hzhang86/bin/chapel-15/runtime/include/chplgmp.h,0

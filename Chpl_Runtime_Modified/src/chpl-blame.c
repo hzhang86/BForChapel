@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,9 @@
 #include "chplrt.h"
 #include "chpl-comm.h"
 #include "chpl-tasks.h"
+#include "chpl-tasks-callbacks.h"
+#include "chpl-comm-callbacks.h"
+#include "chpl-linefile-support.h"
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
@@ -37,21 +40,26 @@
 #include <sys/stat.h>
 #include <sys/resource.h>
 #include <sys/param.h>
-#include "chpl-fifo-gasnet.h"
+
 #include "chplcgfns.h"
+#include "chpl-fifo-gasnet.h"
 
 extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, 
-extern char host_name[128];
-// each pre-On stacktrace also needs it in case the situation like// forall i in 1..10 do
-//   on Locales[i] do
-//     something...
-// Then fork file only goes back to "taskListProcess" line, we'll
-// need the corresponding preStack to constitute full stacktrace
-extern __thread fork_t *param_plain;
-extern __thread fork_t *param_nb;
-extern __thread fork_t *param_large;
-extern __thread fork_t *param_nb_large;
+extern __thread chpl_comm_on_bundle_t *param_plain;
+extern __thread chpl_comm_on_bundle_t *param_nb;
+extern __thread chpl_comm_on_bundle_t *param_large;
+extern __thread chpl_comm_on_bundle_t *param_nb_large;
 extern __thread task_pool_p task_pool_node;
+extern FILE *preFile;
+extern FILE *execute_onFile;
+extern FILE *execute_on_nbFile;
+extern FILE *execute_on_fastFile;
+extern FILE *compFile;
+extern chpl_thread_mutex_t stack_unwind_lock; // critical section lock
+
+int install_callbacks (void);
+int uninstall_callbacks (void);
+void PAPIhandler(int EventSet, void *address, long long overflow_vector, void *context);
 
 static void cb_task_create (const chpl_task_cb_info_t *info);
 static void cb_task_begin (const chpl_task_cb_info_t *info);
@@ -62,12 +70,20 @@ static void cb_comm_put(const chpl_comm_cb_info_t *info);
 static void cb_comm_get(const chpl_comm_cb_info_t *info);
 static void cb_comm_put_strd(const chpl_comm_cb_info_t *info);
 static void cb_comm_get_strd(const chpl_comm_cb_info_t *info);
-static void cb_comm_fork(const chpl_comm_cb_info_t *info);
-static void cb_comm_fork_nb(const chpl_comm_cb_info_t *info);
-static void cb_comm_fork_fast(const chpl_comm_cb_info_t *info);
+static void cb_comm_executeOn(const chpl_comm_cb_info_t *info);
+static void cb_comm_executeOn_nb(const chpl_comm_cb_info_t *info);
+static void cb_comm_executeOn_fast(const chpl_comm_cb_info_t *info);
+
+// blame-specific callbacks
+static void cb_task_create_blame (const chpl_task_cb_info_t *info);
+static void cb_comm_executeOn_blame(const chpl_comm_cb_info_t *info);
+static void cb_comm_executeOn_nb_blame(const chpl_comm_cb_info_t *info);
+static void cb_comm_executeOn_fast_blame(const chpl_comm_cb_info_t *info);
 
 int chpl_vdebug_fd = -1;
 int chpl_vdebug = 0;
+
+#define TID_STRING(buff, tid) (chpl_task_idToString(buff, CHPL_TASK_ID_STRING_MAX_LEN, tid))
 
 int chpl_dprintf (int fd, const char * format, ...) {
   char buffer[2048]; 
@@ -86,9 +102,36 @@ int chpl_dprintf (int fd, const char * format, ...) {
   return -1;
 }
 
-//static int chpl_make_vdebug_file (const char *rootname) {
-//  return 0;
-//}
+static int chpl_make_vdebug_file (const char *rootname) {
+    char fname[MAXPATHLEN]; 
+    struct stat sb;
+
+    chpl_vdebug = 0;
+    chpl_vdebug_fd = -1;
+
+    // Make sure the directory is made.
+    if (mkdir (rootname,0777) < 0) {
+      if (stat (rootname, &sb) < 0) {
+        fprintf (stderr, "Can not make Visual Debug directory %s.\n", rootname);
+        return -1;
+      }
+      if (!S_ISDIR(sb.st_mode)) {
+        fprintf (stderr, "%s: not a directory.\n", rootname);
+        return -1;
+      }
+    }
+    
+    snprintf (fname, sizeof (fname), "%s/%s-%d", rootname, rootname, chpl_nodeID);
+    chpl_vdebug_fd = open (fname, O_WRONLY|O_CREAT|O_TRUNC|O_APPEND, 0666);
+    if (chpl_vdebug_fd < 0) {
+      fprintf (stderr, "Visual Debug failed to open %s: %s\n",
+               fname, strerror (errno));
+      chpl_vdebug_fd = -1;
+      return -1;
+    }
+
+    return 0;
+}
 
 // Record>  ChplVdebug: ver # nid # tid # seq time.sec user.time system.time 
 //
@@ -98,6 +141,73 @@ int chpl_dprintf (int fd, const char * format, ...) {
 //  seq time.sec -- unique number for this run
 
 void chpl_vdebug_start (const char *fileroot, double now) {
+  const char * rootname;
+  struct rusage ru;
+  struct timeval tv;
+  chpl_taskID_t startTask = chpl_task_getId();
+  char buff[CHPL_TASK_ID_STRING_MAX_LEN];
+  (void) gettimeofday (&tv, NULL);
+
+  install_callbacks();
+
+  chpl_vdebug = 0;
+
+  // Close any open files.
+  if (chpl_vdebug_fd >= 0)
+    chpl_vdebug_stop ();
+    
+  // Initial call, open file and write initialization information
+  
+  // Get the root of the file name.
+  rootname = (fileroot == NULL || fileroot[0] == 0) ? ".Vdebug" : fileroot; 
+  
+  // In case of an error, just return
+  if (chpl_make_vdebug_file (rootname) < 0)
+    return;
+  
+  // Write initial information to the file, including resource time
+  if ( getrusage (RUSAGE_SELF, &ru) < 0) {
+    ru.ru_utime.tv_sec = 0;
+    ru.ru_utime.tv_usec = 0;
+    ru.ru_stime.tv_sec = 0;
+    ru.ru_stime.tv_usec = 0;
+  }
+  chpl_dprintf (chpl_vdebug_fd,
+                "ChplVdebug: ver 1.2 nodes %d nid %d tid %s seq %.3lf %lld.%06ld %ld.%06ld %ld.%06ld \n",
+                chpl_numNodes, chpl_nodeID, TID_STRING(buff, startTask), now,
+                (long long) tv.tv_sec, (long) tv.tv_usec,
+                (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
+                (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec  );
+
+  // Dump directory names, file names and function names
+  if (chpl_nodeID == 0) {
+    int ix;
+    int numFIDnames;
+
+    chpl_dprintf (chpl_vdebug_fd, "CHPL_HOME: %s\n", CHPL_HOME);
+    chpl_dprintf (chpl_vdebug_fd, "DIR: %s\n", chpl_compileDirectory);
+
+    chpl_dprintf (chpl_vdebug_fd, "Tablesize: %d\n", chpl_filenameTableSize);
+    for (ix = 0; ix < chpl_filenameTableSize ; ix++) {
+      if (chpl_filenameTable[ix][0] == 0) {
+        chpl_dprintf (chpl_vdebug_fd, "fname: 0 <unknown>\n");
+      } else if (chpl_filenameTable[ix][0] == '<' &&
+                 chpl_filenameTable[ix][1] == 'c') {
+        chpl_dprintf (chpl_vdebug_fd, "fname: %d <command_line>\n", ix);
+      } else {
+        chpl_dprintf (chpl_vdebug_fd, "fname: %d %s\n", ix,
+                      chpl_filenameTable[ix]);
+      }
+    }
+    for (numFIDnames = 0; chpl_finfo[numFIDnames].name != NULL; numFIDnames++);
+    chpl_dprintf (chpl_vdebug_fd, "FIDNsize: %d\n", numFIDnames);
+    for (ix = 0; ix < numFIDnames; ix++)
+      chpl_dprintf (chpl_vdebug_fd, "FIDname: %d %d %d %s\n", ix,
+                    chpl_finfo[ix].lineno, chpl_finfo[ix].fileno,
+                    chpl_finfo[ix].name);
+  }
+  
+  chpl_vdebug = 1;
 }
 
 // Record>  End: time.sec user.time system.time nodeID taskID
@@ -105,30 +215,102 @@ void chpl_vdebug_start (const char *fileroot, double now) {
 // Should be the last record in the file.
 
 void chpl_vdebug_stop (void) {
+  struct rusage ru;  
+  struct timeval tv;
+  chpl_taskID_t stopTask = chpl_task_getId();
+  char buff[CHPL_TASK_ID_STRING_MAX_LEN];
+
+  // First, shutdown VisualDebug
+  chpl_vdebug = 0;
+  uninstall_callbacks();
+
+  // Now log the stop
+  if (chpl_vdebug_fd >= 0) {
+    (void) gettimeofday (&tv, NULL);
+    if ( getrusage (RUSAGE_SELF, &ru) < 0) {
+      ru.ru_utime.tv_sec = 0;
+      ru.ru_utime.tv_usec = 0;
+      ru.ru_stime.tv_sec = 0;
+      ru.ru_stime.tv_usec = 0;
+    }
+    // Generate the End record
+    chpl_dprintf (chpl_vdebug_fd, "End: %lld.%06ld %ld.%06ld %ld.%06ld %d %s\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec,
+                  (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
+                  (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec,
+                  chpl_nodeID, TID_STRING(buff, stopTask));
+    close (chpl_vdebug_fd);
+  }
 }
 
 // Record>  VdbMark: time.sec nodeId taskId
 //
-// This marks taskID as being a xxxVdebug() call.   Any forks or tasks
+// This marks taskID as being a xxxVdebug() call.   Any executeOns or tasks
 // started by this task and descendants of this task are related to
 // the xxxVdebug() call and chplvis should ignore them.
 
 void chpl_vdebug_mark (void) {
+  struct timeval tv;
+  chpl_taskID_t tagTask = chpl_task_getId();
+  char buff[CHPL_TASK_ID_STRING_MAX_LEN];
+  (void) gettimeofday (&tv, NULL);
+  chpl_dprintf (chpl_vdebug_fd, "VdbMark: %lld.%06ld %d %s\n",
+                (long long) tv.tv_sec, (long) tv.tv_usec, chpl_nodeID, TID_STRING(buff, tagTask) );
 }
 
 // Record>  tname: tag# tagname
 
 void chpl_vdebug_tagname (const char* tagname, int tagno) {
+  chpl_dprintf (chpl_vdebug_fd, "tname: %d %s\n", tagno, tagname);
 }
 
 // Record>  Tag: time.sec user.time sys.time nodeId taskId tag# 
 
 void chpl_vdebug_tag (int tagno) {
+  struct rusage ru;
+  struct timeval tv;
+  
+  chpl_taskID_t tagTask = chpl_task_getId();
+  char buff[CHPL_TASK_ID_STRING_MAX_LEN];
+
+  (void) gettimeofday (&tv, NULL);
+  if ( getrusage (RUSAGE_SELF, &ru) < 0) {
+    ru.ru_utime.tv_sec = 0;
+    ru.ru_utime.tv_usec = 0;
+    ru.ru_stime.tv_sec = 0;
+    ru.ru_stime.tv_usec = 0;
+  }
+  chpl_dprintf (chpl_vdebug_fd, "Tag: %lld.%06ld %ld.%06ld %ld.%06ld %d %s %d\n",
+                (long long) tv.tv_sec, (long) tv.tv_usec,
+                (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
+                (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec,
+                chpl_nodeID, TID_STRING(buff, tagTask), tagno);
+  chpl_vdebug = 1;
 }
 
 // Record>  Pause: time.sec user.time sys.time nodeId taskId tag#
 
 void chpl_vdebug_pause (int tagno) {
+  struct rusage ru;
+  struct timeval tv;
+  chpl_taskID_t pauseTask = chpl_task_getId();
+  char buff[CHPL_TASK_ID_STRING_MAX_LEN];
+
+  if (chpl_vdebug_fd >=0 && chpl_vdebug == 1) {
+    (void) gettimeofday (&tv, NULL);
+    if ( getrusage (RUSAGE_SELF, &ru) < 0) {
+      ru.ru_utime.tv_sec = 0;
+      ru.ru_utime.tv_usec = 0;
+      ru.ru_stime.tv_sec = 0;
+      ru.ru_stime.tv_usec = 0;
+    }
+    chpl_dprintf (chpl_vdebug_fd, "Pause: %lld.%06ld %ld.%06ld %ld.%06ld %d %s %d\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec,
+                  (long) ru.ru_utime.tv_sec, (long) ru.ru_utime.tv_usec,
+                  (long) ru.ru_stime.tv_sec, (long) ru.ru_stime.tv_usec,
+                  chpl_nodeID, TID_STRING(buff, pauseTask), tagno);
+    chpl_vdebug = 0;
+  }
 }
 
 // Routines to log data ... put here so other places can
@@ -146,11 +328,12 @@ void cb_comm_put_nb (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     const struct chpl_comm_info_comm *cm = &info->iu.comm;
     chpl_taskID_t commTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd, 
-                  "nb_put: %lld.%06ld %d %d %lu %#lx %#lx %d %d %d %d %d\n",
+                  "nb_put: %lld.%06ld %d %d %s %#lx %#lx %d %d %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
-                  info->remoteNodeID, (unsigned long) commTask, (unsigned long) cm->addr,
+                  info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
                   (unsigned long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
                   cm->lineno, cm->filename);
   }
@@ -166,11 +349,12 @@ void cb_comm_get_nb (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     const struct chpl_comm_info_comm *cm = &info->iu.comm;
     chpl_taskID_t commTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "nb_get: %lld.%06ld %d %d %lu %#lx %#lx %d %d %d %d %d\n",
+                  "nb_get: %lld.%06ld %d %d %s %#lx %#lx %d %d %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
-                  info->remoteNodeID, (unsigned long)commTask, (unsigned long) cm->addr,
+                  info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
                   (unsigned long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
                   cm->lineno, cm->filename);
   }
@@ -185,11 +369,12 @@ void cb_comm_put (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     const struct chpl_comm_info_comm *cm = &info->iu.comm;
     chpl_taskID_t commTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "put: %lld.%06ld %d %d %lu %#lx %#lx %d %d %d %d %d\n",
+                  "put: %lld.%06ld %d %d %s %#lx %#lx %d %d %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
-                  info->remoteNodeID, (unsigned long) commTask, (unsigned long) cm->addr,
+                  info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
                   (unsigned long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
                   cm->lineno, cm->filename);
   }
@@ -205,11 +390,12 @@ void cb_comm_get (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     const struct chpl_comm_info_comm *cm = &info->iu.comm;
     chpl_taskID_t commTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "get: %lld.%06ld %d %d %lu %#lx %#lx %d %d %d %d %d\n",
+                  "get: %lld.%06ld %d %d %s %#lx %#lx %d %d %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID,
-                  info->remoteNodeID, (unsigned long) commTask, (unsigned long) cm->addr,
+                  info->remoteNodeID, TID_STRING(buff, commTask), (unsigned long) cm->addr,
                   (unsigned long) cm->raddr, 1, cm->typeIndex, (int)cm->size,
                   cm->lineno, cm->filename);
   }
@@ -223,11 +409,12 @@ void cb_comm_put_strd (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     const struct chpl_comm_info_comm_strd *cm = &info->iu.comm_strd;
     chpl_taskID_t commTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "st_put: %lld.%06ld %d %ld %lu %#lx %#lx 1 %zd %d %d %d\n",
+                  "st_put: %lld.%06ld %d %ld %s %#lx %#lx 1 %zd %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,  info->localNodeID, 
-                  (long) info->remoteNodeID, (unsigned long) commTask,
+                  (long) info->remoteNodeID, TID_STRING(buff, commTask),
                   (unsigned long) cm->srcaddr, (unsigned long) cm->dstaddr, cm->elemSize,
                   cm->typeIndex, cm->lineno, cm->filename);
     // printout srcstrides and dststrides and stridelevels and count?
@@ -245,11 +432,12 @@ void cb_comm_get_strd (const chpl_comm_cb_info_t *info) {
     struct timeval tv;
     const struct chpl_comm_info_comm_strd *cm = &info->iu.comm_strd;
     chpl_taskID_t commTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     (void) gettimeofday (&tv, NULL);
     chpl_dprintf (chpl_vdebug_fd,
-                  "st_get: %lld.%06ld %d %ld %lu %#lx %#lx 1 %zd %d %d %d\n",
+                  "st_get: %lld.%06ld %d %ld %s %#lx %#lx 1 %zd %d %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
-                  (long) info->remoteNodeID, (unsigned long) commTask, 
+                  (long) info->remoteNodeID, TID_STRING(buff, commTask),
                   (unsigned long) cm->dstaddr, (unsigned long) cm->srcaddr, cm->elemSize,
                   cm->typeIndex, cm->lineno, cm->filename);
     // print out the srcstrides and dststrides and stridelevels and count?
@@ -258,37 +446,43 @@ void cb_comm_get_strd (const chpl_comm_cb_info_t *info) {
 
 // Record>  fork: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
 
-void cb_comm_fork (const chpl_comm_cb_info_t *info) {
-  FILE *pFile;
-  char fname[MAXPATHLEN]; 
+void cb_comm_executeOn (const chpl_comm_cb_info_t *info) {
+
+  // Visual Debug Support
+  if (chpl_vdebug) {
+    const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
+    chpl_taskID_t executeOnTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
+    struct timeval tv;
+    (void) gettimeofday (&tv, NULL);
+    chpl_dprintf (chpl_vdebug_fd,
+                  "fork: %lld.%06ld %d %d %d %d %#lx %zd %s \n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
+                  info->remoteNodeID, cm->subloc, cm->fid, (unsigned long) cm->arg,
+                  cm->arg_size, TID_STRING(buff, executeOnTask));
+  }
+}
+
+// Blame Record  stacktrace before chpl_comm_execute_on
+
+void cb_comm_executeOn_blame (const chpl_comm_cb_info_t *info) {
+
   char funcName[128];
-  
   unw_word_t wordValue;
   unw_cursor_t cursor;
   unw_word_t ip;
   unw_context_t uc;
   int count;
 
-  fork_t *param;
-  int caller, callee;
-  int16_t fid;
-  uint16_t fork_num;
+  chpl_comm_on_bundle_t *param;
+  int caller=0, callee=0;
+  int16_t fid=0;
+  uint16_t fork_num=0;
 
+  const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
 #ifdef ENABLE_OUTPUT_TO_FILE
-  // Keep record of this chpl_comm_fork call
-  const struct chpl_comm_info_comm_fork *cm = &info->iu.fork;
-  //chpl_taskID_t forkTask = chpl_task_getId();
-#endif 
-  sprintf(fname, "%s-%s","fork",host_name);
-  pFile = fopen (fname,"a");
-  if (pFile==NULL) {
-    printf("File %s failed to be created\n",fname);
-    return;
-  }
-  
-#ifdef ENABLE_OUTPUT_TO_FILE
-  fprintf(pFile,"<----START fork %d %d %d %d\n",  
-          info->localNodeID, info->remoteNodeID, cm->fid, cm->fork_num);
+  fprintf(execute_onFile,"<----START fork %d %d %d %d\n",  
+          info->localNodeID, info->remoteNodeID, cm->fid, cm->executeOn_num);
 #endif
   // Start unwind stack from this "on" statement
   count = 0;
@@ -300,13 +494,13 @@ void cb_comm_fork (const chpl_comm_cb_info_t *info) {
 
     unw_get_reg(&cursor, UNW_REG_IP, &ip);
 #ifdef ENABLE_OUTPUT_TO_FILE
-	fprintf (pFile, "%d 0x%016lx ", count, (unsigned long) ip); 	
+	fprintf (execute_onFile, "%d 0x%016lx ", count, (unsigned long) ip); 	
 #endif
     unw_get_proc_name(&cursor, funcName, sizeof(funcName), &wordValue);
     if(!funcName[0]) // sometimes libunwind just can't get the name ! DONTKNOWWHY
       strcpy(funcName,"***");
 #ifdef ENABLE_OUTPUT_TO_FILE
-    fprintf(pFile, "%s ", funcName);
+    fprintf(execute_onFile, "%s ", funcName);
 #endif
     if (strstr(funcName, "fork")!=NULL && strstr(funcName, "wrapper")!=NULL) {
       if (strcmp(funcName, "fork_wrapper") == 0)
@@ -320,68 +514,69 @@ void cb_comm_fork (const chpl_comm_cb_info_t *info) {
       else //should never get here
         printf("Error, what is this frame ? %s\n",funcName);
       
-      caller = param->caller;
-      callee = param->callee;
-      fid = param->fid;
-      fork_num = param->fork_num;
-
+      caller = param->comm.caller;
+      callee = chpl_nodeID;
+      fid = param->task_bundle.requested_fid;
 #ifdef ENABLE_OUTPUT_TO_FILE
-      fprintf(pFile,"%d %d %d %d ",caller, callee, fid, fork_num);
+      fprintf(execute_onFile,"%d %d %d %d ",caller, callee, fid, fork_num);
 #endif
     }
     // If frame is thread_begin, we record the task ID
     else if (strcmp(funcName, "thread_begin") == 0 && task_pool_node) {
 #ifdef ENABLE_OUTPUT_TO_FILE
-      fprintf(pFile, "%lu ", (uint64_t)(task_pool_node->id));   
+      fprintf(execute_onFile, "%lu ", (uint64_t)(task_pool_node->bundle.requested_fid));   
 #endif
     }
 
 #ifdef ENABLE_OUTPUT_TO_FILE
-    fprintf(pFile, "\t");
+    fprintf(execute_onFile, "\t");
 #endif
     count++;
   }
 
 #ifdef ENABLE_OUTPUT_TO_FILE
-  fprintf(pFile,"\n");
-  fprintf(pFile,"---->END\n");
+  fprintf(execute_onFile,"\n");
+  fprintf(execute_onFile,"---->END\n");
 #endif
-  fclose(pFile);
+
 }
 
 // Record>  fork_nb: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
 
+void  cb_comm_executeOn_nb (const chpl_comm_cb_info_t *info) {
+  if (chpl_vdebug) {
+    const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
+    chpl_taskID_t executeOnTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
+    struct timeval tv;
+    (void) gettimeofday (&tv, NULL);
+    chpl_dprintf (chpl_vdebug_fd, "fork_nb: %lld.%06ld %d %d %d %d %#lx %zd %s\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
+                  info->remoteNodeID, cm->subloc, cm->fid, (unsigned long) cm->arg, 
+                  cm->arg_size, TID_STRING(buff, executeOnTask));
+  }
+}
 
-void  cb_comm_fork_nb (const chpl_comm_cb_info_t *info) {
-  FILE *pFile;
-  char fname[MAXPATHLEN]; 
+// Blame Record  stacktrace before chpl_comm_execute_on_nb
+
+void  cb_comm_executeOn_nb_blame (const chpl_comm_cb_info_t *info) {
+
   char funcName[128];
-  
   unw_word_t wordValue;
   unw_cursor_t cursor;
   unw_word_t ip;
   unw_context_t uc;
   int count;
 
-  fork_t *param;
-  int caller, callee;
-  int16_t fid;
-  uint16_t fork_num;
+  chpl_comm_on_bundle_t *param;
+  int caller=0, callee=0;
+  int16_t fid=0;
+  uint16_t fork_num=0;
+
+  const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
 #ifdef ENABLE_OUTPUT_TO_FILE
-  // Keep record of this chpl_comm_fork_nb call
-  const struct chpl_comm_info_comm_fork *cm = &info->iu.fork;
-  //chpl_taskID_t forkTask = chpl_task_getId();
-#endif 
-  sprintf(fname, "%s-%s","fork_nb",host_name);
-  pFile = fopen (fname,"a");
-  if (pFile==NULL) {
-    printf("File %s failed to be created\n",fname);
-    return;
-  }
-  
-#ifdef ENABLE_OUTPUT_TO_FILE
-  fprintf(pFile,"<----START fork_nb %d %d %d %d\n", 
-          info->localNodeID, info->remoteNodeID, cm->fid, cm->fork_num);
+  fprintf(execute_on_nbFile,"<----START fork_nb %d %d %d %d\n",  
+          info->localNodeID, info->remoteNodeID, cm->fid, cm->executeOn_num);
 #endif
   // Start unwind stack from this "on" statement
   count = 0;
@@ -393,13 +588,13 @@ void  cb_comm_fork_nb (const chpl_comm_cb_info_t *info) {
 
     unw_get_reg(&cursor, UNW_REG_IP, &ip);
 #ifdef ENABLE_OUTPUT_TO_FILE
-	fprintf (pFile, "%d 0x%016lx ", count, (unsigned long) ip); 	
+	fprintf (execute_on_nbFile, "%d 0x%016lx ", count, (unsigned long) ip); 	
 #endif
     unw_get_proc_name(&cursor, funcName, sizeof(funcName), &wordValue);
     if(!funcName[0]) // sometimes libunwind just can't get the name ! DONTKNOWWHY
       strcpy(funcName,"***");
 #ifdef ENABLE_OUTPUT_TO_FILE
-    fprintf(pFile, "%s ", funcName);
+    fprintf(execute_on_nbFile, "%s ", funcName);
 #endif
     if (strstr(funcName, "fork")!=NULL && strstr(funcName, "wrapper")!=NULL) {
       if (strcmp(funcName, "fork_wrapper") == 0)
@@ -413,67 +608,71 @@ void  cb_comm_fork_nb (const chpl_comm_cb_info_t *info) {
       else //should never get here
         printf("Error, what is this frame ? %s\n",funcName);
       
-      caller = param->caller;
-      callee = param->callee;
-      fid = param->fid;
-      fork_num = param->fork_num;
-
+      caller = param->comm.caller;
+      callee = chpl_nodeID;
+      fid = param->task_bundle.requested_fid;
 #ifdef ENABLE_OUTPUT_TO_FILE
-      fprintf(pFile,"%d %d %d %d ",caller, callee, fid, fork_num);
+      fprintf(execute_on_nbFile,"%d %d %d %d ",caller, callee, fid, fork_num);
 #endif
     }
     // If frame is thread_begin, we record the task ID
     else if (strcmp(funcName, "thread_begin") == 0 && task_pool_node) {
 #ifdef ENABLE_OUTPUT_TO_FILE
-      fprintf(pFile, "%lu ", (uint64_t)(task_pool_node->id));   
+      fprintf(execute_on_nbFile, "%lu ", (uint64_t)(task_pool_node->bundle.requested_fid));   
 #endif
     }
 
 #ifdef ENABLE_OUTPUT_TO_FILE
-    fprintf(pFile, "\t");
+    fprintf(execute_on_nbFile, "\t");
 #endif
     count++;
   }
 
 #ifdef ENABLE_OUTPUT_TO_FILE
-  fprintf(pFile,"\n");
-  fprintf(pFile,"---->END\n");
+  fprintf(execute_on_nbFile,"\n");
+  fprintf(execute_on_nbFile,"---->END\n");
 #endif
-  fclose(pFile);
+
 }
 
 // Record>  f_fork: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
 
-void cb_comm_fork_fast (const chpl_comm_cb_info_t *info) {
-  FILE *pFile;
-  char fname[MAXPATHLEN]; 
+void cb_comm_executeOn_fast (const chpl_comm_cb_info_t *info) {
+  if (chpl_vdebug) {
+    const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
+    chpl_taskID_t executeOnTask = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
+    struct timeval tv;
+    (void) gettimeofday (&tv, NULL);
+    chpl_dprintf (chpl_vdebug_fd,
+                  "f_executeOn: %lld.%06ld %d %d %d %d %#lx %zd %s\n",
+                  (long long) tv.tv_sec, (long) tv.tv_usec, info->localNodeID,
+                  info->remoteNodeID, cm->subloc, cm->fid, (unsigned long)cm->arg, 
+                  cm->arg_size, TID_STRING(buff, executeOnTask));
+  }
+}
+
+
+// Blame Record  stacktrace before chpl_comm_execute_on_fast
+
+void  cb_comm_executeOn_fast_blame (const chpl_comm_cb_info_t *info) {
+
   char funcName[128];
-  
   unw_word_t wordValue;
   unw_cursor_t cursor;
   unw_word_t ip;
   unw_context_t uc;
   int count;
 
-  fork_t *param;
-  int caller, callee;
-  int16_t fid;
-  uint16_t fork_num;
+  chpl_comm_on_bundle_t *param;
+  int caller=0, callee=0;
+  int16_t fid=0;
+  uint16_t fork_num=0;
+
+  const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
 #ifdef ENABLE_OUTPUT_TO_FILE
-  // Keep record of this chpl_comm_fork_fast call
-  const struct chpl_comm_info_comm_fork *cm = &info->iu.fork;
-  //chpl_taskID_t forkTask = chpl_task_getId();
-#endif 
-  sprintf(fname, "%s-%s","fork_fast",host_name);
-  pFile = fopen (fname,"a");
-  if (pFile==NULL) {
-    printf("File %s failed to be created\n",fname);
-    return;
-  }
-  
-#ifdef ENABLE_OUTPUT_TO_FILE
-  fprintf(pFile,"<----START fork_fast %d %d %d %d\n",  
-          info->localNodeID, info->remoteNodeID, cm->fid, cm->fork_num);
+  fprintf(execute_on_fastFile,"<----START fork_fast %d %d %d %d\n",  
+          info->localNodeID, info->remoteNodeID, cm->fid, cm->executeOn_num);
 #endif
   // Start unwind stack from this "on" statement
   count = 0;
@@ -485,13 +684,13 @@ void cb_comm_fork_fast (const chpl_comm_cb_info_t *info) {
 
     unw_get_reg(&cursor, UNW_REG_IP, &ip);
 #ifdef ENABLE_OUTPUT_TO_FILE
-	fprintf (pFile, "%d 0x%016lx ", count, (unsigned long) ip); 	
+	fprintf (execute_on_fastFile, "%d 0x%016lx ", count, (unsigned long) ip); 	
 #endif
     unw_get_proc_name(&cursor, funcName, sizeof(funcName), &wordValue);
     if(!funcName[0]) // sometimes libunwind just can't get the name ! DONTKNOWWHY
       strcpy(funcName,"***");
 #ifdef ENABLE_OUTPUT_TO_FILE
-    fprintf(pFile, "%s ", funcName);
+    fprintf(execute_on_fastFile, "%s ", funcName);
 #endif
     if (strstr(funcName, "fork")!=NULL && strstr(funcName, "wrapper")!=NULL) {
       if (strcmp(funcName, "fork_wrapper") == 0)
@@ -505,96 +704,97 @@ void cb_comm_fork_fast (const chpl_comm_cb_info_t *info) {
       else //should never get here
         printf("Error, what is this frame ? %s\n",funcName);
       
-      caller = param->caller;
-      callee = param->callee;
-      fid = param->fid;
-      fork_num = param->fork_num;
-
+      caller = param->comm.caller;
+      callee = chpl_nodeID;
+      fid = param->task_bundle.requested_fid;
 #ifdef ENABLE_OUTPUT_TO_FILE
-      fprintf(pFile,"%d %d %d %d ",caller, callee, fid, fork_num);
+      fprintf(execute_on_fastFile,"%d %d %d %d ",caller, callee, fid, fork_num);
 #endif
     }
     // If frame is thread_begin, we record the task ID
     else if (strcmp(funcName, "thread_begin") == 0 && task_pool_node) {
 #ifdef ENABLE_OUTPUT_TO_FILE
-      fprintf(pFile, "%lu ", (uint64_t)(task_pool_node->id));   
+      fprintf(execute_on_fastFile, "%lu ", (uint64_t)(task_pool_node->bundle.requested_fid));   
 #endif
     }
 
 #ifdef ENABLE_OUTPUT_TO_FILE
-    fprintf(pFile, "\t");
+    fprintf(execute_on_fastFile, "\t");
 #endif
     count++;
   }
 
 #ifdef ENABLE_OUTPUT_TO_FILE
-  fprintf(pFile,"\n");
-  fprintf(pFile,"---->END\n");
+  fprintf(execute_on_fastFile,"\n");
+  fprintf(execute_on_fastFile,"---->END\n");
 #endif
-  fclose(pFile);
+
 }
-
-
 // Task layer callbacks
 
 int install_callbacks (void) {
-  if (chpl_task_install_callback(chpl_task_cb_event_kind_create, 
-                                 chpl_task_cb_info_kind_full, cb_task_create) != 0)
-    return 1;
-  if (chpl_task_install_callback(chpl_task_cb_event_kind_begin, 
+  if (getenv("ENABLE_TASK") != NULL) {
+    if (chpl_task_install_callback(chpl_task_cb_event_kind_create, 
+                                 chpl_task_cb_info_kind_full, cb_task_create_blame) != 0)
+      return 1;
+    if (chpl_task_install_callback(chpl_task_cb_event_kind_begin, 
                                  chpl_task_cb_info_kind_full, cb_task_begin) != 0) {
-    (void) uninstall_callbacks();
-    return 1;
-  }
-  if (chpl_task_install_callback(chpl_task_cb_event_kind_end,
+      (void) uninstall_callbacks();
+      return 1;
+    }
+    if (chpl_task_install_callback(chpl_task_cb_event_kind_end,
                                  chpl_task_cb_info_kind_id_only, cb_task_end) != 0) {
-    (void) uninstall_callbacks();
-    return 1;
+      (void) uninstall_callbacks();
+      return 1;
+    }
   }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_put_nb,
+
+  if (getenv("ENABLE_COMM") != NULL) {
+    if (chpl_comm_install_callback(chpl_comm_cb_event_kind_put_nb,
                                  cb_comm_put_nb)) {
-    (void) uninstall_callbacks();
-    return 1;
-  }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_get_nb,
+      (void) uninstall_callbacks();
+      return 1;
+    }
+    if (chpl_comm_install_callback(chpl_comm_cb_event_kind_get_nb,
                                  cb_comm_get_nb)) {
-    (void) uninstall_callbacks();
-    return 1;
-  }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_put,
+      (void) uninstall_callbacks();
+      return 1;
+    }
+    if (chpl_comm_install_callback(chpl_comm_cb_event_kind_put,
                                  cb_comm_put)) {
-    (void) uninstall_callbacks();
-    return 1;
-  }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_get,
+      (void) uninstall_callbacks();
+      return 1;
+    }
+    if (chpl_comm_install_callback(chpl_comm_cb_event_kind_get,
                                  cb_comm_get)) {
-    (void) uninstall_callbacks();
-    return 1;
-  }
-   if (chpl_comm_install_callback(chpl_comm_cb_event_kind_put_strd,
+      (void) uninstall_callbacks();
+      return 1;
+    }
+    if (chpl_comm_install_callback(chpl_comm_cb_event_kind_put_strd,
                                  cb_comm_put_strd)) {
-    (void) uninstall_callbacks();
-    return 1;
-  }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_get_strd,
+      (void) uninstall_callbacks();
+      return 1;
+    }
+    if (chpl_comm_install_callback(chpl_comm_cb_event_kind_get_strd,
                                  cb_comm_get_strd)) {
-    (void) uninstall_callbacks();
-    return 1;
-  }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_fork,
-                                 cb_comm_fork)) {
-    (void) uninstall_callbacks();
-    return 1;
-  }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_fork_nb,
-                                 cb_comm_fork_nb)) {
-    (void) uninstall_callbacks();
-    return 1;
-  }
-  if (chpl_comm_install_callback(chpl_comm_cb_event_kind_fork_fast,
-                                 cb_comm_fork_fast)) {
-    (void) uninstall_callbacks();
-    return 1;
+      (void) uninstall_callbacks();
+      return 1;
+    }
+    if (chpl_comm_install_callback(chpl_comm_cb_event_kind_executeOn,
+                                 cb_comm_executeOn_blame)) {
+      (void) uninstall_callbacks();
+      return 1;
+    }
+    if (chpl_comm_install_callback(chpl_comm_cb_event_kind_executeOn_nb,
+                                 cb_comm_executeOn_nb_blame)) {
+      (void) uninstall_callbacks();
+      return 1;
+    }
+    if (chpl_comm_install_callback(chpl_comm_cb_event_kind_executeOn_fast,
+                                 cb_comm_executeOn_fast_blame)) {
+      (void) uninstall_callbacks();
+      return 1;
+    }
   }
 
   return 0;
@@ -603,32 +803,117 @@ int install_callbacks (void) {
 
 int uninstall_callbacks (void) {
   int rv = 0;
-  rv  = chpl_task_uninstall_callback(chpl_task_cb_event_kind_create,
-                                     cb_task_create);
-  rv += chpl_task_uninstall_callback(chpl_task_cb_event_kind_begin,
+  if (getenv("ENABLE_TASK") != NULL) {
+    rv  = chpl_task_uninstall_callback(chpl_task_cb_event_kind_create,
+                                     cb_task_create_blame);
+    rv += chpl_task_uninstall_callback(chpl_task_cb_event_kind_begin,
                                      cb_task_begin);
-  rv += chpl_task_uninstall_callback(chpl_task_cb_event_kind_end,
+    rv += chpl_task_uninstall_callback(chpl_task_cb_event_kind_end,
                                      cb_task_end);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_put_nb,
+  }
+
+  if (getenv("ENABLE_COMM") != NULL) {
+    rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_put_nb,
                                      cb_comm_put_nb);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_get_nb,
+    rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_get_nb,
                                      cb_comm_get_nb);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_put,
+    rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_put,
                                      cb_comm_put);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_get,
+    rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_get,
                                      cb_comm_get);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_put_strd,
+    rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_put_strd,
                                      cb_comm_put_strd);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_get_strd,
+    rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_get_strd,
                                      cb_comm_get_strd);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_fork,
-                                     cb_comm_fork);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_fork_nb,
-                                     cb_comm_fork_nb);
-  rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_fork_fast,
-                                     cb_comm_fork_fast);
+    rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_executeOn,
+                                     cb_comm_executeOn_blame);
+    rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_executeOn_nb,
+                                     cb_comm_executeOn_nb_blame);
+    rv += chpl_comm_uninstall_callback(chpl_comm_cb_event_kind_executeOn_fast,
+                                     cb_comm_executeOn_fast_blame);
+  }
+
   return rv;
 }
+
+// PAPI sampling handler, output stacktrace to compFile
+void PAPIhandler(int EventSet, void *address, long long overflow_vector, void *context)
+{
+  // just being as a place holder
+  unw_word_t wordValue;
+  unw_cursor_t cursor;
+  unw_word_t ip;
+  unw_context_t uc;
+  int count;
+  char funcName[128];
+
+  chpl_comm_on_bundle_t *param;
+  int caller=0, callee=0;
+  int16_t fid=0;
+  uint16_t fork_num=0;
+
+  // begin critical section
+  chpl_thread_mutexLock(&stack_unwind_lock);
+
+#ifdef ENABLE_OUTPUT_TO_FILE
+  fprintf(compFile,"<----START compute\n");
+#endif
+  unw_getcontext (&uc);
+  if (unw_init_local (&cursor, &uc) < 0)
+    fprintf (stderr,"unw_init_local failed!\n");
+  count = 0;
+  
+  //the first/top frame will be the func above this "getEar.."
+  while (unw_step(&cursor)>0) {
+    unw_get_reg(&cursor, UNW_REG_IP, &ip);
+    unw_get_proc_name(&cursor, funcName, sizeof(funcName), &wordValue);
+    if(!funcName[0]) // sometimes libunwind just can't get the name ! DONTKNOWWHY
+      strcpy(funcName,"***");
+#ifdef ENABLE_OUTPUT_TO_FILE
+	fprintf (compFile, "%d 0x%016lx %s ",count, (unsigned long)ip, funcName);
+#endif
+    // if the frame name is fork_*_wrapper,we need to record fork_t info
+    if (strstr(funcName, "fork")!=NULL && strstr(funcName, "wrapper")!=NULL) {
+      if (strcmp(funcName, "fork_wrapper") == 0)
+        param = param_plain;
+      else if (strcmp(funcName, "fork_nb_wrapper") == 0)
+        param = param_nb;
+      else if (strcmp(funcName, "fork_large_wrapper") == 0)
+        param = param_large;
+      else if (strcmp(funcName, "fork_nb_large_wrapper") == 0)
+        param = param_nb_large;
+      else //should never get here
+        printf("Error, what is this frame ? %s\n",funcName);
+      
+      caller = param->comm.caller;
+      callee = chpl_nodeID;
+      fid = param->task_bundle.requested_fid;
+#ifdef ENABLE_OUTPUT_TO_FILE
+      fprintf(compFile,"%d %d %d %d ",caller, callee, fid, fork_num);
+#endif
+    }
+    // If frame is thread_begin, we record the task ID
+    else if (strcmp(funcName, "thread_begin") == 0 && task_pool_node) {
+#ifdef ENABLE_OUTPUT_TO_FILE
+      fprintf(compFile, "%lu ", (uint64_t)(task_pool_node->bundle.requested_fid));   
+#endif
+    }
+
+#ifdef ENABLE_OUTPUT_TO_FILE
+    fprintf(compFile, "\t");
+#endif
+    count++;
+  }
+
+#ifdef ENABLE_OUTPUT_TO_FILE
+  fprintf(compFile,"\n");
+  fprintf(compFile,"---->END\n");
+#endif
+  
+  // end critical section
+  chpl_thread_mutexUnlock(&stack_unwind_lock);
+}
+
 
 // Record>  task: time.sec nodeId taskId parentTaskId On/Local lineNum srcName fid
 
@@ -637,19 +922,92 @@ void cb_task_create (const chpl_task_cb_info_t *info) {
   if (!chpl_vdebug) return;
   if (chpl_vdebug_fd >= 0) {
     chpl_taskID_t taskId = chpl_task_getId();
+    char buff[CHPL_TASK_ID_STRING_MAX_LEN];
     //printf ("taskCB: event: %d, node %d proc %s task id: %llu, new task id: %llu\n",
     //         (int)info->event_kind, (int)info->nodeID,
-    //        (info->iu.full.is_fork ? "O" : "L"), taskId, info->iu.full.id);
+    //        (info->iu.full.is_executeOn ? "O" : "L"), taskId, info->iu.full.id);
     (void)gettimeofday(&tv, NULL);
-    chpl_dprintf (chpl_vdebug_fd, "task: %lld.%06ld %lld %ld %lu %s %ld %d %d\n",
+    chpl_dprintf (chpl_vdebug_fd, "task: %lld.%06ld %lld %ld %s %s %ld %d %d\n",
                   (long long) tv.tv_sec, (long) tv.tv_usec,
                   (long long) info->nodeID, (long int) info->iu.full.id,
-                  (unsigned long) taskId,
-                  (info->iu.full.is_fork ? "O" : "L"),
+                  TID_STRING(buff, taskId),
+                  (info->iu.full.is_executeOn ? "O" : "L"),
                   (long int) info->iu.full.lineno,
                   info->iu.full.filename,
                   info->iu.full.fid);
    }
+}
+
+void cb_task_create_blame (const chpl_task_cb_info_t *info) {
+  unw_word_t wordValue;
+  unw_cursor_t cursor;
+  unw_word_t ip;
+  unw_context_t uc;
+  int count;
+  char funcName[128];
+
+  chpl_comm_on_bundle_t *param;
+  int caller=0, callee=0;
+  int16_t fid=0;
+  uint16_t fork_num=0;
+
+  chpl_fn_int_t taskFid = (uint64_t)info->iu.full.fid; //type equals to int16_t
+
+#ifdef ENABLE_OUTPUT_TO_FILE
+  fprintf(preFile,"<----START preSpawn %d\n", taskFid);
+#endif
+  unw_getcontext (&uc);
+  if (unw_init_local (&cursor, &uc) < 0)
+    fprintf (stderr,"unw_init_local failed!\n");
+  count = 0;
+  
+  //the first/top frame will be the func above this "getEar.."
+  while (unw_step(&cursor)>0) {
+    unw_get_reg(&cursor, UNW_REG_IP, &ip);
+    unw_get_proc_name(&cursor, funcName, sizeof(funcName), &wordValue);
+    if(!funcName[0]) // sometimes libunwind just can't get the name ! DONTKNOWWHY
+      strcpy(funcName,"***");
+#ifdef ENABLE_OUTPUT_TO_FILE
+	fprintf (preFile, "%d 0x%016lx %s ",count, (unsigned long)ip, funcName);
+#endif
+    // if the frame name is fork_*_wrapper,we need to record fork_t info
+    if (strstr(funcName, "fork")!=NULL && strstr(funcName, "wrapper")!=NULL) {
+      if (strcmp(funcName, "fork_wrapper") == 0)
+        param = param_plain;
+      else if (strcmp(funcName, "fork_nb_wrapper") == 0)
+        param = param_nb;
+      else if (strcmp(funcName, "fork_large_wrapper") == 0)
+        param = param_large;
+      else if (strcmp(funcName, "fork_nb_large_wrapper") == 0)
+        param = param_nb_large;
+      else //should never get here
+        printf("Error, what is this frame ? %s\n",funcName);
+      
+      caller = param->comm.caller;
+      callee = chpl_nodeID;
+      fid = param->task_bundle.requested_fid;
+#ifdef ENABLE_OUTPUT_TO_FILE
+      fprintf(preFile,"%d %d %d %d ",caller, callee, fid, fork_num);
+#endif
+    }
+    // If frame is thread_begin, we record the task ID
+    else if (strcmp(funcName, "thread_begin") == 0 && task_pool_node) {
+#ifdef ENABLE_OUTPUT_TO_FILE
+      fprintf(preFile, "%lu ", (uint64_t)(task_pool_node->bundle.requested_fid));   
+#endif
+    }
+
+#ifdef ENABLE_OUTPUT_TO_FILE
+    fprintf(preFile, "\t");
+#endif
+    count++;
+  }
+
+#ifdef ENABLE_OUTPUT_TO_FILE
+  fprintf(preFile,"\n");
+  fprintf(preFile,"---->END\n");
+#endif
+  
 }
 
 // Record>  Btask: time.sec nodeId taskId

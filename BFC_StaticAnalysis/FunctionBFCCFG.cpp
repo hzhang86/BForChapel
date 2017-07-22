@@ -19,14 +19,14 @@ using namespace llvm;
 void FunctionBFCCFG::calcPTRStoreLines()
 {
 	BBHash::iterator bbh_i;
-	std::set<int>::iterator set_i_i;
+	set<int>::iterator set_i_i;
 
 
 	for (bbh_i = LLVM_BBs.begin(); bbh_i != LLVM_BBs.end();  bbh_i++)
 	{
 		FunctionBFCBB * fbb = bbh_i->second;
 		
-		std::set<NodeProps *>::iterator set_vp_i;
+		set<NodeProps *>::iterator set_vp_i;
 		
 		
 		// Look at the variables genned elsewhere (IN to the BB)
@@ -48,7 +48,7 @@ void FunctionBFCCFG::calcPTRStoreLines()
 			{
 					NodeProps * killer = NULL;
 			
-					std::vector<NodeProps *>::iterator vec_vp_i2;
+					vector<NodeProps *>::iterator vec_vp_i2;
 
 					// Find an instruction that kills the IN instruction
 					for (vec_vp_i2 = fbb->singleStores.begin(); 
@@ -78,7 +78,7 @@ void FunctionBFCCFG::calcPTRStoreLines()
 		}
 		
 		// Now we need to look at those variables that were genned in this basic block
-		std::vector<NodeProps *>::iterator vec_vp_i;
+		vector<NodeProps *>::iterator vec_vp_i;
 		for (vec_vp_i = fbb->singleStores.begin(); 
 					vec_vp_i != fbb->singleStores.end(); vec_vp_i++)
 		{
@@ -88,8 +88,8 @@ void FunctionBFCCFG::calcPTRStoreLines()
 
 			
 			NodeProps * killer = NULL;
-			//std::vector<NodeProps *>::iterator vec_vp_i2 = vec_vp_i;
-			std::vector<NodeProps *>::iterator vec_vp_i2 = fbb->singleStores.begin();
+			//vector<NodeProps *>::iterator vec_vp_i2 = vec_vp_i;
+			vector<NodeProps *>::iterator vec_vp_i2 = fbb->singleStores.begin();
 			
 			// Find an instruction that kills the genned instruction
 			for (; vec_vp_i2 != fbb->singleStores.end(); vec_vp_i2++)
@@ -136,7 +136,7 @@ void FunctionBFCCFG::calcPTRStoreLines()
 			else
 			{
 #ifdef DEBUG_CFG_ERROR			
-				std::cerr<<"NULL or lineNum == 0 killer"<<std::endl;
+				cerr<<"NULL or lineNum == 0 killer"<<endl;
 #endif 
 			}
 		}
@@ -146,7 +146,7 @@ void FunctionBFCCFG::calcPTRStoreLines()
 
 void FunctionBFCBB::assignPTRGenKill() //never called
 {
-	std::vector<NodeProps *>::iterator vec_vp_i;
+	vector<NodeProps *>::iterator vec_vp_i;
 	
 	
 	// Create Gen and Kill for each Instruction (VP)
@@ -161,7 +161,7 @@ void FunctionBFCBB::assignPTRGenKill() //never called
 		
 		if (vp->dpUpPtr != vp)
 		{
-			std::set<NodeProps *>::iterator set_vp_i;
+			set<NodeProps *>::iterator set_vp_i;
 			for (set_vp_i = vp->dpUpPtr->dataPtrs.begin(); set_vp_i != vp->dpUpPtr->dataPtrs.end(); set_vp_i++)
 			{
 				NodeProps * kills = *set_vp_i;
@@ -171,7 +171,7 @@ void FunctionBFCBB::assignPTRGenKill() //never called
 		}
 		
 //////////////TO BE DELETED/////////////////////////////////////////////
-		/*std::set<NodeProps *>::iterator set_vp_i;
+		/*set<NodeProps *>::iterator set_vp_i;
 		for (set_vp_i = vp->storeFrom->storesTo.begin(); set_vp_i != vp->storeFrom->storesTo.end(); set_vp_i++)
 		{
 			NodeProps * kills = *set_vp_i;
@@ -189,7 +189,7 @@ void FunctionBFCBB::assignPTRGenKill() //never called
 	{
 		NodeProps * vp = (*vec_vp_i);
 
-		std::set<NodeProps *>::iterator set_vp_i;
+		set<NodeProps *>::iterator set_vp_i;
 			
 		for (set_vp_i = vp->genPTR_VP.begin(); set_vp_i !=  vp->genPTR_VP.end(); set_vp_i++)
 			genPTR_BB.insert(*set_vp_i);
@@ -218,7 +218,7 @@ void FunctionBFCCFG::assignPTRBBGenKill() //never called
 		FunctionBFCBB * fbb = bbh_i->second;
 		fbb->assignPTRGenKill();
 		
-		if (fbb->bbName.find("entry") != std::string::npos)
+		if (fbb->bbName.find("entry") != string::npos)
 			fbb->outPTR_BB.insert(fbb->genPTR_BB.begin(), fbb->genPTR_BB.end());
 		
 	}
@@ -241,8 +241,8 @@ void FunctionBFCCFG::reachingPTRDefs()
 			FunctionBFCBB * fbb = bbh_i->second;
 			//	fbb->assignGenKill();
 			
-			std::set<FunctionBFCBB *>::iterator set_fbb_i;
-			std::set<NodeProps *>::iterator set_vp_i;
+			set<FunctionBFCBB *>::iterator set_fbb_i;
+			set<NodeProps *>::iterator set_vp_i;
 			
 			// Create IN[B] set from Union of OUT[p] where p is a predecessor
 			fbb->inPTR_BB.clear();
@@ -255,11 +255,11 @@ void FunctionBFCCFG::reachingPTRDefs()
 			
 			// Create new OUT set form GEN[B] Union (IN[B] - KILL[B])
 			
-			std::set<NodeProps *> newOutBB;
+			set<NodeProps *> newOutBB;
 			// new OUT[B] = GEN[B]
 			newOutBB.insert(fbb->genPTR_BB.begin(), fbb->genPTR_BB.end());
 			
-			std::set<NodeProps *> inMinusKillBB;
+			set<NodeProps *> inMinusKillBB;
 			
 			// inMinusKillBB[B] = IN[B]
 			inMinusKillBB.insert(fbb->inPTR_BB.begin(), fbb->inPTR_BB.end());
@@ -290,21 +290,21 @@ void FunctionBFCCFG::reachingPTRDefs()
 
 // Does the first Vertex come before it in the CFG
 // Auxiliary Function
-bool FunctionBFCCFG::controlDep(NodeProps *target, NodeProps *anchor, std::ofstream &blame_info)
+bool FunctionBFCCFG::controlDep(NodeProps *target, NodeProps *anchor, ofstream &blame_info)
 {
 	FunctionBFCBB *tBB = target->fbb;
 	FunctionBFCBB *aBB = anchor->fbb;
 	
 	if (tBB == NULL) {
 #ifdef DEBUG_CFG_CONTROLDEP			
-		blame_info<<"TBB is NULL for "<<target->name<<std::endl;
+		blame_info<<"TBB is NULL for "<<target->name<<endl;
 #endif
 		return false;
 	}
 	
 	if (aBB == NULL) {
 #ifdef DEBUG_CFG_CONTROLDEP			
-		blame_info<<"ABB is NULL for "<<anchor->name<<std::endl;
+		blame_info<<"ABB is NULL for "<<anchor->name<<endl;
 #endif
 		return false;
 	}
@@ -313,7 +313,7 @@ bool FunctionBFCCFG::controlDep(NodeProps *target, NodeProps *anchor, std::ofstr
     //Needs to be improved
 	if (aBB->ancestors.count(tBB) > 0) {
 #ifdef DEBUG_CFG_CONTROLDEP			
-    blame_info<<anchor->name<<"'s ancestors has tBB:"<<tBB->getName()<<std::endl;
+    blame_info<<anchor->name<<"'s ancestors has tBB:"<<tBB->getName()<<endl;
 #endif
 #ifdef TEMP_WORKROUND_CFG
       if (tBB->getName().compare("entry") != 0)
@@ -324,14 +324,14 @@ bool FunctionBFCCFG::controlDep(NodeProps *target, NodeProps *anchor, std::ofstr
 		if (anchor->line_num > target->line_num) {
 #ifdef DEBUG_CFG_CONTROLDEP			
 		    blame_info<<anchor->name<<"'s line_num: "<<anchor->line_num<<" > "<<
-             target->name<<"'s line_num: "<<target->line_num<<std::endl;
+             target->name<<"'s line_num: "<<target->line_num<<endl;
 #endif
 			return true;
         }
 		else {
 #ifdef DEBUG_CFG_CONTROLDEP		
 		    blame_info<<anchor->name<<"'s line_num: "<<anchor->line_num<<" <= "<<
-             target->name<<"'s line_num: "<<target->line_num<<std::endl;
+             target->name<<"'s line_num: "<<target->line_num<<endl;
 #endif
 			return false;
         }
@@ -341,7 +341,7 @@ bool FunctionBFCCFG::controlDep(NodeProps *target, NodeProps *anchor, std::ofstr
 }
 
 // Auxiliary Function
-void FunctionBFCBB::genD(FunctionBFCBB *fbb, std::set<FunctionBFCBB *> &visited)
+void FunctionBFCBB::genD(FunctionBFCBB *fbb, set<FunctionBFCBB *> &visited)
 {
 	if (fbb == NULL)
 		return;
@@ -354,7 +354,7 @@ void FunctionBFCBB::genD(FunctionBFCBB *fbb, std::set<FunctionBFCBB *> &visited)
 	
 	visited.insert(fbb);
 	
-	std::set<FunctionBFCBB *>::iterator set_fbb_i;
+	set<FunctionBFCBB *>::iterator set_fbb_i;
 
 	for (set_fbb_i = fbb->succs.begin(); set_fbb_i != fbb->succs.end(); set_fbb_i++) {
 		if (*set_fbb_i != NULL) {
@@ -365,7 +365,7 @@ void FunctionBFCBB::genD(FunctionBFCBB *fbb, std::set<FunctionBFCBB *> &visited)
 }
 
 // Auxiliary Function
-void FunctionBFCBB::genA(FunctionBFCBB *fbb, std::set<FunctionBFCBB *> &visited)
+void FunctionBFCBB::genA(FunctionBFCBB *fbb, set<FunctionBFCBB *> &visited)
 {
 	if (fbb == NULL)
 		return;
@@ -378,7 +378,7 @@ void FunctionBFCBB::genA(FunctionBFCBB *fbb, std::set<FunctionBFCBB *> &visited)
 	
 	visited.insert(fbb);
 	
-	std::set<FunctionBFCBB *>::iterator set_fbb_i;
+	set<FunctionBFCBB *>::iterator set_fbb_i;
 	
 	for (set_fbb_i = fbb->preds.begin(); set_fbb_i != fbb->preds.end(); set_fbb_i++) {
 		if (*set_fbb_i != NULL) {
@@ -391,7 +391,7 @@ void FunctionBFCBB::genA(FunctionBFCBB *fbb, std::set<FunctionBFCBB *> &visited)
 // Auxiliary Function
 void FunctionBFCCFG::genAD()
 {
-	std::set<FunctionBFCBB *> visited;
+	set<FunctionBFCBB *> visited;
 	BBHash::iterator bbh_i;
 	
 	for (bbh_i = LLVM_BBs.begin(); bbh_i != LLVM_BBs.end(); bbh_i++) {
@@ -421,11 +421,11 @@ void FunctionBFCCFG::genEdges()
 				
 			if (succBFCBB == NULL) {
 #ifdef DEBUG_CFG_ERROR			
-					std::cerr<<"Successor BB not found"<<std::endl;
+					cerr<<"Successor BB not found"<<endl;
 #endif
 			}
 			else {
-					//O<<"Adding successor "<<succFBB->bbName<<" to "<<fbb->bbName<<std::endl;
+					//O<<"Adding successor "<<succFBB->bbName<<" to "<<fbb->bbName<<endl;
 					fbb->succs.insert(succBFCBB);
 			}
 		}
@@ -437,11 +437,11 @@ void FunctionBFCCFG::genEdges()
 				
 			if (predBFCBB == NULL) {
 #ifdef DEBUG_CFG_ERROR			
-					std::cerr<<"Predecessor BB not found"<<std::endl;
+					cerr<<"Predecessor BB not found"<<endl;
 #endif 
 			}
 			else {
-			    //O<<"Adding predecessor "<<predFBB->bbName<<" to "<<fbb->bbName<<std::endl;				
+			    //O<<"Adding predecessor "<<predFBB->bbName<<" to "<<fbb->bbName<<endl;				
 				fbb->preds.insert(predBFCBB);
 			}
 		}
@@ -460,7 +460,7 @@ void FunctionBFCCFG::assignBBGenKill()
 		FunctionBFCBB *fbb = bbh_i->second;
 		fbb->assignGenKill();
 		
-		if (fbb->bbName.find("entry") != std::string::npos)
+		if (fbb->bbName.find("entry") != string::npos)
 			fbb->outBB.insert(fbb->genBB.begin(), fbb->genBB.end());
 		
 	}
@@ -468,7 +468,7 @@ void FunctionBFCCFG::assignBBGenKill()
 
 
 // Auxiliary Function
-void FunctionBFCCFG::printCFG(std::ostream & O)
+void FunctionBFCCFG::printCFG(ostream & O)
 {
 	BBHash::iterator bbh_i;
 	//FunctionBFCBB * entry = NULL;	
@@ -476,9 +476,9 @@ void FunctionBFCCFG::printCFG(std::ostream & O)
 	for (bbh_i = LLVM_BBs.begin(); bbh_i != LLVM_BBs.end();  bbh_i++)
 	{
 		FunctionBFCBB * fbb = bbh_i->second;
-		O<<"FBB name: "<<fbb->bbName<<std::endl;
+		O<<"FBB name: "<<fbb->bbName<<endl;
 		
-		std::set<FunctionBFCBB *>::iterator set_fbb_i;
+		set<FunctionBFCBB *>::iterator set_fbb_i;
 	
 		O<<"Successors: ";
 		for (set_fbb_i = fbb->succs.begin(); set_fbb_i != fbb->succs.end(); set_fbb_i++)
@@ -494,7 +494,7 @@ void FunctionBFCCFG::printCFG(std::ostream & O)
 			FunctionBFCBB * predBB = (*set_fbb_i);
 			O<<predBB->bbName<<" ";
 		}
-		O<<std::endl;
+		O<<endl;
 		
 		O<<"Ancestors: ";
 		for (set_fbb_i = fbb->ancestors.begin(); set_fbb_i != fbb->ancestors.end(); set_fbb_i++)
@@ -502,7 +502,7 @@ void FunctionBFCCFG::printCFG(std::ostream & O)
 			FunctionBFCBB * predBB = (*set_fbb_i);
 			O<<predBB->bbName<<" ";
 		}
-		O<<std::endl;
+		O<<endl;
 		
 		O<<"Descendants: ";
 		for (set_fbb_i = fbb->descendants.begin(); set_fbb_i != fbb->descendants.end(); set_fbb_i++)
@@ -510,20 +510,20 @@ void FunctionBFCCFG::printCFG(std::ostream & O)
 			FunctionBFCBB * predBB = (*set_fbb_i);
 			O<<predBB->bbName<<" ";
 		}
-		O<<std::endl;
+		O<<endl;
 		
 		
 		O<<"Relevant Instructions: ";
-		std::vector<NodeProps *>::iterator vec_vp_i;
+		vector<NodeProps *>::iterator vec_vp_i;
 		
 		
-		std::set<NodeProps *>::iterator set_vp_i;
+		set<NodeProps *>::iterator set_vp_i;
 
 		for (vec_vp_i = fbb->relevantInstructions.begin(); 
 			vec_vp_i != fbb->relevantInstructions.end(); vec_vp_i++)
 		{
 			NodeProps * vp = (*vec_vp_i);
-			O<<vp->name<<"("<<vp->line_num<<")"<<std::endl;
+			O<<vp->name<<"("<<vp->line_num<<")"<<endl;
 			
 			
 			O<<"   Gen: ";
@@ -574,7 +574,7 @@ void FunctionBFCCFG::printCFG(std::ostream & O)
 			vec_vp_i != fbb->singleStores.end(); vec_vp_i++)
 		{
 			NodeProps * vp = (*vec_vp_i);
-			O<<vp->name<<"("<<vp->line_num<<")"<<std::endl;
+			O<<vp->name<<"("<<vp->line_num<<")"<<endl;
 			
 			
 			O<<"   Gen: ";
@@ -619,7 +619,7 @@ void FunctionBFCCFG::printCFG(std::ostream & O)
 		
 		
 		
-		O<<std::endl;
+		O<<endl;
 	}
 			
 	O<<endl;		
@@ -629,10 +629,10 @@ void FunctionBFCCFG::printCFG(std::ostream & O)
 void FunctionBFCCFG::calcStoreLines()
 {
 	BBHash::iterator bbh_i;
-	std::set<int>::iterator set_i_i;
+	set<int>::iterator set_i_i;
 	for (bbh_i = LLVM_BBs.begin(); bbh_i != LLVM_BBs.end();  bbh_i++) {
 		FunctionBFCBB *fbb = bbh_i->second;
-		std::set<NodeProps *>::iterator set_vp_i;
+		set<NodeProps *>::iterator set_vp_i;
 			
 		// Look at the variables genned elsewhere (IN to the BB)
 		for (set_vp_i = fbb->inBB.begin(); set_vp_i != fbb->inBB.end(); set_vp_i++) {
@@ -659,9 +659,9 @@ void FunctionBFCCFG::calcStoreLines()
 #ifdef DEBUG_CFG_STORELINES
                 fb->blame_info<<vp->name<<" isn't alive out of this BB"<<endl;
 #endif
-                std::set<NodeProps *> killers;
-                std::set<int> borders;//line_num of killers
-			    std::vector<NodeProps *>::iterator vec_vp_i2;
+                set<NodeProps *> killers;
+                set<int> borders;//line_num of killers
+			    vector<NodeProps *>::iterator vec_vp_i2;
 				// Find an instruction that kills the IN instruction
 				for (vec_vp_i2 = fbb->relevantInstructions.begin(); //relevantInstruction is the storeVP
 					vec_vp_i2 != fbb->relevantInstructions.end(); vec_vp_i2++) { 
@@ -726,7 +726,7 @@ void FunctionBFCCFG::calcStoreLines()
 		}
 		
 		// Now we need to look at those variables that were genned in this basic block
-		std::vector<NodeProps *>::iterator vec_vp_i;
+		vector<NodeProps *>::iterator vec_vp_i;
 		for (vec_vp_i = fbb->relevantInstructions.begin(); 
 					vec_vp_i != fbb->relevantInstructions.end(); vec_vp_i++) {
 			
@@ -735,9 +735,9 @@ void FunctionBFCCFG::calcStoreLines()
 #ifdef DEBUG_CFG_STORELINES
             fb->blame_info<<"In genBB, "<<vp->name<<"->storeLines.insert("<<vp->line_num<<") in pos8"<<endl;
 #endif
-            std::vector<NodeProps *>::iterator vec_vp_i2 = fbb->relevantInstructions.begin();
-	        std::set<NodeProps *> killers;
-            std::set<int> borders;//line_num of killers
+            vector<NodeProps *>::iterator vec_vp_i2 = fbb->relevantInstructions.begin();
+	        set<NodeProps *> killers;
+            set<int> borders;//line_num of killers
 			// Find an instruction that kills the IN instruction
 			for (; vec_vp_i2 != fbb->relevantInstructions.end(); vec_vp_i2++) { 
 				NodeProps *potKiller = (*vec_vp_i2);
@@ -869,8 +869,8 @@ void FunctionBFCCFG::reachingDefs()
 			FunctionBFCBB *fbb = bbh_i->second;
 			//	fbb->assignGenKill();
 			
-			std::set<FunctionBFCBB *>::iterator set_fbb_i;
-			std::set<NodeProps *>::iterator set_vp_i;
+			set<FunctionBFCBB *>::iterator set_fbb_i;
+			set<NodeProps *>::iterator set_vp_i;
 			
 			// Create IN[B] set from Union of OUT[p] where p is a predecessor
 			fbb->inBB.clear();
@@ -882,11 +882,11 @@ void FunctionBFCCFG::reachingDefs()
 			
 			// Create new OUT set form GEN[B] Union (IN[B] - KILL[B])
 			
-			std::set<NodeProps *> newOutBB;
+			set<NodeProps *> newOutBB;
 			// new OUT[B] = GEN[B]
 			newOutBB.insert(fbb->genBB.begin(), fbb->genBB.end());
 			
-			std::set<NodeProps *> inMinusKillBB;
+			set<NodeProps *> inMinusKillBB;
 			
 			// inMinusKillBB[B] = IN[B]
 			inMinusKillBB.insert(fbb->inBB.begin(), fbb->inBB.end());
@@ -913,14 +913,14 @@ void FunctionBFCCFG::reachingDefs()
 // For Reaching Definitions
 void FunctionBFCBB::assignGenKill()
 {
-	std::vector<NodeProps *>::iterator vec_vp_i;
+	vector<NodeProps *>::iterator vec_vp_i;
 	// Create Gen and Kill for each relevant store Instruction (VP)
 	for (vec_vp_i = relevantInstructions.begin(); vec_vp_i != relevantInstructions.end(); vec_vp_i++) {
 		NodeProps *vp = (*vec_vp_i);
 		// Trivial case that you gen yourself
 		vp->genVP.insert(vp);
 		
-		std::set<NodeProps *>::iterator set_vp_i;
+		set<NodeProps *>::iterator set_vp_i;
 		for (set_vp_i = vp->storeFrom->storesTo.begin(); set_vp_i != vp->storeFrom->storesTo.end(); set_vp_i++) {
 			NodeProps *kills = *set_vp_i;
 		//We kill all other stores that occur anywhere else besides the VP at that line
@@ -932,7 +932,7 @@ void FunctionBFCBB::assignGenKill()
 	// Use that information to create Gen/Kill for entire BB
 	for (vec_vp_i = relevantInstructions.begin(); vec_vp_i != relevantInstructions.end(); vec_vp_i++) {
 		NodeProps *vp = (*vec_vp_i);
-		std::set<NodeProps *>::iterator set_vp_i;
+		set<NodeProps *>::iterator set_vp_i;
 			
 		for (set_vp_i = vp->genVP.begin(); set_vp_i !=  vp->genVP.end(); set_vp_i++)
 			genBB.insert(*set_vp_i);

@@ -138,7 +138,7 @@ struct CollapsePair
 
 struct BFCLoopInfo
 {
-	set<int> lineNumbers;
+    std::set<int> lineNumbers;
 	FunctionBFC * bf;
 };
 
@@ -183,11 +183,6 @@ struct FuncFormalArg {
     const llvm::Type *argType;
 };
 
-struct FuncSignature {
-    std::string fname;
-    std::vector<FuncFormalArg*> args;
-    const llvm::Type *returnType;
-};
 // Comparators //
 struct eqstr { //used in unordered_map, key type should be string
     bool operator()(std::string s1, std::string s2) const {
@@ -199,6 +194,25 @@ struct ltstr { //used in set, key type can be const char*
     bool operator()(const char *s1, const char *s2) const {
         return strcmp(s1, s2) < 0;
     }
+};
+
+struct FuncSignature {
+    std::string fname;
+    std::vector<FuncFormalArg*> args;
+    const llvm::Type *returnType;
+    
+    //expanded to be truncated FuncBFC
+    //copied fields from FuncBFC: funcCallNames
+    std::set<const char*, ltstr> calleeNames; 
+    //all funcs that call "this": reverse mapping of funcCallNames
+    std::set<std::string> callerNames; 
+    //07/07/17:whether this function has "on/forall/coforall" constructs to rep
+    //parallelism or distribution, where it can created generated wrap function with
+    //unique fid used in runtime instrumentation. To warn a potential mismatch of 
+    //the preSpawn/preFork stacktraces
+    bool hasParOrDistCallsReal = false; //copied from FuncBFC at first, then refined
+    //whether this calls a parDist func that has >1 callsites
+    bool maybeMissBlamed = false;
 };
 
 typedef adjacency_list<hash_setS, vecS, bidirectionalS, property<vertex_props_t, NodeProps *>, property<edge_iore_t, int> > MyGraphType;
@@ -233,6 +247,10 @@ public:
     std::ofstream blame_info;
     std::set<int> blamedArgs; //Only for internal module functions 12/19/16
     bool isExternFunc; //03/07/17: distinguish extern funcs with user funcs
+    bool hasParOrDistCalls; //whether this has dist/par calls
+    std::set<const char*, ltstr> funcCallNames; //different called func names
+                                         //if "bar" called twice in foo,only one
+                                         // "bar" kept here
 private:
     //Graph representations
     MyGraphType G; // All nodes
@@ -242,9 +260,7 @@ private:
     LineNumHash lnm; //#nodes that are in the same certain line, for vp->lineNumOrder
     
     std::vector<FuncStores *> allStores;
-    std::set<const char*, ltstr> funcCallNames; //different called func names
-                                         //if "bar" called twice in foo,only one
-                                         // "bar" kept here
+
     // These two are tied together
 	//std::set<std::string> collapsableFields;
 	std::vector<CollapsePair *> collapsePairs;
@@ -272,8 +288,8 @@ private:
     int numParams; // Num of params for function, MAX_PARAMS+1 for variable argument
     int numPointerParams; // Num of params that are pointers
     bool voidReturn; // true->void
-    string moduleName; // name of file where this func found
-    string modulePathName; // full path to the file
+    std::string moduleName; // name of file where this func found
+    std::string modulePathName; // full path to the file
     bool moduleSet; // true if above two variables have been set
     bool isVarLen; // true if parameters are of variable length
     bool isBFCPoint; // whether or not it's explicit blame point(main,
@@ -367,7 +383,7 @@ private:
     void genGraph(ExternFuncBFCHash &efInfo);
     void genGraphTrunc(ExternFuncBFCHash &efInfo);//Only for Chapel internal module
     //Wrapper function for boost edge adding
-    void addEdge(const char *source, const char *dest, Instruction *pi);
+    void addEdge(const char *source, const char *dest, Instruction *pi, int place);
     //Edge generation
     void genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum, std::set<NodeProps *> &seenCall);
 	//generate edges based on opcode
@@ -379,8 +395,13 @@ private:
     //added by Hui 01/14/16
     std::string getUpperLevelFieldName(std::string rawStructVarName, User *pi, std::string instName);
     Value* getValueFromOrig(Instruction *vInstLoad);
+    std::string getUniqueNameAsFieldForNode(Value *reg, int errNo, std::string rawStructVarName);
 
 	std::string geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum);
+														 
+	std::string geExtractValue(User *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum);
+														 
+	std::string geInsertValue(User *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum);
 														 
 	void geDefault(Instruction *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum);
 														 
@@ -483,7 +504,7 @@ private:
 																			
 	void resolveAliases2(NodeProps *exitCand, NodeProps *currNode, std::set<int> &visited, NodeProps *exitV);
 																		
-	short checkIfWritten2(NodeProps *currNode, std::set<int> &visited);
+	bool checkIfWritten2(NodeProps *currNode, std::set<int> &visited);
 																		
 	void resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &tempPointers);		
 	void resolveLocalDFA(NodeProps *v, std::set<NodeProps *> &pointers);		
@@ -513,8 +534,12 @@ private:
     void spAccessHelper(Instruction *pi);
     void resolvePidAliases(void);
     void resolveObjAliases(void);
-    void resolvePidAliasForNode_bw(NodeProps *currNode, std::set<int> &visited);
-    void resolvePidAliasForNode_fw(NodeProps *currNode, std::set<int> &visited);
+    void resolvePPA(void); //find all potential pid aliases for formalArgs
+    void resolvePreRLS(NodeProps *origV, NodeProps *currNode, std::set<int> &visited);
+    void resolvePPAFromRLSNode(NodeProps *origV, NodeProps *currNode, std::set<int> &visited);
+    void resolvePidAliasForNode_bw_new(NodeProps *currNode, std::set<int> &visited);//for Chapel 1.15
+    void resolvePidAliasForNode_fw_new(NodeProps *currNode, std::set<int> &visited);//for Chapel 1.15
+    void resolvePidAliasForNode_fw(NodeProps *currNode, std::set<int> &visited);//still needed for Chapel 1.15
     void resolveTransitivePidAliases(void);
     void resolveTransitiveObjAliases(void);
 	///////////////////////////////////////////////////////////////////////////////
@@ -558,6 +583,8 @@ private:
     NodeProps* getNodeBitCasted(Value *val);
     // Check the match situation between param and arg
     int paramTypeMatch(const llvm::Type *t1, const llvm::Type *t2);
+    // Helper func for the following 2 funcs
+    Value *get_args_for(Instruction *pi);
     // get real params for on_fn_chpl* and coforall_fn_chpl*
     void getParamsForCoforall(Instruction *pi, Value **params, int numArgs, std::vector<FuncFormalArg*> &args); 
     void getParamsForOn(Instruction *pi, Value **params, int numArgs, std::vector<FuncFormalArg*> &args);
@@ -576,6 +603,8 @@ private:
     void ieGen_Operands(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGen_OperandsStore(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGen_OperandsGEP(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
+    void ieGen_OperandsIstVal(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
+    void ieGen_OperandsExtVal(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieGen_OperandsAtomic(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieDefault(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieBlank(Instruction *pi, int &currentLineNum);
@@ -589,6 +618,8 @@ private:
     void ieStore(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieBitCast(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
     void ieSelect(Instruction *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
+    void ieExtractValue(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
+    void ieInsertValue(User *pi, int &varCount, int &currentLineNum, FunctionBFCBB *fbb);
  
     
     ////////////////////  OUTPUT ////////////////////////////////////////////////////////////

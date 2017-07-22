@@ -1,5 +1,5 @@
-/* Hui
- * Copyright 2004-2015 Cray Inc.
+/*
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -31,6 +31,8 @@
 #include "chplmemtrack.h"
 #include "chpl-privatization.h"
 #include "chpl-tasks.h"
+#include "chpl-topo.h"
+#include "chpl-linefile-support.h"
 #include "chplsys.h"
 #include "config.h"
 #include "error.h"
@@ -40,28 +42,88 @@
 #include <locale.h>
 #include <time.h>
 #include <sys.h>
-
-static const char myFilename[] = 
-#ifdef CHPL_DEVELOPER
-  __FILE__;
-#else
-  "<internal>";
-#endif
-
-#ifdef USE_PAPI
 #include "papi.h"
-extern void PAPIhandler_empty(int EventSet, void *address, long long overflow_vector, void *context);
-extern int THRESHOLD;   // overflow threshold of PAPI_TOT_CYC event
-#endif
-char host_name[128]; // each node has a unique host_name, like chpl_nodeID
-
+#include "chpl-blame.h"
+static const int32_t myFilename = CHPL_FILE_IDX_INTERNAL;
 
 chpl_main_argument chpl_gen_main_arg;
 
 char* chpl_executionCommand;
 
+// File set-up for Blame
+FILE *preFile;
+FILE *execute_onFile;
+FILE *execute_on_nbFile;
+FILE *execute_on_fastFile;
+FILE *compFile;
+char host_name[128];
+int THRESHOLD = 1073807359;//608888809; //overflow threshold of PAPI_TOT_CYC event
+static int EventSet = PAPI_NULL;
+
+static void chpl_files_init(void)
+{
+  char buffer[100];
+  if (getenv("ENABLE_TASK") != NULL) {
+    sprintf(buffer, "%s-%s","preSpawn",host_name);
+    preFile = fopen (buffer,"a");
+    if (preFile==NULL) {
+      printf("File %s failed to be created\n",buffer);
+      return;
+    }
+  }
+
+  if (getenv("ENABLE_COMM") != NULL) {
+    sprintf(buffer, "%s-%s","fork",host_name);
+    execute_onFile = fopen (buffer,"a");
+    if (execute_onFile==NULL) {
+      printf("File %s failed to be created\n",buffer);
+      return;
+    }
+    sprintf(buffer, "%s-%s","fork_nb",host_name);
+    execute_on_nbFile = fopen (buffer,"a");
+    if (execute_on_nbFile==NULL) {
+      printf("File %s failed to be created\n",buffer);
+      return;
+    }
+    sprintf(buffer, "%s-%s","fork_fast",host_name);
+    execute_on_fastFile = fopen (buffer,"a");
+    if (execute_on_fastFile==NULL) {
+      printf("File %s failed to be created\n",buffer);
+      return;
+    }
+  }
+  
+  if (getenv("ENABLE_SAMP") != NULL) {
+    sprintf(buffer, "%s",host_name);
+    compFile = fopen (buffer,"a");
+    if (compFile==NULL) {
+      printf("File %s failed to be created\n",buffer);
+      return;
+    }
+  }
+}
+
+static void chpl_files_close(void)
+{
+  if (getenv("ENABLE_TASK") != NULL) {
+    fclose(preFile);
+  }
+
+  if (getenv("ENABLE_COMM") != NULL) {
+    fclose(execute_onFile);
+    fclose(execute_on_nbFile);
+    fclose(execute_on_fastFile);
+  }
+  
+  if (getenv("ENABLE_SAMP") != NULL) {
+    fclose(compFile);
+  }
+}
+
+// ---------^^^^^^^-Blame-specific setups-^^^^^^^-----------------------//
+
 int handleNonstandardArg(int* argc, char* argv[], int argNum, 
-                         int32_t lineno, c_string filename) {
+                         int32_t lineno, int32_t filename) {
 
   if (mainHasArgs) {
     chpl_gen_main_arg.argv[chpl_gen_main_arg.argc] = argv[argNum];
@@ -111,7 +173,6 @@ void chpl_rt_preUserCodeHook(void) {
   chpl_setMemFlags();
 
   chpl_comm_barrier("pre-user-code hook end");
-  
 }
 
 
@@ -124,6 +185,7 @@ void chpl_rt_preUserCodeHook(void) {
 //
 void chpl_rt_postUserCodeHook(void) {
   //
+  // empty
   //
 }
 
@@ -136,7 +198,6 @@ void chpl_rt_postUserCodeHook(void) {
 //
 // Called from main.c:main(...) and chpl-init.c:chpl_library_init(...)
 //
-
 void chpl_rt_init(int argc, char* argv[]) {
   int32_t execNumLocales;
   int runInGDB;
@@ -159,7 +220,9 @@ void chpl_rt_init(int argc, char* argv[]) {
   //
   parseArgs(false, parse_dash_E, &argc, argv);
 
+  chpl_files_init(); // Initialize all pre and fork* files: Blame
   chpl_error_init();  // This does local-only initialization
+  chpl_topo_init();
   chpl_comm_init(&argc, &argv);
   chpl_mem_init();
   chpl_comm_post_mem_init();
@@ -210,7 +273,6 @@ void chpl_rt_init(int argc, char* argv[]) {
   // Make sure the runtime is fully set up on all locales before we start
   // running Chapel code.
   //
-
   chpl_comm_barrier("barrier before main");
 }
 
@@ -219,6 +281,7 @@ void chpl_rt_init(int argc, char* argv[]) {
 //
 void chpl_rt_finalize(int return_value) {
   //chpl_rt_postUserCodeHook();
+  //chpl_files_close(); // Close all pre and fork* files: Blame TODO: check if all threads end here
   chpl_exit_all(return_value);
 }
 
@@ -229,6 +292,10 @@ void chpl_rt_finalize(int return_value) {
 // "main-task" which is either "chpl_executable_init" or "chpl_library_init".
 //
 void chpl_std_module_init(void) {
+  // chpl__initStringLiterals runs the constructors for all string literals. We
+  // need to setup the literals on every locale before any other chapel code is
+  // run.
+  chpl__initStringLiterals();
   chpl__heapAllocateGlobals(); // allocate global vars on heap for multilocale
 
   if (chpl_nodeID == 0) {
@@ -272,19 +339,8 @@ void chpl_std_module_init(void) {
 // chpl-init.c:chpl_library_init().
 //
 void chpl_executable_init(void) {
-
-#ifdef USE_PAPI
-  int EventSet = PAPI_NULL;
-  int ret;
-#endif
-  
-
-  chpl_std_module_init();
-  if (chpl_nodeID == 0) {
-    //
-    // Call the compiler-generated main() routine
-    //
-#ifdef USE_PAPI
+  // Enable PAPI for the main thread
+  if (getenv("ENABLE_SAMP") != NULL) {
     if (PAPI_create_eventset(&EventSet) != PAPI_OK)
       fprintf(stderr, "PAPI_create_eventset() is not okay1\n");
     else
@@ -295,7 +351,8 @@ void chpl_executable_init(void) {
     else
       fprintf(stderr, "PAPI_add_event() success1\n");
   
-    if (PAPI_overflow(EventSet, PAPI_TOT_CYC, THRESHOLD, 0, PAPIhandler_empty) != PAPI_OK)
+    if (PAPI_overflow(EventSet, PAPI_TOT_CYC, THRESHOLD, 
+                        0, PAPIhandler) != PAPI_OK)
       fprintf(stderr, "PAPI_overflow() is not okay1\n");
     else
       fprintf(stderr, "PAPI_overflow() success1\n");
@@ -304,19 +361,31 @@ void chpl_executable_init(void) {
       fprintf(stderr, "PAPI_start() is not okay1\n");
     else
       fprintf(stderr, "PAPI_start() success1\n");
-#endif 
+  }
 
+  chpl_std_module_init();
+  if (chpl_nodeID == 0) {
+    //
+    // Call the compiler-generated main() routine
+    //
     chpl_gen_main_arg.return_value = chpl_gen_main(&chpl_gen_main_arg);
-
-#ifdef USE_PAPI
-    ret = PAPI_stop(EventSet, NULL);
+  }
+    
+  // Disable PAPI for the main thread
+  if (getenv("ENABLE_SAMP") != NULL) {
+    int ret = PAPI_stop(EventSet, NULL);
     if(ret != PAPI_OK)
       fprintf(stderr, "PAPI_stop() error1: %s \n", PAPI_strerror(ret));
     else
       fprintf(stderr, "PAPI_stop() success1\n");
-#endif
   }
 
+}
+
+void chpl_execute_module_deinit(c_fn_ptr deinitFun) {
+  void (*deinitFn)(void);
+  deinitFn = deinitFun;
+  deinitFn();
 }
 
 //

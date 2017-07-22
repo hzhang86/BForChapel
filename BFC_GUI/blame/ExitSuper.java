@@ -239,9 +239,11 @@ public class ExitSuper implements Comparable<ExitSuper> {
 	}
 
 	public void setGenType(String genType) {
-		
+        //String editGT;
+        //if (genType.contains("*"))
 		String editGT = genType.substring(genType.indexOf('*')+1);
-		 
+		//else
+        //    editGT = genType;
 		this.genType = editGT;
 	}
 
@@ -706,7 +708,13 @@ public class ExitSuper implements Comparable<ExitSuper> {
 		
 		if (Global.typeOfTest == 0)
 		{
-			return truncName + " [ " + typeName + " ]  "  + funcName + " " +  df.format(d) + "%";
+            //maybe we should print the genType instead of struct type since most
+            //Chapel var has undefined struct type
+            String nullstr = "null";
+            if (typeName != null && typeName.compareTo(nullstr) != 0)
+			    return truncName + " [ " + typeName + " ]  "  + funcName + " " +  df.format(d) + "%";
+            else
+			    return truncName + " [ " + genType + " ]  "  + funcName + " " +  df.format(d) + "%";
 		}
 		else if (Global.typeOfTest == 1)
 		{

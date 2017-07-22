@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -28,10 +28,12 @@
 #include <stdarg.h>
 #include "chpl-tasks.h"
 #include "chpl-comm-callbacks.h"
-#include "chpl-tasks-callbacks.h"
-
 #include <libunwind.h>
 #define UNW_LOCAL_ONLY //to speed up the stack unwinding
+#define ENABLE_OUTPUT_TO_FILE
+extern int chpl_vdebug_fd;    // fd of output file, 0 => not gathering data
+extern int chpl_vdebug;       // Should we generate debug data
+
 // Linux and MacOS don't do a single write.  We require a single write.
 extern int chpl_dprintf(int fd, const char * format, ...)
 #ifdef __GNUC__
@@ -44,6 +46,9 @@ extern int install_callbacks (void);
 
 // uninstall all task and comm callbacks
 extern int uninstall_callbacks (void);
+
+// PAPI sampling handler
+extern void PAPIhandler(int EventSet, void *address, long long overflow_vector, void *context);
 
 //  start and open file if not NULL
 extern void chpl_vdebug_start(const char *, double now); 

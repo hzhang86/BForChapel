@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -34,8 +34,8 @@ LAUNCHER_SRC_NAME = $(TMPDIRNAME)/launcher_support.c
 REAL_BINARY_NAME = $(BINNAME:%$(EXE_SUFFIX)=%)$(REAL_SUFFIX)
 
 all: FORCE
-	cp $(TMPBINNAME) $(REAL_BINARY_NAME)
-	rm $(TMPBINNAME)
+	rm -f $(REAL_BINARY_NAME)
+	mv $(TMPBINNAME) $(REAL_BINARY_NAME)
 	echo "#include \"chplcgfns.h\"" > $(LAUNCHER_SRC_NAME)
 	echo "#include \"config.h\"" >> $(LAUNCHER_SRC_NAME)
 	echo "#include \"_config.c\"" >> $(LAUNCHER_SRC_NAME)

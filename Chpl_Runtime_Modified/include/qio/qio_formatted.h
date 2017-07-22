@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2015 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -397,7 +397,7 @@ qioerr qio_channel_write_complex(const int threadsafe, const int byteorder, qio_
 // QIO_BINARY_STRING_STYLE_TOEOF -0xff00 -- read until end or up to maxlen
 // BINARY_STRING_STYLE_DATA_NULL|0xXX -0x01XX -- read until terminator XX
 //  + -- nonzero positive -- read exactly this length.
-qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen);
+qioerr qio_channel_read_string(const int threadsafe, const int byteorder, const int64_t str_style, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes);
 
 // string binary style:
 // QIO_BINARY_STRING_STYLE_LEN1B_DATA -1 -- 1 byte of length before
@@ -450,14 +450,14 @@ qioerr qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, i
   // Fast path: an entire multi-byte sequence
   // is stored in the buffers.
   if( qio_glocale_utf8 > 0 &&
-      4 <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+      qio_space_in_ptr_diff(4, ch->cached_end, ch->cached_cur) ) {
     if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
       state = 0;
       while( 1 ) {
         qio_utf8_decode(&state,
                         &codepoint,
                         *(unsigned char*)ch->cached_cur);
-        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,1);
+        ch->cached_cur = qio_ptr_add(ch->cached_cur,1);
         if (state <= 1) {
           break;
         }
@@ -471,7 +471,7 @@ qioerr qio_channel_read_char(const int threadsafe, qio_channel_t* restrict ch, i
     } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
       // character == byte.
       *chr = *(unsigned char*)ch->cached_cur;
-      ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,1);
+      ch->cached_cur = qio_ptr_add(ch->cached_cur,1);
       err = 0;
     }
   } else {
@@ -604,11 +604,11 @@ qioerr qio_decode_char_buf(int32_t* restrict chr, int* restrict nbytes, const ch
       }
       if( state == UTF8_ACCEPT ) {
         *chr = codepoint;
-        *nbytes = VOID_PTR_DIFF(buf, start);
+        *nbytes = qio_ptr_diff((void*) buf, (void*) start);
         return 0;
       } else {
         *chr = 0xfffd; // replacement character
-        *nbytes = VOID_PTR_DIFF(buf, start);
+        *nbytes = qio_ptr_diff((void*) buf, (void*) start);
         QIO_RETURN_CONSTANT_ERROR(EILSEQ, "");
       }
     } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
@@ -682,36 +682,36 @@ qioerr qio_channel_write_char(const int threadsafe, qio_channel_t* restrict ch, 
   err = 0;
 
   if( qio_glocale_utf8 > 0 &&
-      4 <= VOID_PTR_DIFF(ch->cached_end, ch->cached_cur) ) {
+      qio_space_in_ptr_diff(4, ch->cached_end, ch->cached_cur) ) {
     if( qio_glocale_utf8 == QIO_GLOCALE_UTF8 ) {
       if( chr < 0 ) {
         QIO_GET_CONSTANT_ERROR(err, EILSEQ, "");
       } else if( chr < 0x80 ) {
         // OK, we got a 1-byte character; case #1
         *(unsigned char*)ch->cached_cur = (unsigned char) chr;
-        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,1);
+        ch->cached_cur = qio_ptr_add(ch->cached_cur,1);
       } else if( chr < 0x800 ) {
         // OK, we got a fits-in-2-bytes character; case #2
         *(unsigned char*)ch->cached_cur = (0xc0 | (chr >> 6));
         *(((unsigned char*)ch->cached_cur)+1) = (0x80 | (chr & 0x3f));
-        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,2);
+        ch->cached_cur = qio_ptr_add(ch->cached_cur,2);
       } else if( chr < 0x10000 ) {
         // OK, we got a fits-in-3-bytes character; case #3
         *(unsigned char*)ch->cached_cur = (0xe0 | (chr >> 12));
         *(((unsigned char*)ch->cached_cur)+1) = (0x80 | ((chr >> 6) & 0x3f));
         *(((unsigned char*)ch->cached_cur)+2) = (0x80 | (chr & 0x3f));
-        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,3);
+        ch->cached_cur = qio_ptr_add(ch->cached_cur,3);
       } else {
         // OK, we got a fits-in-4-bytes character; case #4
         *(unsigned char*)ch->cached_cur = (0xf0 | (chr >> 18));
         *(((unsigned char*)ch->cached_cur)+1) = (0x80 | ((chr >> 12) & 0x3f));
         *(((unsigned char*)ch->cached_cur)+2) = (0x80 | ((chr >> 6) & 0x3f));
         *(((unsigned char*)ch->cached_cur)+3) = (0x80 | (chr & 0x3f));
-        ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,4);
+        ch->cached_cur = qio_ptr_add(ch->cached_cur,4);
       }
     } else if( qio_glocale_utf8 == QIO_GLOCALE_ASCII ) {
       *(unsigned char*)ch->cached_cur = (unsigned char) chr;
-      ch->cached_cur = VOID_PTR_ADD(ch->cached_cur,1);
+      ch->cached_cur = qio_ptr_add(ch->cached_cur,1);
     }
   } else {
     err = _qio_channel_write_char_slow_unlocked(ch, chr);
@@ -739,12 +739,13 @@ qioerr qio_channel_skip_past_newline(const int threadsafe, qio_channel_t* restri
 
 qioerr qio_channel_write_newline(const int threadsafe, qio_channel_t* restrict ch);
 
-qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen);
+qioerr qio_channel_scan_string(const int threadsafe, qio_channel_t* restrict ch, const char* restrict * restrict out, int64_t* restrict len_out, ssize_t maxlen_bytes);
 
+// reads match exactly - skipping whitespace before it if skipwsbefore is set.
 // returns 0 if it matched, or EFORMAT if it did not.
-qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipws);
+qioerr qio_channel_scan_literal(const int threadsafe, qio_channel_t* restrict ch, const char* restrict match, ssize_t len, int skipwsbefore);
 // Chapel needs another name for the same routine.
-qioerr qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, /* const char* */ void* match, ssize_t len, int skipws);
+qioerr qio_channel_scan_literal_2(const int threadsafe, qio_channel_t* ch, /* const char* */ void* match, ssize_t len, int skipwsbefore);
 
 typedef struct qio_truncate_info_ {
   ssize_t max_columns;
@@ -758,7 +759,7 @@ typedef struct qio_truncate_info_ {
 } qio_truncate_info_t;
 
 // Quote a string according to a style (we have this one for some error
-// situations in which it's undesireable to use the stdout channel
+// situations in which it's undesirable to use the stdout channel
 // because of e.g. Chapel module initialization order)
 qioerr qio_quote_string(uint8_t string_start, uint8_t string_end, uint8_t string_format, const char* restrict ptr, ssize_t len, const char** out, qio_truncate_info_t* ti);
 // like qio_quote_string, but only get length information.
@@ -772,8 +773,13 @@ qioerr qio_channel_print_literal(const int threadsafe, qio_channel_t* restrict c
 qioerr qio_channel_print_literal_2(const int threadsafe, qio_channel_t* ch, /*const char* */ void* ptr, ssize_t len);
 
 
+int32_t qio_skip_json_object_unlocked(qio_channel_t* restrict ch);
+int32_t qio_skip_json_array_unlocked(qio_channel_t* restrict ch);
+int32_t qio_skip_json_value_unlocked(qio_channel_t* restrict ch);
+int32_t qio_skip_json_string_unlocked(qio_channel_t* restrict ch);
+int32_t qio_skip_json_field_unlocked(qio_channel_t* restrict ch);
 
-
+qioerr qio_channel_skip_json_field(const int threadsafe, qio_channel_t* ch);
 
 enum {
   QIO_CONV_UNK = 0,

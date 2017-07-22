@@ -339,8 +339,9 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 	getline(bI, line);
 
 
-	if (eStatus >= EXIT_VAR_GLOBAL)
+	if (eStatus >= EXIT_VAR_GLOBAL) {
 		bf->addExitVar(this);
+    }
 	else if (eStatus == EXIT_PROG)
 		bf->addExitProg(this);
 	else if (eStatus == EXIT_OUTP)
@@ -913,6 +914,23 @@ void VertexProps::parseVertex(ifstream & bI, BlameFunction * bf)
 		{
 			VertexProps *temp = bf->findOrCreateVP(line);
 			objAliases.insert(temp);
+		}
+	}
+
+
+	//----
+	//BEGIN PPAS
+	getline(bI, line);
+	proceed = true;
+	while (proceed)
+	{
+		getline(bI, line);
+		if (line.find("END PPAS") != std::string::npos)
+			proceed = false;
+		else
+		{
+			VertexProps *temp = bf->findOrCreateVP(line);
+			PPAs.insert(temp);
 		}
 	}
 #endif

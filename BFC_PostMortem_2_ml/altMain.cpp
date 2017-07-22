@@ -29,7 +29,6 @@ using namespace std;
 //Hui for test: output file for finer stacktraces
 ofstream stack_info;
 nodeHash nodeIDNameMap; //Initialized in populateForkSamples
-globalTaskIDHash gTaskMap; //(nodeName, (taskID, parent taskID))
 // some forward-declarations
 static void glueStackTraces(string node, int InstNum, Instance &inst, 
         preInstanceHash &pre_instance_table, globalForkInstMap &gForkInsts);
@@ -87,8 +86,8 @@ static void glueStackTraces(string node, int InstNum, Instance &inst,
     
     // needGluePre=true, needGlueFork==false
     else if (inst.needGluePre) {
-      unsigned long TID = inst.frames.back().task_id;
-      stack_info<<"Glueing inst&pre_inst taskID: "<<TID<<" on "<<workingNode<<endl;
+      unsigned long FID = inst.frames.back().func_id;
+      stack_info<<"Glueing inst&pre_inst funcID: "<<FID<<" on "<<workingNode<<endl;
       // Double check whether the end frame is thread_begin
       if (inst.frames.back().frameName != "thread_begin") {
         stack_info<<"Error: the end frame is NOT thread_begin while needGluePre==TRUE"<<endl;
@@ -96,13 +95,13 @@ static void glueStackTraces(string node, int InstNum, Instance &inst,
       }
       
       InstanceHash &preForNode = pre_instance_table[workingNode];
-      if (preForNode.count(gTaskMap[workingNode][TID]) == 0) {
-        stack_info<<"Error: worker thread has parent taskID "<<gTaskMap[workingNode][TID]
+      if (preForNode.count(FID) == 0) {
+        stack_info<<"Error: worker thread has funcID "<<FID
             <<" not found in preSpawn on "<<workingNode<<endl;
         break;
       }
       
-      Instance &pre_inst = preForNode[gTaskMap[workingNode][TID]];
+      Instance &pre_inst = preForNode[FID];
       if (!pre_inst.frames.empty()) {
         inst.frames.pop_back(); //delete the original "thread_begin" frame
         inst.frames.insert(inst.frames.end(), pre_inst.frames.begin(), 
@@ -130,7 +129,7 @@ static void glueStackTraces(string node, int InstNum, Instance &inst,
         }
       }
       else {
-        stack_info<<"Whoops: the pre_inst is empty for parent TID: "<<gTaskMap[workingNode][TID]<<endl;
+        stack_info<<"Whoops: the pre_inst is empty for FID: "<<FID<<endl;
         break;
       }
     }
@@ -243,7 +242,7 @@ static void populateCompSamples(vector<Instance> &comp_instances, string traceNa
           }
         }
         else if (sf.frameName == "thread_begin") {
-          ss>>sf.task_id;
+          ss>>sf.func_id;
         }
 
         inst.frames.push_back(sf);
@@ -269,20 +268,14 @@ static void populatePreSamples(InstanceHash &pre_instances, string traceName, st
     int numInstances = atoi(line.c_str());
     cout<<"Number of pre_instances from "<<traceName<<" is "<<numInstances<<endl;
  
-    //-- populate gTaskMap for this node --//
-    taskHash th;
+    //-- populate all preSpawn stacktrace for this node --//
     for (int i = 0; i < numInstances; i++) {
       Instance inst;
       getline(ifs_pre, line);
       
       int numFrames;
       inst.instType = PRESPAWN_INST;
-      sscanf(line.c_str(), "%d %d %d %d", &numFrames, &(inst.taskID), &(inst.minTID), &(inst.maxTID));
-
-      // populate taskHash for this preSpawn instance
-      th[inst.taskID] = inst.taskID; //add itself to the map first
-      for (int tid = inst.minTID; tid <= inst.maxTID; tid++)
-        th[tid] = inst.taskID;       //add all children tid to the map
+      sscanf(line.c_str(), "%d %d", &numFrames, &(inst.funcID));
 
       for (int j=0; j<numFrames; j++) {
         StackFrame sf;
@@ -304,21 +297,19 @@ static void populatePreSamples(InstanceHash &pre_instances, string traceName, st
           }
         }
         else if (sf.frameName == "thread_begin") {
-          ss>>sf.task_id;
+          ss>>sf.func_id;
         }
 
         inst.frames.push_back(sf);
       }
     
-      if (pre_instances.count(inst.taskID) == 0)
-        pre_instances[inst.taskID] = inst;
+      if (pre_instances.count(inst.funcID) == 0)
+        pre_instances[inst.funcID] = inst;
       else
-        cerr<<"Error: more than 1 pre-instance mapped to the same taskID "
-          <<inst.taskID<<" in "<<traceName<<endl;
+        cerr<<"Error: more than 1 pre-instance mapped to the same funcID "
+          <<inst.funcID<<" in "<<traceName<<endl;
     }
     
-    //-- add th for this node to the gTaskMap --//
-    gTaskMap[nodeName] = th;
     //Close the read file
     ifs_pre.close();
   }
@@ -375,7 +366,7 @@ static void populateForkSamples(vector<Instance> &fork_instances, string traceNa
           }
         }
         else if (sf.frameName == "thread_begin") {
-          ss>>sf.task_id;
+          ss>>sf.func_id;
         }
           
         inst.frames.push_back(sf);
@@ -457,7 +448,7 @@ static void populateSamplesFromDirs(compInstanceHash &comp_instance_table,
           cerr<<"Error: This file was populated before: "<<traceName<<endl;
       }
       else if ((ent->d_type == DT_REG) && 
-          (strstr(ent->d_name, "Input-compute") == NULL)) //avoid dir entries: .&..
+          (strstr(ent->d_name, "Input-preSpawn") == NULL)) //avoid dir entries: .&..
         cerr<<"Error: there is a unmatching file "<<ent->d_name<<" in "<<dirName<<endl;
     }
     closedir(dir);
@@ -485,7 +476,7 @@ static void populateSamplesFromDirs(compInstanceHash &comp_instance_table,
         }
       }
       else if ((ent->d_type == DT_REG) && 
-          (strstr(ent->d_name, "Input-compute") == NULL)) //avoid dir entries: .&..
+          (strstr(ent->d_name, "Input-fork") == NULL)) //avoid dir entries: .&..
         cerr<<"Error: there is a unmatching file "<<ent->d_name<<" in "<<dirName<<endl;
     }
     closedir(dir);
@@ -538,6 +529,9 @@ int main(int argc, char** argv)
   
   //std::cout<<"Adding implicit blame points."<<std::endl;
   bp.addImplicitBlamePoints();
+
+  //retrieve pids from PPA 01/18/17
+  //bp.resolvePidsFromPPAs(); 
   
   //std::cout<<"Printing parsed output to 'output.txt'"<<std::endl;
   //ofstream outtie("output.txt");
@@ -566,7 +560,7 @@ int main(int argc, char** argv)
   //ph_i: <string nodeName, InstanceHash pre_hash>
   for (ph_i=pre_instance_table.begin(); ph_i!=pre_instance_table.end(); ph_i++) {
     InstanceHash &pre_hash = (*ph_i).second;
-    //ih_i: <int taskID, Instance inst>
+    //ih_i: <int funcID, Instance inst>
     int iCounter = 0;
     for (ih_i=pre_hash.begin(); ih_i!=pre_hash.end(); ih_i++) {
       (*ih_i).second.trimFrames(bp.blameModules, iCounter, (*ph_i).first);
@@ -625,14 +619,14 @@ int main(int argc, char** argv)
     for (vec_I_i=comp_vec.begin(); vec_I_i!=comp_vec.end(); vec_I_i++) {
       gOut<<"---INSTANCE "<<iCounter<<"  ---"<<std::endl;
 
-      // glue stacktraces whenever necessary !
-      if ((*vec_I_i).isMainThread == false) 
+      // glue stacktraces whenever necessary ! (at least one valid frame for glue)
+      if ((*vec_I_i).isMainThread == false && !(*vec_I_i).frames.empty()) 
         glueStackTraces(node, iCounter, (*vec_I_i),
                         pre_instance_table, gForkInsts);
 
       // Result check, due to the BAD libunwind missing info !!!
-      if ((*vec_I_i).frames.size()>1 && ((*vec_I_i).frames.back().frameName =="thread_begin"
-            || isForkStarWrapper((*vec_I_i).frames.back().frameName)))
+      if ((*vec_I_i).frames.size()>1 && ((*vec_I_i).frames.back().frameName 
+         =="thread_begin" || isForkStarWrapper((*vec_I_i).frames.back().frameName)))
         numUnresolvedInsts++;
 
       // Polish stacktrace again: rm all wrap* functions such as wrapcoforall_fn_chpl

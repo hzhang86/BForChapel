@@ -247,7 +247,7 @@ public class BlameDataTrunc extends BlameData {
                             if (strVarName.indexOf('.') == strVarName.lastIndexOf('.'))
                             {
                                 fieldParent = bf.getOrCreateEV(newStrVarName);
-                                fieldParent.isGlobal = true; //added by Hui 01/26/16, in order to keep it in AllGlobalVariabales
+                                //fieldParent.isGlobal = true; //added by Hui 01/26/16, in order to keep it in AllGlobalVariabales
                             }
                             else
                             {

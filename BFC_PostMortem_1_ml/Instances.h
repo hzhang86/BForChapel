@@ -35,16 +35,14 @@ struct StackFrame
   unsigned long address;
   std::string frameName;
   fork_t info; //specifically for fork_*_wrapper frame
-  unsigned long task_id = 0; //specifically for thread_begin frame
+  unsigned long func_id = 0; //specifically for thread_begin frame
 };
 
 struct Instance
 {
   std::vector<StackFrame> frames;
   int instNum; //denote which inst in this sample file
-  unsigned long taskID = 0; //for preSpawn stacktraces
-  unsigned long minTID = 0; //if minTID != taskID (from processTaskLIst) then maxTID = taskID-1
-  unsigned long maxTID = 0; 
+  unsigned long funcID = 0; //for preSpawn stacktraces
   fork_t info; //specifically for fork* samples
 };
 

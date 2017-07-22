@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -37,7 +37,7 @@
 //    }
 //
 
-extern int chpl_comm_callback_counts[chpl_comm_cb_num_event_kinds];
+int chpl_comm_callback_counts[chpl_comm_cb_num_event_kinds];
 
 static inline
 int chpl_comm_have_callbacks(chpl_comm_cb_event_kind_t event_kind) {

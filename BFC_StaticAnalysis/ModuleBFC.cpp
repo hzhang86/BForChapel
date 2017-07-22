@@ -16,12 +16,12 @@
 using namespace std;
 
 // to be used in pidArrayResolve
-extern std::ofstream struct_file;
+extern ofstream struct_file;
 
 /*
-std::string getStringFromMD(Value * v)
+string getStringFromMD(Value * v)
 {
-	std::string fail("---");
+	string fail("---");
 	
 	if (v == NULL)
 		return fail;
@@ -48,7 +48,7 @@ std::string getStringFromMD(Value * v)
 						ConstantArray * ca = cast<ConstantArray>(stringArr2);
 						if (ca->isString())
 						{
-							std::string rawRet = ca->getAsString();
+							string rawRet = ca->getAsString();
 							
 							// Need to get rid of the trailing NULL
 							return rawRet.substr(0, rawRet.length()-1);
@@ -62,18 +62,18 @@ std::string getStringFromMD(Value * v)
 }
 
 
-void getTypeFromBasic(Value * v, std::string & typeName)
+void getTypeFromBasic(Value * v, string & typeName)
 {
 	
-	if (v->getName().find("derivedtype.type") != std::string::npos)
+	if (v->getName().find("derivedtype.type") != string::npos)
 	{
-		//std::cout<<"Leaving getTypeFromDerivedType (1)"<<std::endl;
+		//cout<<"Leaving getTypeFromDerivedType (1)"<<endl;
 		return;
 	}
 	
 	if (!isa<GlobalVariable>(v))
 	{
-		//std::cout<<"Leaving getTypeFromDerivedType (2)"<<std::endl;
+		//cout<<"Leaving getTypeFromDerivedType (2)"<<endl;
 		return;
 	}
 	
@@ -83,7 +83,7 @@ void getTypeFromBasic(Value * v, std::string & typeName)
 	for (; op_i2 != gv->op_end(); op_i2++)
 	{
 		Value * structOp = *op_i2;			
-		//std::cout<<"StructOp Name(getTypeFromDerivedType) - "<<structOp->getName()<<std::endl;
+		//cout<<"StructOp Name(getTypeFromDerivedType) - "<<structOp->getName()<<endl;
 		
 		if (isa<ConstantStruct>(structOp))
 		{
@@ -91,13 +91,13 @@ void getTypeFromBasic(Value * v, std::string & typeName)
 			
 			if (csOp->getNumOperands() < 9)
 			{
-				//std::cout<<"Leaving getTypeFromDerivedType (3)  "<<csOp->getNumOperands()<<std::endl;
+				//cout<<"Leaving getTypeFromDerivedType (3)  "<<csOp->getNumOperands()<<endl;
 				return;
 			}
 			
 			
-			std::string maybeName = getStringFromMD(csOp->getOperand(2));
-			//std::cout<<"Maybe name (Basic) is "<<maybeName<<std::endl;
+			string maybeName = getStringFromMD(csOp->getOperand(2));
+			//cout<<"Maybe name (Basic) is "<<maybeName<<endl;
 			typeName += maybeName;
 			
 		}
@@ -108,24 +108,24 @@ void getTypeFromBasic(Value * v, std::string & typeName)
 
 
 
-void getTypeFromComposite(Value * v, std::string & typeName)
+void getTypeFromComposite(Value * v, string & typeName)
 {
 	
 	return;
 }
 
 
-void getTypeFromDerived(Value* v, std::string & typeName)
+void getTypeFromDerived(Value* v, string & typeName)
 {
-	if (v->getName().find("derivedtype.type") != std::string::npos)
+	if (v->getName().find("derivedtype.type") != string::npos)
 	{
-		//std::cout<<"Leaving getTypeFromDerivedType (1)"<<std::endl;
+		//cout<<"Leaving getTypeFromDerivedType (1)"<<endl;
 		return;
 	}
 	
 	if (!isa<GlobalVariable>(v))
 	{
-		//std::cout<<"Leaving getTypeFromDerivedType (2)"<<std::endl;
+		//cout<<"Leaving getTypeFromDerivedType (2)"<<endl;
 		return;
 	}
 	
@@ -135,7 +135,7 @@ void getTypeFromDerived(Value* v, std::string & typeName)
 	for (; op_i2 != gv->op_end(); op_i2++)
 	{
 		Value * structOp = *op_i2;			
-		//std::cout<<"StructOp Name(getTypeFromDerivedType) - "<<structOp->getName()<<std::endl;
+		//cout<<"StructOp Name(getTypeFromDerivedType) - "<<structOp->getName()<<endl;
 		
 		if (isa<ConstantStruct>(structOp))
 		{
@@ -143,17 +143,17 @@ void getTypeFromDerived(Value* v, std::string & typeName)
 			
 			if (csOp->getNumOperands() < 9)
 			{
-				//std::cout<<"Leaving getTypeFromDerivedType (3)  "<<csOp->getNumOperands()<<std::endl;
+				//cout<<"Leaving getTypeFromDerivedType (3)  "<<csOp->getNumOperands()<<endl;
 				return;
 			}
 			
 			
-			std::string maybeName = getStringFromMD(csOp->getOperand(2));
-			//std::cout<<"Maybe name(Derived) is "<<maybeName<<std::endl;
+			string maybeName = getStringFromMD(csOp->getOperand(2));
+			//cout<<"Maybe name(Derived) is "<<maybeName<<endl;
 			
 			
 			// We found a legit type name
-			if (maybeName.find("---") == std::string::npos)
+			if (maybeName.find("---") == string::npos)
 			{
 				typeName += maybeName;
 				return;
@@ -168,8 +168,8 @@ void getTypeFromDerived(Value* v, std::string & typeName)
 			
 			if (!isa<ConstantExpr>(v2))
 			{
-				//std::cout<<"Leaving getTypeFromDerived (4)"<<std::endl;
-				std::string voidStr("VOID");
+				//cout<<"Leaving getTypeFromDerived (4)"<<endl;
+				string voidStr("VOID");
 				typeName += voidStr;
 				return;
 			}
@@ -184,14 +184,14 @@ void getTypeFromDerived(Value* v, std::string & typeName)
 				if (bitCastOp == NULL)
 					return;
 				
-				//std::cout<<std::endl<<"bitCastOp (getTypeFromMD)- "<<bitCastOp->getName()<<std::endl;
+				//cout<<endl<<"bitCastOp (getTypeFromMD)- "<<bitCastOp->getName()<<endl;
 				
 				
-				if (bitCastOp->getName().find("derived") != std::string::npos)
+				if (bitCastOp->getName().find("derived") != string::npos)
 					getTypeFromDerived(bitCastOp, typeName);
-				else if (bitCastOp->getName().find("basic") != std::string::npos)
+				else if (bitCastOp->getName().find("basic") != string::npos)
 					getTypeFromBasic(bitCastOp, typeName);
-				else if (bitCastOp->getName().find("composite") != std::string::npos)
+				else if (bitCastOp->getName().find("composite") != string::npos)
 					getTypeFromComposite(bitCastOp, typeName);			
 				
 			}
@@ -202,19 +202,19 @@ void getTypeFromDerived(Value* v, std::string & typeName)
 
 
 
-std::string getTypeFromMD(Value *v)
+string getTypeFromMD(Value *v)
 {
-	std::string noIdea("NO_IDEA");
+	string noIdea("NO_IDEA");
 	
 	if (v == NULL)
 		return noIdea;
 	
 	
-	//std::cout<<"(getTypeFromMD) v Name -- "<<v->getName()<<std::endl;
+	//cout<<"(getTypeFromMD) v Name -- "<<v->getName()<<endl;
 	
 	if (!isa<ConstantExpr>(v))
 	{
-		//std::cout<<"Leaving getTypeFromMD (2)"<<std::endl;
+		//cout<<"Leaving getTypeFromMD (2)"<<endl;
 		return noIdea;
 	}
 	
@@ -228,20 +228,20 @@ std::string getTypeFromMD(Value *v)
 		if (bitCastOp == NULL)
 			return noIdea;
 		
-		//std::cout<<std::endl<<"bitCastOp (getTypeFromMD)- "<<bitCastOp->getName()<<std::endl;
+		//cout<<endl<<"bitCastOp (getTypeFromMD)- "<<bitCastOp->getName()<<endl;
 		
-		std::string typeName;
+		string typeName;
 		
-	  if (bitCastOp->getName().find("derived") != std::string::npos)
+	  if (bitCastOp->getName().find("derived") != string::npos)
 			getTypeFromDerived(bitCastOp, typeName);
-		else if (bitCastOp->getName().find("basic") != std::string::npos)
+		else if (bitCastOp->getName().find("basic") != string::npos)
 			getTypeFromBasic(bitCastOp, typeName);
-		else if (bitCastOp->getName().find("composite") != std::string::npos)
+		else if (bitCastOp->getName().find("composite") != string::npos)
 			getTypeFromComposite(bitCastOp, typeName);
 		
 		return typeName;
 		
-		//if (bitCastOp->getName().find("composite") == std::string::npos)
+		//if (bitCastOp->getName().find("composite") == string::npos)
 		//	return NULL;
 	}
 	
@@ -251,20 +251,20 @@ std::string getTypeFromMD(Value *v)
 
 
 
-void StructBFC::setModuleName(std::string rawName)
+void StructBFC::setModuleName(string rawName)
 {
 	moduleName = rawName.substr(0, rawName.length() - 1);
 	
 }
 
-void StructBFC::setModulePathName(std::string rawName)
+void StructBFC::setModulePathName(string rawName)
 {
 	modulePathName = rawName.substr(0, rawName.length() - 1);
 }
 */
 
 
-void ModuleBFC::exportOneStruct(std::ostream &O, StructBFC *sb)
+void ModuleBFC::exportOneStruct(ostream &O, StructBFC *sb)
 {
     O<<"BEGIN STRUCT"<<endl;
     
@@ -273,19 +273,19 @@ void ModuleBFC::exportOneStruct(std::ostream &O, StructBFC *sb)
     O<<"END S_NAME "<<endl;
     
     O<<"BEGIN M_PATH"<<endl;
-    O<<sb->modulePathName<<std::endl;
+    O<<sb->modulePathName<<endl;
     O<<"END M_PATH"<<endl;
     
     O<<"BEGIN M_NAME"<<endl;
-    O<<sb->moduleName<<std::endl;
+    O<<sb->moduleName<<endl;
     O<<"END M_NAME"<<endl;
     
     O<<"BEGIN LINENUM"<<endl;
-    O<<sb->lineNum<<std::endl;
+    O<<sb->lineNum<<endl;
     O<<"END LINENUM"<<endl;
     
     O<<"BEGIN FIELDS"<<endl;
-    std::vector<StructField *>::iterator vec_sf_i;
+    vector<StructField *>::iterator vec_sf_i;
     for (vec_sf_i = sb->fields.begin(); vec_sf_i != sb->fields.end(); vec_sf_i++) {
         O<<"BEGIN FIELD"<<endl;
         StructField * sf = (*vec_sf_i);
@@ -315,9 +315,9 @@ void ModuleBFC::exportOneStruct(std::ostream &O, StructBFC *sb)
 }
 
 
-void ModuleBFC::exportStructs(std::ostream &O)
+void ModuleBFC::exportStructs(ostream &O)
 {
-	std::vector<StructBFC *>::iterator vec_sb_i;
+	vector<StructBFC *>::iterator vec_sb_i;
 	
 	for (vec_sb_i = structs.begin(); vec_sb_i != structs.end(); vec_sb_i++) {
 		StructBFC * sb = (*vec_sb_i);
@@ -328,19 +328,19 @@ void ModuleBFC::exportStructs(std::ostream &O)
 		O<<"END S_NAME "<<endl;
 		
 		O<<"BEGIN M_PATH"<<endl;
-		O<<sb->modulePathName<<std::endl;
+		O<<sb->modulePathName<<endl;
 		O<<"END M_PATH"<<endl;
 		
 		O<<"BEGIN M_NAME"<<endl;
-		O<<sb->moduleName<<std::endl;
+		O<<sb->moduleName<<endl;
 		O<<"END M_NAME"<<endl;
 		
 		O<<"BEGIN LINENUM"<<endl;
-		O<<sb->lineNum<<std::endl;
+		O<<sb->lineNum<<endl;
 		O<<"END LINENUM"<<endl;
 		
 		O<<"BEGIN FIELDS"<<endl;
-		std::vector<StructField *>::iterator vec_sf_i;
+		vector<StructField *>::iterator vec_sf_i;
 		for (vec_sf_i = sb->fields.begin(); vec_sf_i != sb->fields.end(); vec_sf_i++) {
 			O<<"BEGIN FIELD"<<endl;
 			StructField * sf = (*vec_sf_i);
@@ -374,76 +374,76 @@ void ModuleBFC::exportStructs(std::ostream &O)
 }
 
 
-std::string returnTypeName(const llvm::Type * t, std::string prefix)
+string returnTypeName(const llvm::Type * t, string prefix)
 {
 	if (t == NULL)
-		return prefix += std::string("NULL");
+		return prefix += string("NULL");
 	
     unsigned typeVal = t->getTypeID();
     if (typeVal == Type::VoidTyID)
-        return prefix += std::string("Void");
+        return prefix += string("Void");
     else if (typeVal == Type::FloatTyID)
-        return prefix += std::string("Float");
+        return prefix += string("Float");
     else if (typeVal == Type::DoubleTyID)
-        return prefix += std::string("Double");
+        return prefix += string("Double");
     else if (typeVal == Type::X86_FP80TyID)
-        return prefix += std::string("80 bit FP");
+        return prefix += string("80 bit FP");
     else if (typeVal == Type::FP128TyID)
-        return prefix += std::string("128 bit FP");
+        return prefix += string("128 bit FP");
     else if (typeVal == Type::PPC_FP128TyID)
-        return prefix += std::string("2-64 bit FP");
+        return prefix += string("2-64 bit FP");
     else if (typeVal == Type::LabelTyID)
-        return prefix += std::string("Label");
+        return prefix += string("Label");
     else if (typeVal == Type::IntegerTyID)
-        return prefix += std::string("Int");
+        return prefix += string("Int");
     else if (typeVal == Type::FunctionTyID)
-        return prefix += std::string("Function");
+        return prefix += string("Function");
     else if (typeVal == Type::StructTyID)
-        return prefix += std::string("Struct");
+        return prefix += string("Struct");
     else if (typeVal == Type::ArrayTyID)
-        return prefix += std::string("Array");
+        return prefix += string("Array");
     else if (typeVal == Type::PointerTyID)
         return prefix += returnTypeName(cast<PointerType>(t)->getElementType(),
-			std::string("*"));
+			string("*"));
     else if (typeVal == Type::MetadataTyID)
-        return prefix += std::string("Metadata");
+        return prefix += string("Metadata");
     else if (typeVal == Type::VectorTyID)
-        return prefix += std::string("Vector");
+        return prefix += string("Vector");
     else
-        return prefix += std::string("UNKNOWN");
+        return prefix += string("UNKNOWN");
 }
 
 
 void ModuleBFC::printStructs()
 {
-	std::vector<StructBFC *>::iterator vec_sb_i;
+	vector<StructBFC *>::iterator vec_sb_i;
 	
 	for (vec_sb_i = structs.begin(); vec_sb_i != structs.end(); vec_sb_i++)	{
-		std::cout<<endl<<endl;
+		cout<<endl<<endl;
 		StructBFC * sb = (*vec_sb_i);
-		std::cout<<"Struct "<<sb->structName<<std::endl;
-		std::cout<<"Module Path "<<sb->modulePathName<<std::endl;
-		std::cout<<"Module Name "<<sb->moduleName<<std::endl;
-		std::cout<<"Line Number "<<sb->lineNum<<std::endl;
+		cout<<"Struct "<<sb->structName<<endl;
+		cout<<"Module Path "<<sb->modulePathName<<endl;
+		cout<<"Module Name "<<sb->moduleName<<endl;
+		cout<<"Line Number "<<sb->lineNum<<endl;
 		
-		std::vector<StructField *>::iterator vec_sf_i;
+		vector<StructField *>::iterator vec_sf_i;
 		for (vec_sf_i = sb->fields.begin(); vec_sf_i != sb->fields.end(); vec_sf_i++) {
 			StructField * sf = (*vec_sf_i);
 			if (sf == NULL)
 				continue;
-			std::cout<<"   Field # "<<sf->fieldNum<<" ";
-			std::cout<<", Name "<<sf->fieldName<<" ";
-			std::cout<<" Type "<<sf->typeName<<" ";
-			//std::cout<<", Type "<<returnTypeName(sf->llvmType, std::string(" "));
-			std::cout<<endl;
+			cout<<"   Field # "<<sf->fieldNum<<" ";
+			cout<<", Name "<<sf->fieldName<<" ";
+			cout<<" Type "<<sf->typeName<<" ";
+			//cout<<", Type "<<returnTypeName(sf->llvmType, string(" "));
+			cout<<endl;
 		}
 	}
 }
 
 
-StructBFC * ModuleBFC::structLookUp(std::string &sName)
+StructBFC * ModuleBFC::structLookUp(string &sName)
 {
-  std::vector<StructBFC *>::iterator vec_sb_i;
+  vector<StructBFC *>::iterator vec_sb_i;
   for (vec_sb_i = structs.begin(); vec_sb_i != structs.end(); vec_sb_i++) {
 	StructBFC * sb = (*vec_sb_i);
 		
@@ -457,8 +457,8 @@ StructBFC * ModuleBFC::structLookUp(std::string &sName)
 
 void ModuleBFC::addStructBFC(StructBFC * sb)
 {
-	//std::cout<<"Entering addStructBFC"<<std::endl;
-	std::vector<StructBFC *>::iterator vec_sb_i;
+	//cout<<"Entering addStructBFC"<<endl;
+	vector<StructBFC *>::iterator vec_sb_i;
 #ifdef DEBUG_P
     cout<<sb->structName<<": moduleName = "<<sb->moduleName<< \
         " modulePathName = "<<sb->modulePathName<<endl;
@@ -471,7 +471,7 @@ void ModuleBFC::addStructBFC(StructBFC * sb)
             (sbv->moduleName.empty() && sb->moduleName.empty() && sbv->modulePathName.empty() && sb->modulePathName.empty())) {
 			
           // Already have this exact struct, free the space allocated for this sb
-          std::vector<StructField*>::iterator sf_i, sf_e;
+          vector<StructField*>::iterator sf_i, sf_e;
           for (sf_i=sb->fields.begin(), sf_e=sb->fields.end(); sf_i!=sf_e; sf_i++) {
             StructField *sf = *sf_i;
             delete sf;
@@ -483,7 +483,7 @@ void ModuleBFC::addStructBFC(StructBFC * sb)
 		
         else {
 #ifdef DEBUG_ERROR			
-		  std::cerr<<"Two structs with same name and different declaration sites"<<std::endl;
+		  cerr<<"Two structs with same name and different declaration sites"<<endl;
 #endif
 		}
 	  }
@@ -494,7 +494,7 @@ void ModuleBFC::addStructBFC(StructBFC * sb)
 }
 
 
-StructBFC* ModuleBFC::findOrCreatePidArray(std::string pidArrayName, int numElems, const llvm::Type *sbPointT)
+StructBFC* ModuleBFC::findOrCreatePidArray(string pidArrayName, int numElems, const llvm::Type *sbPointT)
 {
     StructBFC *retSB = NULL;
     retSB = structLookUp(pidArrayName);
@@ -523,7 +523,7 @@ StructBFC* ModuleBFC::findOrCreatePidArray(std::string pidArrayName, int numElem
         }
       }
       else {
-        std::cerr<<"Error, non pid array apears in findOrCreatePidArray:"<<
+        cerr<<"Error, non pid array apears in findOrCreatePidArray:"<<
             pidArrayName<<endl;
         delete retSB; 
         return NULL;
@@ -581,7 +581,7 @@ void ModuleBFC::parseDITypes(DIType* dt) //deal with derived type and composite 
             
         }	
     }
-	//std::cout<<"Leaving parseStruct for "<<gv->getNameStart()<<std::endl;
+	//cout<<"Leaving parseStruct for "<<gv->getNameStart()<<endl;
 }
 
 
@@ -694,7 +694,7 @@ bool ModuleBFC::parseCompositeType(DIType *dt, StructBFC *sb, bool isPrimary)
 #ifdef DEBUG_P
     cout<<"parseCompositeType "<<dt->getName().str()<<" failed in Cond7"<<endl;
 #endif
-	//std::cout<<"Leaving parseCompositeType(3)"<<std::endl;
+	//cout<<"Leaving parseCompositeType(3)"<<endl;
 	return false;
 }
 
@@ -765,7 +765,7 @@ bool ModuleBFC::parseDerivedType(DIType *dt, StructBFC *sb, StructField *sf, boo
 #ifdef DEBUG_P
     cout<<"parseDerivedType "<<dt->getName().str()<<" failed in Cond3"<<endl;
 #endif
-	//std::cout<<"Leaving parseDerivedType (4)"<<std::endl;
+	//cout<<"Leaving parseDerivedType (4)"<<endl;
 	return false;
 }
 

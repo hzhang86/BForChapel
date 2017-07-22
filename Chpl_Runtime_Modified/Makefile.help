@@ -1,4 +1,4 @@
-# Copyright 2004-2015 Cray Inc.
+# Copyright 2004-2017 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
 # The entirety of this work is licensed under the Apache License,
@@ -39,6 +39,8 @@ printstuff:
 	@echo $(CHPL_MAKE_HOME)/make/platform/Makefile.$(CHPL_MAKE_PLATFORM)
 	@echo CHPL_MAKE_MEM = $(CHPL_MAKE_MEM)
 	@echo CHPL_MAKE_HOST_TARGET = $(CHPL_MAKE_HOST_TARGET)
+	@echo CHPL_MAKE_TARGET_ARCH = $(CHPL_MAKE_TARGET_ARCH)
+	@echo CHPL_ORIG_TARGET_COMPILER = $(CHPL_ORIG_TARGET_COMPILER)
 
 
 #
@@ -75,7 +77,6 @@ RUNTIME_OBJS = \
 	$(AUXFS_HDFS_OBJS) \
 	$(AUXFS_CURL_OBJS)
 
-
 LAUNCH_LIB_OBJS = \
 	$(COMMON_LAUNCHER_OBJS) \
 	$(COMM_LAUNCHER_OBJS) \
@@ -85,6 +86,8 @@ RUNTIME_DIR = ../$(LIB_RT_DIR)
 RUNTIME_LIB = $(RUNTIME_DIR)/libchpl.a
 RUNTIME_DIR_TIMESTAMP = $(RUNTIME_DIR)/.timestamp
 
+RUNTIME_MALLOC_LIB = $(RUNTIME_DIR)/libchplmalloc.a
+
 LAUNCHER_DIR = ../$(LIB_LN_DIR)
 LAUNCHER_LIB = $(LAUNCHER_DIR)/libchpllaunch.a
 LAUNCHER_DIR_TIMESTAMP = $(LAUNCHER_DIR)/.timestamp
@@ -92,6 +95,7 @@ LAUNCHER_DIR_TIMESTAMP = $(LAUNCHER_DIR)/.timestamp
 RUNTIME_TARGETS = \
 	$(RUNTIME_LIB) \
 	$(RUNTIME_DIR)/main.o \
+	$(RUNTIME_MALLOC_LIB) \
 
 ifneq ($(CHPL_MAKE_LAUNCHER),none)
 LAUNCHER_TARGETS = \
@@ -106,6 +110,11 @@ else
 TARGETS = $(LAUNCHER_TARGETS)
 endif
 
+# Generate tags command, dependent on if Makefile variable, TAGS == 1
+ifeq ($(TAGS), 1)
+TAGS_COMMAND=-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) $(CURDIR)/include/*.h) || echo "$(CHPL_TAGS_UTIL) not available"
+endif
+
 #
 # main rules
 #
@@ -117,14 +126,23 @@ include $(RUNTIME_ROOT)/make/Makefile.runtime.rules
 # target-based rules
 #
 
+RUNTIME_CHPLCONFIG = $(RUNTIME_DIR)/chplconfig
+
 $(RUNTIME_LIB): $(RUNTIME_OBJS) $(RUNTIME_DIR_TIMESTAMP)
 	@rm -f $@
 	$(AR) -rc $@ $(RUNTIME_OBJS)
 	$(RANLIB) $@
-	-@(which $(CHPL_TAGS_UTIL) > /dev/null 2>&1 && echo "Updating TAGS..." && $(CHPL_TAGS_UTIL) $(CHPL_TAGS_FLAGS) $(ALL_SRCS) $(CURDIR)/include/*.h) || echo "$(CHPL_TAGS_UTIL) not available"
+	$(TAGS_COMMAND)
+	../util/printchplenv --simple > $(RUNTIME_CHPLCONFIG)
 
-$(RUNTIME_DIR)/main.o: src/$(RUNTIME_OBJDIR)/main.o
+$(RUNTIME_DIR)/main.o: $(RUNTIME_OBJDIR)/src/main.o
 	cp $< $@
+
+$(RUNTIME_MALLOC_LIB): $(RUNTIME_MALLOC_OBJS) $(RUNTIME_DIR_TIMESTAMP)
+	@rm -f $@
+	$(AR) -rc $@ $(RUNTIME_MALLOC_OBJS)
+	$(RANLIB) $@
+	$(TAGS_COMMAND)
 
 
 #
@@ -135,7 +153,7 @@ $(LAUNCHER_LIB): $(LAUNCH_LIB_OBJS) $(LAUNCHER_DIR_TIMESTAMP)
 	$(AR) -rc $@ $(LAUNCH_LIB_OBJS)
 	$(RANLIB) $@
 
-$(LAUNCHER_DIR)/main_launcher.o: src/$(LAUNCHER_OBJDIR)/main_launcher.o
+$(LAUNCHER_DIR)/main_launcher.o: $(LAUNCHER_OBJDIR)/src/main_launcher.o
 	cp $< $@
 
 

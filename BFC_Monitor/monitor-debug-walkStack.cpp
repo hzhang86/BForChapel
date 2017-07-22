@@ -92,7 +92,10 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
       Frame inFrame;
       ret = walker->getInitialFrame(inFrame, tid);
       if (!ret) {
-        cerr<<"Third-party getInitialFrame failed on "<<(int)tid<<" "<<host_name<<endl;
+        string fname;
+        inFrame.getName(fname);
+        cerr<<"Third-party getInitialFrame failed on "<<(int)tid<<" "<<host_name<<endl
+            <<std::hex<<inFrame.getRA()<<std::dec<<" "<<fname<<endl;
         return Process::cbProcContinue;
       }
 
@@ -299,8 +302,23 @@ int main(int argc, char *argv[])
   }
 
   // Create a new target process
-  string exec = argv[1];
-  for (unsigned i=1; i<argc; i++)
+  // get the real program name index first
+#define FANCY_TEST
+  int i, progIdx = 1;
+#ifdef FANCY_TEST
+  string argName;
+  string prefix = "ENABLE_";
+  for (i=1; i<argc; i++) {
+    argName = argv[i];
+    if (argName.substr(0, prefix.size()) != prefix) {
+      progIdx = i;
+      break;
+    }
+  }
+#endif
+  string exec = argv[progIdx];
+  cerr<<"Program name: "<<exec<<" index: "<<progIdx<<endl;
+  for (i=progIdx; i<argc; i++)
     args.push_back(std::string(argv[i]));  /* e.g monitor ./lulesh --elemsPerEdge 8
                                             * then exec=lulesh, args={./lulesh, --elemsPerEdge, 8}
                                             */

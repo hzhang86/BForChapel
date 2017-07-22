@@ -1674,6 +1674,51 @@ void BlameFunction::determineBlameHolders(std::set<VertexProps *> & blamees,
 
 */
 
+void BlameFunction::resolvePAForParamNode(VertexProps *param)
+{
+  std::cout<<"Func: "<<getName()<<", #EVs="<<exitVariables.size()<<", calling rPAPN for "<<param->name<<endl;
+  std::vector<VertexProps *>::iterator ivh_i;
+  std::set<VertexProps *>::iterator ivh_i2, ivh_i3;
+  for (ivh_i = exitVariables.begin(); ivh_i != exitVariables.end(); ivh_i++) {
+    VertexProps *ivp = *ivh_i;
+    std::cout<<"Checking EV "<<ivp->name<<endl;
+    if (ivp->eStatus >= EXIT_VAR_PARAM) {
+      for (ivh_i2 = ivp->PPAs.begin(); ivh_i2 != ivp->PPAs.end(); ivh_i2++) {
+        VertexProps *ivp2 = *ivh_i2;
+        std::cout<<"Checking EV's PPA "<<ivp2->name<<endl;
+        // if this param is in some EV's PPAs, then we set all PPAs as pidAliases to param
+        if (ivp2->name.compare(param->name) == 0) {
+          //just for checking TOBEDELETED
+          if (ivp2 != param) {
+            std::cerr<<"CHECK: why name match but node mismatch for "<<param->name<<endl;
+            return;
+          }
+
+          //first set the EV to be pid
+          ivp->isPid = true;
+          ivp->pidAliases.insert(ivp->PPAs.begin(), ivp->PPAs.end());
+          //second set the EV's PPAs all to be pid
+          for (ivh_i3 = ivp->PPAs.begin(); ivh_i3 != ivp->PPAs.end(); ivh_i3++) {
+            VertexProps *ivp3 = *ivh_i3;
+            ivp3->isPid = true;
+            ivp3->pidAliases.insert(ivp); //EV's PPAs didn't include EV itself
+            ivp3->pidAliases.insert(ivp->PPAs.begin(), ivp->PPAs.end());
+            ivp3->pidAliases.erase(ivp3); //PPA's pidAliases shouldn't include itself
+          }
+
+          //check the result
+          std::cout<<"We've resolved pidAliases for param: "<<param->name<<endl;
+          for (ivh_i3 = param->pidAliases.begin(); ivh_i3 != param->pidAliases.end(); ivh_i3++)
+            std::cout<<(*ivh_i3)->name<<" ";
+          std::cout<<endl;
+          return;
+        } //found the EV
+      } //end of all EV's PPAs
+    } //EV is formalArg
+  } //end of all EVs
+}
+
+
 void BlameFunction::handleTransferFunction(VertexProps *callNode, std::set<VertexProps *> &blamedParams)
 {
   std::cout<<"Need to do transfer function for "<<callNode->name<<std::endl;
@@ -1682,19 +1727,24 @@ void BlameFunction::handleTransferFunction(VertexProps *callNode, std::set<Verte
   
   std::set<int> blamers; // the values feeding into the blame
   std::set<int> blamed; // the values that are blamed for call
-  
+  std::set<int> blamedPidParams; //the paramNums that are Pids reflected by the callNode
   std::set<VertexProps *> blamerVP; 
   std::set<VertexProps *> blamedVP;
   //blamedParams are vars in the frame that maps to this callNode 
   //(storage for its formal arg)
   for (vec_int_i = blamedParams.begin(); vec_int_i != blamedParams.end(); vec_int_i++) {
     VertexProps * vp = (*vec_int_i);
-    std::cout<<"blamedParams: "<<vp->name<<",eStatus="<<vp->eStatus<<" "<<std::endl;
+    std::cout<<"blamedParams: "<<vp->name<<",eStatus="<<vp->eStatus
+        <<" ,isPid="<<vp->isPid<<std::endl;
     
     if (vp->eStatus >= EXIT_VAR_GLOBAL) {//search blamed params in pre frames, 
                                      //if they are global variables/param/retval
       int paramNum = vp->eStatus - EXIT_VAR_PARAM;
-      if (paramNum >= 0) {//if it's real param
+      if (paramNum >= 0) {//if it's an EV in the callNode function(formal arg)
+        //Added07/18/17: resolve Pids in this bf by checking the callNode's EV
+        if (vp->isPid) 
+          blamedPidParams.insert(paramNum);
+        //---------------------^^^^^^---------------------------------------------//
         blamed.insert(paramNum);
         std::cout<<"inserted with paramNum="<<paramNum<<endl;
       }  
@@ -1702,18 +1752,25 @@ void BlameFunction::handleTransferFunction(VertexProps *callNode, std::set<Verte
   }
   
   std::cout<<std::endl;
-  
   //Now calls are actual params for this callNode, so they are vars in the upper
   //frame to the one that maps to this callNode
   std::vector<FuncCall *>::iterator vec_fc_i;
   for (vec_fc_i = callNode->calls.begin(); vec_fc_i != callNode->calls.end(); vec_fc_i++) {
     FuncCall *fc = (*vec_fc_i);
     if (blamed.count(fc->paramNumber) > 0) {
-      std::cout<<"Param Num "<<fc->paramNumber<<" is blamed "<<fc->Node->name<<std::endl;
+      std::cout<<"Param Num "<<fc->paramNumber<<" is blamed "<<fc->Node->name
+          <<", fc->Node->isPid="<<fc->Node->isPid<<std::endl;
       blamedVP.insert(fc->Node);
       //we need to know which acutal param is blamed for this func call
       fc->Node->paramIsBlamedForTheCall = true; 
       
+      //makeup pids for "this" func, starting from fc->Node 07/18/17
+      //only do once for each such fc->Node, since it'll be same in each function
+      if (blamedPidParams.count(fc->paramNumber) && !fc->Node->isPid) {
+        fc->Node->isPid = true;
+        resolvePAForParamNode(fc->Node);
+      }
+
       fc->Node->tempLine = callNode->declaredLine;
       tempLines.insert(pair<int, VertexProps *>(fc->Node->tempLine, fc->Node));
       
@@ -2704,11 +2761,7 @@ void BlameFunction::outputFrameBlamees(std::set<VertexProps *> & blamees, std::s
     }
     
     // The generic type as given by LLVM (int, double, Struct*)
-    // We make special type for Pids 04/10/17
-    if (vp->isPid)
-      O<<"   "<<"*Pid ";
-    else
-      O<<"   "<<vp->genType<<" ";
+    O<<vp->genType<<" ";
     
     if (vp->sType != NULL) {
       O<<vp->sType->structName<<"   ";
@@ -3158,26 +3211,59 @@ void BlameFunction::addTempFieldBlamees(std::set<VertexProps *> &blamees, std::s
 
 
 // Add all pidAliases of the one in blamees to blamees 03/31/17
-void BlameFunction::addPidAliasesToBlamees(std::set<VertexProps *> &blamees)
+void BlameFunction::addPidAliasesToBlamees(std::set<VertexProps *> &blamees, std::set<VertexProps *> &localBlamees)
 {
   std::set<VertexProps *>::iterator svi, sve, svi2, sve2;
-  std::set<VertexProps *> tempBlamees;
+  std::set<VertexProps *> tempBlamees, tempLocalBlamees;
   for (svi=blamees.begin(), sve=blamees.end(); svi != sve; svi++) {
     VertexProps *vp = *svi;
     if (vp->isPid) {
       for (svi2=vp->pidAliases.begin(), sve2=vp->pidAliases.end(); svi2 != sve2; svi2++) {
         VertexProps *vp2 = *svi2;
         // we shouldn't change those that already existed in blamees
-        if (blamees.count(vp2) == 0) {
-          tempBlamees.insert(vp2);
-          vp2->addedFromWhere = 88; //new tag 03/31/17
+        if (vp2->eStatus>=EXIT_PROG || vp2->nStatus[EXIT_VAR] || vp2->nStatus[EXIT_VAR_ALIAS]
+            || vp2->nStatus[EXIT_VAR_FIELD] || vp2->nStatus[EXIT_VAR_FIELD_ALIAS]) {
+          if (localBlamees.count(vp2) == 0 && blamees.count(vp2) == 0) { //only add if it wasn't in both places
+            tempBlamees.insert(vp2);
+            vp2->addedFromWhere = 88; //new tag 07/18/17
+          }
+        }
+        else { //LV
+          if (localBlamees.count(vp2) == 0 && blamees.count(vp2) == 0) { //only add if it wasn't in both places
+            tempLocalBlamees.insert(vp2);
+            vp2->addedFromWhere = 98; //new tag 07/18/17
+          }
         }
       }
     }
   }
 
+  for (svi=localBlamees.begin(), sve=localBlamees.end(); svi != sve; svi++) {
+    VertexProps *vp = *svi;
+    if (vp->isPid) {
+      for (svi2=vp->pidAliases.begin(), sve2=vp->pidAliases.end(); svi2 != sve2; svi2++) {
+        VertexProps *vp2 = *svi2;
+        // we shouldn't change those that already existed in blamees
+        if (vp2->eStatus>=EXIT_PROG || vp2->nStatus[EXIT_VAR] || vp2->nStatus[EXIT_VAR_ALIAS]
+            || vp2->nStatus[EXIT_VAR_FIELD] || vp2->nStatus[EXIT_VAR_FIELD_ALIAS]) {
+          if (localBlamees.count(vp2) == 0 && blamees.count(vp2) == 0) { //only add if it wasn't in both places
+            tempBlamees.insert(vp2);
+            vp2->addedFromWhere = 62; //new tag 07/18/17
+          }
+        }
+        else { //LV
+          if (localBlamees.count(vp2) == 0 && blamees.count(vp2) == 0) { //only add if it wasn't in both places
+            tempLocalBlamees.insert(vp2);
+            vp2->addedFromWhere = 66; //new tag 07/18/17
+          }
+        }
+      }
+    }
+  }
   //add all new nodes from tempBlamees to blamees
   blamees.insert(tempBlamees.begin(), tempBlamees.end());
+  //add all new nodes from tempLocalBlamees to localBlamees
+  localBlamees.insert(tempLocalBlamees.begin(), tempLocalBlamees.end());
 }
 
 
@@ -3280,7 +3366,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
       //  U s1
       //  GF s1.b
       addTempFieldBlamees(blamees, oldBlamees);
-      addPidAliasesToBlamees(blamees); //added 03/31/17 for blamed pidAliases
+      addPidAliasesToBlamees(blamees, localBlamees); //added 03/31/17 for blamed pidAliases
       clearTempFields(oldBlamees, oldFunc);
       
       outputFrameBlamees(blamees, localBlamees, DQblamees, O);      
@@ -3380,7 +3466,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
       //  U s1
       //  GF s1.b
       addTempFieldBlamees(blamees, oldBlamees);
-      addPidAliasesToBlamees(blamees); //added 03/31/17
+      addPidAliasesToBlamees(blamees, localBlamees); //added 03/31/17
       clearTempFields(oldBlamees, oldFunc);
       
       outputFrameBlamees(blamees, localBlamees, DQblamees, O);      
@@ -3428,7 +3514,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
     std::set<VertexProps *> oldBlamees = blamees;
     determineBlameHolders(blamees, oldBlamees, callNode,(*vec_SF_i).lineNumber, isBlamePoint, localBlamees, DQblamees);
     calcParamInfo(blamees, callNode);
-    addPidAliasesToBlamees(blamees); //added 03/31/17
+    addPidAliasesToBlamees(blamees, localBlamees); //added 03/31/17
     
     outputFrameBlamees(blamees, localBlamees, DQblamees, O);
 
@@ -3555,7 +3641,7 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
     //  U s1
     //  GF s1.b
     addTempFieldBlamees(blamees, oldBlamees);
-    addPidAliasesToBlamees(blamees); //added 03/31/17
+    addPidAliasesToBlamees(blamees, localBlamees); //added 03/31/17
     clearTempFields(oldBlamees, oldFunc);
     outputFrameBlamees(blamees, localBlamees, DQblamees, O);    
     

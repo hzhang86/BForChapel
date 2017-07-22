@@ -16,7 +16,7 @@ using namespace std;
 
 /*void NodeProps::addFuncCall(FuncCall * fc)
 {
-  std::set<FuncCall*>::iterator vec_fc_i;
+  set<FuncCall*>::iterator vec_fc_i;
   
   for (vec_fc_i = funcCalls.begin(); vec_fc_i != funcCalls.end(); vec_fc_i++) {
 		if ((*vec_fc_i)->funcName == fc->funcName && (*vec_fc_i)->paramNumber == fc->paramNumber)
@@ -25,7 +25,7 @@ using namespace std;
 		}
 	}
 	
-	//std::cout<<"Pushing back call to "<<fc->funcName<<" param "<<fc->paramNumber<<" for node "<<name<<std::endl;
+	//cout<<"Pushing back call to "<<fc->funcName<<" param "<<fc->paramNumber<<" for node "<<name<<endl;
   funcCalls.insert(fc);
 }*/
 
@@ -33,7 +33,7 @@ using namespace std;
 void FunctionBFC::determineBFCForVertexTrunc(NodeProps *v)
 {
 #ifdef DEBUG_EXIT
-	blame_info<<"EV__(determineBFCForVertexTrunc) -- for "<<v->name<<std::endl;
+	blame_info<<"EV__(determineBFCForVertexTrunc) -- for "<<v->name<<endl;
 #endif 	
 	
     int v_index = v->number;
@@ -44,7 +44,7 @@ void FunctionBFC::determineBFCForVertexTrunc(NodeProps *v)
 	int returnVal = checkForUnreadReturn(v, v_index);
 	if (returnVal && !(v->isGlobal)) {
 #ifdef DEBUG_EXIT
-		blame_info<<"EXIT__(determineBFCForVertexTrunc) -- Program Exit (Unread Return) added for "<<v->name<<std::endl;
+		blame_info<<"EXIT__(determineBFCForVertexTrunc) -- Program Exit (Unread Return) added for "<<v->name<<endl;
 #endif
 		//addExitProg(new ExitProgram(v->name, UNREAD_RET));
 		//v->exitStatus = EXIT_PROG;
@@ -55,15 +55,15 @@ void FunctionBFC::determineBFCForVertexTrunc(NodeProps *v)
 	// EV:  RETURN VALUES
     // This sees if the LLVM exit variable (no incoming edges, 1+ outgoing edges) 
     // matches a previously discovered return variable (DEFAULT_RET)
-    if (v->name.find("retval") != std::string::npos ) {
-		for (std::vector<ExitVariable *>::iterator ev_i = exitVariables.begin(); 
+    if (v->name.find("retval") != string::npos ) {
+		for (vector<ExitVariable *>::iterator ev_i = exitVariables.begin(); 
 				 ev_i != exitVariables.end();  ev_i++) {
 			if ((*ev_i)->realName.compare("DEFAULT_RET") == 0) {
 				(*ev_i)->addVertex(v);
 				(*ev_i)->vertex = v;
 				v->eStatus = EXIT_VAR_RETURN;
                 
-                blame_info<<"Weird: we found a default retval !"<<std::endl;
+                blame_info<<"Weird: we found a default retval !"<<endl;
                 blamedArgs.insert(-1); //unlikely to happen
 				return;
 			}
@@ -71,21 +71,21 @@ void FunctionBFC::determineBFCForVertexTrunc(NodeProps *v)
 		// This would occur in a case where our prototype analyzer showed a void
 		// return value and LLVM still had a return value to go with it
 #ifdef DEBUG_ERROR
-		std::cerr<<"Where is the return exit variable?  "<<v->name<<"\n";
+		cerr<<"Where is the return exit variable?  "<<v->name<<"\n";
 #endif
 	}
     
 	// EV:  GENERAL CASE (PARAMS) 
     // Looking for an exact match to the predetermined exit variables or 
     //   a match for the pointsTo NodeProps in the case of a GEP node
-    for (std::vector<ExitVariable *>::iterator ev_i = exitVariables.begin(); 
+    for (vector<ExitVariable *>::iterator ev_i = exitVariables.begin(); 
         ev_i != exitVariables.end();  ev_i++) {
 		// compare()==0 means two strings are equal
 		if (v->name.compare((*ev_i)->realName)==0 && v->isWritten) {
 			(*ev_i)->addVertex(v);
 			(*ev_i)->vertex = v;
 #ifdef DEBUG_EXIT 
-			blame_info<<"EV__(LLVMtoExitVars3) -- Add node for "<<v->name<<std::endl;
+			blame_info<<"EV__(LLVMtoExitVars3) -- Add node for "<<v->name<<endl;
 #endif 
 			v->eStatus = EXIT_VAR_PARAM + (*ev_i)->whichParam;
 			v->paramNum = (*ev_i)->whichParam;
@@ -102,7 +102,7 @@ void FunctionBFC::determineBFCForVertexLite(NodeProps *v)
 {
 	
 #ifdef DEBUG_EXIT
-	blame_info<<"EV__(determineBFCForVertexLite) -- for "<<v->name<<std::endl;
+	blame_info<<"EV__(determineBFCForVertexLite) -- for "<<v->name<<endl;
 #endif 	
 	
 	int v_index = v->number;
@@ -115,7 +115,7 @@ void FunctionBFC::determineBFCForVertexLite(NodeProps *v)
 	/int returnVal = checkForUnreadReturn(v, v_index);
 	/if (returnVal && !(v->isGlobal)) {
 #ifdef DEBUG_EXIT
-		blame_info<<"EXIT__(determineBFCForVertexLite) -- Program Exit (Unread Return) added for "<<v->name<<std::endl;
+		blame_info<<"EXIT__(determineBFCForVertexLite) -- Program Exit (Unread Return) added for "<<v->name<<endl;
 #endif
 		//addExitProg(new ExitProgram(v->name, UNREAD_RET));
 		//v->exitStatus = EXIT_PROG;
@@ -128,7 +128,7 @@ void FunctionBFC::determineBFCForVertexLite(NodeProps *v)
     // so we assign it an exit value
 	if (v->isGlobal) {
 #ifdef DEBUG_EXIT
-        blame_info<<v->name<<" isGlobal !"<<std::endl;
+        blame_info<<v->name<<" isGlobal !"<<endl;
 #endif
 		v->eStatus = EXIT_VAR_GLOBAL;
     }
@@ -137,8 +137,8 @@ void FunctionBFC::determineBFCForVertexLite(NodeProps *v)
 	// EV:  RETURN VALUES
     // This sees if the LLVM exit variable (no incoming edges, 1+ outgoing edges) 
     // matches a previously discovered return variable (DEFAULT_RET)
-    if (v->name.find("retval") != std::string::npos ) {
-		for (std::vector<ExitVariable *>::iterator ev_i = exitVariables.begin(); 
+    if (v->name.find("retval") != string::npos ) {
+		for (vector<ExitVariable *>::iterator ev_i = exitVariables.begin(); 
 				 ev_i != exitVariables.end();  ev_i++) {
 			if ((*ev_i)->realName.compare("DEFAULT_RET") == 0) {
 				(*ev_i)->addVertex(v);
@@ -151,7 +151,7 @@ void FunctionBFC::determineBFCForVertexLite(NodeProps *v)
 		// This would occur in a case where our prototype analyzer showed a void
 		// return value and LLVM still had a return value to go with it
 #ifdef DEBUG_ERROR
-		std::cerr<<"Where is the return exit variable?  "<<v->name<<"\n";
+		cerr<<"Where is the return exit variable?  "<<v->name<<"\n";
 #endif
 	}
 	
@@ -159,33 +159,27 @@ void FunctionBFC::determineBFCForVertexLite(NodeProps *v)
 	// EV:  GENERAL CASE (PARAMS)
     // Looking for an exact match to the predetermined exit variables or 
     //   a match for the pointsTo NodeProps in the case of a GEP node
-    for (std::vector<ExitVariable *>::iterator ev_i = exitVariables.begin(); 
+    for (vector<ExitVariable *>::iterator ev_i = exitVariables.begin(); 
         ev_i != exitVariables.end();  ev_i++) {
 		// compare()==0 means two strings are equal
-		if (v->name.compare((*ev_i)->realName)==0 && v->isWritten) {
+		if (v->name.compare((*ev_i)->realName)==0) {
 			(*ev_i)->addVertex(v);
 			(*ev_i)->vertex = v;
 #ifdef DEBUG_EXIT 
-			blame_info<<"EV__(LLVMtoExitVars2) -- Add node for "<<v->name<<std::endl;
+			blame_info<<"EV__(LLVMtoExitVars2) -- Add node for "<<v->name<<endl;
 #endif 
 			v->eStatus = EXIT_VAR_PARAM + (*ev_i)->whichParam;
 			v->paramNum = (*ev_i)->whichParam;
 			return;
 		}
 
-		else if (v->name.compare((*ev_i)->realName)==0 && (*ev_i)->et==PARAM) { //PARAM is the ExitType
-			(*ev_i)->vertex = v;
-			v->eStatus = EXIT_VAR_UNWRITTEN;
-			v->paramNum = (*ev_i)->whichParam;
-		}
-		
 		/*
 		 if (v->pointsTo != NULL)
 		 {
 		 if (v->pointsTo->name.compare( (*ev_i)->realName ) == 0)
 		 {
 		 #ifdef DEBUG_EXIT
-		 blame_info<<"EV__(LLVMtoExitVars2) -- Add node for "<<v->name<<"which points to "<<v->pointsTo->name<<std::endl;
+		 blame_info<<"EV__(LLVMtoExitVars2) -- Add node for "<<v->name<<"which points to "<<v->pointsTo->name<<endl;
 		 #endif
 		 (*ev_i)->addVertex(v);
 		 v->exitStatus = EXIT_VAR_PTR;
@@ -201,9 +195,9 @@ void FunctionBFC::determineBFCForVertexLite(NodeProps *v)
 void FunctionBFC::determineBFCForOutputVertexLite(NodeProps *v, int v_index)
 {
 #ifdef DEBUG_EXIT_OUT
-	blame_info<<"OUT__(determineBFCForOutputVertex) - Entering func for "<<v->name<<std::endl;
+	blame_info<<"OUT__(determineBFCForOutputVertex) - Entering func for "<<v->name<<endl;
 #endif
-	std::set<FuncCall *>::iterator fc_i = v->funcCalls.begin();
+	set<FuncCall *>::iterator fc_i = v->funcCalls.begin();
 	
 	for (; fc_i != v->funcCalls.end(); fc_i++) {
 		FuncCall *fc = *fc_i;
@@ -211,7 +205,7 @@ void FunctionBFC::determineBFCForOutputVertexLite(NodeProps *v, int v_index)
 			fc->outputEvaluated = true;
 	}
 	
-	std::set<int> inputVertices;
+	set<int> inputVertices;
 	int zeroParam = -1;
 	NodeProps *zParam = NULL;
 	
@@ -237,15 +231,15 @@ void FunctionBFC::determineBFCForOutputVertexLite(NodeProps *v, int v_index)
 			
 			int paramNum = MAX_PARAMS + 1;
 #ifdef DEBUG_EXIT_OUT
-			blame_info<<"OUT__(determineBFCForOutputVertexLite) - Call from "<<sourceVP->name<<" to "<<targetVP->name<<std::endl;
+			blame_info<<"OUT__(determineBFCForOutputVertexLite) - Call from "<<sourceVP->name<<" to "<<targetVP->name<<endl;
 #endif
-			//std::vector<FuncCall *>::iterator 
+			//vector<FuncCall *>::iterator 
 			fc_i = sourceVP->funcCalls.begin();
 			
 			for (; fc_i != sourceVP->funcCalls.end(); fc_i++) {
 				FuncCall *fc = *fc_i;
 #ifdef DEBUG_EXIT_OUT
-				blame_info<<"OUT__(determineBFCForOutputVertexLite) - FC -- "<<fc->funcName<<"  "<<targetVP->name<<std::endl;
+				blame_info<<"OUT__(determineBFCForOutputVertexLite) - FC -- "<<fc->funcName<<"  "<<targetVP->name<<endl;
 #endif	
 				if (fc->funcName == targetVP->name) {
 					fc->outputEvaluated = true;
@@ -254,13 +248,13 @@ void FunctionBFC::determineBFCForOutputVertexLite(NodeProps *v, int v_index)
 						zeroParam = sourceVP->number;
 						zParam = sourceVP;
 #ifdef DEBUG_EXIT_OUT
-						blame_info<<"Inputs to "<<v->name<<" is "<<sourceVP->name<<" "<<paramNum<<std::endl;
+						blame_info<<"Inputs to "<<v->name<<" is "<<sourceVP->name<<" "<<paramNum<<endl;
 #endif
 					}
 					else if (paramNum >= 0) {//changed by Hui 12/31/15:'>' => '>='
 						inputVertices.insert(sourceV);
 #ifdef DEBUG_EXIT_OUT
-						blame_info<<"Inputs to "<<v->name<<" is "<<sourceVP->name<<" "<<paramNum<<std::endl;
+						blame_info<<"Inputs to "<<v->name<<" is "<<sourceVP->name<<" "<<paramNum<<endl;
 #endif
 					}
 					break;
@@ -271,7 +265,7 @@ void FunctionBFC::determineBFCForOutputVertexLite(NodeProps *v, int v_index)
 	
 	if (zeroParam > -1) {
 #ifdef DEBUG_EXIT_OUT
-		blame_info<<"OUT__(determineBFCForOutputVertexLite) - Removing edge to "<<v->name<<" from "<<zeroParam<<std::endl;
+		blame_info<<"OUT__(determineBFCForOutputVertexLite) - Removing edge to "<<v->name<<" from "<<zeroParam<<endl;
 #endif
 		int in_d = in_degree(zeroParam, G);
 		if (in_d == 0)
@@ -279,7 +273,7 @@ void FunctionBFC::determineBFCForOutputVertexLite(NodeProps *v, int v_index)
 		zParam->nStatus[CALL_RETURN] = false;	
 	}
 	
-	std::set<int>::iterator set_i;
+	set<int>::iterator set_i;
 	for (set_i = inputVertices.begin(); set_i != inputVertices.end();  set_i++) {
 		remove_edge(*set_i, v->number, G);
 		tie(ed, inserted) = add_edge(v->number, *set_i, G);
@@ -386,8 +380,8 @@ void FunctionBFC::recheckExitVars()
                     Value *second = *(++op_i); // second is the actual mem address where to store the value
 						
 				    if (second->hasName()) { //in this case, firt can be a register since the original arg has been bicasted 
-                      std::string argHolderName = second->getName().str();
-                      if (argHolderName.find(PARAM_REC) != std::string::npos || argHolderName.find(PARAM_REC2) != std::string::npos) {
+                      string argHolderName = second->getName().str();
+                      if (argHolderName.find(PARAM_REC) != string::npos || argHolderName.find(PARAM_REC2) != string::npos) {
                         if (variables.count(argHolderName)) {
                           NodeProps *vp = variables[argHolderName];
                           // We only add EV for Pids, otherwise all int param will be EVs
@@ -419,8 +413,8 @@ void FunctionBFC::recheckExitVars()
               Value  *first = *op_i,  *second = *(++op_i);
 			  
               if (first->hasName() && second->hasName()) { //In this case, first must have name since it's the Arg
-                std::string argHolderName = second->getName().str();
-                if (argHolderName.find(PARAM_REC) != std::string::npos || argHolderName.find(PARAM_REC2) != std::string::npos) {
+                string argHolderName = second->getName().str();
+                if (argHolderName.find(PARAM_REC) != string::npos || argHolderName.find(PARAM_REC2) != string::npos) {
                   if (variables.count(argHolderName)) {
                     NodeProps *vp = variables[argHolderName];
                     // We only add EV for Pids, otherwise all int param will be EVs
@@ -434,7 +428,7 @@ void FunctionBFC::recheckExitVars()
                 }
                 else {
 #ifdef DEBUG_EXIT
-                  blame_info<<"LLVM_(checkFunctionProto) - wrong name? arg: "<<first->getName().str()<<" holder: "<<argHolderName<<std::endl;
+                  blame_info<<"LLVM_(checkFunctionProto) - wrong name? arg: "<<first->getName().str()<<" holder: "<<argHolderName<<endl;
 #endif
                 }
 			  } //first and second has name
@@ -485,27 +479,19 @@ void FunctionBFC::determineBFCHoldersTrunc()
 	    else if (v->isFormalArg) {
 	      // We always check the parameters, the EV sanity check will kick in ... hopefully
 #ifdef DEBUG_EXIT
-	      blame_info<<"EXIT__(determineBFCHoldersTrunc) for isFormalArg(no holder) "<<v->name<<std::endl;
+	      blame_info<<"EXIT__(determineBFCHoldersTrunc) for isFormalArg(no holder) "<<v->name<<endl;
 #endif
 	      determineBFCForVertexTrunc(v);
 	    }
-		else if (v->name.find(PARAM_REC)!=std::string::npos || v->name.find(PARAM_REC2)!=std::string::npos) {
-			// We always check the parameters, the EV sanity check will kick in ... hopefully
-			// TODO: verify this
-#ifdef DEBUG_EXIT
-			blame_info<<"EXIT__(determineBFCHoldersTrunc) for PARAM_REC with in_d > 0 "<<v->name<<std::endl;
-#endif
-			determineBFCForVertexTrunc(v);
-		}
 		else if (v->isGlobal && (in_d > 0 || out_d > 0)) {
 #ifdef DEBUG_EXIT
-			blame_info<<"EXIT__(determineBFCHoldersTrunc) for GLOBAL with in_d || out_d > 0 "<<v->name<<std::endl;
+			blame_info<<"EXIT__(determineBFCHoldersTrunc) for GLOBAL with in_d || out_d > 0 "<<v->name<<endl;
 #endif
 			determineBFCForVertexTrunc(v);
 		}
-		else if (v->name.find("retval") != std::string::npos) {
+		else if (v->name.find("retval") != string::npos) {
 #ifdef DEBUG_EXIT
-			blame_info<<"EXIT__(determineBFCHoldersTrunc) for return val with in_d || out_d > 0 "<<v->name<<std::endl;
+			blame_info<<"EXIT__(determineBFCHoldersTrunc) for return val with in_d || out_d > 0 "<<v->name<<endl;
 #endif
 			determineBFCForVertexTrunc(v);	
 		}
@@ -539,26 +525,19 @@ void FunctionBFC::determineBFCHoldersLite()
 	else if (v->isFormalArg) {
 	  // We always check the parameters, the EV sanity check will kick in ... hopefully
 #ifdef DEBUG_EXIT
-	  blame_info<<"EXIT__(determineBFCHolders) for isFormalArg(no holder) "<<v->name<<std::endl;
-#endif
-	  determineBFCForVertexLite(v);
-	}
-	else if (v->name.find(PARAM_REC)!=std::string::npos || v->name.find(PARAM_REC2)!=std::string::npos) {
-	  // We always check the parameters, the EV sanity check will kick in ... hopefully
-#ifdef DEBUG_EXIT
-	  blame_info<<"EXIT__(determineBFCHolders) for PARAM_REC with in_d > 0 "<<v->name<<std::endl;
+	  blame_info<<"EXIT__(determineBFCHolders) for isFormalArg(no holder) "<<v->name<<endl;
 #endif
 	  determineBFCForVertexLite(v);
 	}
 	else if (v->isGlobal && (in_d > 0 || out_d > 0)) {
 #ifdef DEBUG_EXIT
-	  blame_info<<"EXIT__(determineBFCHolder) for GLOBAL with in_d || out_d > 0 "<<v->name<<std::endl;
+	  blame_info<<"EXIT__(determineBFCHolder) for GLOBAL with in_d || out_d > 0 "<<v->name<<endl;
 #endif
 	  determineBFCForVertexLite(v);
 	}
-	else if (v->name.find("retval") != std::string::npos) {
+	else if (v->name.find("retval") != string::npos) {
 #ifdef DEBUG_EXIT
-	  blame_info<<"EXIT__(determineBFCHolder) for return val with in_d > 0 "<<v->name<<std::endl;
+	  blame_info<<"EXIT__(determineBFCHolder) for return val with in_d > 0 "<<v->name<<endl;
 #endif
 	  determineBFCForVertexLite(v);	
 	}
@@ -574,8 +553,8 @@ void FunctionBFC::determineBFCHoldersLite()
 	
 	if (v == NULL) {
 #ifdef DEBUG_ERROR
-      blame_info<<"ERROR__(DBHLite) - V is null\n"<<std::endl;
-	  std::cerr<<"V is null in determineBFCHoldersLite"<<std::endl;
+      blame_info<<"ERROR__(DBHLite) - V is null\n"<<endl;
+	  cerr<<"V is null in determineBFCHoldersLite"<<endl;
 #endif
 	  continue;
 	}	
@@ -606,14 +585,14 @@ void FunctionBFC::identifyExternCalls(ExternFuncBFCHash &efInfo)
 		
 		if (v->funcCalls.size() > 0 && v->nStatus[CALL_NODE]) { //second cond added by Hui 04/11/16: we only check call node for obvious reason
 #ifdef DEBUG_GRAPH_BUILD
-			blame_info<<"Graph__(identifyExternCalls) - Vertex "<<v->name<<" involved"<<std::endl;
+			blame_info<<"Graph__(identifyExternCalls) - Vertex "<<v->name<<" involved"<<endl;
 #endif
-			std::set<FuncCall *>::iterator fc_i = v->funcCalls.begin();
+			set<FuncCall *>::iterator fc_i = v->funcCalls.begin();
 			
 #ifdef DEBUG_GRAPH_BUILD
 			for (; fc_i != v->funcCalls.end(); fc_i++) {
 				FuncCall *fc = *fc_i;	
-				blame_info<<"Graph__(identifyExternCalls) - Func -  "<<fc->funcName<<" Param - "<<fc->paramNumber<<std::endl;
+				blame_info<<"Graph__(identifyExternCalls) - Func -  "<<fc->funcName<<" Param - "<<fc->paramNumber<<endl;
 			}
 #endif
 		
@@ -625,7 +604,7 @@ void FunctionBFC::identifyExternCalls(ExternFuncBFCHash &efInfo)
 			if (tStr == NULL)
 				continue;
 			else {
-                std::string tS(tStr);
+                string tS(tStr);
 				efb = efInfo[tS];
             }
 			if (efb != NULL)
@@ -637,7 +616,7 @@ void FunctionBFC::identifyExternCalls(ExternFuncBFCHash &efInfo)
 
 
 void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeProps *targetV, 
-        std::set<int> &visited, std::set<NodeProps *> &tempPointers, NodeProps *alias, int origOpCode)
+        set<int> &visited, set<NodeProps *> &tempPointers, NodeProps *alias, int origOpCode)
 {
 #ifdef DEBUG_RP
 	blame_info<<"In resolvePointersHelper for "<<targetV->name<<" oV - "<<origV->name;
@@ -675,7 +654,7 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
 		return;
 	else if (newPtrLevel <= origPLevel) {// still in the game
 #ifdef DEBUG_RP
-		blame_info<<"In inner loop for "<<targetV->name<<std::endl;
+		blame_info<<"In inner loop for "<<targetV->name<<endl;
 #endif 
 	
 		boost::graph_traits<MyGraphType>::in_edge_iterator e_beg, e_end;
@@ -688,7 +667,7 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
 			NodeProps *tV = get(get(vertex_props,G), source(*e_beg,G));
 			
 #ifdef DEBUG_RP
-			blame_info<<"In Edges for "<<targetV->name<<"  "<<opCode<<std::endl;
+			blame_info<<"In Edges for "<<targetV->name<<"  "<<opCode<<endl;
 #endif 
 			
 			int tVPtrLevel = 0;
@@ -712,9 +691,9 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
 			if (opCode == Instruction::Store) {	//*targetV = RLS/load **origV;
 				// treat as alias               //store *targetV **tV;
 #ifdef DEBUG_RP				
-				blame_info<<"RHP Store between targetV("<<targetV->name<<") and tV("<<tV->name<<")"<<std::endl;
+				blame_info<<"RHP Store between targetV("<<targetV->name<<") and tV("<<tV->name<<")"<<endl;
 				blame_info<<tVPtrLevel<<" "<<origPLevel<<" "<<origV->resolvedLSFrom.size();
-				blame_info<<" "<<targetV->resolvedLSFrom.size()<<std::endl;
+				blame_info<<" "<<targetV->resolvedLSFrom.size()<<endl;
 #endif
                 //---added by Hui 04/08/16-------------------------------//
                 const llvm::Type *origT0;
@@ -733,7 +712,7 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
                     }
                     else if (isa<ConstantPointerNull> (origV->llvm_inst)) { //added by Hui 04/19/16, for origV is global var case
 #ifdef DEBUG_RP
-                        blame_info<<"origV("<<origV->name<<")"<<"  -- ConstantPointerNullVal"<<std::endl;
+                        blame_info<<"origV("<<origV->name<<")"<<"  -- ConstantPointerNullVal"<<endl;
 #endif
                         ConstantPointerNull *origVcpn = cast<ConstantPointerNull>(origV->llvm_inst);
                         origT0 = origVcpn->getType();
@@ -744,7 +723,7 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
 
 
 #ifdef DEBUG_RP
-                blame_info<<"The tV's pointedTypeID="<<tVPointedTypeID<<", origV's pointedTypeID="<<origPointedTypeID<<std::endl;
+                blame_info<<"The tV's pointedTypeID="<<tVPointedTypeID<<", origV's pointedTypeID="<<origPointedTypeID<<endl;
 #endif
                 //For cases: targetV = GEP origV; store targetV, tV;
                 // origV and tV should never treated as aliases, even if pointedTypeID and ptrLevel are equal
@@ -752,29 +731,29 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
                 //*TypeID cond added by Hui 04/08/16:alias should be same ptr level with same Pointed type, eg: **double and **int aren't aliases 
 				if (tVPtrLevel == origPLevel && origPointedTypeID == tVPointedTypeID && origOpCode != GEP_BASE_OP) { 
 #ifdef DEBUG_RP                                                         
-    			    blame_info<<"Pointer levels are equal"<<std::endl;
+    			    blame_info<<"Pointer levels are equal"<<endl;
 #endif
 
 					if (tV->storesTo.size() > 1){
-						blame_info<<"Inserting almost alias(1) between "<<origV->name<<" and "<<tV->name<<std::endl;
+						blame_info<<"Inserting almost alias(1) between "<<origV->name<<" and "<<tV->name<<endl;
 						//origV->almostAlias.insert(targetV); //TODO: shouldn't it between tV and origV ?
 						//targetV->almostAlias.insert(origV);
                         origV->almostAlias.insert(tV); //New added 01/28/16
                         tV->almostAlias.insert(origV); //New
 #ifdef DEBUG_RP
-						blame_info<<"Inserting pointer(6) "<<targetV->name<<std::endl;
+						blame_info<<"Inserting pointer(6) "<<targetV->name<<endl;
 #endif
 						//tempPointers.insert(targetV);
                         tempPointers.insert(tV); //New
 					}
 					  else {
-						blame_info<<"Inserting alias(1) out "<<tV->name<<" into "<<origV->name<<std::endl;
+						blame_info<<"Inserting alias(1) out "<<tV->name<<" into "<<origV->name<<endl;
 						origV->aliasesOut.insert(tV);
-						blame_info<<"Inserting alias(2) in "<<origV->name<<" into "<<tV->name<<std::endl;
+						blame_info<<"Inserting alias(2) in "<<origV->name<<" into "<<tV->name<<endl;
 						tV->aliasesIn.insert(origV);
 						
 #ifdef DEBUG_RP
-						blame_info<<"Inserting STORE ALIAS pointer(2) "<<tV->name<<std::endl;
+						blame_info<<"Inserting STORE ALIAS pointer(2) "<<tV->name<<endl;
 #endif
 						tempPointers.insert(tV);
 					}
@@ -782,20 +761,20 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
 				// treat as write within data space
 				else { //how could it be not equal? like a=GEP b; store a, c; then b and c Ptrlevel could be different
 				    #ifdef DEBUG_RP
-					blame_info<<"Pointer levels are not equal"<<std::endl;
+					blame_info<<"Pointer levels are not equal"<<endl;
 					#endif
 					bool proceed = true;
-					std::set<NodeProps *>::iterator vec_vp_i_in;
+					set<NodeProps *>::iterator vec_vp_i_in;
 					
 					for (vec_vp_i_in = origV->almostAlias.begin(); vec_vp_i_in != origV->almostAlias.end(); vec_vp_i_in++) {
 					    #ifdef DEBUG_RP
-						blame_info<<"dfAlias relation between "<<tV->name<<" and "<<(*vec_vp_i_in)->name<<std::endl;
+						blame_info<<"dfAlias relation between "<<tV->name<<" and "<<(*vec_vp_i_in)->name<<endl;
 					    #endif 
 						tV->dfAliases.insert(*vec_vp_i_in);
 						(*vec_vp_i_in)->dfaUpPtr = tV;
 						
 						// If it's returned than we find it as interesting as something written, even though it technically may not be
-						if (tV->name.find("retval") != std::string::npos) {
+						if (tV->name.find("retval") != string::npos) {
 							tV->isWritten = true;
 							(*vec_vp_i_in)->isWritten = true;
 						}
@@ -808,14 +787,14 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
 						// if it's a local var, we'll already be examining it
 						if (!tV->isLocalVar) {
 							#ifdef DEBUG_RP
-							blame_info<<"Not local var, call rpH2"<<std::endl;
+							blame_info<<"Not local var, call rpH2"<<endl;
 							#endif 
 						    //TODO: Not sure about this special call, here since opCode is STORE, we still keep origV as arg"origV" and origOpCode
 							resolvePointersHelper2(origV, origPLevel, tV, visited, tempPointers, alias, origOpCode);
 						}
 						else {
 						    #ifdef DEBUG_RP
-							blame_info<<"Is local var, do something later I guess." <<std::endl;
+							blame_info<<"Is local var, do something later I guess." <<endl;
 							#endif
 						}
 					}
@@ -827,9 +806,9 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
 				resolvePointersHelper2(targetV, origPLevel, tV, visited, tempPointers, alias, opCode);
 			}
 			else if(opCode == GEP_BASE_OP) {
-				std::string origTStr = returnTypeName(origT, std::string(""));
+				string origTStr = returnTypeName(origT, string(""));
 				// Dealing with a struct pointer
-				if (origTStr.find("Struct") != std::string::npos) {
+				if (origTStr.find("Struct") != string::npos) {
 					if (origV->llvm_inst != NULL) {
 						boost::graph_traits<MyGraphType>::out_edge_iterator e_beg2, e_end2;
 						
@@ -886,14 +865,14 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
 				else{ //not struct
 					if (tVPtrLevel > 0) { //of course tVPtrLevel>0,since tV=GEP targetV, it's an address!
 #ifdef DEBUG_RP
-						blame_info<<"Adding GEP(1) "<<tV->name<<" "<<tV->isWritten<<" to "<<origV->name<<std::endl;
+						blame_info<<"Adding GEP(1) "<<tV->name<<" "<<tV->isWritten<<" to "<<origV->name<<endl;
 #endif                  //03/27/17: if targetV = GEP orig, tV = GEP targetV, we don't add tV to origV's GEPs
 						if (origOpCode != GEP_BASE_OP)
                           origV->GEPs.insert(tV);
 						
 						if (alias && tV->isWritten) {
 #ifdef DEBUG_RP
-							blame_info<<"Adding "<<tV->name<<" to list of resolvedLSSideEffects for "<<alias->name<<std::endl;
+							blame_info<<"Adding "<<tV->name<<" to list of resolvedLSSideEffects for "<<alias->name<<endl;
 #endif
 							alias->resolvedLSSideEffects.insert(tV);
 						}
@@ -902,7 +881,7 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
 					// we'll use this in cases where 2 loads replace a GEP
 					if (targetV != origV) { //targetV = load origV;  tV = GEP targetV ...
 #ifdef DEBUG_RP
-						blame_info<<"Adding GEP(2) "<<tV->name<<" to load "<<targetV->name<<std::endl;
+						blame_info<<"Adding GEP(2) "<<tV->name<<" to load "<<targetV->name<<endl;
 #endif 
 						targetV->GEPs.insert(tV);
 					}
@@ -910,9 +889,9 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
 				}
 			}
 			else if (opCode == RESOLVED_L_S_OP) {
-				//std::cerr<<"Shouldn't hit this here!"<<std::endl;
+				//cerr<<"Shouldn't hit this here!"<<endl;
 #ifdef DEBUG_RP
-				blame_info<<"R_L_S blame Source "<<tV->name<<" Dest "<<targetV->name<<std::endl;
+				blame_info<<"R_L_S blame Source "<<tV->name<<" Dest "<<targetV->name<<endl;
 #endif 
 			}
 		}
@@ -927,10 +906,10 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
 
 			if (opCode == Instruction::Store) {	
 #ifdef DEBUG_RP
-				blame_info<<"Here(2) "<<newPtrLevel<<" "<<targetV->name<<std::endl;
+				blame_info<<"Here(2) "<<newPtrLevel<<" "<<targetV->name<<endl;
 				// We have a write to the data section of the pointer
-				blame_info<<"Vertex "<<targetV->name<<" is written(5)"<<std::endl;
-				blame_info<<"Vertex "<<origV->name<<" is written(6)"<<std::endl;
+				blame_info<<"Vertex "<<targetV->name<<" is written(5)"<<endl;
+				blame_info<<"Vertex "<<origV->name<<" is written(6)"<<endl;
 #endif
 				origV->isWritten = true;
 				targetV->isWritten = true;
@@ -946,163 +925,156 @@ void FunctionBFC::resolvePointersHelper2(NodeProps *origV, int origPLevel, NodeP
 	}
 	else { // What to do with cases like: targetV = GEP origV, targetV
 	#ifdef DEBUG_RP
-		blame_info<<"New pointer level is "<<newPtrLevel<<" and  old is "<<origPLevel<<std::endl;
+		blame_info<<"New pointer level is "<<newPtrLevel<<" and  old is "<<origPLevel<<endl;
 		#endif
 	
 	}
 }
 
 
-short FunctionBFC::checkIfWritten2(NodeProps * currNode, std::set<int> & visited)
+bool FunctionBFC::checkIfWritten2(NodeProps * currNode, set<int> & visited)
 {
 #ifdef DEBUG_RP
-	blame_info<<"In checkIfWritten for "<<currNode->name<<", orig isWritten="<<currNode->isWritten<<std::endl;
+	blame_info<<"In checkIfWritten for "<<currNode->name<<", orig isWritten="<<currNode->isWritten<<endl;
 #endif 
 	
 	if (visited.count(currNode->number) > 0)
-		return 0; //should it return currNode->isWritten ?
+	  return currNode->isWritten; //changed from 0 to  currNode->isWritten
 	visited.insert(currNode->number);
 	
 	short writeTotal = currNode->isWritten;
 	set<NodeProps *>::iterator vec_vp_i;
-	for (vec_vp_i = currNode->aliasesOut.begin(); vec_vp_i != currNode->aliasesOut.end(); vec_vp_i++)
-	{
-		writeTotal += checkIfWritten2((*vec_vp_i), visited);
+	for (vec_vp_i = currNode->aliasesOut.begin(); vec_vp_i != currNode->aliasesOut.end(); vec_vp_i++) {
+	  writeTotal += checkIfWritten2((*vec_vp_i), visited);
 	}
 #ifdef DEBUG_RP
-	blame_info<<"In checkIfWritten for "<<currNode->name<<", after aliasesOut, writeTotal="<<writeTotal<<std::endl;
+	blame_info<<"In checkIfWritten for "<<currNode->name<<", after aliasesOut, writeTotal="<<writeTotal<<endl;
 #endif 
 
-	for (vec_vp_i = currNode->aliasesIn.begin(); vec_vp_i != currNode->aliasesIn.end(); vec_vp_i++)
-	{
-		writeTotal += checkIfWritten2((*vec_vp_i), visited);
+	for (vec_vp_i = currNode->aliasesIn.begin(); vec_vp_i != currNode->aliasesIn.end(); vec_vp_i++) {
+	  writeTotal += checkIfWritten2((*vec_vp_i), visited);
 	}
 #ifdef DEBUG_RP
-	blame_info<<"In checkIfWritten for "<<currNode->name<<", after aliasesIn, writeTotal="<<writeTotal<<std::endl;
+	blame_info<<"In checkIfWritten for "<<currNode->name<<", after aliasesIn, writeTotal="<<writeTotal<<endl;
 #endif 
 
     // Just for pids
     if (currNode->isPid) {
-	  for (vec_vp_i = currNode->pidAliasesOut.begin(); vec_vp_i != currNode->pidAliasesOut.end(); vec_vp_i++)
-	  {
+      // first make sure pid is written if the corresponding obj is written
+      if (currNode->myObj) {
+        if (currNode->myObj->isWritten) //Normally it's alreay written since it's a var
+          currNode->isWritten = true;
+      }
+      // second we check its pidAliasesOut nodes  
+	  for (vec_vp_i = currNode->pidAliasesOut.begin(); vec_vp_i != currNode->pidAliasesOut.end(); vec_vp_i++) {
 		writeTotal += checkIfWritten2((*vec_vp_i), visited);
 	  }
 #ifdef DEBUG_RP
-	  blame_info<<"In checkIfWritten for "<<currNode->name<<", after pidAliasesOut, writeTotal="<<writeTotal<<std::endl;
+	  blame_info<<"In checkIfWritten for "<<currNode->name<<", after pidAliasesOut, writeTotal="<<writeTotal<<endl;
 #endif
     }
 	//Just for objs
     if (currNode->isObj) {
-	  for (vec_vp_i = currNode->objAliasesOut.begin(); vec_vp_i != currNode->objAliasesOut.end(); vec_vp_i++)
-	  {
+	  for (vec_vp_i = currNode->objAliasesOut.begin(); vec_vp_i != currNode->objAliasesOut.end(); vec_vp_i++) {
 		writeTotal += checkIfWritten2((*vec_vp_i), visited);
 	  }
 #ifdef DEBUG_RP
-	  blame_info<<"In checkIfWritten for "<<currNode->name<<", after objAliasesOut, writeTotal="<<writeTotal<<std::endl;
+	  blame_info<<"In checkIfWritten for "<<currNode->name<<", after objAliasesOut, writeTotal="<<writeTotal<<endl;
 #endif 
     }
-	//Just for isBlamedExternCallParam
+	
+    //Just for isBlamedExternCallParam
     if (currNode->isBlamedExternCallParam) {
-	  for (vec_vp_i = currNode->blameesFromExFunc.begin(); vec_vp_i != currNode->blameesFromExFunc.end(); vec_vp_i++)
-	  {
+	  for (vec_vp_i = currNode->blameesFromExFunc.begin(); vec_vp_i != currNode->blameesFromExFunc.end(); vec_vp_i++) {
 		writeTotal += checkIfWritten2((*vec_vp_i), visited);
 	  }
 #ifdef DEBUG_RP
-	  blame_info<<"In checkIfWritten for "<<currNode->name<<", after blameesFromExFunc, writeTotal="<<writeTotal<<std::endl;
+	  blame_info<<"In checkIfWritten for "<<currNode->name<<", after blameesFromExFunc, writeTotal="<<writeTotal<<endl;
 #endif 
     }
 
-    for (vec_vp_i = currNode->almostAlias.begin(); vec_vp_i != currNode->almostAlias.end(); vec_vp_i++)
-	{
-		writeTotal += checkIfWritten2((*vec_vp_i), visited);
+    for (vec_vp_i = currNode->almostAlias.begin(); vec_vp_i != currNode->almostAlias.end(); vec_vp_i++) {
+	  writeTotal += checkIfWritten2((*vec_vp_i), visited);
 	}
 #ifdef DEBUG_RP
-	blame_info<<"In checkIfWritten for "<<currNode->name<<", after almostAlias, writeTotal="<<writeTotal<<std::endl;
+	blame_info<<"In checkIfWritten for "<<currNode->name<<", after almostAlias, writeTotal="<<writeTotal<<endl;
 #endif 
 	
-	for (vec_vp_i = currNode->resolvedLS.begin(); vec_vp_i != currNode->resolvedLS.end(); vec_vp_i++)
-	{
-		writeTotal += checkIfWritten2((*vec_vp_i), visited);
+	for (vec_vp_i = currNode->resolvedLS.begin(); vec_vp_i != currNode->resolvedLS.end(); vec_vp_i++) {
+	  writeTotal += checkIfWritten2((*vec_vp_i), visited);
 	}
 #ifdef DEBUG_RP
-	blame_info<<"In checkIfWritten for "<<currNode->name<<", after resolvedLS, writeTotal="<<writeTotal<<std::endl;
+	blame_info<<"In checkIfWritten for "<<currNode->name<<", after resolvedLS, writeTotal="<<writeTotal<<endl;
 #endif 
 	
-	for (vec_vp_i = currNode->fields.begin(); vec_vp_i != currNode->fields.end(); vec_vp_i++)
-	{
-		writeTotal += checkIfWritten2((*vec_vp_i), visited);
+	for (vec_vp_i = currNode->fields.begin(); vec_vp_i != currNode->fields.end(); vec_vp_i++) {
+	  writeTotal += checkIfWritten2((*vec_vp_i), visited);
 	}
 #ifdef DEBUG_RP
-	blame_info<<"In checkIfWritten for "<<currNode->name<<", after fields, writeTotal="<<writeTotal<<std::endl;
+	blame_info<<"In checkIfWritten for "<<currNode->name<<", after fields, writeTotal="<<writeTotal<<endl;
 #endif 
 	
-	for (vec_vp_i = currNode->nonAliasStores.begin(); vec_vp_i != currNode->nonAliasStores.end(); vec_vp_i++)
-	{
-		writeTotal += checkIfWritten2((*vec_vp_i), visited);
+	for (vec_vp_i = currNode->nonAliasStores.begin(); vec_vp_i != currNode->nonAliasStores.end(); vec_vp_i++) {
+	  writeTotal += checkIfWritten2((*vec_vp_i), visited);
 	}
 #ifdef DEBUG_RP
-	blame_info<<"In checkIfWritten for "<<currNode->name<<", after nonAliasStores, writeTotal="<<writeTotal<<std::endl;
+	blame_info<<"In checkIfWritten for "<<currNode->name<<", after nonAliasStores, writeTotal="<<writeTotal<<endl;
 #endif 
 	
-	for (vec_vp_i = currNode->arrayAccess.begin(); vec_vp_i != currNode->arrayAccess.end(); vec_vp_i++)
-	{
-		writeTotal += checkIfWritten2((*vec_vp_i), visited);
+	for (vec_vp_i = currNode->arrayAccess.begin(); vec_vp_i != currNode->arrayAccess.end(); vec_vp_i++) {
+	  writeTotal += checkIfWritten2((*vec_vp_i), visited);
 	}
 #ifdef DEBUG_RP
-	blame_info<<"In checkIfWritten for "<<currNode->name<<", after arrayAccess, writeTotal="<<writeTotal<<std::endl;
+	blame_info<<"In checkIfWritten for "<<currNode->name<<", after arrayAccess, writeTotal="<<writeTotal<<endl;
 #endif 
 
 #ifdef ADD_MULTI_LOCALE
-	for (vec_vp_i = currNode->GEPs.begin(); vec_vp_i != currNode->GEPs.end(); vec_vp_i++)
-	{
-		writeTotal += checkIfWritten2((*vec_vp_i), visited);
+	for (vec_vp_i = currNode->GEPs.begin(); vec_vp_i != currNode->GEPs.end(); vec_vp_i++) {
+	  writeTotal += checkIfWritten2((*vec_vp_i), visited);
 	}
 #ifdef DEBUG_RP
-    blame_info<<"In checkIfWritten for "<<currNode->name<<", after GEPs, writeTotal="<<writeTotal<<std::endl;
+    blame_info<<"In checkIfWritten for "<<currNode->name<<", after GEPs, writeTotal="<<writeTotal<<endl;
 #endif
 #endif
 	// We consider any param passed into a function as written, acting conservatively
 	//  At runtime through transfer functions we can figure out if this is actually the case
-	for (vec_vp_i = currNode->loads.begin(); vec_vp_i != currNode->loads.end(); vec_vp_i++)
-	{
-		NodeProps * v = (*vec_vp_i);
-		if (!v)
-		{
+	for (vec_vp_i = currNode->loads.begin(); vec_vp_i != currNode->loads.end(); vec_vp_i++) {
+	  NodeProps * v = (*vec_vp_i);
+	  if (!v) {
 #ifdef DEBUG_ERROR		
-			std::cerr<<"Null V in checkIfWritten\n";
+		cerr<<"Null V in checkIfWritten\n";
 #endif
-			continue;
-		}
-		boost::graph_traits<MyGraphType>::out_edge_iterator e_beg, e_end;
-		e_beg = boost::out_edges(v->number, G).first;		// edge iterator begin
-		e_end = boost::out_edges(v->number, G).second;    // edge iterator end
+		continue;
+	  }
+	  boost::graph_traits<MyGraphType>::out_edge_iterator e_beg, e_end;
+	  e_beg = boost::out_edges(v->number, G).first;		// edge iterator begin
+	  e_end = boost::out_edges(v->number, G).second;    // edge iterator end
 		
-		// iterate through the edges to find matching opcode
-		for(; e_beg != e_end; ++e_beg) 
-		{
-			int opCode = get(get(edge_iore, G),*e_beg);
+	  // iterate through the edges to find matching opcode
+	  for(; e_beg != e_end; ++e_beg) {
+		int opCode = get(get(edge_iore, G),*e_beg);
 			
-			if (opCode == Instruction::Call || opCode == Instruction::Invoke)
-				writeTotal++;
-		}	
+		if (opCode == Instruction::Call || opCode == Instruction::Invoke)
+		  writeTotal++;
+	  }	
 	}
 #ifdef DEBUG_RP
-	blame_info<<"In checkIfWritten for "<<currNode->name<<", after loads, writeTotal="<<writeTotal<<std::endl;
+	blame_info<<"In checkIfWritten for "<<currNode->name<<", after loads, writeTotal="<<writeTotal<<endl;
 #endif 
 	
 	if (writeTotal > 0)
-		currNode->isWritten = true;
-	return writeTotal;
+      currNode->isWritten = true;
+	return currNode->isWritten;
 }
 
 
 //At the very irst time this func was called, exitCand, currNode, exitV are all same
 void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNode,
-										std::set<int> & visited, NodeProps * exitV)
+										set<int> & visited, NodeProps * exitV)
 {
 #ifdef DEBUG_RP
 	blame_info<<"In resolveLocalAliases2 for "<<exitCand->name<<"("<<exitCand->eStatus<<")";
-	blame_info<<" "<<currNode->name<<"("<<currNode->eStatus<<")"<<std::endl;
+	blame_info<<" "<<currNode->name<<"("<<currNode->eStatus<<")"<<endl;
 #endif
 	
 	if (visited.count(currNode->number) > 0)
@@ -1116,7 +1088,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 		for (vec_vp_i = currNode->aliasesOut.begin(); vec_vp_i != currNode->aliasesOut.end(); vec_vp_i++)
 		{
 			NodeProps * vp = (*vec_vp_i);
-			//blame_info<<"VP AO - "<<vp->name<<"("<<vp->exitStatus<<")"<<std::endl;
+			//blame_info<<"VP AO - "<<vp->name<<"("<<vp->exitStatus<<")"<<endl;
 			
 			//if (vp->exitStatus == NO_EXIT)
 			//{
@@ -1128,7 +1100,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveLocalAliases)(1) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveLocalAliases)(1) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif
 				vp->exitV = exitV;
 			}
@@ -1138,7 +1110,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 				return;
 			
 			#ifdef DEBUG_RP
-			blame_info<<"Inserting alias(3) straight up in "<<vp->name<<" into "<<exitCand->name<<std::endl;
+			blame_info<<"Inserting alias(3) straight up in "<<vp->name<<" into "<<exitCand->name<<endl;
 			#endif 
 
 			exitCand->aliases.insert(vp);
@@ -1151,7 +1123,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 		for (vec_vp_i = currNode->aliasesIn.begin(); vec_vp_i != currNode->aliasesIn.end(); vec_vp_i++)
 		{
 			NodeProps * vp = (*vec_vp_i);
-			//blame_info<<"VP AI - "<<vp->name<<"("<<vp->exitStatus<<")"<<std::endl;
+			//blame_info<<"VP AI - "<<vp->name<<"("<<vp->exitStatus<<")"<<endl;
 			
 			
 			//if (vp->exitStatus == NO_EXIT)
@@ -1164,7 +1136,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveLocalAliases)(2) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveLocalAliases)(2) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -1197,13 +1169,13 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveLocalAliases)(3) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveLocalAliases)(3) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;					
 			}
 			 
 			 #ifdef DEBUG_RP
-			 blame_info<<"Inserting dfAlias(4) "<<vp->name<<"into set for "<<exitCand->name<<std::endl;
+			 blame_info<<"Inserting dfAlias(4) "<<vp->name<<"into set for "<<exitCand->name<<endl;
 			 #endif 
 
 			exitCand->dfAliases.insert(vp);
@@ -1218,7 +1190,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 	for (vec_vp_i = currNode->nonAliasStores.begin(); vec_vp_i != currNode->nonAliasStores.end(); vec_vp_i++)
 	{
 		NodeProps * vp = (*vec_vp_i);
-		//blame_info<<"VP NAS - "<<vp->name<<"("<<vp->exitStatus<<")"<<std::endl;
+		//blame_info<<"VP NAS - "<<vp->name<<"("<<vp->exitStatus<<")"<<endl;
 		//if (vp->exitStatus == NO_EXIT)
 		vp->nStatus[LOCAL_VAR_PTR] = true;
 		
@@ -1228,7 +1200,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 		if (vp->exitV == NULL)
 		{
 #ifdef DEBUG_RP
-			blame_info<<"PTRS__(resolveLocalAliases)(4) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+			blame_info<<"PTRS__(resolveLocalAliases)(4) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 			vp->exitV = exitV;
 		}
@@ -1236,7 +1208,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 		vp->dpUpPtr = currNode;
 		
         //Hui dataPtrs.insert test 12/04/15
-        blame_info<<"dataPtrs.insert 1: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
+        blame_info<<"dataPtrs.insert 1: insert to : "<<currNode->name<<" of: "<<vp->name<<endl;
 		currNode->dataPtrs.insert(vp);
 		resolveLocalAliases2(exitCand, vp, visited, exitV);
 	}
@@ -1246,7 +1218,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 		for (vec_vp_i = currNode->aliasesOut.begin(); vec_vp_i != currNode->aliasesOut.end(); vec_vp_i++)
 		{
 			NodeProps * vp = (*vec_vp_i);
-			//blame_info<<"VP AO(LVF) - "<<vp->name<<"("<<vp->exitStatus<<")"<<std::endl;
+			//blame_info<<"VP AO(LVF) - "<<vp->name<<"("<<vp->exitStatus<<")"<<endl;
 			
 			//if (vp->exitStatus == NO_EXIT)
 			vp->nStatus[LOCAL_VAR_FIELD_ALIAS] = true;
@@ -1260,13 +1232,13 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveLocalAliases)(5) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveLocalAliases)(5) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif
 				vp->exitV = exitV;
 			}
 			
 			#ifdef DEBUG_RP
-			blame_info<<"Inserting alias(4) straight up "<<vp->name<<" into "<<exitCand->name<<std::endl;
+			blame_info<<"Inserting alias(4) straight up "<<vp->name<<" into "<<exitCand->name<<endl;
 			#endif 
 			exitCand->aliases.insert(vp);
 			// FORTRAN
@@ -1283,7 +1255,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 		for (vec_vp_i = currNode->aliasesIn.begin(); vec_vp_i != currNode->aliasesIn.end(); vec_vp_i++)
 		{
 			NodeProps * vp = (*vec_vp_i);
-			//blame_info<<"VP AI(LVF) - "<<vp->name<<"("<<vp->exitStatus<<")"<<std::endl;
+			//blame_info<<"VP AI(LVF) - "<<vp->name<<"("<<vp->exitStatus<<")"<<endl;
 			
 			
 			//if (vp->exitStatus == NO_EXIT)
@@ -1297,14 +1269,14 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveLocalAliases)(6) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveLocalAliases)(6) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
 			
 			
 			#ifdef DEBUG_RP
-			blame_info<<"Inserting alias(5) straight up "<<vp->name<<" into "<<exitCand->name<<std::endl;
+			blame_info<<"Inserting alias(5) straight up "<<vp->name<<" into "<<exitCand->name<<endl;
 			#endif
 			
 			exitCand->aliases.insert(vp);
@@ -1326,7 +1298,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 		for (vec_vp_i = currNode->fields.begin(); vec_vp_i != currNode->fields.end(); vec_vp_i++)
 		{
 			NodeProps * vp = (*vec_vp_i);
-			//blame_info<<"VP F - "<<vp->name<<"("<<vp->exitStatus<<")"<<std::endl;
+			//blame_info<<"VP F - "<<vp->name<<"("<<vp->exitStatus<<")"<<endl;
 			
 			
 			//if (vp->exitStatus == NO_EXIT)
@@ -1338,7 +1310,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveLocalAliases)(7) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveLocalAliases)(7) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -1353,7 +1325,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 		for (vec_vp_i = currNode->fields.begin(); vec_vp_i != currNode->fields.end(); vec_vp_i++)
 		{
 			NodeProps * vp = (*vec_vp_i);
-			//blame_info<<"VP F(LVA) - "<<vp->name<<"("<<vp->exitStatus<<")"<<std::endl;
+			//blame_info<<"VP F(LVA) - "<<vp->name<<"("<<vp->exitStatus<<")"<<endl;
 			
 			
 			//if (vp->exitStatus == NO_EXIT)
@@ -1365,7 +1337,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveLocalAliases)(8) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveLocalAliases)(8) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -1382,7 +1354,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 	{
 		NodeProps * vp = (*vec_vp_i);
 #ifdef DEBUG_RP
-		blame_info<<"VP AA - "<<vp->name<<std::endl;
+		blame_info<<"VP AA - "<<vp->name<<endl;
 #endif
 		int out_d = out_degree(vp->number, G);
 		if (out_d > 1)
@@ -1398,14 +1370,14 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveLocalAliases)(9) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveLocalAliases)(9) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif
 				vp->exitV = exitV;
 			}
 			vp->dpUpPtr = currNode;
 			
             //Hui dataPtrs.insert test 12/04/15
-            blame_info<<"dataPtrs.insert 2: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
+            blame_info<<"dataPtrs.insert 2: insert to : "<<currNode->name<<" of: "<<vp->name<<endl;
 			currNode->dataPtrs.insert(vp);
 		}
 		
@@ -1415,7 +1387,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 	for (vec_vp_i = currNode->GEPs.begin(); vec_vp_i != currNode->GEPs.end(); vec_vp_i++)
 	{
 		NodeProps * vp = (*vec_vp_i);
-		//blame_info<<"VP GEP - "<<vp->name<<"("<<vp->exitStatus<<")"<<std::endl;
+		//blame_info<<"VP GEP - "<<vp->name<<"("<<vp->exitStatus<<")"<<endl;
 		
 		// TODO: 10/30/10 investigate the out_d > 1 thing
 		int out_d = out_degree(vp->number, G);
@@ -1432,7 +1404,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveLocalAliases)(10) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveLocalAliases)(10) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif
 				vp->exitV = exitV;
 			}
@@ -1440,7 +1412,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			vp->dpUpPtr = currNode;
 			
             //Hui dataPtrs.insert test 12/04/15
-            blame_info<<"dataPtrs.insert 3: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
+            blame_info<<"dataPtrs.insert 3: insert to : "<<currNode->name<<" of: "<<vp->name<<endl;
 			currNode->dataPtrs.insert(vp);
 		}
 		
@@ -1450,7 +1422,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 	for (vec_vp_i = currNode->fields.begin(); vec_vp_i != currNode->fields.end(); vec_vp_i++)
 	{
 		NodeProps * vp = (*vec_vp_i);
-		//blame_info<<"VP GEP - "<<vp->name<<"("<<vp->exitStatus<<")"<<std::endl;
+		//blame_info<<"VP GEP - "<<vp->name<<"("<<vp->exitStatus<<")"<<endl;
 		
 		// TODO: 10/30/10 investigate the out_d > 1 thing
 		int out_d = out_degree(vp->number, G);
@@ -1467,7 +1439,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveLocalAliases)(10.2) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveLocalAliases)(10.2) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif
 				vp->exitV = exitV;
 			}
@@ -1475,7 +1447,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			vp->dpUpPtr = currNode;
 			
             //Hui dataPtrs.insert test 12/04/15
-            blame_info<<"dataPtrs.insert 3(fields): insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
+            blame_info<<"dataPtrs.insert 3(fields): insert to : "<<currNode->name<<" of: "<<vp->name<<endl;
 			currNode->dataPtrs.insert(vp);
 		}
 		
@@ -1486,14 +1458,14 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 	{
 		NodeProps * vp = (*vec_vp_i);
 #ifdef DEBUG_RP
-		blame_info<<"RA (RLS_Local) - Current Node "<<currNode->name<<" Looking at "<<vp->name<<std::endl;
+		blame_info<<"RA (RLS_Local) - Current Node "<<currNode->name<<" Looking at "<<vp->name<<endl;
 #endif 
 		
 		int out_d = out_degree(vp->number, G);
 		if (out_d > 1 || vp->GEPs.size() == 0)
 		{
 #ifdef DEBUG_RP
-			blame_info<<"RA (RLS_Local) - Adding "<<vp->name<<std::endl;
+			blame_info<<"RA (RLS_Local) - Adding "<<vp->name<<endl;
 #endif 
 			
 			vp->nStatus[LOCAL_VAR_PTR] = true;
@@ -1504,7 +1476,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveLocalAliases)(11) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveLocalAliases)(11) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -1512,7 +1484,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			vp->dpUpPtr = currNode;
 			
             //Hui dataPtrs.insert test 12/04/15
-            blame_info<<"dataPtrs.insert 4: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
+            blame_info<<"dataPtrs.insert 4: insert to : "<<currNode->name<<" of: "<<vp->name<<endl;
 			currNode->dataPtrs.insert(vp);
 			
 		}
@@ -1524,7 +1496,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 	{
 		NodeProps * vp = (*vec_vp_i);
 		
-		//blame_info<<"VP L - "<<vp->name<<"("<<vp->exitStatus<<")"<<std::endl;
+		//blame_info<<"VP L - "<<vp->name<<"("<<vp->exitStatus<<")"<<endl;
 		
 		
 		int out_d = out_degree(vp->number, G);
@@ -1541,7 +1513,7 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveLocalAliases)(11) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveLocalAliases)(11) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -1549,29 +1521,29 @@ void FunctionBFC::resolveLocalAliases2(NodeProps * exitCand, NodeProps * currNod
 			vp->dpUpPtr = currNode;
 			
             //Hui dataPtrs.insert test 12/04/15
-            blame_info<<"dataPtrs.insert 5: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
+            blame_info<<"dataPtrs.insert 5: insert to : "<<currNode->name<<" of: "<<vp->name<<endl;
 			currNode->dataPtrs.insert(vp);
 		}
 	}
 #ifdef DEBUG_RP
-	blame_info<<"Finishing up resolveLocalAliases for "<<exitCand->name<<" "<<currNode->name<<std::endl;
+	blame_info<<"Finishing up resolveLocalAliases for "<<exitCand->name<<" "<<currNode->name<<endl;
 #endif 
 }
 
 
 
 void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
-									std::set<int> & visited, NodeProps * exitV)
+									set<int> & visited, NodeProps * exitV)
 {
 #ifdef DEBUG_RP
 	blame_info<<"In resolveAliases for "<<exitCand->name<<"("<<exitCand->eStatus<<")";
-	blame_info<<" "<<currNode->name<<"("<<currNode->eStatus<<")"<<std::endl;
+	blame_info<<" "<<currNode->name<<"("<<currNode->eStatus<<")"<<endl;
 	
 	blame_info<<"Node Props for curr node "<<currNode->name<<": ";
 	for (int a = 0; a < NODE_PROPS_SIZE; a++)
 		blame_info<<currNode->nStatus[a]<<" ";
 
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif 	
 	
 	if (visited.count(currNode->number) > 0)
@@ -1591,7 +1563,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(1) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(1) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -1599,7 +1571,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(1) - exitV "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 
 	
@@ -1609,18 +1581,18 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR
 				blame_info<<"PTRS__(resolveAliases)(2) - exitV "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif 
 
-				blame_info<<"Inserting alias(60) straight up "<<vp->name<<" into "<<exitCand->name<<std::endl;
+				blame_info<<"Inserting alias(60) straight up "<<vp->name<<" into "<<exitCand->name<<endl;
 				exitCand->aliases.insert(vp);
 
 				continue;
 			}
 			
 			
-			blame_info<<"Inserting alias(6) straight up "<<vp->name<<" into "<<exitCand->name<<std::endl;
+			blame_info<<"Inserting alias(6) straight up "<<vp->name<<" into "<<exitCand->name<<endl;
 			exitCand->aliases.insert(vp);
 		
 			resolveAliases2(exitCand, vp, visited, exitV);
@@ -1635,7 +1607,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(2) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(2) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -1643,7 +1615,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(3) - exitV "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 
 				continue;
@@ -1652,12 +1624,12 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR
 				blame_info<<"PTRS__(resolveAliases)(4) - exitV "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif 
 
 #ifdef DEBUG_RP
-				blame_info<<"Inserting alias(61) straight up "<<vp->name<<" into "<<exitCand->name<<std::endl;
+				blame_info<<"Inserting alias(61) straight up "<<vp->name<<" into "<<exitCand->name<<endl;
 #endif 				
 				exitCand->aliases.insert(vp);
 
@@ -1665,7 +1637,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			}
 			
 			#ifdef DEBUG_RP
-						blame_info<<"Inserting alias(7) straight up "<<vp->name<<" into "<<exitCand->name<<std::endl;
+						blame_info<<"Inserting alias(7) straight up "<<vp->name<<" into "<<exitCand->name<<endl;
 			#endif 			
 
 			exitCand->aliases.insert(vp);
@@ -1685,7 +1657,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(3) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(3) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -1693,7 +1665,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(5) "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 				continue;
 			}	
@@ -1701,14 +1673,14 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR
 				blame_info<<"PTRS__(resolveAliases)(6) "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif 
 				continue;
 			}
 			
 			#ifdef DEBUG_RP
-			blame_info<<"Inserting dfAlias(1) "<<vp->name<<"into set for "<<exitCand->name<<std::endl;
+			blame_info<<"Inserting dfAlias(1) "<<vp->name<<"into set for "<<exitCand->name<<endl;
 			#endif 
 
 			exitCand->dfAliases.insert(vp);
@@ -1734,7 +1706,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 				if (vp->exitV == NULL)
 				{
 #ifdef DEBUG_RP
-					blame_info<<"PTRS__(resolveAliases)(4) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+					blame_info<<"PTRS__(resolveAliases)(4) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 					vp->exitV = exitV;
 				}
@@ -1742,7 +1714,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 				{
 #ifdef DEBUG_RP
 					blame_info<<"PTRS__(resolveAliases)(7) "<<exitV->name<<" already there for ";
-					blame_info<<vp->name<<std::endl;
+					blame_info<<vp->name<<endl;
 #endif 
 					continue;
 				}	
@@ -1750,14 +1722,14 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 				{
 #ifdef DEBUG_ERROR
 					blame_info<<"PTRS__(resolveAliases)(8) "<<exitV->name<<" already there  (";
-					blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-					std::cerr<<"exitV already taken"<<std::endl;
+					blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+					cerr<<"exitV already taken"<<endl;
 #endif 
 					continue;
 				}
 				
 				#ifdef DEBUG_RP
-							blame_info<<"Inserting alias(8) straight up "<<vp->name<<" into "<<exitCand->name<<std::endl;
+							blame_info<<"Inserting alias(8) straight up "<<vp->name<<" into "<<exitCand->name<<endl;
 				#endif 
 
 				exitCand->aliases.insert(vp);
@@ -1780,7 +1752,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 				if (vp->exitV == NULL)
 				{
 #ifdef DEBUG_RP
-					blame_info<<"PTRS__(resolveAliases)(5) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+					blame_info<<"PTRS__(resolveAliases)(5) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 					vp->exitV = exitV;
 				}
@@ -1788,7 +1760,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 				{
 #ifdef DEBUG_RP
 					blame_info<<"PTRS__(resolveAliases)(9) "<<exitV->name<<" already there for ";
-					blame_info<<vp->name<<std::endl;
+					blame_info<<vp->name<<endl;
 #endif 
 					continue;
 				}	
@@ -1796,14 +1768,14 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 				{
 #ifdef DEBUG_ERROR
 					blame_info<<"PTRS__(resolveAliases)(10) "<<exitV->name<<" already there  (";
-					blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-					std::cerr<<"exitV already taken"<<std::endl;
+					blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+					cerr<<"exitV already taken"<<endl;
 #endif 
 					continue;
 				}
 				
 				#ifdef DEBUG_RP
-							blame_info<<"Inserting alias(9) straight up "<<vp->name<<" into "<<exitCand->name<<std::endl;
+							blame_info<<"Inserting alias(9) straight up "<<vp->name<<" into "<<exitCand->name<<endl;
 				#endif 
 
 				exitCand->aliases.insert(vp);
@@ -1824,7 +1796,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(6) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(6) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -1832,7 +1804,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(11) "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 				continue;
 			}	
@@ -1840,14 +1812,14 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR
 				blame_info<<"PTRS__(resolveAliases)(12) "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif 
 				continue;
 			}
 			
 			#ifdef DEBUG_RP
-			blame_info<<"Inserting dfAlias(2) "<<vp->name<<"into set for "<<exitCand->name<<std::endl;
+			blame_info<<"Inserting dfAlias(2) "<<vp->name<<"into set for "<<exitCand->name<<endl;
 			#endif 			
 						
 			exitCand->dfAliases.insert(vp);
@@ -1869,7 +1841,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 		if (vp->exitV == NULL)
 		{
 #ifdef DEBUG_RP
-			blame_info<<"PTRS__(resolveAliases)(7) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+			blame_info<<"PTRS__(resolveAliases)(7) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 			vp->exitV = exitV;
 		}
@@ -1877,7 +1849,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 		{
 #ifdef DEBUG_RP
 			blame_info<<"PTRS__(resolveAliases)(13) "<<exitV->name<<" already there for ";
-			blame_info<<vp->name<<std::endl;
+			blame_info<<vp->name<<endl;
 #endif 
 			continue;
 		}	
@@ -1885,8 +1857,8 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 		{
 #ifdef DEBUG_ERROR
 			blame_info<<"PTRS__(resolveAliases)(14) "<<exitV->name<<" already there  (";
-			blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-			std::cerr<<"exitV already taken"<<std::endl;
+			blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+			cerr<<"exitV already taken"<<endl;
 #endif 
 			continue;
 		}
@@ -1894,7 +1866,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 		vp->dpUpPtr = currNode;
 		
         //Hui dataPtrs.insert test 12/04/15
-        blame_info<<"dataPtrs.insert 6: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
+        blame_info<<"dataPtrs.insert 6: insert to : "<<currNode->name<<" of: "<<vp->name<<endl;
 		currNode->dataPtrs.insert(vp);
 		resolveAliases2(exitCand, vp, visited, exitV);
 	}
@@ -1909,7 +1881,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(8) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(8) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -1917,7 +1889,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(15) "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 				continue;
 			}	
@@ -1925,14 +1897,14 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR
 				blame_info<<"PTRS__(resolveAliases)(16) "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif
 				continue;
 			}
 			
 			#ifdef DEBUG_RP
-			blame_info<<"Inserting alias(10) straight up "<<vp->name<<" into "<<currNode->name<<std::endl;
+			blame_info<<"Inserting alias(10) straight up "<<vp->name<<" into "<<currNode->name<<endl;
 			#endif 			
 
 			currNode->aliases.insert(vp);
@@ -1954,7 +1926,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(9) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(9) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -1962,7 +1934,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(17) "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 				continue;
 			}	
@@ -1970,14 +1942,14 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR
 				blame_info<<"PTRS__(resolveAliases)(18) "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif 
 				continue;
 			}
 			
 			#ifdef DEBUG_RP
-						blame_info<<"Inserting alias(11) straight up "<<vp->name<<" into "<<exitCand->name<<std::endl;
+						blame_info<<"Inserting alias(11) straight up "<<vp->name<<" into "<<exitCand->name<<endl;
 			#endif 			
 
 			currNode->aliases.insert(vp);
@@ -2002,7 +1974,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(3) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(3) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -2010,7 +1982,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(5) "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 				continue;
 			}	
@@ -2018,14 +1990,14 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR
 				blame_info<<"PTRS__(resolveAliases)(6) "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif 
 				continue;
 			}
 			
 			#ifdef DEBUG_RP
-			blame_info<<"Inserting dfAlias(1) "<<vp->name<<"into set for "<<exitCand->name<<std::endl;
+			blame_info<<"Inserting dfAlias(1) "<<vp->name<<"into set for "<<exitCand->name<<endl;
 			#endif 
 
 			exitCand->dfAliases.insert(vp);
@@ -2052,7 +2024,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(10) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(10) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif
 				vp->exitV = exitV;
 			}
@@ -2060,7 +2032,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(19) "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 				continue;
 			}	
@@ -2068,8 +2040,8 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR	
 				blame_info<<"PTRS__(resolveAliases)(20) "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif 
 			}
 			resolveAliases2(vp, vp, visited, exitV);
@@ -2086,7 +2058,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(11) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(11) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -2094,7 +2066,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(21) "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 				continue;
 			}	
@@ -2102,8 +2074,8 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR
 				blame_info<<"PTRS__(resolveAliases)(22) "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif 
 				continue;
 			}
@@ -2126,7 +2098,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(12) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(12) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -2134,7 +2106,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(23) "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 				continue;
 			}	
@@ -2142,8 +2114,8 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR
 				blame_info<<"PTRS__(resolveAliases)(24) "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif 
 				continue;
 			}
@@ -2151,7 +2123,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			vp->dpUpPtr = currNode;
 			
             //Hui dataPtrs.insert test 12/04/15
-            blame_info<<"dataPtrs.insert 7: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
+            blame_info<<"dataPtrs.insert 7: insert to : "<<currNode->name<<" of: "<<vp->name<<endl;
 			currNode->dataPtrs.insert(vp);
 		}
 	}
@@ -2170,7 +2142,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(12.2) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(12.2) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -2178,7 +2150,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(23.2) "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 				continue;
 			}	
@@ -2186,8 +2158,8 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR
 				blame_info<<"PTRS__(resolveAliases)(24.2) "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif 
 				continue;
 			}
@@ -2195,7 +2167,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			vp->dpUpPtr = currNode;
 			
             //Hui dataPtrs.insert test 12/04/15
-            blame_info<<"dataPtrs.insert 7(fields): insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
+            blame_info<<"dataPtrs.insert 7(fields): insert to : "<<currNode->name<<" of: "<<vp->name<<endl;
 			currNode->dataPtrs.insert(vp);
 		}
 	}
@@ -2213,7 +2185,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(13) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(13) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -2221,7 +2193,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(25) "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 				continue;
 			}	
@@ -2229,8 +2201,8 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR
 				blame_info<<"PTRS__(resolveAliases)(26) "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif 
 				continue;
 			}
@@ -2238,7 +2210,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			vp->dpUpPtr = currNode;
 			
             //Hui dataPtrs.insert test 12/04/15
-            blame_info<<"dataPtrs.insert 8: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
+            blame_info<<"dataPtrs.insert 8: insert to : "<<currNode->name<<" of: "<<vp->name<<endl;
 			currNode->dataPtrs.insert(vp);
 		}
 		
@@ -2249,14 +2221,14 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 	{
 		NodeProps * vp = (*vec_vp_i);
 #ifdef DEBUG_RP
-		blame_info<<"RA (RLS) - Current Node "<<currNode->name<<" Looking at "<<vp->name<<std::endl;
+		blame_info<<"RA (RLS) - Current Node "<<currNode->name<<" Looking at "<<vp->name<<endl;
 #endif 
 		
 		int out_d = out_degree(vp->number, G);
 		if (out_d > 1 || vp->GEPs.size() == 0)
 		{
 #ifdef DEBUG_RP
-			blame_info<<"RA (RLS) - Adding "<<vp->name<<std::endl;
+			blame_info<<"RA (RLS) - Adding "<<vp->name<<endl;
 #endif 
 			
 			vp->nStatus[EXIT_VAR_PTR] = true;
@@ -2264,7 +2236,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(15) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(15) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -2272,7 +2244,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(29) "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 				continue;
 			}	
@@ -2280,8 +2252,8 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR
 				blame_info<<"PTRS__(resolveAliases)(30) "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif 
 				continue;
 			}
@@ -2289,7 +2261,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			vp->dpUpPtr = currNode;
 
             //Hui dataPtrs.insert test 12/04/15
-            blame_info<<"dataPtrs.insert 9: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
+            blame_info<<"dataPtrs.insert 9: insert to : "<<currNode->name<<" of: "<<vp->name<<endl;
 			currNode->dataPtrs.insert(vp);
 		}
 	}
@@ -2308,7 +2280,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			if (vp->exitV == NULL)
 			{
 #ifdef DEBUG_RP
-				blame_info<<"PTRS__(resolveAliases)(14) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<std::endl;
+				blame_info<<"PTRS__(resolveAliases)(14) - Assigning exitV "<<exitV->name<<" for "<<vp->name<<endl;
 #endif 
 				vp->exitV = exitV;
 			}
@@ -2316,7 +2288,7 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_RP
 				blame_info<<"PTRS__(resolveAliases)(27) "<<exitV->name<<" already there for ";
-				blame_info<<vp->name<<std::endl;
+				blame_info<<vp->name<<endl;
 #endif 
 				continue;
 			}	
@@ -2324,8 +2296,8 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			{
 #ifdef DEBUG_ERROR
 				blame_info<<"PTRS__(resolveAliases)(28) "<<exitV->name<<" already there  (";
-				blame_info<<vp->exitV->name<<") for "<<vp->name<<std::endl;
-				std::cerr<<"exitV already taken"<<std::endl;
+				blame_info<<vp->exitV->name<<") for "<<vp->name<<endl;
+				cerr<<"exitV already taken"<<endl;
 #endif 
 				continue;
 			}
@@ -2333,21 +2305,21 @@ void FunctionBFC::resolveAliases2(NodeProps * exitCand, NodeProps * currNode,
 			vp->dpUpPtr = currNode;
 
             //Hui dataPtrs.insert test 12/04/15
-            blame_info<<"dataPtrs.insert 10: insert to : "<<currNode->name<<" of: "<<vp->name<<std::endl;
+            blame_info<<"dataPtrs.insert 10: insert to : "<<currNode->name<<" of: "<<vp->name<<endl;
 			currNode->dataPtrs.insert(vp);
 		}
 	}
 #ifdef DEBUG_RP
-	blame_info<<"Finishing up resolveAliases for "<<exitCand->name<<" "<<currNode->name<<std::endl;
+	blame_info<<"Finishing up resolveAliases for "<<exitCand->name<<" "<<currNode->name<<endl;
 #endif 
 }
 
 
-void FunctionBFC::resolveArrays(NodeProps * origV, NodeProps * v, std::set<NodeProps *> & tempPointers)
+void FunctionBFC::resolveArrays(NodeProps * origV, NodeProps * v, set<NodeProps *> & tempPointers)
 {
 	// At this point, we don't care if the pointer is written to or not,
 	//   we'll worry about that later
-	blame_info<<"In resolveArrays: Inserting pointer(4) "<<v->name<<std::endl;
+	blame_info<<"In resolveArrays: Inserting pointer(4) "<<v->name<<endl;
 	
 	tempPointers.insert(v);
 	
@@ -2368,7 +2340,7 @@ void FunctionBFC::resolveArrays(NodeProps * origV, NodeProps * v, std::set<NodeP
 			//v->aliasesIn.push_back(targetV);
             blame_info<<"Inserting arrayAccess for "<<origV->name<<" of "<<targetV->name<<"\n";
 			origV->arrayAccess.insert(targetV);
-			//blame_info<<"Inserting pointer(5) "<<targetV->name<<std::endl;
+			//blame_info<<"Inserting pointer(5) "<<targetV->name<<endl;
 			
 			tempPointers.insert(targetV);
 			
@@ -2381,12 +2353,12 @@ void FunctionBFC::resolveArrays(NodeProps * origV, NodeProps * v, std::set<NodeP
 			for(; e_beg2 != e_end2; ++e_beg2) 
 			{
 				int opCodeForField = get(get(edge_iore, G),*e_beg2);
-				//blame_info<<"Opcode "<<opCodeForField<<std::endl;
+				//blame_info<<"Opcode "<<opCodeForField<<endl;
 				//int fNum = 0;
 				if (opCodeForField == Instruction::Store)
 				{
 #ifdef DEBUG_RP
-					blame_info<<"Vertex "<<v->name<<" is written(1)"<<std::endl;
+					blame_info<<"Vertex "<<v->name<<" is written(1)"<<endl;
 #endif 
 					v->isWritten = true;
 				}
@@ -2400,17 +2372,17 @@ void FunctionBFC::resolveArrays(NodeProps * origV, NodeProps * v, std::set<NodeP
 		{
 			/*// treat as alias  why ? v and targetV have different ptr level
 			#ifdef DEBUG_RP
-			blame_info<<"RHP Store(2) between "<<v->name<<" and "<<targetV->name<<std::endl;
+			blame_info<<"RHP Store(2) between "<<v->name<<" and "<<targetV->name<<endl;
 			#endif
 				
 			#ifdef DEBUG_RP
-			blame_info<<"Inserting alias(12) out  "<<targetV->name<<" into "<<v->name<<std::endl;
+			blame_info<<"Inserting alias(12) out  "<<targetV->name<<" into "<<v->name<<endl;
 			#endif 			
 			v->aliasesOut.insert(targetV);
 			targetV->aliasesIn.insert(v);
 				
 #ifdef DEBUG_RP
-			blame_info<<"Inserting STORE ALIAS pointer(3) "<<targetV->name<<std::endl;
+			blame_info<<"Inserting STORE ALIAS pointer(3) "<<targetV->name<<endl;
 #endif
             */
 			tempPointers.insert(targetV);
@@ -2419,7 +2391,7 @@ void FunctionBFC::resolveArrays(NodeProps * origV, NodeProps * v, std::set<NodeP
 	}
 }
 
-void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &tempPointers)
+void FunctionBFC::resolvePointersForNode2(NodeProps *v, set<NodeProps *> &tempPointers)
 {
 	if (v->resolved == true)
 		return;
@@ -2427,8 +2399,8 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 		v->resolved = true;
 	
 #ifdef DEBUG_RP
-	blame_info<<std::endl;
-	blame_info<<"In resolvePointersForNode for "<<v->name<<std::endl;
+	blame_info<<endl;
+	blame_info<<"In resolvePointersForNode for "<<v->name<<endl;
 #endif 
 	int origPointerLevel = 0, collapsedPointerLevel = 0;
 	const llvm::Type *origT,  *collapsedT;		
@@ -2436,12 +2408,12 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 	if (v->llvm_inst != NULL) {
 	
 #ifdef DEBUG_RP
-		blame_info<<"Value ID is "<<v->llvm_inst->getValueID()<<std::endl;
+		blame_info<<"Value ID is "<<v->llvm_inst->getValueID()<<endl;
 #endif 	
 		
 		if (isa<Instruction>(v->llvm_inst)) {
 #ifdef DEBUG_RP
-		blame_info<<v->name<<" is Instruction"<<std::endl;
+		blame_info<<v->name<<" is Instruction"<<endl;
 #endif 	
 			Instruction *pi = cast<Instruction>(v->llvm_inst);	
 			origT = pi->getType();	
@@ -2449,7 +2421,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 		}
 		else if (isa<ConstantExpr>(v->llvm_inst)) {
 #ifdef DEBUG_RP
-		blame_info<<v->name<<" is ConstantExpr"<<std::endl;
+		blame_info<<v->name<<" is ConstantExpr"<<endl;
 #endif 	
 		    ConstantExpr *ce = cast<ConstantExpr>(v->llvm_inst);
 			origT = ce->getType();
@@ -2457,7 +2429,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 		}
 		else if (isa<ConstantAggregateZero> (v->llvm_inst)) {
 #ifdef DEBUG_RP
-		blame_info<<v->name<<" is ConstantAggregateZero"<<std::endl;
+		blame_info<<v->name<<" is ConstantAggregateZero"<<endl;
 #endif 	
 		    ConstantAggregateZero *caz = cast<ConstantAggregateZero>(v->llvm_inst);
 			origT = caz->getType();
@@ -2465,7 +2437,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 		}
 		else if (isa<ConstantArray> (v->llvm_inst)) {
 #ifdef DEBUG_RP
-		blame_info<<v->name<<" is ConstantArray"<<std::endl;
+		blame_info<<v->name<<" is ConstantArray"<<endl;
 #endif 	
 			ConstantArray *ca = cast<ConstantArray>(v->llvm_inst);
 			origT = ca->getType();
@@ -2473,7 +2445,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 		}
 		else if (isa<ConstantPointerNull> (v->llvm_inst)) {
 #ifdef DEBUG_RP
-			blame_info<<v->name<<" is ConstantPointerNullVal, ptrlevel++"<<std::endl;
+			blame_info<<v->name<<" is ConstantPointerNullVal, ptrlevel++"<<endl;
 #endif
 			ConstantPointerNull *cpn = cast<ConstantPointerNull>(v->llvm_inst);
 			origT = cpn->getType();
@@ -2482,7 +2454,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 		}
 		else if (v->isFormalArg){
 #ifdef DEaBUG_RP
-			blame_info<<v->name<<" is formal arg"<<std::endl;
+			blame_info<<v->name<<" is formal arg"<<endl;
 #endif
 			origT = v->llvm_inst->getType();	
 			origPointerLevel = pointerLevel(origT,0);
@@ -2490,7 +2462,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 		else if (isa<ConstantStruct> (v->llvm_inst)) {
 #ifdef DEBUG_RP
 			blame_info<<"Leaving resolvePointersForNode for "<<v->name<<" Value ID - "<<v->llvm_inst->getValueID();
-			blame_info<<"  -- ConstantStruct"<<std::endl;
+			blame_info<<"  -- ConstantStruct"<<endl;
 #endif
 			return;
 			//ConstantStruct * csv = cast<ConstantStruct>(v->llvm_inst);
@@ -2500,13 +2472,13 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 		else if (isa<ConstantVector> (v->llvm_inst)) {
 #ifdef DEBUG_RP
 			blame_info<<"Leaving resolvePointersForNode for "<<v->name<<" Value ID - "<<v->llvm_inst->getValueID();
-			blame_info<<"  -- ConstantVectorVal"<<std::endl;
+			blame_info<<"  -- ConstantVectorVal"<<endl;
 #endif
 			return;			
 		}	
 		else {
 #ifdef DEBUG_RP
-			blame_info<<"Leaving resolvePointersForNode for "<<v->name<<" Value ID - "<<v->llvm_inst->getValueID()<<std::endl;
+			blame_info<<"Leaving resolvePointersForNode for "<<v->name<<" Value ID - "<<v->llvm_inst->getValueID()<<endl;
 #endif
 			return;
 		}
@@ -2547,17 +2519,17 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 		}
 		
 		if (proceed) { //for case that v came from a bitcast instruction
-			std::string colTStr = returnTypeName(collapsedT, std::string(""));
+			string colTStr = returnTypeName(collapsedT, string(""));
 			
 #ifdef DEBUG_RP
-			blame_info<<"COL "<<collapsedPointerLevel<<" "<<colTStr<<std::endl;
+			blame_info<<"COL "<<collapsedPointerLevel<<" "<<colTStr<<endl;
 #endif
 			
-			if (collapsedPointerLevel == 1 && colTStr.find("Array") != std::string::npos) {
+			if (collapsedPointerLevel == 1 && colTStr.find("Array") != string::npos) {
 				bitCastArray = true;
 				
 #ifdef DEBUG_RP
-				blame_info<<v->name<<" has a bitcast array "<<v->collapsed_inst->getName().data()<<std::endl;
+				blame_info<<v->name<<" has a bitcast array "<<v->collapsed_inst->getName().data()<<endl;
 #endif
 			}
 		}
@@ -2571,11 +2543,11 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 			isGlobalField = true;
 	}
 	
-	std::string origTStr = returnTypeName(origT, std::string(""));
+	string origTStr = returnTypeName(origT, string(""));
 	
 #ifdef DEBUG_RP
-	blame_info<<v->name<<"'s pointer level is "<<origPointerLevel<<std::endl;
-	blame_info<<v->name<<" has pointer type "<<origTStr<<std::endl;
+	blame_info<<v->name<<"'s pointer level is "<<origPointerLevel<<endl;
+	blame_info<<v->name<<" has pointer type "<<origTStr<<endl;
 #endif 
     if(origPointerLevel >1) //added by Hui 12/16/15, doesn't matter later
         v->isPtr = true;
@@ -2587,13 +2559,13 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 	// Changed 7/1/2010
 	// and again 7/7/2010 
 	// and again 7/12/2010 (bitCastArray, isGlobalField)
-	if (origPointerLevel > 1 || v->storeLines.size() > 0 || ( origPointerLevel == 1 && origTStr.find("Array") != std::string::npos) || bitCastArray || isGlobalField) {
+	if (origPointerLevel > 1 || v->storeLines.size() > 0 || ( origPointerLevel == 1 && origTStr.find("Array") != string::npos) || bitCastArray || isGlobalField) {
 		//	||  (origPointerLevel == 1 && v->isBlamedExternCallParam))
 		//if (origPointerLevel > 0 || v->storeLines.size() > 0 )
 		// At this point, we don't care if the pointer is written to or not,
 		//   we'll worry about that later
 #ifdef DEBUG_RP
-		blame_info<<"Inserting pointer(1) "<<v->name<<std::endl;
+		blame_info<<"Inserting pointer(1) "<<v->name<<endl;
 #endif 
 		//pointers.insert(v);
 		tempPointers.insert(v);
@@ -2603,7 +2575,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 		e_beg = boost::in_edges(v->number, G).first;	// edge iterator begin
 		e_end = boost::in_edges(v->number, G).second;   // edge iterator end
 		
-		std::set<int> visited; // don't know if the way we're traversing the graph,
+		set<int> visited; // don't know if the way we're traversing the graph,
 		// a loop is even possible, but just in case
 		visited.insert(v->number);
 		
@@ -2613,12 +2585,12 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 			NodeProps *targetV = get(get(vertex_props,G), source(*e_beg,G));
 			if (opCode == Instruction::Store) {	
 #ifdef DEBUG_RP
-				blame_info<<"STORE operation between "<<v->name<<" and "<<targetV->name<<std::endl;
+				blame_info<<"STORE operation between "<<v->name<<" and "<<targetV->name<<endl;
 #endif 
 			}
 			else if (opCode == GEP_BASE_OP){
 #ifdef DEBUG_RP
-				blame_info<<"GEPB operation between "<<v->name<<" and "<<targetV->name<<std::endl;
+				blame_info<<"GEPB operation between "<<v->name<<" and "<<targetV->name<<endl;
 #endif          //here, targetV is the field ptr,e.g. a = GEP b, 0, 1 then a=targetV
 				boost::graph_traits<MyGraphType>::out_edge_iterator o_beg, o_end;
 				o_beg = boost::out_edges(targetV->number, G).first;//edge iter begin
@@ -2637,7 +2609,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
                   //we should treat pid arrays as structures without structType
                   //TODO: we need to create a similar structType for pid field in order
                   //to keep fieldNum for the use in postmortem process
-                  if (targetV->isPid && origTStr.find("Array")!=std::string::npos) { 
+                  if (targetV->isPid && origTStr.find("Array")!=string::npos) { 
                     boost::graph_traits<MyGraphType>::out_edge_iterator e_beg2, e_end2;
                     e_beg2 = boost::out_edges(targetV->number,G).first;
                     e_end2 = boost::out_edges(targetV->number,G).second;
@@ -2677,7 +2649,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
                     }
 
 #ifdef DEBUG_RP
-				    blame_info<<"Transferring sBFC from(sf->ps) "<<targetV->name<<" to "<<v->name<<std::endl;
+				    blame_info<<"Transferring sBFC from(sf->ps) "<<targetV->name<<" to "<<v->name<<endl;
 #endif 
                     if (targetV->sField != NULL) {
                       v->sBFC = targetV->sField->parentStruct;
@@ -2704,7 +2676,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
                   else {
 				    v->GEPs.insert(targetV); //a = GEP b, then b.GEPs.insert(a)
 #ifdef DEBUG_RP
-				    blame_info<<"Adding GEP(3) "<<targetV->name<<" to "<<v->name<<std::endl;
+				    blame_info<<"Adding GEP(3) "<<targetV->name<<" to "<<v->name<<endl;
 #endif 
 				    resolvePointersHelper2(v, origPointerLevel, targetV, visited, 
                             tempPointers, NULL, opCode);
@@ -2712,13 +2684,13 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 				}	
 				else {
 #ifdef DEBUG_ERROR
-					std::cerr<<"Was this supposed to happen?!"<<std::endl;
+					cerr<<"Was this supposed to happen?!"<<endl;
 #endif 
 				}
 			}
 			else if (opCode == Instruction::Load ) {
 #ifdef DEBUG_RP
-				blame_info<<"LOAD operation between "<<v->name<<" and "<<targetV->name<<std::endl;
+				blame_info<<"LOAD operation between "<<v->name<<" and "<<targetV->name<<endl;
 #endif
 				boost::graph_traits<MyGraphType>::out_edge_iterator o_beg, o_end;
 				o_beg = boost::out_edges(targetV->number, G).first;//edge iter begin
@@ -2749,7 +2721,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 				}
 				else {
 #ifdef DEBUG_RP
-					blame_info<<"Load not put in because there was a R_L_S from targetV "<<targetV->name<<std::endl;
+					blame_info<<"Load not put in because there was a R_L_S from targetV "<<targetV->name<<endl;
 #endif
 
 #ifdef TEMP_FOR_MINIMD
@@ -2759,7 +2731,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 #endif
                     if (lsTarget) {
 #ifdef DEBUG_RP
-						blame_info<<"R_L_S op between "<<lsTarget->name<<" and "<<targetV->name<<std::endl;
+						blame_info<<"R_L_S op between "<<lsTarget->name<<" and "<<targetV->name<<endl;
 #endif 
 						lsTarget->resolvedLS.insert(targetV);
 						targetV->resolvedLSFrom.insert(lsTarget);
@@ -2771,7 +2743,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 			}
 			else if (opCode == RESOLVED_L_S_OP) {
 #ifdef DEBUG_RP
-				blame_info<<"RLS operation between "<<v->name<<" and "<<targetV->name<<std::endl;
+				blame_info<<"RLS operation between "<<v->name<<" and "<<targetV->name<<endl;
 #endif 
 				v->resolvedLS.insert(targetV);
 				targetV->resolvedLSFrom.insert(v);
@@ -2779,11 +2751,11 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 			}
 		}
 	}
-	else if (origTStr.find("Struct") != std::string::npos) { //TOCONTINUE: 01/30/16
+	else if (origTStr.find("Struct") != string::npos) { //TOCONTINUE: 01/30/16
 		//At this point, we don't care if the pointer is written to or not,
 		//we'll worry about that later
 #ifdef DEBUG_RP
-		blame_info<<"Inserting pointer(3) "<<v->name<<std::endl;
+		blame_info<<"Inserting pointer(3) "<<v->name<<endl;
 #endif 
 		//pointers.insert(v);
 		tempPointers.insert(v);
@@ -2798,7 +2770,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
             //here,targetV is the coming node for v, not v itself
 			NodeProps * targetV = get(get(vertex_props,G), source(*e_beg,G));
 #ifdef DEBUG_RP
-        blame_info<<"For the struct pointer: "<<v->name<<", targetV of this in_edge is "<<targetV->name<<std::endl;
+        blame_info<<"For the struct pointer: "<<v->name<<", targetV of this in_edge is "<<targetV->name<<endl;
 #endif
 
 			if (opCode == GEP_BASE_OP) {
@@ -2823,12 +2795,12 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 					if (opCodeForField == Instruction::Store) { //field is written
 						targetV->isWritten = true;
 #ifdef DEBUG_RP
-						blame_info<<"Vertex "<<targetV->name<<" is written(2)"<<std::endl;
+						blame_info<<"Vertex "<<targetV->name<<" is written(2)"<<endl;
 #endif 
 					}
 				}
 #ifdef DEBUG_RP
-				blame_info<<"Transferring sBFC from(sf->ps) "<<targetV->name<<" to "<<v->name<<std::endl;
+				blame_info<<"Transferring sBFC from(sf->ps) "<<targetV->name<<" to "<<v->name<<endl;
 #endif 
 				if (targetV->sField != NULL) {
 					v->sBFC = targetV->sField->parentStruct;
@@ -2862,7 +2834,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
                     int opCode2 = get(get(edge_iore, G), *e_beg2);
                     NodeProps *targetV2 = get(get(vertex_props,G),source(*e_beg2,G));
 #ifdef DEBUG_RP
-                    blame_info<<"For "<<targetV->name<<", targetV2 of this in_edge is "<<targetV2->name<<std::endl;
+                    blame_info<<"For "<<targetV->name<<", targetV2 of this in_edge is "<<targetV2->name<<endl;
 #endif
                     if (opCode2 == Instruction::Load) {
                         boost::graph_traits<MyGraphType>::in_edge_iterator e_beg3, 
@@ -2874,7 +2846,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
                             int opCode3 = get(get(edge_iore, G), *e_beg3);
                             NodeProps *targetV3 = get(get(vertex_props, G), source(*e_beg3, G));
 #ifdef DEBUG_RP
-                            blame_info<<"For "<<targetV2->name<<", targetV3 of this in_edge is "<<targetV3->name<<std::endl;
+                            blame_info<<"For "<<targetV2->name<<", targetV3 of this in_edge is "<<targetV3->name<<endl;
 
 #endif
  			                if (opCode3 == GEP_BASE_OP) {
@@ -2899,12 +2871,12 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 					                if (opCodeForField == Instruction::Store) {
 						                targetV3->isWritten = true;
 #ifdef DEBUG_RP
-						                blame_info<<"Vertex "<<targetV3->name<<" is written(2)"<<std::endl;
+						                blame_info<<"Vertex "<<targetV3->name<<" is written(2)"<<endl;
 #endif 
 					                }
 				                }
 #ifdef DEBUG_RP
-				                blame_info<<"Transferring sBFC from(sf->ps) "<<targetV3->name<<" to "<<v->name<<std::endl;
+				                blame_info<<"Transferring sBFC from(sf->ps) "<<targetV3->name<<" to "<<v->name<<endl;
 #endif 
 
 				                if (targetV3->sField != NULL) {
@@ -2936,14 +2908,14 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 #endif
 		}// for each in_edge of v
 	}// origTstr.find("Struct")
-	else if (origTStr.find("Array") != std::string::npos) {
+	else if (origTStr.find("Array") != string::npos) {
 		resolveArrays(v, v, tempPointers);
 	}
     //added by Hui :currently doesn't give much help, so delete it, TO CHECK later
     /*
     else if(origPointerLevel ==1) { //we take care of the basic 1-level ptr
 #ifdef DEBUG_RP
-		blame_info<<"Inserting pointer(new) "<<v->name<<std::endl;
+		blame_info<<"Inserting pointer(new) "<<v->name<<endl;
 #endif 
 		//pointers.insert(v);
 		tempPointers.insert(v);
@@ -2953,7 +2925,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 		e_beg = boost::in_edges(v->number, G).first;	// edge iterator begin
 		e_end = boost::in_edges(v->number, G).second;   // edge iterator end
 		
-		std::set<int> visited; // don't know if the way we're traversing the graph,
+		set<int> visited; // don't know if the way we're traversing the graph,
 		// a loop is even possible, but just in case
 		visited.insert(v->number);
 		
@@ -2961,17 +2933,17 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 		for(; e_beg != e_end; ++e_beg) {
 			int opCode = get(get(edge_iore, G),*e_beg);
 #ifdef DEBUG_RP
-		    blame_info<<"in_edge opCode = "<<opCode<<std::endl;
+		    blame_info<<"in_edge opCode = "<<opCode<<endl;
 #endif 
 			NodeProps *targetV = get(get(vertex_props,G), source(*e_beg,G));
 			if (opCode == Instruction::Store) {	
 #ifdef DEBUG_RP
-				blame_info<<"STORE operation(new) between "<<v->name<<" and "<<targetV->name<<std::endl;
+				blame_info<<"STORE operation(new) between "<<v->name<<" and "<<targetV->name<<endl;
 #endif 
 			}
 			else if (opCode == GEP_BASE_OP){
 #ifdef DEBUG_RP
-				blame_info<<"GEPB operation(new) between "<<v->name<<" and "<<targetV->name<<std::endl;
+				blame_info<<"GEPB operation(new) between "<<v->name<<" and "<<targetV->name<<endl;
 #endif          //here, targetV is the field ptr,e.g. a = GEP b, 0, 1 then a=targetV
 				boost::graph_traits<MyGraphType>::out_edge_iterator o_beg, o_end;
 				o_beg = boost::out_edges(targetV->number, G).first;//edge iter begin
@@ -2988,19 +2960,19 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 				if (circumVent) {
 					v->GEPs.insert(targetV); //a = GEP b, then b.GEPs.insert(a)
 #ifdef DEBUG_RP
-					blame_info<<"Adding GEP(new) "<<targetV->name<<" to load "<<v->name<<std::endl;
+					blame_info<<"Adding GEP(new) "<<targetV->name<<" to load "<<v->name<<endl;
 #endif 
 					//resolvePointersHelper2(v, origPointerLevel, targetV, visited, tempPointers, NULL);
 				}	
 				else {
 #ifdef DEBUG_ERROR
-					std::cerr<<"Was this supposed to happen(new)?!"<<std::endl;
+					cerr<<"Was this supposed to happen(new)?!"<<endl;
 #endif 
 				}
 			}
 			else if (opCode == Instruction::Load ) {
 #ifdef DEBUG_RP
-				blame_info<<"LOAD operation(new) between "<<v->name<<" and "<<targetV->name<<std::endl;
+				blame_info<<"LOAD operation(new) between "<<v->name<<" and "<<targetV->name<<endl;
 #endif
 				boost::graph_traits<MyGraphType>::out_edge_iterator o_beg, o_end;
 				o_beg = boost::out_edges(targetV->number, G).first;//edge iter begin
@@ -3023,11 +2995,11 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 				}
 				else {
 #ifdef DEBUG_RP
-					blame_info<<"Load not put in(new) because there was a R_L_S from targetV "<<targetV->name<<std::endl;
+					blame_info<<"Load not put in(new) because there was a R_L_S from targetV "<<targetV->name<<endl;
 #endif 
 					if (lsTarget) {
 #ifdef DEBUG_RP
-						blame_info<<"R_L_S op(new) between "<<lsTarget->name<<" and "<<targetV->name<<std::endl;
+						blame_info<<"R_L_S op(new) between "<<lsTarget->name<<" and "<<targetV->name<<endl;
 #endif 
 						lsTarget->resolvedLS.insert(targetV);
 						targetV->resolvedLSFrom.insert(lsTarget);
@@ -3037,7 +3009,7 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 			}
 			else if (opCode == RESOLVED_L_S_OP) {
 #ifdef DEBUG_RP
-				blame_info<<"RLS operation(new) between "<<v->name<<" and "<<targetV->name<<std::endl;
+				blame_info<<"RLS operation(new) between "<<v->name<<" and "<<targetV->name<<endl;
 #endif 
 				v->resolvedLS.insert(targetV);
 				targetV->resolvedLSFrom.insert(v);
@@ -3048,75 +3020,75 @@ void FunctionBFC::resolvePointersForNode2(NodeProps *v, std::set<NodeProps *> &t
 	
 #ifdef DEBUG_RP_SUMMARY
 	
-	blame_info<<std::endl;
-	blame_info<<"For PTR "<<v->name<<std::endl;
-	blame_info<<"Is Pointer "<<v->isPtr<<std::endl; //TC: Should it be set to 1?
-	blame_info<<"Is Written "<<v->isWritten<<std::endl;
-	std::set<NodeProps *>::iterator vec_vp_i;
-	std::set<NodeProps *>::iterator set_vp_i;
+	blame_info<<endl;
+	blame_info<<"For PTR "<<v->name<<endl;
+	blame_info<<"Is Pointer "<<v->isPtr<<endl; //TC: Should it be set to 1?
+	blame_info<<"Is Written "<<v->isWritten<<endl;
+	set<NodeProps *>::iterator vec_vp_i;
+	set<NodeProps *>::iterator set_vp_i;
 	
 	
 	blame_info<<"Aliases in ";
 	for (vec_vp_i = v->aliasesIn.begin(); vec_vp_i != v->aliasesIn.end(); vec_vp_i++) {
 		blame_info<<(*vec_vp_i)->name<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 	
 	blame_info<<"Aliases out ";
 	for (vec_vp_i = v->aliasesOut.begin(); vec_vp_i != v->aliasesOut.end(); vec_vp_i++) {
 		blame_info<<(*vec_vp_i)->name<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 	
 	blame_info<<"Fields ";
 	for (vec_vp_i = v->fields.begin(); vec_vp_i != v->fields.end(); vec_vp_i++) {
 		blame_info<<(*vec_vp_i)->name<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 	
 	blame_info<<"GEPs ";
 	for (vec_vp_i = v->GEPs.begin(); vec_vp_i != v->GEPs.end(); vec_vp_i++){
 		blame_info<<(*vec_vp_i)->name<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 	
 	blame_info<<"Non-Alias-Stores ";
 	for (vec_vp_i = v->nonAliasStores.begin(); vec_vp_i != v->nonAliasStores.end(); vec_vp_i++) {
 		blame_info<<(*vec_vp_i)->name<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 	
 	blame_info<<"Loads ";
 	for (vec_vp_i = v->loads.begin(); vec_vp_i != v->loads.end(); vec_vp_i++) {
 		blame_info<<(*vec_vp_i)->name<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 	
 	blame_info<<"Almost Aliases ";
 	for (vec_vp_i = v->almostAlias.begin(); vec_vp_i != v->almostAlias.end(); vec_vp_i++) {
 		blame_info<<(*vec_vp_i)->name<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 	
 	blame_info<<"Resolved LS ";
 	for (vec_vp_i = v->resolvedLS.begin(); vec_vp_i != v->resolvedLS.end(); vec_vp_i++) {
 		blame_info<<(*vec_vp_i)->name<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 	
 	blame_info<<"StoresTo ";
 	for (set_vp_i = v->storesTo.begin(); set_vp_i != v->storesTo.end(); set_vp_i++){
 		blame_info<<(*set_vp_i)->name<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 	
-	blame_info<<"StoreLines"<<std::endl;
-	std::set<int>::iterator set_i_i;
+	blame_info<<"StoreLines"<<endl;
+	set<int>::iterator set_i_i;
 	for (set_i_i = v->storeLines.begin(); set_i_i != v->storeLines.end(); set_i_i++)
 	{
 		blame_info<<*set_i_i<<" ";
 	}
-	blame_info<<std::endl;
+	blame_info<<endl;
 	
 #endif 
 	
@@ -3129,7 +3101,7 @@ void FunctionBFC::resolvePointers2()
 	
     graph_traits<MyGraphType>::vertex_iterator i, v_end;
 	
-	std::set<NodeProps *> tempPointers;
+	set<NodeProps *> tempPointers;
 	
     for(tie(i,v_end) = vertices(G); i != v_end; ++i) {
 		
@@ -3137,7 +3109,7 @@ void FunctionBFC::resolvePointers2()
 		//int v_index = get(get(vertex_index, G),*i);
 		if (!v) {
 #ifdef DEBUG_ERROR
-			std::cerr<<"Null V in resolvePointers2\n";
+			cerr<<"Null V in resolvePointers2\n";
 #endif 
 			continue;
 		}
@@ -3162,8 +3134,7 @@ void FunctionBFC::resolvePointers2()
         //----------------------------------------------------------------//
 #endif
 		// First we want to resolve the local variables and function parameters
-		if (v->isLocalVar || v->isFormalArg || v->isGlobal || 
-            v->name.find(PARAM_REC) != std::string::npos || v->name.find(PARAM_REC2) != std::string::npos) {
+		if (v->isLocalVar || v->isFormalArg || v->isGlobal) {
 			resolvePointersForNode2(v, tempPointers);
 		}
 
@@ -3188,7 +3159,7 @@ void FunctionBFC::resolvePointers2()
         }*/ 
 	}//end of for loop
 	
-	std::set<NodeProps *>::iterator set_vp_i;	
+	set<NodeProps *>::iterator set_vp_i;	
 	
 	for(set_vp_i = tempPointers.begin(); set_vp_i != tempPointers.end(); set_vp_i++)
 		pointers.insert(*set_vp_i);
@@ -3197,7 +3168,7 @@ void FunctionBFC::resolvePointers2()
 	blame_info<<"At this point the pointers are: ";
 	for (set_vp_i = pointers.begin(); set_vp_i != pointers.end(); set_vp_i++)
 		blame_info<<(*set_vp_i)->name<<" ";
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif 
 	
 	bool keepGoing = true;
@@ -3206,7 +3177,7 @@ void FunctionBFC::resolvePointers2()
 		for (set_vp_i = pointers.begin(); set_vp_i != pointers.end(); set_vp_i++) {
 			NodeProps *v = (*set_vp_i);
 			resolvePointersForNode2(v, tempPointers);
-			std::set<NodeProps *>::iterator vec_vp_i;
+			set<NodeProps *>::iterator vec_vp_i;
 			for (vec_vp_i = v->fields.begin(); vec_vp_i != v->fields.end(); vec_vp_i++) {
 				resolvePointersForNode2((*vec_vp_i), tempPointers);
 			}
@@ -3226,20 +3197,19 @@ void FunctionBFC::resolvePointers2()
 	blame_info<<"At this point(2) the pointers are: ";
 	for (set_vp_i = pointers.begin(); set_vp_i != pointers.end(); set_vp_i++)
 		blame_info<<(*set_vp_i)->name<<" ";
-	blame_info<<std::endl;
+	blame_info<<endl;
 #endif 
 	
 	// Now assign the EXIT_VAR, EXIT_VAR_ALIAS, EXIT_VAR_PTR distinctions
 	for (set_vp_i = pointers.begin(); set_vp_i != pointers.end(); set_vp_i++) {
 		NodeProps *vp = (*set_vp_i);
-		if (((vp->name.find(PARAM_REC)!=std::string::npos || vp->name.find(PARAM_REC2)!=std::string::npos || vp->isFormalArg==true) 
-                && vp->isLocalVar == false) || vp->isGlobal || vp->name.find("retval") != std::string::npos) {
+		if ((vp->isFormalArg && !vp->isLocalVar) || vp->isGlobal || vp->name.find("retval") != string::npos) {
 			// First we need to make sure that it is actually written in at least
 			//   one of the aliases
-			std::set<int> visited;
+			set<int> visited;
 			if (vp->isWritten || checkIfWritten2(vp, visited)) {
 #ifdef DEBUG_RP
-				blame_info<<"For "<<vp->name<<" one of the aliases was written to!"<<std::endl;
+				blame_info<<"For "<<vp->name<<" one of the aliases was written to!"<<endl;
 #endif 
 				vp->isWritten = true;
 				vp->nStatus[EXIT_VAR] = true;
@@ -3251,7 +3221,7 @@ void FunctionBFC::resolvePointers2()
 			}
 			else {
 #ifdef DEBUG_RP
-				blame_info<<"For "<<vp->name<<" one of the aliases was NOT written to!"<<std::endl;
+				blame_info<<"For "<<vp->name<<" one of the aliases was NOT written to!"<<endl;
 #endif
 			}
 		}	
@@ -3262,11 +3232,11 @@ void FunctionBFC::resolvePointers2()
 		if (vp->isLocalVar == true) {
 			// First we need to make sure that it is actually written in at least
 			//   one of the aliases
-			std::set<int> visited;
+			set<int> visited;
 			
 			if (vp->isWritten || checkIfWritten2(vp, visited)) {
 #ifdef DEBUG_RP
-				blame_info<<"For "<<vp->name<<" one of the aliases was written to!"<<std::endl;
+				blame_info<<"For "<<vp->name<<" one of the aliases was written to!"<<endl;
 #endif 
 				vp->isWritten = true;
 				vp->nStatus[LOCAL_VAR] = true;
@@ -3281,7 +3251,7 @@ void FunctionBFC::resolvePointers2()
 			else {
 				
 #ifdef DEBUG_RP
-				blame_info<<"For "<<vp->name<<" not written to (that we know) but still going to resolve aliases"<<std::endl;
+				blame_info<<"For "<<vp->name<<" not written to (that we know) but still going to resolve aliases"<<endl;
 #endif 			 
 				vp->nStatus[LOCAL_VAR] = true;
 				
@@ -3292,7 +3262,7 @@ void FunctionBFC::resolvePointers2()
 				
 				
 #ifdef DEBUG_RP
-				blame_info<<"For "<<vp->name<<" one of the aliases was NOT written to!"<<std::endl;
+				blame_info<<"For "<<vp->name<<" one of the aliases was NOT written to!"<<endl;
 #endif 
 				
 			}
@@ -3307,7 +3277,7 @@ void FunctionBFC::resolvePointers2()
 		//int v_index = get(get(vertex_index, G),*i);
 		if (!v) {
 #ifdef DEBUG_ERROR
-			std::cerr<<"Null V in resolvePointers2\n";
+			cerr<<"Null V in resolvePointers2\n";
 #endif 
 			continue;
 		}
@@ -3320,6 +3290,9 @@ void FunctionBFC::resolvePointers2()
 
 void FunctionBFC::againCheckIfWrittenForAllNodes()
 {
+#ifdef DEBUG_AGAINCEHCK
+    blame_info<<"In againCheckIfWrittenForAllNodes"<<endl;
+#endif
     
 	graph_traits < MyGraphType >::edge_descriptor ed;
     property_map<MyGraphType, edge_iore_t>::type edge_type = get(edge_iore, G);
@@ -3352,27 +3325,17 @@ void FunctionBFC::againCheckIfWrittenForAllNodes()
             origT = v->llvm_inst->getType();
             origPointerLevel = pointerLevel(origT, 0);
         }
-        // first make sure pid is written if the corresponding obj is written
-        if (v->isPid) {
-          if (v->myObj) {
-            if (v->myObj->isWritten) //Normally it's alreay written since it's a var
-              v->isWritten = true;
-          }
-        }
         
         if(origPointerLevel >=1){
-            std::set<int> visited;
-            short writtenTo = checkIfWritten2(v, visited);
-#ifdef DEBUG_AGAINCHECK
-            blame_info<<v->name<<"'s writtenTo = "<<writtenTo<<endl;
-#endif
+            set<int> visited;
+            bool writtenTo = checkIfWritten2(v, visited);
         }
     }
 }
 
-void FunctionBFC::resolveLocalDFA(NodeProps * v, std::set<NodeProps *> & pointers)
+void FunctionBFC::resolveLocalDFA(NodeProps * v, set<NodeProps *> & pointers)
 {
-	std::set<NodeProps *>::iterator set_vp_i;
+	set<NodeProps *>::iterator set_vp_i;
 	
 	for (set_vp_i = v->storesTo.begin(); set_vp_i != v->storesTo.end(); set_vp_i++)
 	{
@@ -3387,13 +3350,13 @@ void FunctionBFC::resolveLocalDFA(NodeProps * v, std::set<NodeProps *> & pointer
 			vp->nStatus[LOCAL_VAR_A_ALIAS] = true;
 			
 			#ifdef DEBUG_RP
-			blame_info<<"Inserting dfAlias(3) "<<vp->name<<" into set for "<<v->name<<std::endl;
+			blame_info<<"Inserting dfAlias(3) "<<vp->name<<" into set for "<<v->name<<endl;
 			#endif 
 			
 			v->dfAliases.insert(vp);
 			vp->dfaUpPtr = v;
 #ifdef DEBUG_RP
-			blame_info<<"Vertex "<<v->name<<" is written(3)"<<std::endl;
+			blame_info<<"Vertex "<<v->name<<" is written(3)"<<endl;
 #endif 
 			v->isWritten = true; //changed from vp to v, by Hui 04/11/16: we can't say vp->isWritten=true from here
 		}
@@ -3402,7 +3365,7 @@ void FunctionBFC::resolveLocalDFA(NodeProps * v, std::set<NodeProps *> & pointer
 
 void FunctionBFC::collapseAutoCopyPairs()
 {
-	std::vector<CollapsePair *>::iterator vec_cp_i;
+	vector<CollapsePair *>::iterator vec_cp_i;
 	
 	for (vec_cp_i = autoCopyCollapsePairs.begin(); vec_cp_i != autoCopyCollapsePairs.end(); vec_cp_i++)
 	{
@@ -3416,14 +3379,14 @@ void FunctionBFC::collapseAutoCopyPairs()
 
 void FunctionBFC::collapseRedundantFields()
 {
-	std::vector<CollapsePair *>::iterator vec_cp_i;
+	vector<CollapsePair *>::iterator vec_cp_i;
 	
 	for (vec_cp_i = collapsePairs.begin(); vec_cp_i != collapsePairs.end(); vec_cp_i++)
 	{
 		CollapsePair * cp = *vec_cp_i;
 #ifdef DEBUG_GRAPH_COLLAPSE
 		blame_info<<"Transferring CRF edges from field "<<cp->collapseVertex->name<<" to "<<cp->destVertex->name;
-		blame_info<<" for "<<cp->nameFieldCombo<<std::endl;
+		blame_info<<" for "<<cp->nameFieldCombo<<endl;
 #endif 
 		transferEdgesAndDeleteNode(cp->collapseVertex, cp->destVertex, false, true);
 	}
@@ -3433,22 +3396,22 @@ void FunctionBFC::collapseRedundantFields()
 void FunctionBFC::resolveDataReads()
 {
 #ifdef DEBUG_CFG
-	blame_info<<"Before assignBBGenKIll"<<std::endl;
+	blame_info<<"Before assignBBGenKIll"<<endl;
 #endif 
 	cfg->assignPTRBBGenKill();
 	
 #ifdef DEBUG_CFG
-	blame_info<<"Before reachingDefs"<<std::endl;
+	blame_info<<"Before reachingDefs"<<endl;
 #endif 
 	cfg->reachingPTRDefs();
 	
 #ifdef DEBUG_CFG
-	blame_info<<"Before calcStoreLines"<<std::endl;
+	blame_info<<"Before calcStoreLines"<<endl;
 #endif 
 	cfg->calcPTRStoreLines();
 	
 #ifdef DEBUG_CFG
-	blame_info<<"Before printCFG"<<std::endl;
+	blame_info<<"Before printCFG"<<endl;
 	printCFG();
 #endif 
 	
@@ -3463,11 +3426,11 @@ void FunctionBFC::resolveTransitiveAliases()
 		NodeProps *v = get(get(vertex_props, G),*i);
 		if (!v) {
 #ifdef DEBUG_ERROR			
-			std::cerr<<"Null V in resolveTransitiveAlias\n";
+			cerr<<"Null V in resolveTransitiveAlias\n";
 #endif 
 			continue;
 		}
-		std::set<NodeProps *>::iterator set_vp_i, set_vp_i2;
+		set<NodeProps *>::iterator set_vp_i, set_vp_i2;
 		for (set_vp_i = v->aliases.begin(); set_vp_i!=v->aliases.end(); set_vp_i++){
 			NodeProps *al1 = *set_vp_i;
 			for (set_vp_i2 = set_vp_i; set_vp_i2 != v->aliases.end(); set_vp_i2++) {
@@ -3477,13 +3440,13 @@ void FunctionBFC::resolveTransitiveAliases()
 				
 				if (al1 != v) {
 				#ifdef DEBUG_RP
-					blame_info<<"Transitive alias between "<<al1->name<<" and "<<al2->name<<std::endl;
+					blame_info<<"Transitive alias between "<<al1->name<<" and "<<al2->name<<endl;
 				#endif 
 					al1->aliases.insert(al2);
 				}
 				if (al2 != v) {
 				#ifdef DEBUG_RP
-					blame_info<<"Transitive alias(2) between "<<al2->name<<" and "<<al1->name<<std::endl;
+					blame_info<<"Transitive alias(2) between "<<al2->name<<" and "<<al1->name<<endl;
 					#endif 
 					al2->aliases.insert(al1);
 				}
@@ -3501,7 +3464,7 @@ void FunctionBFC::resolveFieldAliases()
 		NodeProps * v= get(get(vertex_props, G),*i);
 		if (!v){
 #ifdef DEBUG_ERROR			
-			std::cerr<<"Null V in resolveFieldAliases\n";
+			cerr<<"Null V in resolveFieldAliases\n";
 #endif 
 			continue;
 		}
@@ -3509,14 +3472,14 @@ void FunctionBFC::resolveFieldAliases()
 		if (v->nStatus[EXIT_VAR_FIELD_ALIAS]) {
 			if (v->fieldUpPtr != NULL){
 			#ifdef DEBUG_RP
-				blame_info<<"IMPORTANT EVFA "<<v->name<<" alread has fUpPtr "<<v->fieldUpPtr->name<<std::endl;
+				blame_info<<"IMPORTANT EVFA "<<v->name<<" alread has fUpPtr "<<v->fieldUpPtr->name<<endl;
 			#endif 
 				return;
 			}
 
             blame_info<<"In resolveFieldAliases for EVFA: "<<v->name<<endl;
 			
-			std::set<NodeProps *>::iterator set_vp_i, set_vp_i2;
+			set<NodeProps *>::iterator set_vp_i, set_vp_i2;
 		
 			for (set_vp_i = v->aliases.begin(); set_vp_i != v->aliases.end(); set_vp_i++) {
 				NodeProps *al = *set_vp_i;
@@ -3534,7 +3497,7 @@ void FunctionBFC::resolveFieldAliases()
                     al->fieldUpPtr->fields.insert(v);
 					v->nStatus[EXIT_VAR_FIELD] = true;
 					#ifdef DEBUG_RP
-					blame_info<<"Making EVFA variable an EVF for "<<v->name<<" to "<<v->fieldUpPtr->name<<std::endl;
+					blame_info<<"Making EVFA variable an EVF for "<<v->name<<" to "<<v->fieldUpPtr->name<<endl;
 					#endif 
 				}	
 			}
@@ -3542,14 +3505,14 @@ void FunctionBFC::resolveFieldAliases()
 	    else if (v->nStatus[LOCAL_VAR_FIELD_ALIAS]) {
 			if (v->fieldUpPtr != NULL) {
 			#ifdef DEBUG_RP
-				blame_info<<"IMPORTANT LVFA "<<v->name<<" alread has fUpPtr "<<v->fieldUpPtr->name<<std::endl;
+				blame_info<<"IMPORTANT LVFA "<<v->name<<" alread has fUpPtr "<<v->fieldUpPtr->name<<endl;
 			#endif 
 				return;
 			}
 			
             blame_info<<"In resolveFieldAliases for LVFA: "<<v->name<<endl;
 			
-            std::set<NodeProps *>::iterator set_vp_i, set_vp_i2;
+            set<NodeProps *>::iterator set_vp_i, set_vp_i2;
 		    for (set_vp_i = v->aliases.begin(); set_vp_i != v->aliases.end(); set_vp_i++) {
 				NodeProps *al = *set_vp_i;
 	// we might be our own alias ... probably should make it so that never happens
@@ -3565,7 +3528,7 @@ void FunctionBFC::resolveFieldAliases()
                     al->fieldUpPtr->fields.insert(v);
 					v->nStatus[LOCAL_VAR_FIELD] = true;
 					#ifdef DEBUG_RP
-					blame_info<<"Making LVFA variable an LVF for "<<v->name<<" to "<<v->fieldUpPtr->name<<std::endl;
+					blame_info<<"Making LVFA variable an LVF for "<<v->name<<" to "<<v->fieldUpPtr->name<<endl;
 					#endif 
 				}	
 			}
@@ -3592,42 +3555,42 @@ void FunctionBFC::genGraphTrunc(ExternFuncBFCHash &efInfo)
 	 -> second is NodeProps * for node
 	 */
     for (begin = variables.begin(), end = variables.end(); begin != end; begin++) {
-	  std::string name(begin->first);
+	  string name(begin->first);
 	  NodeProps *v = begin->second;
       if (v) {
 #ifdef DEBUG_GRAPH_BUILD
-		blame_info<<"Putting node "<<v->number<<"("<<name<<") into graph"<<std::endl;
+		blame_info<<"Putting node "<<v->number<<"("<<name<<") into graph"<<endl;
 #endif 
 		put(props, v->number, v);
       }
       else
 #ifdef DEBUG_GRAPH_BUILD
-		blame_info<<"Weird: not putting node since NodeProps is empty "<<name<<std::endl;
+		blame_info<<"Weird: not putting node since NodeProps is empty "<<name<<endl;
 #endif 
 	}
   //every block has a iSet, is a set of implicit blame nodes:Condition Names
-    std::set<const char*, ltstr> iSet;	
+    set<const char*, ltstr> iSet;	
   
     //int varCount = 0, currentLineNum = 0;
   
     int currentLineNum = 0;
 #ifdef DEBUG_GRAPH_BUILD
-	blame_info<<"Starting to Gen Edges "<<std::endl;
+	blame_info<<"Starting to Gen Edges "<<endl;
 #endif 
     // We iterate through all the instructions again to create the edges (explicit and implicit)
     // generated between the registers	
 	// Some times there are duplicate calls on lines, we want to make sure we don't reuse one
-	std::set<NodeProps *> seenCall;
+	set<NodeProps *> seenCall;
     for (Function::iterator b = func->begin(), be = func->end(); b != be; ++b) {
         iSet = iReg[b->getName().str()];
         for (BasicBlock::iterator i = b->begin(), ie = b->end(); i != ie; ++i) {
-            //std::cout<<"CurrentLineNum is "<<currentLineNum<<std::endl;
+            //cout<<"CurrentLineNum is "<<currentLineNum<<endl;
             genEdges(i, iSet, props, edge_type, currentLineNum, seenCall);
         }
     }
 	
 #ifdef DEBUG_GRAPH_BUILD
-	blame_info<<"Finished generating edges "<<std::endl;
+	blame_info<<"Finished generating edges "<<endl;
 #endif 
   
 	// TODO: Make this a verbose or runtime decision
@@ -3667,7 +3630,7 @@ void FunctionBFC::genGraphTrunc(ExternFuncBFCHash &efInfo)
 	// that affects it and factor that into things 
 	//resolveDataReads();
 #ifdef DEBUG_GRAPH_BUILD
-	blame_info<<"Calling DBHL "<<std::endl; 
+	blame_info<<"Calling DBHL "<<endl; 
 #endif 
 	determineBFCHoldersTrunc();
 	
@@ -3692,36 +3655,36 @@ void FunctionBFC::genGraph(ExternFuncBFCHash &efInfo)
 	 -> second is NodeProps * for node
 	 */
     for (begin = variables.begin(), end = variables.end(); begin != end; begin++) {
-		std::string name(begin->first);
+		string name(begin->first);
 		NodeProps *v = begin->second;
 #ifdef DEBUG_GRAPH_BUILD
-		blame_info<<"Putting node "<<v->number<<" ("<<v->name<<") into graph"<<std::endl;
+		blame_info<<"Putting node "<<v->number<<" ("<<v->name<<") into graph"<<endl;
 #endif 
 		put(props, v->number, v);
 	}
   //every block has a iSet, is a set of implicit blame nodes:Condition Names
-    std::set<const char*, ltstr> iSet;	
+    set<const char*, ltstr> iSet;	
   
     //int varCount = 0, currentLineNum = 0;
   
     int currentLineNum = 0;
 #ifdef DEBUG_GRAPH_BUILD
-	blame_info<<"Starting to Gen Edges "<<std::endl;
+	blame_info<<"Starting to Gen Edges "<<endl;
 #endif 
     // We iterate through all the instructions again to create the edges (explicit and implicit)
     // generated between the registers	
 	// Some times there are duplicate calls on lines, we want to make sure we don't reuse one
-	std::set<NodeProps *> seenCall;
+	set<NodeProps *> seenCall;
     for (Function::iterator b = func->begin(), be = func->end(); b != be; ++b) {
         iSet = iReg[b->getName().str()];
         for (BasicBlock::iterator i = b->begin(), ie = b->end(); i != ie; ++i) {
-            //std::cout<<"CurrentLineNum is "<<currentLineNum<<std::endl;
+            //cout<<"CurrentLineNum is "<<currentLineNum<<endl;
             genEdges(i, iSet, props, edge_type, currentLineNum, seenCall);
         }
     }
 	
 #ifdef DEBUG_GRAPH_BUILD
-	blame_info<<"Finished generating edges "<<std::endl;
+	blame_info<<"Finished generating edges "<<endl;
 #endif 
   
 	// TODO: Make this a verbose or runtime decision
@@ -3740,6 +3703,7 @@ void FunctionBFC::genGraph(ExternFuncBFCHash &efInfo)
 	
     // Has to be called before resolveStores,for pid, NOT used for extern funcs! 03/06/17
     resolvePidAliases();
+    resolvePPA(); //keep potential pidAliases for EVs
 	//Make the edges incoming to nodes that have stores based on
 	//the control flow
 	resolveStores();	
@@ -3766,17 +3730,17 @@ void FunctionBFC::genGraph(ExternFuncBFCHash &efInfo)
 	// that affects it and factor that into things 
 	//resolveDataReads();
 #ifdef DEBUG_GRAPH_BUILD
-	blame_info<<"Calling DBHL "<<std::endl; 
+	blame_info<<"Calling DBHL "<<endl; 
 #endif
     // Add EVs for args that are pid value
-    recheckExitVars();
+    //recheckExitVars(); //For Chapel1.15, Pid arg isn't integer, so it has been added into EVs already
 
 	determineBFCHoldersLite();
 	
 	resolveCallsDomLines(); 
 	
 #ifdef DEBUG_GRAPH_BUILD
-	blame_info<<"Finished DBHL , now going to print _trunc.dot file "<<std::endl;
+	blame_info<<"Finished DBHL , now going to print _trunc.dot file "<<endl;
 #endif
 	printTruncDotFiles("_trunc.dot", true);
 }
@@ -3802,21 +3766,21 @@ void FunctionBFC::resolveStores()
 		
 		if (!v) {
 #ifdef DEBUG_ERROR			
-			std::cerr<<"Null V in resolveStores\n";
+			cerr<<"Null V in resolveStores\n";
 #endif 
 			continue;
 		}
 		
 #ifdef DEBUG_GRAPH_BUILD
-		blame_info<<"In resolveStores for "<<v->name<<std::endl;
+		blame_info<<"In resolveStores for "<<v->name<<endl;
 #endif 
 		boost::graph_traits<MyGraphType>::out_edge_iterator e_beg, e_end;
 		
 		e_beg = boost::out_edges(v_index, G).first;		// edge iterator begin
 		e_end = boost::out_edges(v_index, G).second;    // edge iterator end	
 		//int storeCount = 0;	
-		std::set<NodeProps *> stores;	
-		std::set<NodeProps *> storesSource;
+		set<NodeProps *> stores;	
+		set<NodeProps *> storesSource;
 		
 		// iterate through the edges to find matching opcode
 		for(; e_beg != e_end; ++e_beg) {
@@ -3826,17 +3790,15 @@ void FunctionBFC::resolveStores()
 	            NodeProps *targetV = get(get(vertex_props,G), target(*e_beg,G));
 				
 				#ifdef DEBUG_LINE_NUMS
-				blame_info<<"Inserting line number(1a) "<<targetV->line_num<<" to "<<sourceV->name<<std::endl;
+				blame_info<<"Inserting line number(1a) "<<targetV->line_num<<" to "<<sourceV->name<<endl;
 				#endif 
 				sourceV->lineNumbers.insert(targetV->line_num);
 				
 #ifdef DEBUG_GRAPH_BUILD
-				blame_info<<"Store between "<<sourceV->name<<" and "<<targetV->name<<std::endl;
-				blame_info<<"Vertex "<<sourceV->name<<" is written(4)"<<std::endl;
+				blame_info<<"Store between "<<sourceV->name<<" and "<<targetV->name<<endl;
+				blame_info<<"Vertex "<<sourceV->name<<" is written(4)"<<endl;
 #endif 
-				//We don't care about the parameter holder for now , no need to consider isFormalArg here since it has not store
-				if (sourceV->name.find(PARAM_REC) == std::string::npos && sourceV->name.find(PARAM_REC2) == std::string::npos)
-					sourceV->isWritten = true;
+				sourceV->isWritten = true;
 				                
                 blame_info<<"We have a storeFrom inserted: "<<targetV->name<<"->storeFrom="<<sourceV->name<<endl;
 
@@ -3859,16 +3821,16 @@ void FunctionBFC::resolveStores()
         //no singleStores anymore !!!
 		if (stores.size() >= 1){//store a *b, then a is in stores, b is in storesSource..
 #ifdef DEBUG_GRAPH_BUILD
-			blame_info<<"Stores for V - "<<v->name<<" number "<<stores.size()<<std::endl;
+			blame_info<<"Stores for V - "<<v->name<<" number "<<stores.size()<<endl;
 #endif 
-			std::set<NodeProps *>::iterator set_vp_i = stores.begin();
+			set<NodeProps *>::iterator set_vp_i = stores.begin();
 			for ( ; set_vp_i != stores.end(); set_vp_i++) {
 				NodeProps *storeVP = (*set_vp_i);
 				
 				if (storeVP->fbb == NULL)
 					continue;
 #ifdef DEBUG_GRAPH_BUILD
-			    blame_info<<"Insert relevantInst - "<<storeVP->name<<" in fbb "<<storeVP->fbb->getName()<<std::endl;
+			    blame_info<<"Insert relevantInst - "<<storeVP->name<<" in fbb "<<storeVP->fbb->getName()<<endl;
 #endif 
 				storeVP->fbb->relevantInstructions.push_back(storeVP);
 			}
@@ -3876,16 +3838,16 @@ void FunctionBFC::resolveStores()
 		// (in likelihood) to the variable pointer  
 		/*else if (stores.size() == 1) {
 #ifdef DEBUG_GRAPH_BUILD
-			blame_info<<"Stores for V(2) - "<<v->name<<" number "<<stores.size()<<std::endl;
+			blame_info<<"Stores for V(2) - "<<v->name<<" number "<<stores.size()<<endl;
 #endif 		
-			std::set<NodeProps *>::iterator set_vp_i = storesSource.begin();
+			set<NodeProps *>::iterator set_vp_i = storesSource.begin();
 			for ( ; set_vp_i != storesSource.end(); set_vp_i++) {
 				NodeProps *storeVP = (*set_vp_i);
 				if (storeVP->fbb == NULL)
 					continue;
 				
 				#ifdef DEBUG_GRAPH_BUILD
-				blame_info<<"Single stores pushing back "<<storeVP->name<<std::endl;
+				blame_info<<"Single stores pushing back "<<storeVP->name<<endl;
 				#endif 
 				storeVP->fbb->singleStores.push_back(storeVP);
 			}
@@ -3893,27 +3855,27 @@ void FunctionBFC::resolveStores()
 	}
 
 #ifdef DEBUG_CFG
-	blame_info<<"Before CFG sort"<<std::endl;
+	blame_info<<"Before CFG sort"<<endl;
 #endif 
 	cfg->sortCFG(); //for each BB, sort the edges
 	
 #ifdef DEBUG_CFG
-	blame_info<<"Before assignBBGenKIll"<<std::endl;
+	blame_info<<"Before assignBBGenKIll"<<endl;
 #endif 
 	cfg->assignBBGenKill();
 	
 #ifdef DEBUG_CFG
-	blame_info<<"Before reachingDefs"<<std::endl;
+	blame_info<<"Before reachingDefs"<<endl;
 #endif 
 	cfg->reachingDefs();
 	
 #ifdef DEBUG_CFG
-	blame_info<<"Before calcStoreLines"<<std::endl;
+	blame_info<<"Before calcStoreLines"<<endl;
 #endif 
 	cfg->calcStoreLines();
 	
 #ifdef DEBUG_CFG
-	blame_info<<"Before printCFG"<<std::endl;
+	blame_info<<"Before printCFG"<<endl;
 	printCFG();
 #endif 
 
@@ -3939,7 +3901,7 @@ void FunctionBFC::adjustMainGraph()
 			e_beg = boost::in_edges(vp->number, G).first;	// edge iterator begin
 			e_end = boost::in_edges(vp->number, G).second;  // edge iterator end
 			
-			std::set<int> deleteMe;
+			set<int> deleteMe;
 			// iterate through the edges to find matching opcode
 			for(; e_beg != e_end; ++e_beg) {
 				int opCode = get(get(edge_iore, G),*e_beg);
@@ -3948,15 +3910,15 @@ void FunctionBFC::adjustMainGraph()
 					NodeProps *sourceVP = get(get(vertex_props, G), source(*e_beg, G));
 					int sourceLine = sourceVP->line_num;
 #ifdef DEBUG_GRAPH_COLLAPSE
-					blame_info<<"For sourceVP(Load): "<<sourceVP->name<<" "<<sourceLine<<std::endl;
-					blame_info<<"---"<<std::endl;
+					blame_info<<"For sourceVP(Load): "<<sourceVP->name<<" "<<sourceLine<<endl;
+					blame_info<<"---"<<endl;
 #endif 
-					std::set<NodeProps *>::iterator set_vp_i;
+					set<NodeProps *>::iterator set_vp_i;
 					for (set_vp_i = vp->storesTo.begin(); set_vp_i != vp->storesTo.end(); set_vp_i++) {
 						NodeProps *storeVP = (*set_vp_i);
 #ifdef DEBUG_GRAPH_COLLAPSE
 						blame_info<<"storeVP: "<<storeVP->name<<" - Store Lines - ";
-                        std::set<int>::iterator set_i_i;
+                        set<int>::iterator set_i_i;
 	                    for (set_i_i = storeVP->storeLines.begin(); set_i_i != storeVP->storeLines.end(); set_i_i++)
 		                    blame_info<<*set_i_i<<" ";
 	
@@ -3964,7 +3926,7 @@ void FunctionBFC::adjustMainGraph()
 	                    for (set_i_i = storeVP->borderLines.begin(); set_i_i != storeVP->borderLines.end(); set_i_i++)
 		                    blame_info<<*set_i_i<<" ";
 
-						blame_info<<std::endl;
+						blame_info<<endl;
 #endif 
 						if ((storeVP->storeLines.count(sourceLine) >0 && resolveStoreLine(storeVP, sourceVP)) ||
 							(storeVP->borderLines.count(sourceLine) >0 && 
@@ -3987,10 +3949,10 @@ void FunctionBFC::adjustMainGraph()
 								//if (newPtrLevel == 0) 
                                 //example:store C, b; a = load b;
                                 //changed by Hui 03/24/16:we shouldn't remove a->b if C is a constant, since it could be just an initialization of b
-                                if (newPtrLevel ==0 && storeVP->name.find("Constant+")==std::string::npos) {
+                                if (newPtrLevel ==0 && storeVP->name.find("Constant+")==string::npos) {
 									deleteMe.insert(sourceVP->number);
 #ifdef DEBUG_GRAPH_COLLAPSE
-            			            blame_info<<"Need to remove edge(hui) from "<<sourceVP->name<<" to "<<vp->name<<" [8]"<<std::endl;
+            			            blame_info<<"Need to remove edge(hui) from "<<sourceVP->name<<" to "<<vp->name<<" [8]"<<endl;
 #endif 
                                 }
                                 //Added for pids: %6=Load A; funcCall(%6, ..) when A is Pid, we should add %6 to A's loadForCalls before the edge is deleted
@@ -4016,13 +3978,13 @@ void FunctionBFC::adjustMainGraph()
 						}
 					}
 #ifdef DEBUG_GRAPH_COLLAPSE
-					blame_info<<"---"<<std::endl;
-					blame_info<<std::endl;
+					blame_info<<"---"<<endl;
+					blame_info<<endl;
 #endif 
 				}
 			}
 			
-			std::set<int>::iterator set_i_i;
+			set<int>::iterator set_i_i;
 			for (set_i_i = deleteMe.begin(); set_i_i != deleteMe.end(); set_i_i++) {
 				remove_edge((*set_i_i), vp->number, G);
 			}
@@ -4034,7 +3996,7 @@ bool FunctionBFC::resolveStoreLine(NodeProps *storeVP, NodeProps *sourceVP)
 {
 #ifdef DEBUG_GRAPH_COLLAPSE
 	blame_info<<"In resolveStoreLine storeVP:"<<storeVP->name<<" ln="<<storeVP->line_num<<" lNO="<<storeVP->lineNumOrder
-        <<"  sourceVP:"<<sourceVP->name<<" ln="<<sourceVP->line_num<<" lNO="<<sourceVP->lineNumOrder<<std::endl;
+        <<"  sourceVP:"<<sourceVP->name<<" ln="<<sourceVP->line_num<<" lNO="<<sourceVP->lineNumOrder<<endl;
 #endif 
     if(storeVP->line_num < sourceVP->line_num)
         return true;
@@ -4067,11 +4029,11 @@ bool FunctionBFC::resolveBorderLine(NodeProps *storeVP, NodeProps *sourceVP, \
                 					 NodeProps * origStoreVP, int sourceLine)
 {
 #ifdef DEBUG_GRAPH_COLLAPSE
-	blame_info<<std::endl;
-	blame_info<<"In resolveBorderLine "<<storeVP->name<<" "<<sourceVP->name<<" "<<origStoreVP->name<<std::endl;
+	blame_info<<endl;
+	blame_info<<"In resolveBorderLine "<<storeVP->name<<" "<<sourceVP->name<<" "<<origStoreVP->name<<endl;
 #endif 
     //int storeVPNum = storeVP->lineNumOrder;
-	std::vector<FuncStores *>::iterator vec_fs_i;
+	vector<FuncStores *>::iterator vec_fs_i;
 	
 	for (vec_fs_i = allStores.begin(); vec_fs_i != allStores.end(); vec_fs_i++) {
 		FuncStores *fs = *vec_fs_i;
@@ -4086,19 +4048,19 @@ bool FunctionBFC::resolveBorderLine(NodeProps *storeVP, NodeProps *sourceVP, \
 		else
 			blame_info<<"Contents NULL ";
 		
-		blame_info<<fs->line_num<<" "<<fs->lineNumOrder<<std::endl;
+		blame_info<<fs->line_num<<" "<<fs->lineNumOrder<<endl;
 #endif 
 		
 		if (fs->receiver == origStoreVP && fs->line_num == sourceLine) {		
 #ifdef DEBUG_GRAPH_COLLAPSE
-			blame_info<<"Border Line between "<<storeVP->name<<" "<<sourceVP->name<<" "<<origStoreVP->name<<std::endl;
+			blame_info<<"Border Line between "<<storeVP->name<<" "<<sourceVP->name<<" "<<origStoreVP->name<<endl;
 #endif 
             //Here, the fs is the store that kills the previous store, so
             //it should come after the load(sourceVP) so that the previous store
             //would be effect on sourceVP
 			if (fs->lineNumOrder > sourceVP->lineNumOrder) {
 #ifdef DEBUG_GRAPH_COLLAPSE
-				blame_info<<"Border Cond resolved"<<std::endl;
+				blame_info<<"Border Cond resolved"<<endl;
 #endif 
 				return true;
 			}
@@ -4106,7 +4068,7 @@ bool FunctionBFC::resolveBorderLine(NodeProps *storeVP, NodeProps *sourceVP, \
 	}
 	
 #ifdef DEBUG_GRAPH_COLLAPSE
-	blame_info<<"Border Cond NOT resolved"<<std::endl;
+	blame_info<<"Border Cond NOT resolved"<<endl;
 #endif 
 	
 	return false;
@@ -4124,13 +4086,13 @@ unsigned FunctionBFC::getPointedTypeID(const llvm::Type *t)
 
 
 
-void FunctionBFC::addImplicitEdges(Value *v, std::set<const char*, ltstr> &iSet,                        	 
+void FunctionBFC::addImplicitEdges(Value *v, set<const char*, ltstr> &iSet,                        	 
         property_map<MyGraphType, edge_iore_t>::type edge_type, const char *vName, bool useName)
 {
     bool inserted;
     graph_traits < MyGraphType >::edge_descriptor ed;
 	
-	std::string impName;
+	string impName;
 	char tempBuf[18];
 	
 	if (useName) {
@@ -4142,25 +4104,25 @@ void FunctionBFC::addImplicitEdges(Value *v, std::set<const char*, ltstr> &iSet,
 	else {
 		//sprintf(tempBuf, "0x%x", (unsigned)v);
         sprintf(tempBuf, "0x%x", v);
-		std::string tempStr(tempBuf);
+		string tempStr(tempBuf);
 		impName.insert(0, tempStr);			
 	}
 	
 	// Take Care of Implicit Edges
-	for (std::set<const char*, ltstr>::iterator s_iter = iSet.begin(); s_iter != iSet.end(); s_iter++) { 
-        std::string s_iterString(*s_iter);
+	for (set<const char*, ltstr>::iterator s_iter = iSet.begin(); s_iter != iSet.end(); s_iter++) { 
+        string s_iterString(*s_iter);
 		if (variables.count(impName)>0 && variables.count(s_iterString)>0) {
 #ifdef DEBUG_GRAPH_IMPLICIT		
-			blame_info<<"Adding implicit edges between "<<impName<<" and "<<*s_iter<<std::endl;
+			blame_info<<"Adding implicit edges between "<<impName<<" and "<<*s_iter<<endl;
 #endif 
 			tie(ed, inserted) = add_edge(variables[impName]->number, variables[s_iterString]->number, G); 
 			if (inserted)
 				edge_type[ed] = IMPLICIT_OP;	
 			else {
 #ifdef DEBUG_ERROR
-				blame_info<<"ERROR__(genEdges) - Insertion fail for implicit edge"<<std::endl;
+				blame_info<<"ERROR__(genEdges) - Insertion fail for implicit edge"<<endl;
 #endif
-				//std::cerr<<"Insertion fail for implicit edge\n";
+				//cerr<<"Insertion fail for implicit edge\n";
 			}
 		}
 
@@ -4170,7 +4132,7 @@ void FunctionBFC::addImplicitEdges(Value *v, std::set<const char*, ltstr> &iSet,
 }
 
 
-void FunctionBFC::geDefault(Instruction *pi, std::set<const char*, ltstr> &iSet, 
+void FunctionBFC::geDefault(Instruction *pi, set<const char*, ltstr> &iSet, 
 							property_map<MyGraphType, vertex_props_t>::type props,
 							property_map<MyGraphType, edge_iore_t>::type edge_type,
 							int &currentLineNum)
@@ -4182,7 +4144,7 @@ void FunctionBFC::geDefault(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	// Take care of implicit edges for default case 
 	addImplicitEdges(pi, iSet, edge_type, NULL, false);
 	
-	std::string instName;
+	string instName;
 	char tempBuf[18];
 	
 	if (pi->hasName()) {
@@ -4190,7 +4152,7 @@ void FunctionBFC::geDefault(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	}
 	else {
 		sprintf(tempBuf, "0x%x", /*(unsigned)*/pi);
-		std::string tempStr(tempBuf);
+		string tempStr(tempBuf);
 		instName.insert(0, tempStr);			
 	}
 	
@@ -4198,10 +4160,10 @@ void FunctionBFC::geDefault(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	for (User::op_iterator op_i = pi->op_begin(), op_e = pi->op_end(); op_i != op_e; ++op_i) {
 		Value *v = *op_i;
 		if (v->hasName() && pi->hasName()) {
-			addEdge(pi->getName().data(), v->getName().data(), pi);
+			addEdge(pi->getName().data(), v->getName().data(), pi, 1);
 		}
 		else {
-			std::string opName;
+			string opName;
 			
 			if (v->hasName()) {
 				opName = v->getName().str();
@@ -4238,8 +4200,8 @@ void FunctionBFC::geDefault(Instruction *pi, std::set<const char*, ltstr> &iSet,
 		        }
 		        else {
 #ifdef DEBUG_ERROR
-			      std::cerr<<"Not a float or a double FPVal"<<std::endl;
-			      blame_info<<"Not a float or a double FPVal"<<std::endl;
+			      cerr<<"Not a float or a double FPVal"<<endl;
+			      blame_info<<"Not a float or a double FPVal"<<endl;
 #endif 
 			      return;
 		        }
@@ -4254,12 +4216,12 @@ void FunctionBFC::geDefault(Instruction *pi, std::set<const char*, ltstr> &iSet,
             
               else{
 				sprintf(tempBuf, "0x%x", /*(unsigned)*/v);
-				std::string tempStr(tempBuf);
+				string tempStr(tempBuf);
 				opName.insert(0, tempStr);
               }
 			}
 			
-			addEdge(instName.c_str(), opName.c_str(), pi);
+			addEdge(instName.c_str(), opName.c_str(), pi, 2);
 		}
 	}
 	
@@ -4269,9 +4231,9 @@ string FunctionBFC::getRealStructName(string rawStructVarName, Value *v, User *p
                                                                 string instName)
 {
     if (v->getValueID() == Value::ConstantIntVal) {
-        blame_info<<"The instName of GEP(1): "<<instName<<std::endl;
+        blame_info<<"The instName of GEP(1): "<<instName<<endl;
         /////step1 done/////////////NOT very useful///////////////////////
-        //if(rawStructVarName.find("localActor") != std::string::npos)
+        //if(rawStructVarName.find("localActor") != string::npos)
         //    return rawStructVarName; //temporary scheme, for the first level GEP
 
         Value *vLoad = *(pi->op_begin());
@@ -4399,7 +4361,53 @@ string FunctionBFC::getRealStructName(string rawStructVarName, Value *v, User *p
     }
 }
 
-//added by Hui 01/14/16: get the original value back-following the S->L chain
+
+string FunctionBFC::getUniqueNameAsFieldForNode(Value *val, int errNo, string rawStructVarName)
+{
+  //If val has name, then we simply return either its uniqueNameAsField if existed, not its own name(it's the top level struct)
+  if(val->hasName()) {
+    blame_info<<errNo<<" should-be Top struct: val="<<val->getName().str()<<" rawStructVarName="<<rawStructVarName<<endl;
+    string nodeName = val->getName().str();//should be equal to rawStructVarName
+    if(variables.count(nodeName)>0){
+      if(variables[nodeName]->uniqueNameAsField){
+        string retName(variables[nodeName]->uniqueNameAsField);
+        return retName;
+      }
+      else {
+        blame_info<<errNo<<" Var: "<<nodeName<<" uses its own name as uniqueNameAsField"<<endl;
+        variables[nodeName]->uniqueNameAsField = nodeName.c_str(); //set its uniqueNameAsField
+        return nodeName;
+      }
+    }
+    else { //node not in variables, error
+      blame_info<<errNo<<" Error: named node not in variables: "<<nodeName<<endl;
+      return rawStructVarName;
+    }
+  }
+
+  //else: since all the nodes that call this func has no name,so we simly call val as "reg"
+  char tempBuff[18];
+  sprintf(tempBuff, "0x%x",val);
+  string tempStr(tempBuff);
+  blame_info<<errNo<<" Upper-level struct: reg="<<tempStr<<", rawStructVarName="<<rawStructVarName<<endl;
+  string nodeName = tempStr;
+  if(variables.count(nodeName)>0){
+    if(variables[nodeName]->uniqueNameAsField){
+      string retName(variables[nodeName]->uniqueNameAsField);
+      return retName;
+    }
+    else {
+      blame_info<<errNo<<" Error: register should have uniqueNameAsField"<<endl;
+      return rawStructVarName;
+    }
+  }
+  else { //node not in variables, error
+    blame_info<<"Error: reg node not in variables: "<<nodeName<<endl;
+    return rawStructVarName;
+  }
+}
+
+//added by Hui 01/14/16: get the original value back-tracing the S->L chain
 Value* FunctionBFC::getValueFromOrig(Instruction *vInstLoad) 
 {
   Value *loadFrom = *(vInstLoad->op_begin());
@@ -4437,9 +4445,9 @@ string FunctionBFC::getUpperLevelFieldName(string rawStructVarName, User *pi, st
   Value *vBase = *(pi->op_begin()); //vBase's name should be equal to rawStructVarName
   //if GEP base already has its uniqueNameAsField, simply return it
   if(variables.count(rawStructVarName)>0){
-    std::string baseName = rawStructVarName;
+    string baseName = rawStructVarName;
     if(variables[baseName]->uniqueNameAsField){
-      std::string retName(variables[baseName]->uniqueNameAsField);
+      string retName(variables[baseName]->uniqueNameAsField);
       blame_info<<"GEP base: "<<baseName<<"  already has the uniqueNameAsField("
           <<retName<<"), simply return it!"<<endl;
       return retName;
@@ -4449,79 +4457,39 @@ string FunctionBFC::getUpperLevelFieldName(string rawStructVarName, User *pi, st
   if(Instruction *vInstLoad = dyn_cast<Instruction>(vBase)){
     if(vInstLoad->getOpcode() == Instruction::Load){
       if(vInstLoad->hasName()){ //We've arrived at top level struct TOCHECK:should be moved to back?
-        blame_info<<"should-be Top struct(1): vInstLoad="<<vInstLoad->getName().str()<<" rawStructVarName="<<rawStructVarName<<endl;
-        std::string nodeName = vInstLoad->getName().str();//should be equal to rawStructVarName
-        if(variables.count(nodeName)>0){
-          if(variables[nodeName]->uniqueNameAsField){
-            std::string retName(variables[nodeName]->uniqueNameAsField);
-            return retName;
-          }
-          else
-            return vInstLoad->getName().str();
-        }
+        //return its uniqueNameAsField or its own name
+        return getUniqueNameAsFieldForNode(vInstLoad, 6, rawStructVarName);
       }
       else{
         Value *valueFrom = getValueFromOrig(vInstLoad);
         blame_info<<"After getValueFromOrig, we have "<<valueFrom<<endl;
         if(valueFrom->hasName()){//It's an exitVar(passed-in param): SL...->GEP (TOCHECK)
-          blame_info<<"should-be Top struct(2): valueFrom="<<valueFrom->getName().str()<<" rawStructVarName="<<rawStructVarName<<endl;
-          std::string nodeName = valueFrom->getName().str();
-          if(variables.count(nodeName)>0){
-            if(variables[nodeName]->uniqueNameAsField){
-              std::string retName(variables[nodeName]->uniqueNameAsField);
-              return retName;
-            }
-            else
-              return valueFrom->getName().str();
-          }
+          //return its uniqueNameAsField or its own name
+          return getUniqueNameAsFieldForNode(valueFrom, 7, rawStructVarName);
         }
         else if(Instruction *valueFromInst = dyn_cast<Instruction>(valueFrom)){
           if(valueFromInst->getOpcode()==Instruction::GetElementPtr){//1st most common case: GEP->SL...->GEP
             //return the uniqueNameAsField of this GEP retVal
-            char tempBuff[18];
-            sprintf(tempBuff, "0x%x",valueFrom);
-            string tempStr(tempBuff);
-            blame_info<<"Upper struct(1): valueFrom="<<tempStr<<" rawStructVarName="<<rawStructVarName<<endl;
-            std::string nodeName = tempStr;
-            if(variables.count(nodeName)>0){
-              if(variables[nodeName]->uniqueNameAsField){
-                std::string retName(variables[nodeName]->uniqueNameAsField);
-                return retName;
-              }
-              else
-                blame_info<<"Error: register should have uniqueNameAsField"<<endl;
-            }
+            return getUniqueNameAsFieldForNode(valueFrom, 1, rawStructVarName);
           }
-          else if(valueFromInst->getOpcode()==Instruction::Load){
+          else if(valueFromInst->getOpcode()==Instruction::ExtractValue){
+            //return the uniqueNameAsField of this extractvalue retVal
+            return getUniqueNameAsFieldForNode(valueFrom, 2, rawStructVarName);
+          }
+          else if(valueFromInst->getOpcode()==Instruction::Load){ //very likely for extractvalue base node
             Value *loadFrom = *(valueFromInst->op_begin());
             if(loadFrom->hasName()){//It's an exitVar(globalVar): load->SL...->GEP (TOCHECK)
-              blame_info<<"should-be Top struct(3): loadFrom="<<loadFrom->getName().str()<<" rawStructVarName="<<rawStructVarName<<endl;
-              std::string nodeName = loadFrom->getName().str();
-              if(variables.count(nodeName)>0){
-                if(variables[nodeName]->uniqueNameAsField){
-                  std::string retName(variables[nodeName]->uniqueNameAsField);
-                  return retName;
-                }
-                else
-                  return loadFrom->getName().str();
-              }
+              //return its uniqueNameAsField or its own name
+              return getUniqueNameAsFieldForNode(valueFrom, 8, rawStructVarName);
             }
             else if(Instruction *loadFromInst = dyn_cast<Instruction>(loadFrom)){
               if(loadFromInst->getOpcode()==Instruction::GetElementPtr){//2nd most common case: GEP->load->(SL...)->GEP
-                //return the uniqueNameAsField of this GEP retVal   
-                char tempBuff2[18];
-                sprintf(tempBuff2, "0x%x",loadFrom);
-                string tempStr2(tempBuff2);
-                blame_info<<"Upper struct(2): loadFrom="<<tempStr2<<" rawStructVarName="<<rawStructVarName<<endl;
-                std::string nodeName2 = tempStr2;
-                if(variables.count(nodeName2)>0){
-                  if(variables[nodeName2]->uniqueNameAsField){
-                    std::string retName(variables[nodeName2]->uniqueNameAsField);
-                    return retName;
-                  }
-                  else
-                    blame_info<<"Error2: register should have uniqueNameAsField"<<endl;
-                }
+                //return the uniqueNameAsField of this GEP retVal 
+                return getUniqueNameAsFieldForNode(loadFrom, 3, rawStructVarName);
+              }
+              else if(loadFromInst->getOpcode()==Instruction::ExtractValue){//2nd most common case: GEP->load->(SL...)->GEP
+                //return the uniqueNameAsField of this extractvalue retVal   
+                return getUniqueNameAsFieldForNode(loadFrom, 4, rawStructVarName);
               }
               else blame_info<<"Fail in case 0"<<endl;
             }
@@ -4563,6 +4531,40 @@ string FunctionBFC::getUpperLevelFieldName(string rawStructVarName, User *pi, st
                 else
                   blame_info<<"Error: ceGEP has only "<<ceGEP->getNumOperands()<<" Operands"<<endl;
               }
+              else if(ceGEP->getOpcode() == Instruction::ExtractValue){ //place holder, not necessary will happen
+                //since we don't know the currentlinenum of this ceExtractValue node when it's called
+                //so we can't directly get its uniqueNameAsField, have to recompute it from the base
+                Value *ceBase = *(ceGEP->op_begin());
+                string baseName;
+                if(ceBase->hasName())
+                  baseName = ceBase->getName().str();
+                else{
+                  char tempBuff[18];
+                  sprintf(tempBuff, "0x%x", ceBase);
+                  string tempStr(tempBuff);
+                  baseName.clear();
+                  baseName.insert(0, tempStr);
+                }
+                baseName = getUpperLevelFieldName(baseName, ceGEP, "ceExtVal");
+                //now start to manully get loadFrom's uniqueNameAsField
+                if(ceGEP->getNumOperands() == 2){ //For now, we only take care of 1st index
+                  Value *fieldNum = ceGEP->getOperand(1);
+                  if(fieldNum->getValueID() == Value::ConstantIntVal){
+                    ConstantInt *cv = (ConstantInt *)fieldNum;
+                    int number = cv->getSExtValue();
+                    
+                    string fieldName = baseName;
+                    fieldName.insert(0, ".P.");
+                    char fieldNumStr[3];
+                    sprintf(fieldNumStr, "%d", number);
+                    fieldName.insert(0, fieldNumStr);
+                        
+                    return fieldName;
+                  }
+                }
+                else
+                  blame_info<<"Error: ceExtVal has only "<<ceGEP->getNumOperands()<<" Operands"<<endl;
+              }
             }
           }
           else blame_info<<"Fail in case 1"<<endl;
@@ -4571,32 +4573,20 @@ string FunctionBFC::getUpperLevelFieldName(string rawStructVarName, User *pi, st
       }
     }
     else if(vInstLoad->getOpcode() == Instruction::Alloca && vInstLoad->hasName()){
-      blame_info<<"should-be Top struct(0): vInstAlloca="<<vInstLoad->getName().str()<<" rawStructVarName="<<rawStructVarName<<endl;
-      std::string nodeName = vInstLoad->getName().str();//should be equal to rawStructVarName
-      if(variables.count(nodeName)>0){
-        if(variables[nodeName]->uniqueNameAsField){
-          std::string retName(variables[nodeName]->uniqueNameAsField);
-          blame_info<<"Shouldn't be here(1)"<<endl;
-          return retName;
-        }
-        else
-          return vInstLoad->getName().str();
-      }
+      //return its uniqueNameAsField or its own name
+      return getUniqueNameAsFieldForNode(vInstLoad, 9, rawStructVarName);
     }
-    else blame_info<<"If inst before GEP isn't load/alloca, then we shouldn't be here!"<<endl;
+    else if(vInstLoad->getOpcode() == Instruction::ExtractValue) {
+      //for extractvalue inst: %1=extracvalue %2, 0, .. where %1 and %2 are both registers for sure
+      //so we don't deal with case that vInstLoad hasName
+      return getUniqueNameAsFieldForNode(vInstLoad, 5, rawStructVarName);
+    }
+    else
+      blame_info<<"If inst before GEP/extractvalue isn't load/alloca/extractvalue, then we shouldn't be here!"<<endl;
   }
   else if(vBase->hasName()){ //not likely to happen
-    blame_info<<"should-be Top struct(-1): vBase="<<vBase->getName().str()<<" rawStructVarName="<<rawStructVarName<<endl;
-    std::string nodeName = vBase->getName().str();//should be equal to rawStructVarName
-    if(variables.count(nodeName)>0){
-      if(variables[nodeName]->uniqueNameAsField){
-        std::string retName(variables[nodeName]->uniqueNameAsField);
-        blame_info<<"Shouldn't be here(2)"<<endl;
-        return retName;
-      }
-      else
-        return vBase->getName().str();
-    }
+    //return its uniqueNameAsField or its own name
+    return getUniqueNameAsFieldForNode(vBase, 10, rawStructVarName);
   }
   else blame_info<<"If GEP base isn't an inst nor hasName(), then we shouldn't be here!"<<endl;
 
@@ -4604,7 +4594,7 @@ string FunctionBFC::getUpperLevelFieldName(string rawStructVarName, User *pi, st
 }
         
 
-string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet,property_map<MyGraphType, 
+string FunctionBFC::geGetElementPtr(User *pi, set<const char*, ltstr> &iSet,property_map<MyGraphType, 
         vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type,int &currentLineNum)
 {
 	bool inserted;
@@ -4613,10 +4603,10 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 	addImplicitEdges(pi, iSet, edge_type, NULL, false);
 	
     int opCount = 0;
-	std::string instName, opName;
+	string instName, opName;
 	
 	// Name of struct variable name (essentially op0)
-	std::string structVarNameGlobal;
+	string structVarNameGlobal;
 	
 	char tempBuf[18];
 	
@@ -4625,7 +4615,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 	}
 	else {
 		sprintf(tempBuf, "0x%x", /*(unsigned)*/pi);
-		std::string tempStr(tempBuf);
+		string tempStr(tempBuf);
 		instName.insert(0, tempStr);			
 		
 		if (isa<ConstantExpr>(pi)) {
@@ -4650,17 +4640,17 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                     /////////////////////////////////////
 					edge_type[ed] = GEP_BASE_OP;//pi->getOpcode();	previously existed
                         /*blame_info<<"reGenEdge YES from "<<v->getName().data()<<" to "<<instName;
-                        blame_info<<std::endl;
+                        blame_info<<endl;
                     }
                     else {
                         blame_info<<"rGenEdge Failed from "<<v->getName().data()<<" to"<<instName;
-                        blame_info<<std::endl;
+                        blame_info<<endl;
                     }*/
                     //////////////////////////////////////////
 					variables[instName]->pointsTo = variables[v->getName().str()];
 					variables[v->getName().str()]->pointedTo.insert(variables[instName]);
 #ifdef DEBUG_GRAPH_BUILD
-					blame_info<<"GRAPH_(genEdge) - GEP "<<instName<<" points to "<<v->getName().data()<<std::endl;
+					blame_info<<"GRAPH_(genEdge) - GEP "<<instName<<" points to "<<v->getName().data()<<endl;
 #endif
                     //added by Hui 01/14/16
                     blame_info<<"GEP base "<<v->getName().data()<<" will have uniqueNameAsField of itself"<<endl;
@@ -4694,10 +4684,10 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                       variables[instName]->uniqueNameAsField = strAlloc;
                       blame_info<<"(1)Inst "<<instName<<" has uniqueNameAsField: "<<strAlloc<<endl;
                       
-                      //std::string strAllocStr(strAlloc);
+                      //string strAllocStr(strAlloc);
                       if (cpHash.count(strAllocStr)) {
                         #ifdef DEBUG_GRAPH_COLLAPSE
-                        blame_info<<"Collapsable field already exists(1).  Add inst name "<<instName<<" to collapsable pairs."<<std::endl;
+                        blame_info<<"Collapsable field already exists(1).  Add inst name "<<instName<<" to collapsable pairs."<<endl;
                         #endif 
                         
                         CollapsePair *cp = new CollapsePair();
@@ -4710,7 +4700,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                         cp->destVertex->collapseNodes.insert(cp->collapseVertex);
  	
 #ifdef DEBUG_GRAPH_COLLAPSE
-            			blame_info<<"Remove edge(hui) from "<<instName<<" to "<<v->getName().data()<<" [3]"<<std::endl;
+            			blame_info<<"Remove edge(hui) from "<<instName<<" to "<<v->getName().data()<<" [3]"<<endl;
 #endif 
 						remove_edge(variables[instName]->number,variables[v->getName().str()]->number,G);//TOCHECK: whether we need to remove_edge
                       }
@@ -4718,7 +4708,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                         //collapsableFields.insert(structVarName);
                         cpHash[strAllocStr] = variables[instName]; //cpHash only insert here
                         #ifdef DEBUG_GRAPH_COLLAPSE
-                        blame_info<<"Collapsable field does not exist(1).  Create field and make inst name "<<instName<<" destination node."<<std::endl;
+                        blame_info<<"Collapsable field does not exist(1).  Create field and make inst name "<<instName<<" destination node."<<endl;
                         #endif 
                       }
                     }
@@ -4733,7 +4723,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 			}
 			else {
 #ifdef DEBUG_ERROR			
-				std::cerr<<"Insertion fail in genEges for "<<instName<<" to "<<v->getName().data()<<std::endl;
+				cerr<<"Insertion fail in genEges for "<<instName<<" to "<<v->getName().data()<<endl;
 #endif 
 			}
 		} //v hasName() = true
@@ -4749,15 +4739,15 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                   upperStructName.insert(0,"I.");
                   //const char *strAlloc = (const char*)malloc(sizeof(char)*(upperStructName.length()+1));
                   //strcpy((char*)strAlloc, upperStructName.c_str());
-                  std::string strAllocStr(upperStructName);
+                  string strAllocStr(upperStructName);
                   const char *strAlloc = strAllocStr.c_str();
                   variables[instName]->uniqueNameAsField = strAlloc;
                   blame_info<<"(2)Inst "<<instName<<" has uniqueNameAsField: "<<strAlloc<<endl;
 
-                  //std::string strAllocStr(strAlloc);
+                  //string strAllocStr(strAlloc);
                   if (cpHash.count(strAllocStr)) {
                     #ifdef DEBUG_GRAPH_COLLAPSE
-                    blame_info<<"Collapsable field already exists(2).  Add inst name "<<instName<<" to collapsable pairs."<<std::endl;
+                    blame_info<<"Collapsable field already exists(2).  Add inst name "<<instName<<" to collapsable pairs."<<endl;
                     #endif 
                     
                     CollapsePair *cp = new CollapsePair();
@@ -4773,7 +4763,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                     //collapsableFields.insert(structVarName);
                     cpHash[strAllocStr] = variables[instName]; //cpHash only insert here
                     #ifdef DEBUG_GRAPH_COLLAPSE
-                    blame_info<<"Collapsable field does not exist(2).  Create field and make inst name "<<instName<<" destination node."<<std::endl;
+                    blame_info<<"Collapsable field does not exist(2).  Create field and make inst name "<<instName<<" destination node."<<endl;
                     #endif 
                   }
                 }
@@ -4789,11 +4779,11 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 			strcpy(vN,tempBuf);
 			vN[strlen(tempBuf)]='\0';
 			const char *vName = vN;
-            std::string vNameStr(vName);
+            string vNameStr(vName);
 			
 			if (variables.count(instName) && variables.count(vNameStr)) {
 #ifdef DEBUG_GRAPH_BUILD
-				blame_info<<"Adding edge from "<<instName<<" to "<<vName<<std::endl;
+				blame_info<<"Adding edge from "<<instName<<" to "<<vName<<endl;
 #endif 
 				tie(ed, inserted) = add_edge(variables[instName]->number,variables[vNameStr]->number,G);
 				
@@ -4805,7 +4795,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                         //getRealStructName(structVarNameGlobal,v,pi,instName);
                         getUpperLevelFieldName(structVarNameGlobal,pi,instName);
 #endif
-					std::string structVarName = structVarNameGlobal;
+					string structVarName = structVarNameGlobal;
 					structVarName.insert(0, ".P.");
 					
 					char fieldNumStr[3];
@@ -4819,15 +4809,15 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                         lastChar = *structVarName.rbegin();
                     }
 #endif
-					blame_info<<"structVarName is "<<structVarName<<std::endl;
+					blame_info<<"structVarName is "<<structVarName<<endl;
                     //////////////////////////////////////////////////////////////
 					//const char *strAlloc = (const char *) malloc(sizeof(char) *(structVarName.length() + 1));				
 					//strcpy((char *)strAlloc,structVarName.c_str()); //strAlloc: 0.P.localPeople
-                    std::string strAllocStr(structVarName);
+                    string strAllocStr(structVarName);
                     const char *strAlloc = strAllocStr.c_str();
                     //for name in People
 					#ifdef DEBUG_GRAPH_COLLAPSE
-					blame_info<<"Name of collapsable field candidate is "<<structVarName<<" for "<<instName<<std::endl;
+					blame_info<<"Name of collapsable field candidate is "<<structVarName<<" for "<<instName<<endl;
 					#endif 
 
                     /////////added by Hui 01/14/16////////////////////
@@ -4836,10 +4826,10 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                     blame_info<<"(3)Inst "<<instName<<" has uniqueNameAsField: "<<strAlloc<<endl;
                     //////////////////////////////////////////////////
 
-                    //std::string strAllocStr(strAlloc);
+                    //string strAllocStr(strAlloc);
 					if (cpHash.count(strAllocStr)) {
 					    #ifdef DEBUG_GRAPH_COLLAPSE
-						blame_info<<"Collapsable field already exists.  Add inst name "<<instName<<" to collapsable pairs."<<std::endl;
+						blame_info<<"Collapsable field already exists.  Add inst name "<<instName<<" to collapsable pairs."<<endl;
 						#endif 
 						
 						CollapsePair *cp = new CollapsePair();
@@ -4851,8 +4841,8 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                         cp->collapseVertex->collapseTo = cp->destVertex;
                         cp->destVertex->collapseNodes.insert(cp->collapseVertex);
 #ifdef DEBUG_GRAPH_COLLAPSE //added remove[4.5] by Hui 04/05/16: when field redundant, we need to remove the edge from it to the base, either
-            			blame_info<<"Remove edge(hui) from "<<instName<<" to "<<vName<<" [4]"<<std::endl;
-                        //blame_info<<"Remove edge(hui) from "<<instName<<" to "<<instNode->pointsTo->name<<" [4.5]"<<std::endl;
+            			blame_info<<"Remove edge(hui) from "<<instName<<" to "<<vName<<" [4]"<<endl;
+                        //blame_info<<"Remove edge(hui) from "<<instName<<" to "<<instNode->pointsTo->name<<" [4.5]"<<endl;
 #endif 
 						remove_edge(variables[instName]->number,variables[vNameStr]->number,G);
                         //remove_edge(instNode->number, instNode->pointsTo->number, G);
@@ -4863,7 +4853,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 						//collapsableFields.insert(structVarName);
 						cpHash[strAllocStr] = variables[instName]; //cpHash only insert here
 						#ifdef DEBUG_GRAPH_COLLAPSE
-						blame_info<<"Collapsable field does not exist.  Create field and make inst name "<<instName<<" destination node."<<std::endl;
+						blame_info<<"Collapsable field does not exist.  Create field and make inst name "<<instName<<" destination node."<<endl;
 						#endif 
 					}
 #endif					
@@ -4871,14 +4861,14 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 
 				else {
 #ifdef DEBUG_ERROR			
-					std::cerr<<"Insertion fail, GEP struct field const(F)"<<" for "<<instName<<std::endl;
+					cerr<<"Insertion fail, GEP struct field const(F)"<<" for "<<instName<<endl;
 #endif 
 				}
 			}
 			else {
 			    #ifdef DEBUG_ERROR
 				blame_info<<"Error adding edge with(not found in variables) "<<vName<<" "<<variables.count(vNameStr)<<" and "<<instName<<" ";
-				blame_info<<variables.count(instName)<<std::endl;
+				blame_info<<variables.count(instName)<<endl;
 			    #endif 
 				return instName;
 			}				
@@ -4888,7 +4878,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 			char tempBuff[18];
 			
 			sprintf(tempBuff, "0x%x", /*(unsigned)*/v);
-			std::string tempStr(tempBuff);
+			string tempStr(tempBuff);
 			opName.clear();
 			opName.insert(0, tempStr);
 			//structVarNameGlobal not really useful, just for comparison
@@ -4904,14 +4894,14 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 						variables[instName]->pointsTo = variables[opName];
 						variables[opName]->pointedTo.insert(variables[instName]);
 #ifdef DEBUG_GRAPH_BUILD
-						blame_info<<"GRAPH_(genEdge) - GEP(2) "<<instName.c_str()<<" points to "<<opName.c_str()<<std::endl;
+						blame_info<<"GRAPH_(genEdge) - GEP(2) "<<instName.c_str()<<" points to "<<opName.c_str()<<endl;
 #endif
 						opCount++;
                         //added by Hui 01/14/16/////////////////////
                         string upperStructName = getUpperLevelFieldName(structVarNameGlobal,pi,instName);
                         //const char *strAlloc = (const char*)malloc(sizeof(char)*(upperStructName.length()+1));
                         //strcpy((char*)strAlloc, upperStructName.c_str());
-                        std::string strAllocStr(upperStructName);
+                        string strAllocStr(upperStructName);
                         const char *strAlloc = strAllocStr.c_str();
                         blame_info<<"GEP base "<<opName<<" will have uniqueNameAsField: "<<strAlloc<<endl;
 
@@ -4940,15 +4930,15 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                           upperStructName.insert(0,"I.");
                           //const char *strAlloc = (const char*)malloc(sizeof(char)*(upperStructName.length()+1));
                           //strcpy((char*)strAlloc, upperStructName.c_str());
-                          std::string strAllocStr(upperStructName);
+                          string strAllocStr(upperStructName);
                           const char *strAlloc = strAllocStr.c_str();
                           variables[instName]->uniqueNameAsField = strAlloc;
                           blame_info<<"(4)Inst "<<instName<<" has uniqueNameAsField: "<<strAlloc<<endl;
 
-                          //std::string strAllocStr(strAlloc);
+                          //string strAllocStr(strAlloc);
                           if (cpHash.count(strAllocStr)) {
                             #ifdef DEBUG_GRAPH_COLLAPSE
-                            blame_info<<"Collapsable field already exists(3).  Add inst name "<<instName<<" to collapsable pairs."<<std::endl;
+                            blame_info<<"Collapsable field already exists(3).  Add inst name "<<instName<<" to collapsable pairs."<<endl;
                             #endif 
                         
                             CollapsePair *cp = new CollapsePair();
@@ -4960,7 +4950,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                             cp->collapseVertex->collapseTo = cp->destVertex;
                             cp->destVertex->collapseNodes.insert(cp->collapseVertex);
 #ifdef DEBUG_GRAPH_COLLAPSE
-            			    blame_info<<"Remove edge(hui) from "<<instName<<" to "<<opName<<" [5]"<<std::endl;
+            			    blame_info<<"Remove edge(hui) from "<<instName<<" to "<<opName<<" [5]"<<endl;
 #endif 
 						    remove_edge(variables[instName]->number,variables[opName]->number,G);//TOCHECK:whether we need to remove_edge
                           }
@@ -4968,7 +4958,7 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
                             //collapsableFields.insert(structVarName);
                             cpHash[strAllocStr] = variables[instName]; //cpHash only insert here
                             #ifdef DEBUG_GRAPH_COLLAPSE
-                            blame_info<<"Collapsable field does not exist(1).  Create field and make inst name "<<instName<<" destination node."<<std::endl;
+                            blame_info<<"Collapsable field does not exist(1).  Create field and make inst name "<<instName<<" destination node."<<endl;
                             #endif 
                           }
                         }
@@ -4983,14 +4973,14 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 				}
 				else { //not inserted
 #ifdef DEBUG_ERROR			
-					std::cerr<<"Insertion fail in genEges for "<<instName<<" to "<<v->getName().data()<<std::endl;
+					cerr<<"Insertion fail in genEges for "<<instName<<" to "<<v->getName().data()<<endl;
 #endif 
 				}
 			}
 			else {	
 #ifdef DEBUG_ERROR
 				blame_info<<"Variables can't find value of "<<instName<<" "<<variables.count(instName);
-				blame_info<<" or "<<opName<<" "<<variables.count(opName)<<std::endl;
+				blame_info<<" or "<<opName<<" "<<variables.count(opName)<<endl;
 #endif 			
 			}
 		} // end hasName() else 
@@ -5001,10 +4991,288 @@ string FunctionBFC::geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet
 } 
 
 
-void FunctionBFC::geCallWrapFunc(Instruction *pi, std::set<const char*, ltstr> &iSet,
+// For now (07/07/17) We just treat extractvalue inst exactly the same as GEP, including collapsable pairs
+// and uniqueFieldName construction. Basically we need to treat (ld+extracValue) equal to GEP
+string FunctionBFC::geExtractValue(User *pi, set<const char*, ltstr> &iSet,property_map<MyGraphType, 
+        vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type,int &currentLineNum)
+{
+	bool inserted;
+    graph_traits < MyGraphType >::edge_descriptor ed;
+	
+	addImplicitEdges(pi, iSet, edge_type, NULL, false);
+	
+    int opCount = 0;
+	string instName, opName;
+	
+	// Name of struct variable name (essentially op0)
+	string structVarNameGlobal;
+	
+	char tempBuf[18];
+	
+	if (pi->hasName()) {
+		instName = pi->getName().str();
+	}
+	else {
+		sprintf(tempBuf, "0x%x", /*(unsigned)*/pi);
+		string tempStr(tempBuf);
+		instName.insert(0, tempStr);			
+		
+		if (isa<ConstantExpr>(pi)) {
+			instName += ".CE";
+			char tempBuf2[10];
+			sprintf(tempBuf2, ".%d", currentLineNum);
+			instName.append(tempBuf2);
+		}
+	}
+	
+	// Go through the operands
+	for (User::op_iterator op_i = pi->op_begin(), op_e = pi->op_end(); op_i != op_e; ++op_i) {
+		Value *v = *op_i;
+		if (v->hasName() && variables[instName] && variables[v->getName().str()]) {
+			tie(ed, inserted) = add_edge(variables[instName]->number,variables[v->getName().str()]->number,G);
+			if (inserted) {
+				if (opCount == 0) {
+                    /////added by Hui////////////////////
+                    //remove_edge(variables[instName.c_str()]->number,variables[v->getName().data()]->number,G);//blame relation should be struct -> field, e.g: localPeople->bd, bd->day
+			        //tie(ed, inserted) = add_edge(variables[v->getName().data()]->number,variables[instName.c_str()]->number,G);
+                    //if(inserted){
+                    /////////////////////////////////////
+					edge_type[ed] = GEP_BASE_OP;//pi->getOpcode();	previously existed
+                        /*blame_info<<"reGenEdge YES from "<<v->getName().data()<<" to "<<instName;
+                        blame_info<<endl;
+                    }
+                    else {
+                        blame_info<<"rGenEdge Failed from "<<v->getName().data()<<" to"<<instName;
+                        blame_info<<endl;
+                    }*/
+                    //////////////////////////////////////////
+					variables[instName]->pointsTo = variables[v->getName().str()];
+					variables[v->getName().str()]->pointedTo.insert(variables[instName]);
+#ifdef DEBUG_GRAPH_BUILD
+					blame_info<<"GRAPH_(genEdge) - extval "<<instName<<" points to "<<v->getName().data()<<endl;
+#endif
+                    //added by Hui 01/14/16
+                    blame_info<<"GEP base(extval) "<<v->getName().data()<<" will have uniqueNameAsField of itself"<<endl;
+
+                    if(!(variables[v->getName().str()]->uniqueNameAsField))
+                      variables[v->getName().str()]->uniqueNameAsField = v->getName().data(); //topLevel struct name is itself
+                    else{
+                      blame_info<<"To check(extval) (v already has its uniqueNameAsField): old="<<variables[v->getName().str()]->uniqueNameAsField
+                          <<"  new(its own name)="<<v->getName().data()<<endl;
+                      if(strcmp(variables[v->getName().str()]->uniqueNameAsField, v->getName().data())!=0)
+                        blame_info<<"Check(extval) ! named node has a different uniqueNameASField!"<<endl;
+                    }
+					//structVarNameGlobal.clear();
+					structVarNameGlobal.insert(0, v->getName().str());//only for comparison, not real useful
+					opCount++;
+				}//opCount=0
+				else if (opCount >= 1){//barely happen in this case 
+					edge_type[ed] = GEP_S_FIELD_VAR_OFF_OP;
+					opCount++;
+#ifdef DEBUG_GRAPH_BUILD
+                    blame_info<<"GEP_S_FIELD_VAR_OFF_OP (extval): "<<v->getName().data()<<" to inst: "<<instName<<endl;
+#endif
+				}
+			}
+			else {
+#ifdef DEBUG_ERROR			
+				cerr<<"(extval)Insertion fail in genEges for "<<instName<<" to "<<v->getName().data()<<endl;
+#endif 
+			}
+		} //v hasName() = true
+		else if (v->getValueID() == Value::ConstantIntVal) {
+			if (opCount == 0) { //unlikely to happen
+				opCount++;
+				continue;
+			}
+
+			ConstantInt *cv = (ConstantInt *)v;
+			int number = cv->getSExtValue();
+			
+			char tempBuf[64];
+			sprintf (tempBuf, "Constant+%i+%i+%i+%i", number, currentLineNum, opCount, Instruction::GetElementPtr);		
+			char *vN = (char *) malloc(sizeof(char)*(strlen(tempBuf)+1));
+			strcpy(vN,tempBuf);
+			vN[strlen(tempBuf)]='\0';
+			const char *vName = vN;
+            string vNameStr(vName);
+			
+			if (variables.count(instName) && variables.count(vNameStr)) {
+#ifdef DEBUG_GRAPH_BUILD
+				blame_info<<"(extval)Adding edge from "<<instName<<" to "<<vName<<endl;
+#endif 
+				tie(ed, inserted) = add_edge(variables[instName]->number,variables[vNameStr]->number,G);
+				
+				if (inserted) {
+					edge_type[ed] = GEP_S_FIELD_OFFSET_OP + number;
+#ifdef ENABLE_FORTRAN
+#ifdef HUI_CHPL //still temporary, we back follow GEP->store->load->GEP
+                    structVarNameGlobal = //can be changed to recursively/iteratively call
+                        //getRealStructName(structVarNameGlobal,v,pi,instName);
+                        getUpperLevelFieldName(structVarNameGlobal,pi,instName);
+#endif
+					string structVarName = structVarNameGlobal;
+					structVarName.insert(0, ".P.");
+					
+					char fieldNumStr[3];
+					sprintf(fieldNumStr, "%d", number);
+					structVarName.insert(0, fieldNumStr);
+#ifdef HUI_C
+                ///added by Hui, temporary way to solve multi-level structures////
+                    char lastChar = *structVarName.rbegin();
+                    while('0'<=lastChar && lastChar<='9'){
+                        structVarName = structVarName.substr(0,structVarName.length()-1);
+                        lastChar = *structVarName.rbegin();
+                    }
+#endif
+					blame_info<<"(extval)structVarName is "<<structVarName<<endl;
+                    //////////////////////////////////////////////////////////////
+					//const char *strAlloc = (const char *) malloc(sizeof(char) *(structVarName.length() + 1));				
+					//strcpy((char *)strAlloc,structVarName.c_str()); //strAlloc: 0.P.localPeople
+                    string strAllocStr(structVarName);
+                    const char *strAlloc = strAllocStr.c_str();
+                    //for name in People
+					#ifdef DEBUG_GRAPH_COLLAPSE
+					blame_info<<"(extval)Name of collapsable field candidate is "<<structVarName<<" for "<<instName<<endl;
+					#endif 
+
+                    /////////added by Hui 01/14/16////////////////////
+                    NodeProps *instNode = variables[instName];
+                    instNode->uniqueNameAsField = strAlloc;
+                    blame_info<<"(extval)(3)Inst "<<instName<<" has uniqueNameAsField: "<<strAlloc<<endl;
+                    //////////////////////////////////////////////////
+
+                    //string strAllocStr(strAlloc);
+					if (cpHash.count(strAllocStr)) {
+					    #ifdef DEBUG_GRAPH_COLLAPSE
+						blame_info<<"(extval)Collapsable field already exists.  Add inst name "<<instName<<" to collapsable pairs."<<endl;
+						#endif 
+						
+						CollapsePair *cp = new CollapsePair();
+						cp->nameFieldCombo = strAllocStr;
+						cp->collapseVertex = variables[instName];
+						cp->destVertex = cpHash[strAllocStr];
+						collapsePairs.push_back(cp);
+						
+                        cp->collapseVertex->collapseTo = cp->destVertex;
+                        cp->destVertex->collapseNodes.insert(cp->collapseVertex);
+#ifdef DEBUG_GRAPH_COLLAPSE //added remove[4.5] by Hui 04/05/16: when field redundant, we need to remove the edge from it to the base, either
+            			blame_info<<"(extval)Remove edge(hui) from "<<instName<<" to "<<vName<<" [4]"<<endl;
+                        //blame_info<<"Remove edge(hui) from "<<instName<<" to "<<instNode->pointsTo->name<<" [4.5]"<<endl;
+#endif 
+						remove_edge(variables[instName]->number,variables[vNameStr]->number,G);
+                        //remove_edge(instNode->number, instNode->pointsTo->number, G);
+
+
+					}
+					else {
+						//collapsableFields.insert(structVarName);
+						cpHash[strAllocStr] = variables[instName]; //cpHash only insert here
+						#ifdef DEBUG_GRAPH_COLLAPSE
+						blame_info<<"(extval)Collapsable field does not exist.  Create field and make inst name "<<instName<<" destination node."<<endl;
+						#endif 
+					}
+#endif					
+				}
+
+				else {
+#ifdef DEBUG_ERROR			
+					cerr<<"Insertion fail, GEP struct field const(F)"<<" for "<<instName<<endl;
+#endif 
+				}
+			}
+			else {
+			    #ifdef DEBUG_ERROR
+				blame_info<<"Error adding edge with(not found in variables) "<<vName<<" "<<variables.count(vNameStr)<<" and "<<instName<<" ";
+				blame_info<<variables.count(instName)<<endl;
+			    #endif 
+				return instName;
+			}				
+		}//if v !hasName but it's ConstantInt
+		else { //Most likely happen for opCount=0 since it's stored in a register
+			char tempBuff[18];
+			
+			sprintf(tempBuff, "0x%x", /*(unsigned)*/v);
+			string tempStr(tempBuff);
+			opName.clear();
+			opName.insert(0, tempStr);
+			//structVarNameGlobal not really useful, just for comparison
+			if (opCount == 0) {
+				structVarNameGlobal.insert(0, tempStr);
+			}
+			
+			if (variables.count(instName) > 0 && variables.count(opName) > 0) {
+				tie(ed, inserted) = add_edge(variables[instName]->number,variables[opName]->number,G);
+				if (inserted) {
+					if (opCount == 0) {
+						edge_type[ed] = GEP_BASE_OP;//pi->getOpcode();	
+						variables[instName]->pointsTo = variables[opName];
+						variables[opName]->pointedTo.insert(variables[instName]);
+#ifdef DEBUG_GRAPH_BUILD
+						blame_info<<"(extval)GRAPH_(genEdge) - GEP(2) "<<instName.c_str()<<" points to "<<opName.c_str()<<endl;
+#endif
+						opCount++;
+                        //added by Hui 01/14/16/////////////////////
+                        string upperStructName = getUpperLevelFieldName(structVarNameGlobal,pi,instName);
+                        //const char *strAlloc = (const char*)malloc(sizeof(char)*(upperStructName.length()+1));
+                        //strcpy((char*)strAlloc, upperStructName.c_str());
+                        string strAllocStr(upperStructName);
+                        const char *strAlloc = strAllocStr.c_str();
+                        blame_info<<"(extval)GEP base "<<opName<<" will have uniqueNameAsField: "<<strAlloc<<endl;
+
+                        if(!(variables[opName]->uniqueNameAsField)) {//very likely, unless in 2nd GEP of two successive GEPs
+                          variables[opName]->uniqueNameAsField = strAlloc; //topLevel struct name is itself
+                        }
+                        else{
+                          blame_info<<"(extval)To check(opName already has its uniqueNameAsField)(2): old="<<
+                              variables[opName]->uniqueNameAsField<<"  new="<<strAlloc<<endl;
+                          if(strcmp(variables[opName]->uniqueNameAsField, strAlloc)!=0){ //shouldn't happen
+                            blame_info<<"(extval)Error: register can't hold retval from 2 diff GEPs!"<<endl;
+                            variables[opName]->uniqueNameAsField = strAlloc;
+                          }
+                        }
+                        ///////////////////////////////////////////////
+					}
+					else if (opCount >= 1) {//barely happen in this case
+						edge_type[ed] = GEP_S_FIELD_VAR_OFF_OP;
+						opCount++;
+#ifdef DEBUG_GRAPH_BUILD
+                        blame_info<<"(extval)GEP_S_FIELD_VAR_OFF_OP(2): "<<opName<<" to inst: "<<instName<<endl;
+#endif
+					}
+				}
+				else { //not inserted
+#ifdef DEBUG_ERROR			
+					cerr<<"(extval)Insertion fail in genEges for "<<instName<<" to "<<v->getName().data()<<endl;
+#endif 
+				}
+			}
+			else {	
+#ifdef DEBUG_ERROR
+				blame_info<<"(extval)Variables can't find value of "<<instName<<" "<<variables.count(instName);
+				blame_info<<" or "<<opName<<" "<<variables.count(opName)<<endl;
+#endif 			
+			}
+		} // end hasName() else 
+	} // end for 
+	
+	return instName;
+	
+} 
+
+
+string FunctionBFC::geInsertValue(User *pi, set<const char*, ltstr> &iSet,property_map<MyGraphType, 
+        vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type,int &currentLineNum)
+{
+  blame_info<<"HELP! Pull me out here cuz I don't know what to do!"<<endl;
+  return string("InsertValue");
+} 
+
+
+void FunctionBFC::geCallWrapFunc(Instruction *pi, set<const char*, ltstr> &iSet,
 							property_map<MyGraphType, vertex_props_t>::type props,
 							property_map<MyGraphType, edge_iore_t>::type edge_type,
-							int &currentLineNum, std::set<NodeProps *> &seenCall)
+							int &currentLineNum, set<NodeProps *> &seenCall)
 {
     
   Value *lastOp = pi->getOperand(pi->getNumOperands()-1);
@@ -5027,8 +5295,8 @@ void FunctionBFC::geCallWrapFunc(Instruction *pi, std::set<const char*, ltstr> &
     blame_info<<"Error: can't retrive fid from "<<lastOp->getName().str()<<endl;
     return;
   }
-  std::string wrapName = (this->getModuleBFC()->funcPtrTable)[fidHolder];
-  std::string realName;
+  string wrapName = (this->getModuleBFC()->funcPtrTable)[fidHolder];
+  string realName;
   if (wrapName.find("wrap") == 0) 
     realName = wrapName.substr(4); //start from 4th char (chopped "wrap" from head)
   else if (wrapName.find("_local_wrap") == 0) {
@@ -5067,7 +5335,7 @@ void FunctionBFC::geCallWrapFunc(Instruction *pi, std::set<const char*, ltstr> &
 
   //get the names of call and arg
   int sizeSuffix = 0;
-  std::string tempStr;
+  string tempStr;
 
   while (1) {
     tempStr.clear();
@@ -5083,7 +5351,7 @@ void FunctionBFC::geCallWrapFunc(Instruction *pi, std::set<const char*, ltstr> &
       tempStr.push_back('a');
     }
 		
-    //std::cout<<vNTemp<<" "<<sizeSuffix<<std::endl;
+    //cout<<vNTemp<<" "<<sizeSuffix<<endl;
 	if (variables.count(tempStr) > 0) {
 	  NodeProps *vpTemp = variables[tempStr];
 	
@@ -5122,13 +5390,13 @@ void FunctionBFC::geCallWrapFunc(Instruction *pi, std::set<const char*, ltstr> &
             && valueID != Value::UndefValueVal && valueID != Value::ConstantPointerNullVal) {//v isn't a constant value
           char tempBuf2[20];
           sprintf(tempBuf2, "0x%x", /*(unsigned)*/param);
-          paramName = std::string(tempBuf2);
+          paramName = string(tempBuf2);
         }
       }
 
 	  if (!paramName.empty() && variables.count(paramName) > 0) {	
         // Add edge between arg and wrapOn_fn_chpl*
-        addEdge(paramName.c_str(), callName, pi);
+        addEdge(paramName.c_str(), callName, pi, 3);
       }
       else
         blame_info<<"Error: can't find param#"<<i<<" "<<paramName<<" in variables"<<endl;
@@ -5136,10 +5404,10 @@ void FunctionBFC::geCallWrapFunc(Instruction *pi, std::set<const char*, ltstr> &
   }
 }
 
-void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
+void FunctionBFC::geCall(Instruction *pi, set<const char*, ltstr> &iSet,
 							property_map<MyGraphType, vertex_props_t>::type props,
 							property_map<MyGraphType, edge_iore_t>::type edge_type,
-							int &currentLineNum, std::set<NodeProps *> &seenCall)
+							int &currentLineNum, set<NodeProps *> &seenCall)
 {
     //bool inserted;
     graph_traits < MyGraphType >::edge_descriptor ed;
@@ -5148,7 +5416,7 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
     llvm::Function *calledFunc = cpi->getCalledFunction();
     if(calledFunc != NULL && calledFunc->hasName())
         blame_info<<"In geCall, calledFunc's name = "<<calledFunc->getName().data();
-    blame_info<<"  pi->getNumOperands()="<<pi->getNumOperands()<<std::endl;
+    blame_info<<"  pi->getNumOperands()="<<pi->getNumOperands()<<endl;
     //////////////////////////////////////////////////////////
     int callNameIdx = pi->getNumOperands()-1; //called func is the last operand of this inst
     Value *call_name = pi->getOperand(callNameIdx);
@@ -5159,7 +5427,7 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 #ifdef SPECIAL_FUNC_PTR
         //Added for taskListProcess and executeOn* Chapel lib funcs
         //if (variables.count(tempStr)
-        std::string callName(callNameStr);
+        string callName(callNameStr);
         if (callName.find("chpl_executeOn") == 0  
                 || callName.find("chpl_taskListAddBegin") == 0
                     || callName.find("chpl_taskListAddCoStmt") == 0) {
@@ -5171,7 +5439,7 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
     }
     else if (call_name->getValueID() == Value::ConstantExprVal) {
 #ifdef DEBUG_GRAPH_BUILD
-		blame_info<<"call_name is ConstantExpr"<<std::endl;
+		blame_info<<"call_name is ConstantExpr"<<endl;
 #endif
 		if (isa<ConstantExpr>(call_name)) {
 			ConstantExpr *ce = cast<ConstantExpr>(call_name);
@@ -5180,7 +5448,7 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 				Value *funcVal = *op_i;			
 				if (isa<Function>(funcVal)) {
 					Function *embFunc = cast<Function>(funcVal);
-					//blame_info<<"Func "<<embFunc->getName()<<std::endl;
+					//blame_info<<"Func "<<embFunc->getName()<<endl;
 					isTradName = false;
 					callNameStr = embFunc->getName().data();
 				}
@@ -5203,7 +5471,7 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	
 	//bool foundFunc = true;
 	int sizeSuffix = 0;
-	std::string tempStr;
+	string tempStr;
 	
 	while (1) {
 		tempStr.clear();
@@ -5220,7 +5488,7 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 		}
 
 		
-		//std::cout<<vNTemp<<" "<<sizeSuffix<<std::endl;
+		//cout<<vNTemp<<" "<<sizeSuffix<<endl;
 		if (variables.count(tempStr) > 0) {
 			NodeProps *vpTemp = variables[tempStr];
 			
@@ -5245,18 +5513,18 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	// pi - variable that receives return value, if none then function is void
 
     //const char* retNameNew; //name of the return value if it existed
-    std::string retName;
+    string retName;
     if (pi->hasName()) {
-		addEdge(pi->getName().data(), vName, pi);
+		addEdge(pi->getName().data(), vName, pi, 4);
         retName.insert(0,pi->getName().data());
         //retNameNew = temp.c_str();
 	}
 	else if (pi->hasNUsesOrMore(1)) {
 		char tempBuf2[20];
 		sprintf(tempBuf2, "0x%x", /*(unsigned)*/pi);
-		std::string name(tempBuf2);
+		string name(tempBuf2);
 		
-		addEdge(name.c_str(), vName, pi);
+		addEdge(name.c_str(), vName, pi, 5);
         retName.insert(0,name.c_str());
         //retNameNew = temp.c_str();
         //blame_info<<"The retName of call is "<<retName<<endl;
@@ -5269,7 +5537,7 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	// Add edges for all parameters of the function					
 	int opCount = 0;
     //const char *opName;
-    std::string opName;
+    string opName;
     User::op_iterator op_i = pi->op_begin(), op_e = pi->op_end();
     for ( ; op_i != op_e; ++op_i) {
 	  Value *v = *op_i;
@@ -5279,34 +5547,34 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 #endif
 		// Normal case where the parameter has a name and we have a normal function
 		if (v->hasName()) {						
-			addEdge(v->getName().data(), vName, pi);
+			addEdge(v->getName().data(), vName, pi, 6);
             opName.insert(0,v->getName().data());
             //opName = temp.c_str();
 		}
 		// corner case where parameter is a constantExpr (GEP or BitCast)
 		else if (v->getValueID() == Value::ConstantExprVal) {
 #ifdef DEBUG_GRAPH_BUILD
-			blame_info<<"Param "<<opCount<<" for "<<vName<<" is a constant"<<std::endl;
+			blame_info<<"Param "<<opCount<<" for "<<vName<<" is a constant"<<endl;
 #endif 
 			if (isa<ConstantExpr>(v)) {
 				ConstantExpr *ce = cast<ConstantExpr>(v);	
 			    if (ce->getOpcode() == Instruction::GetElementPtr) {
 					Value *vReplace = ce->getOperand(0);
 					if ((call_name->hasName()||!isTradName)&&vReplace->hasName()) {						
-						addEdge(vReplace->getName().data(), vName, pi);
+						addEdge(vReplace->getName().data(), vName, pi, 7);
                         opName.insert(0,vReplace->getName().data());
                         //opName = temp.c_str();
 					}
 					// FORTRAN support TC: still need to preserve ??
 					else if ((call_name->hasName() || !isTradName) && variables.count(tempStr) > 0) {
-						std::string paramName;
+						string paramName;
 						char tempBuf[18];
 						
 						sprintf(tempBuf, "0x%x", /*(unsigned)*/vReplace);
-						std::string tempStr(tempBuf);
+						string tempStr(tempBuf);
 						paramName.insert(0, tempStr);			
 						
-						addEdge(paramName.c_str(), vName, pi);
+						addEdge(paramName.c_str(), vName, pi, 8);
                         opName.insert(0,paramName.c_str());
                         //opName = temp.c_str();
 					}
@@ -5314,20 +5582,20 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 				else if (ce->getOpcode() == Instruction::BitCast) {
 					Value *vReplace = ce->getOperand(0);
 					if ((call_name->hasName()||!isTradName) && vReplace->hasName()) {
-                        addEdge(vReplace->getName().data(), vName, pi);
+                        addEdge(vReplace->getName().data(), vName, pi, 9);
                         opName.insert(0,vReplace->getName().data());
                         //opName = temp.c_str();
                     }
 					// FORTRAN support
 					else if ((call_name->hasName() || !isTradName) && variables.count(tempStr) > 0) {
-						std::string paramName;
+						string paramName;
 						char tempBuf[18];
 						
 						sprintf(tempBuf, "0x%x", /*(unsigned)*/vReplace);
-						std::string tempStr(tempBuf);
+						string tempStr(tempBuf);
 						paramName.insert(0, tempStr);			
 						
-						addEdge(paramName.c_str(), vName, pi);
+						addEdge(paramName.c_str(), vName, pi, 10);
                         opName.insert(0,paramName.c_str());
                         //opName = temp.c_str();
 					}
@@ -5338,9 +5606,9 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 		else if (variables.count(tempStr)) { //tempStr=>call_name
 			char tempBuf[18];
 			sprintf(tempBuf, "0x%x", /*(unsigned)*/v);
-			std::string paramName(tempBuf);
+			string paramName(tempBuf);
 			
-			addEdge(paramName.c_str(), vName, pi);
+			addEdge(paramName.c_str(), vName, pi, 11);
             opName.insert(0,paramName.c_str());
             //opName = temp.c_str();
 		}
@@ -5364,7 +5632,7 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
 
     //We don't run this for extern functions FOR NOW
     //if (!isExternFunc) {
-      std::string cN(callNameStr);
+      string cN(callNameStr);
       int specialCall = needExProc(cN);
       if (specialCall) {
 #ifdef DEBUG_GRAPH_BUILD
@@ -5375,12 +5643,12 @@ void FunctionBFC::geCall(Instruction *pi, std::set<const char*, ltstr> &iSet,
     //}
 }
 
-void FunctionBFC::geLoad(Instruction *pi, std::set<const char*, ltstr> &iSet,
+void FunctionBFC::geLoad(Instruction *pi, set<const char*, ltstr> &iSet,
 						property_map<MyGraphType, vertex_props_t>::type props,
 						property_map<MyGraphType, edge_iore_t>::type edge_type,
 						int & currentLineNum)
 {	
-	std::string instName;
+	string instName;
 	char tempBuf[18];
 	
 	if (pi->hasName()) {
@@ -5388,7 +5656,7 @@ void FunctionBFC::geLoad(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	}
 	else {
 		sprintf(tempBuf, "0x%x", /*(unsigned)*/pi);
-		std::string tempStr(tempBuf);
+		string tempStr(tempBuf);
 		instName.insert(0, tempStr);			
 	}
 	
@@ -5397,54 +5665,45 @@ void FunctionBFC::geLoad(Instruction *pi, std::set<const char*, ltstr> &iSet,
     
     if (v->hasName()) {
       if (variables.count(v->getName().str()) && variables.count(instName)) {
-#ifdef DEBUG_GRAPH_BUILD
-        blame_info<<"Adding edge(19) from "<<instName<<"-"<<v->getName().str()<<std::endl;
-#endif
-        addEdge(instName.c_str(), v->getName().data(), pi);
+        addEdge(instName.c_str(), v->getName().data(), pi, 12);
       }
     }
 
     else if (isa<ConstantExpr>(v)) { //v doesn't have a name
         ConstantExpr *ce = cast<ConstantExpr>(v);	
         if (ce->getOpcode() == Instruction::GetElementPtr) {
-            std::string opName = geGetElementPtr(ce, iSet, props, edge_type, currentLineNum);
+            string opName = geGetElementPtr(ce, iSet, props, edge_type, currentLineNum);
             if(opName.length() == 0)
                 return;
             if (variables.count(instName)&&variables.count(opName)){
-#ifdef DEBUG_GRAPH_BUILD
-                blame_info<<"Adding edge(20) from "<<instName<<"-"<<opName<<std::endl;
-#endif
-                addEdge(instName.c_str(), opName.c_str(), pi);
+                addEdge(instName.c_str(), opName.c_str(), pi, 13);
             }
         }
         else if (ce->getOpcode() == Instruction::BitCast) {
             Value *vRepl = ce->getOperand(0);
             if (vRepl == NULL) {
 #ifdef DEBUG_ERROR
-                blame_info<<"v bitcast get NULL in geLoad"<<std::endl;
+                blame_info<<"v bitcast get NULL in geLoad"<<endl;
 #endif 
                 return;
             }
             
-            std::string vReplName;
+            string vReplName;
             if (vRepl->hasName())
                 vReplName = vRepl->getName().str();
             else {
                 sprintf(tempBuf, "0x%x", vRepl);
-                std::string tempStr(tempBuf);
+                string tempStr(tempBuf);
                 vReplName.insert(0, tempStr);
             }
 
             // TODO: Add debug integer param to addEdge so we know which addEdge it came from 
             if (variables.count(instName) && variables.count(vReplName)) {
-#ifdef DEBUG_GRAPH_BUILD
-                blame_info<<"Adding edge(21) from "<<instName<<"-"<<vReplName<<std::endl;
-#endif 
-                addEdge(instName.c_str(), vReplName.c_str(), pi);
+                addEdge(instName.c_str(), vReplName.c_str(), pi, 14);
             }
             else {
 #ifdef DEBUG_ERROR
-                blame_info<<"Can't find "<<instName<<" or "<<vReplName<<" in variables in geLoad"<<std::endl;
+                blame_info<<"Can't find "<<instName<<" or "<<vReplName<<" in variables in geLoad"<<endl;
 #endif 
                 return;
             }
@@ -5452,29 +5711,26 @@ void FunctionBFC::geLoad(Instruction *pi, std::set<const char*, ltstr> &iSet,
     }
 
     else { //v doesn't have a name and not a constantExpr, most common
-      std::string opName;	
+      string opName;	
       sprintf(tempBuf, "0x%x", /*(unsigned)*/v);
-      std::string tempStr(tempBuf);    
+      string tempStr(tempBuf);    
       opName.insert(0, tempStr);
         
       if (variables.count(opName) && variables.count(instName)) {
-#ifdef DEBUG_GRAPH_BUILD
-        blame_info<<"Adding edge(22) from "<<instName<<"-"<<opName<<std::endl;
-#endif 
-        addEdge(instName.c_str(), opName.c_str(), pi);
+        addEdge(instName.c_str(), opName.c_str(), pi, 15);
       }
     }
 }		
 
 
-void FunctionBFC::geMemAtomic(Instruction *pi, std::set<const char*, ltstr> &iSet, 
+void FunctionBFC::geMemAtomic(Instruction *pi, set<const char*, ltstr> &iSet, 
                             property_map<MyGraphType, vertex_props_t>::type props, 
                             property_map<MyGraphType, edge_iore_t>::type edge_type,  
                             int &currentLineNum)
 {
     //TODO: Add edges between pi and ops: mem atomic = load+store
 #ifdef DEBUG_GRAPH_BUILD
-    blame_info<<"gen edges for MemAtomic Inst: "<<pi->getOpcodeName()<<" at line"<<currentLineNum<<std::endl;
+    blame_info<<"gen edges for MemAtomic Inst: "<<pi->getOpcodeName()<<" at line"<<currentLineNum<<endl;
 #endif
 
     if (pi->getOpcode() == Instruction::AtomicCmpXchg) {
@@ -5489,7 +5745,7 @@ void FunctionBFC::geMemAtomic(Instruction *pi, std::set<const char*, ltstr> &iSe
         //add edge between comp and ptr
 	    char tempBuf[18];
 
-        std::string cmpName;
+        string cmpName;
         if (second->hasName())
             cmpName = second->getName().str();
         else if (second->getValueID() == Value::ConstantIntVal) {
@@ -5508,17 +5764,17 @@ void FunctionBFC::geMemAtomic(Instruction *pi, std::set<const char*, ltstr> &iSe
         } 
         else {
 			sprintf(tempBuf, "0x%x", /*(unsigned)*/second);
-			std::string tempStr(tempBuf);
+			string tempStr(tempBuf);
 			cmpName.insert(0, tempStr);
 		}
         
         // Now we just need to find the correct ptrName and addEdge !
-        std::string ptrName;
+        string ptrName;
 
         if (first->hasName()) {
             ptrName = first->getName().str();
             if (variables.count(ptrName) && variables.count(cmpName)) {
-                addEdge(ptrName.c_str(), cmpName.c_str(), pi);
+                addEdge(ptrName.c_str(), cmpName.c_str(), pi, 16);
             }
         }
         else if (isa<ConstantExpr>(first)) { //first/ptr doesn't have a name
@@ -5528,7 +5784,7 @@ void FunctionBFC::geMemAtomic(Instruction *pi, std::set<const char*, ltstr> &iSe
                 if(ptrName.length() == 0)
                     return;
                 if (variables.count(ptrName) && variables.count(cmpName)) {
-                    addEdge(ptrName.c_str(), cmpName.c_str(), pi);
+                    addEdge(ptrName.c_str(), cmpName.c_str(), pi, 17);
                 }
             }
             else if (ce->getOpcode() == Instruction::BitCast) {
@@ -5540,22 +5796,22 @@ void FunctionBFC::geMemAtomic(Instruction *pi, std::set<const char*, ltstr> &iSe
                     ptrName = vRepl->getName().str();
                 else {
                     sprintf(tempBuf, "0x%x", vRepl);
-                    std::string tempStr(tempBuf);
+                    string tempStr(tempBuf);
                     ptrName.insert(0, tempStr);
                 }
 
                 if (variables.count(ptrName) && variables.count(cmpName)) {
-                    addEdge(ptrName.c_str(), cmpName.c_str(), pi);
+                    addEdge(ptrName.c_str(), cmpName.c_str(), pi, 18);
                 }
             }	
         }
         else { //first doesn't have a name and not a constantExpr, most common
             sprintf(tempBuf, "0x%x", /*(unsigned)*/first);
-            std::string tempStr(tempBuf);    
+            string tempStr(tempBuf);    
             ptrName.insert(0, tempStr);
             
             if (variables.count(ptrName) && variables.count(cmpName)) {
-                addEdge(ptrName.c_str(), cmpName.c_str(), pi);
+                addEdge(ptrName.c_str(), cmpName.c_str(), pi, 19);
             }
         }
     } //end of if Opcode = AtomicCmpXchg
@@ -5572,12 +5828,12 @@ void FunctionBFC::geMemAtomic(Instruction *pi, std::set<const char*, ltstr> &iSe
 
 
 void FunctionBFC::geAtomicLoadPart(Value *ptr, 
-                            Instruction *pi, std::set<const char*, ltstr> &iSet, 
+                            Instruction *pi, set<const char*, ltstr> &iSet, 
                             property_map<MyGraphType, vertex_props_t>::type props, 
                             property_map<MyGraphType, edge_iore_t>::type edge_type,  
                             int &currentLineNum)
 {
-	std::string instName;
+	string instName;
 	char tempBuf[18];
 	
 	if (pi->hasName()) {
@@ -5585,31 +5841,25 @@ void FunctionBFC::geAtomicLoadPart(Value *ptr,
 	}
 	else {
 		sprintf(tempBuf, "0x%x", /*(unsigned)*/pi);
-		std::string tempStr(tempBuf);
+		string tempStr(tempBuf);
 		instName.insert(0, tempStr);			
 	}
 	
     //// start adding edges //////
     if (ptr->hasName()) {
       if (variables.count(ptr->getName().str()) && variables.count(instName)) {
-#ifdef DEBUG_GRAPH_BUILD
-        blame_info<<"Adding edge(23) from "<<instName<<"-"<<ptr->getName().str()<<std::endl;
-#endif
-        addEdge(instName.c_str(), ptr->getName().data(), pi);
+        addEdge(instName.c_str(), ptr->getName().data(), pi, 20);
       }
     }
 
     else if (isa<ConstantExpr>(ptr)) { //ptr doesn't have a name
         ConstantExpr *ce = cast<ConstantExpr>(ptr);	
         if (ce->getOpcode() == Instruction::GetElementPtr) {
-            std::string opName = geGetElementPtr(ce, iSet, props, edge_type, currentLineNum);
+            string opName = geGetElementPtr(ce, iSet, props, edge_type, currentLineNum);
             if(opName.length() == 0)
                 return;
             if (variables.count(instName)&&variables.count(opName)){
-#ifdef DEBUG_GRAPH_BUILD
-                blame_info<<"Adding edge(24) from "<<instName<<"-"<<opName<<std::endl;
-#endif
-                addEdge(instName.c_str(), opName.c_str(), pi);
+                addEdge(instName.c_str(), opName.c_str(), pi, 21);
             }
         }
 
@@ -5617,30 +5867,27 @@ void FunctionBFC::geAtomicLoadPart(Value *ptr,
             Value *vRepl = ce->getOperand(0);
             if (vRepl == NULL) {
 #ifdef DEBUG_ERROR
-                blame_info<<"ptr bitcast get NULL in geAtomicLoadPart"<<std::endl;
+                blame_info<<"ptr bitcast get NULL in geAtomicLoadPart"<<endl;
 #endif 
                 return;
             }
             
-            std::string vReplName;
+            string vReplName;
             if (vRepl->hasName())
                 vReplName = vRepl->getName().str();
             else {
                 sprintf(tempBuf, "0x%x", vRepl);
-                std::string tempStr(tempBuf);
+                string tempStr(tempBuf);
                 vReplName.insert(0, tempStr);
             }
 
                 // TODO: Add debug integer param to addEdge so we know which addEdge it came from 
             if (variables.count(instName) && variables.count(vReplName)) {
-#ifdef DEBUG_GRAPH_BUILD
-                blame_info<<"Adding edge(25) from "<<instName<<"-"<<vReplName<<std::endl;
-#endif 
-                addEdge(instName.c_str(), vReplName.c_str(), pi);
+                addEdge(instName.c_str(), vReplName.c_str(), pi, 22);
             }
             else {
 #ifdef DEBUG_ERROR
-                blame_info<<"Can't find "<<instName<<" or "<<vReplName<<" in variables in geAtomicLoadPart"<<std::endl;
+                blame_info<<"Can't find "<<instName<<" or "<<vReplName<<" in variables in geAtomicLoadPart"<<endl;
 #endif 
                 return;
             }
@@ -5648,29 +5895,26 @@ void FunctionBFC::geAtomicLoadPart(Value *ptr,
     }
 
     else { //ptr doesn't have a name and not a constantExpr, most common
-      std::string opName;	
+      string opName;	
       sprintf(tempBuf, "0x%x", /*(unsigned)*/ptr);
-      std::string tempStr(tempBuf);    
+      string tempStr(tempBuf);    
       opName.insert(0, tempStr);
         
       if (variables.count(opName) && variables.count(instName)) {
-#ifdef DEBUG_GRAPH_BUILD
-        blame_info<<"Adding edge(26) from "<<instName<<"-"<<opName<<std::endl;
-#endif 
-        addEdge(instName.c_str(), opName.c_str(), pi);
+        addEdge(instName.c_str(), opName.c_str(), pi, 23);
       }
     }
 }	
 
 
 void FunctionBFC::geAtomicStorePart(Value *ptr, Value *val, 
-                            Instruction *pi, std::set<const char*, ltstr> &iSet, 
+                            Instruction *pi, set<const char*, ltstr> &iSet, 
                             property_map<MyGraphType, vertex_props_t>::type props, 
                             property_map<MyGraphType, edge_iore_t>::type edge_type,  
                             int &currentLineNum)
 {
 	//first=value,second=location to store
-	std::string firstName, secondName;
+	string firstName, secondName;
 	char tempBuf[18];
 	
 	if (ptr->hasName()) {
@@ -5679,7 +5923,7 @@ void FunctionBFC::geAtomicStorePart(Value *ptr, Value *val,
 	}
 	else if (ptr->getValueID() == Value::ConstantExprVal) {
 #ifdef DEBUG_GRAPH_BUILD
-		blame_info<<"Second value in Store is ConstantExpr"<<std::endl;
+		blame_info<<"Second value in Store is ConstantExpr"<<endl;
 #endif 
 		// Just to make sure
 		if (isa<ConstantExpr>(ptr)) {	
@@ -5687,7 +5931,7 @@ void FunctionBFC::geAtomicStorePart(Value *ptr, Value *val,
 			if (ce->getOpcode() == Instruction::BitCast) {
 				// Overwriting 
 #ifdef DEBUG_GRAPH_BUILD
-				blame_info<<"Overwriting GEP Store second with "<<ce->getOperand(0)->getName().data()<<std::endl;
+				blame_info<<"Overwriting GEP Store second with "<<ce->getOperand(0)->getName().data()<<endl;
 #endif 
 				ptr = ce->getOperand(0);
 				
@@ -5696,7 +5940,7 @@ void FunctionBFC::geAtomicStorePart(Value *ptr, Value *val,
 			
 				else {
 					sprintf(tempBuf, "0x%x", /*(unsigned)*/ptr);
-					std::string tempStr(tempBuf);
+					string tempStr(tempBuf);
 					secondName.insert(0, tempStr);
 				}
 			}
@@ -5706,7 +5950,7 @@ void FunctionBFC::geAtomicStorePart(Value *ptr, Value *val,
 	}
 	else {
 		sprintf(tempBuf, "0x%x", /*(unsigned)*/ptr);
-		std::string tempStr(tempBuf);
+		string tempStr(tempBuf);
 		secondName.insert(0, tempStr);
 	}
 
@@ -5715,7 +5959,7 @@ void FunctionBFC::geAtomicStorePart(Value *ptr, Value *val,
 /*        cout<<"val's name is: "<<val->getName().data()<<endl;
 		
         sprintf(tempBuf, "0x%x", val);
-		std::string tempStr(tempBuf);
+		string tempStr(tempBuf);
 		firstName.insert(0, tempStr);
         cout<<"simply val's raw name "<<firstName<<endl;
 */		
@@ -5724,7 +5968,7 @@ void FunctionBFC::geAtomicStorePart(Value *ptr, Value *val,
 	}
 	else if (val->getValueID() == Value::ConstantExprVal) {
 #ifdef DEBUG_GRAPH_BUILD
-		blame_info<<"First value in Store is ConstantExpr"<<std::endl;
+		blame_info<<"First value in Store is ConstantExpr"<<endl;
 #endif 
 		// Just to make sure
 		if (isa<ConstantExpr>(val)) {
@@ -5732,14 +5976,14 @@ void FunctionBFC::geAtomicStorePart(Value *ptr, Value *val,
 			if (ce->getOpcode() == Instruction::BitCast) {
 				// Overwriting 
 #ifdef DEBUG_GRAPH_BUILD
-				blame_info<<"Overwriting BitCast Store first with "<<ce->getOperand(0)->getName().data()<<std::endl;
+				blame_info<<"Overwriting BitCast Store first with "<<ce->getOperand(0)->getName().data()<<endl;
 #endif 
 				val = ce->getOperand(0);
 				if (val->hasName()) 
 					firstName= val->getName().str();
 				else {
 					sprintf(tempBuf, "0x%x", /*(unsigned)*/val);
-					std::string tempStr(tempBuf);
+					string tempStr(tempBuf);
 		    		firstName.insert(0, tempStr);
 				}
 			}
@@ -5766,30 +6010,30 @@ void FunctionBFC::geAtomicStorePart(Value *ptr, Value *val,
 	} 
 	else { // FORTRAN support
 		sprintf(tempBuf, "0x%x", /*(unsigned)*/val);
-		std::string tempStr(tempBuf);
+		string tempStr(tempBuf);
 		firstName.insert(0, tempStr);
 	}
 	
 	if (variables.count(secondName) && variables.count(firstName))
-		addEdge(secondName.c_str(), firstName.c_str(), pi);
+		addEdge(secondName.c_str(), firstName.c_str(), pi, 24);
 }
 
 
-void FunctionBFC::addEdge(const char *source, const char *dest, Instruction *pi)
+void FunctionBFC::addEdge(const char *source, const char *dest, Instruction *pi, int place)
 {
 	property_map<MyGraphType, edge_iore_t>::type edge_type = get(edge_iore, G);
     bool inserted;
     graph_traits < MyGraphType >::edge_descriptor ed;
 	
 #ifdef DEBUG_GRAPH_BUILD_EDGES
-	blame_info<<"Adding edge between "<<source<<" and "<<dest<<" of type "<<pi->getOpcodeName()<<std::endl;
+	blame_info<<"Adding edge "<<place<<" between "<<source<<" and "<<dest<<" of type "<<pi->getOpcodeName()<<endl;
 #endif
 	
-    std::string sourceStr(source), destStr(dest);
+    string sourceStr(source), destStr(dest);
 	if (variables.count(sourceStr) == 0 || variables.count(destStr) == 0) {
 #ifdef DEBUG_ERROR
 		blame_info<<"Variables can't find value of "<<source<<" "<<variables.count(sourceStr);
-		blame_info<<" or "<<dest<<" "<<variables.count(destStr)<<std::endl;
+		blame_info<<" or "<<dest<<" "<<variables.count(destStr)<<endl;
 #endif 			
 		return;
 	}
@@ -5799,13 +6043,13 @@ void FunctionBFC::addEdge(const char *source, const char *dest, Instruction *pi)
 		edge_type[ed] = pi->getOpcode();
 	else {
 #ifdef DEBUG_ERROR
-		blame_info<<"Insertion fail in genEdges for "<<source<<" to "<<dest<<std::endl;
-		std::cerr<<"Insertion fail in genEdges for "<<source<<" to "<<dest<<std::endl;
+		blame_info<<"Insertion fail in genEdges for "<<source<<" to "<<dest<<endl;
+		cerr<<"Insertion fail in genEdges for "<<source<<" to "<<dest<<endl;
 #endif 
 	}
 }
 
-void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
+void FunctionBFC::geStore(Instruction *pi, set<const char*, ltstr> &iSet,
 							property_map<MyGraphType, vertex_props_t>::type props,
 							property_map<MyGraphType, edge_iore_t>::type edge_type,
 							int & currentLineNum)
@@ -5815,7 +6059,7 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	User::op_iterator op_i = pi->op_begin();
 	Value  *first = *op_i,  *second = *(++op_i);
 	//first=value,second=location to store
-	std::string firstName, secondName;
+	string firstName, secondName;
 	
 	char tempBuf[18];
 	
@@ -5823,16 +6067,16 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
 		secondName = second->getName();
 		// TODO: generate this automatically
 		/*
-		if (secondName.find("ierr") != std::string::npos)
+		if (secondName.find("ierr") != string::npos)
 		{
-			std::cout<<"Ignoring ierr store"<<std::endl;
+			cout<<"Ignoring ierr store"<<endl;
 			return;
 		}*/
 		addImplicitEdges(second, iSet, edge_type, NULL, false);
 	}
 	else if (second->getValueID() == Value::ConstantExprVal) {
 #ifdef DEBUG_GRAPH_BUILD
-		blame_info<<"Second value in Store is ConstantExpr"<<std::endl;
+		blame_info<<"Second value in Store is ConstantExpr"<<endl;
 #endif 
 		// Just to make sure
 		if (isa<ConstantExpr>(second)){
@@ -5841,7 +6085,7 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
 			if (ce->getOpcode() == Instruction::BitCast) {
 				// Overwriting 
 #ifdef DEBUG_GRAPH_BUILD
-				blame_info<<"Overwriting GEP Store second with "<<ce->getOperand(0)->getName().data()<<std::endl;
+				blame_info<<"Overwriting GEP Store second with "<<ce->getOperand(0)->getName().data()<<endl;
 #endif 
 				second = ce->getOperand(0);
 				
@@ -5850,7 +6094,7 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
 			
 				else {
 					sprintf(tempBuf, "0x%x", /*(unsigned)*/second);//TC: old:first
-					std::string tempStr(tempBuf);
+					string tempStr(tempBuf);
 					secondName.insert(0, tempStr);
 				}
 			}
@@ -5860,7 +6104,7 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	}
 	else {
 		sprintf(tempBuf, "0x%x", /*(unsigned)*/second);
-		std::string tempStr(tempBuf);
+		string tempStr(tempBuf);
 		secondName.insert(0, tempStr);
 	}
 
@@ -5869,9 +6113,9 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
 		
 		// TODO: generate this automatically
 		/*
-		if (firstName.find("ierr") != std::string::npos)
+		if (firstName.find("ierr") != string::npos)
 		{
-			std::cout<<"Ignoring ierr store"<<std::endl;
+			cout<<"Ignoring ierr store"<<endl;
 			return;
 		}*/
 		
@@ -5881,7 +6125,7 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
 
 	else if (first->getValueID() == Value::ConstantExprVal) {
 #ifdef DEBUG_GRAPH_BUILD
-		blame_info<<"First value in Store is ConstantExpr"<<std::endl;
+		blame_info<<"First value in Store is ConstantExpr"<<endl;
 #endif 
 		// Just to make sure
 		if (isa<ConstantExpr>(first)) {
@@ -5890,7 +6134,7 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
 			if (ce->getOpcode() == Instruction::BitCast) {
 				// Overwriting 
 #ifdef DEBUG_GRAPH_BUILD
-				blame_info<<"Overwriting BitCast Store first with "<<ce->getOperand(0)->getName().data()<<std::endl;
+				blame_info<<"Overwriting BitCast Store first with "<<ce->getOperand(0)->getName().data()<<endl;
 #endif 
 				first = ce->getOperand(0);
 				
@@ -5898,7 +6142,7 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
 					firstName= first->getName().str();
 				else {
 					sprintf(tempBuf, "0x%x", /*(unsigned)*/first);
-					std::string tempStr(tempBuf);
+					string tempStr(tempBuf);
 		    		firstName.insert(0, tempStr);
 				}
 			}
@@ -5908,7 +6152,7 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
             else {
                 char tempBuf[18];
                 sprintf(tempBuf, "0x%x", /*(unsigned)*/pi);
-                std::string name(tempBuf); // Use the address of the instruction as its name ??
+                string name(tempBuf); // Use the address of the instruction as its name ??
                 name += ".CE";
                 
                 char tempBuf2[10];
@@ -5952,8 +6196,8 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
 		}
 		else {
 #ifdef DEBUG_ERROR
-			std::cerr<<"Not a float or a double FPVal"<<std::endl;
-			blame_info<<"Not a float or a double FPVal"<<std::endl;
+			cerr<<"Not a float or a double FPVal"<<endl;
+			blame_info<<"Not a float or a double FPVal"<<endl;
 #endif 
 			return;
 		}
@@ -5971,7 +6215,7 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	else  // FORTRAN support
 	{
 		sprintf(tempBuf, "0x%x", /*(unsigned)*/first);
-		std::string tempStr(tempBuf);
+		string tempStr(tempBuf);
 		firstName.insert(0, tempStr);
 	}
 	
@@ -5979,11 +6223,11 @@ void FunctionBFC::geStore(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	if (variables.count(secondName) && variables.count(firstName))
 	//changed by Hui 08/21/15: switch first and second
     //    addEdge(firstName.c_str(), secondName.c_str(), pi);
-        addEdge(secondName.c_str(), firstName.c_str(), pi);
+        addEdge(secondName.c_str(), firstName.c_str(), pi, 25);
 }
 
 
-void FunctionBFC::geBitCast(Instruction *pi, std::set<const char*, ltstr> &iSet,
+void FunctionBFC::geBitCast(Instruction *pi, set<const char*, ltstr> &iSet,
 							property_map<MyGraphType, vertex_props_t>::type props,
 							property_map<MyGraphType, edge_iore_t>::type edge_type,
 							int &currentLineNum)
@@ -6016,14 +6260,14 @@ void FunctionBFC::geBitCast(Instruction *pi, std::set<const char*, ltstr> &iSet,
 			else {	
 #ifdef DEBUG_ERROR
 				blame_info<<"ERROR__(genEdges) - Insertion fail in genEdges for ";
-				blame_info<<v->getName().data()<<" to "<<pi->getName().data()<<std::endl;
-				std::cerr<<"Insertion fail in genEdges for "<<v->getName().data()<<" to "<<pi->getName().data()<<std::endl;
+				blame_info<<v->getName().data()<<" to "<<pi->getName().data()<<endl;
+				cerr<<"Insertion fail in genEdges for "<<v->getName().data()<<" to "<<pi->getName().data()<<endl;
 #endif 
 			}
 		}
 		// FORTRAN TC: Should this be preserved ?
 		else {
-			std::string opName, instName;
+			string opName, instName;
 			char tempBuff[18];
 			
 			if (pi->hasName()) {
@@ -6031,7 +6275,7 @@ void FunctionBFC::geBitCast(Instruction *pi, std::set<const char*, ltstr> &iSet,
 			}
 			else {
 				sprintf(tempBuff, "0x%x", /*(unsigned)*/pi);
-				std::string tempStr(tempBuff);
+				string tempStr(tempBuff);
 				instName.insert(0, tempStr);			
 			}
 			if (v->hasName()) {
@@ -6039,13 +6283,13 @@ void FunctionBFC::geBitCast(Instruction *pi, std::set<const char*, ltstr> &iSet,
 			}
 			else {
 				sprintf(tempBuff, "0x%x", /*(unsigned)*/v);
-				std::string tempStr(tempBuff);
+				string tempStr(tempBuff);
 				opName.insert(0, tempStr);
 			}
 			
 			if (variables.count(opName) && variables.count(instName)) {
 #ifdef DEBUG_GRAPH_BUILD_EDGES
-	            blame_info<<"Adding edge between "<<instName<<" and "<<opName<<" of type "<<pi->getOpcodeName()<<std::endl;
+	            blame_info<<"Adding edge between "<<instName<<" and "<<opName<<" of type "<<pi->getOpcodeName()<<endl;
 #endif
 				tie(ed, inserted) = add_edge(variables[instName]->number,variables[opName]->number,G);
 				//tie(ed,inserted) = add_edge(variables[pi->getName().data()]->number, variables[v->getName().data()]->number,G);
@@ -6060,7 +6304,7 @@ void FunctionBFC::geBitCast(Instruction *pi, std::set<const char*, ltstr> &iSet,
 void FunctionBFC::geBlank(Instruction *pi)
 {
 					#ifdef DEBUG_GRAPH_BUILD
-	blame_info<<"Not generating any edges for opcode "<<pi->getOpcodeName()<<std::endl;
+	blame_info<<"Not generating any edges for opcode "<<pi->getOpcodeName()<<endl;
 	#endif
 }
 
@@ -6068,7 +6312,7 @@ void FunctionBFC::geBlank(Instruction *pi)
 void FunctionBFC::geInvoke()
 {
 #ifdef DEBUG_ERROR			
-	std::cerr<<"Why are we calling invoke?"<<std::endl;
+	cerr<<"Why are we calling invoke?"<<endl;
 #endif 
 	/*
 	 //cout<<"Begin Invoke\n";
@@ -6077,8 +6321,8 @@ void FunctionBFC::geInvoke()
 	 {
 	 Value *v = *op_i;
 	 
-	 //cout<<"Invoke pi->getNameStart is "<<pi->getName().data()<<std::endl;
-	 //cout<<"Invoke v->getNameStart is "<<v->getName().data()<<std::endl;
+	 //cout<<"Invoke pi->getNameStart is "<<pi->getName().data()<<endl;
+	 //cout<<"Invoke v->getNameStart is "<<v->getName().data()<<endl;
 	 
 	 if (v->hasName() && pi->hasName() && variables[pi->getName().data()] 
 	 && variables[v->getName().data()] )  
@@ -6097,24 +6341,24 @@ void FunctionBFC::geInvoke()
 }
 
 
-void FunctionBFC::genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet,
+void FunctionBFC::genEdges(Instruction *pi, set<const char*, ltstr> &iSet,
 							property_map<MyGraphType, vertex_props_t>::type props,
 							property_map<MyGraphType, edge_iore_t>::type edge_type,
-							int &currentLineNum, std::set<NodeProps *> &seenCall)
+							int &currentLineNum, set<NodeProps *> &seenCall)
 {  
 	if (pi == NULL) {
 #ifdef DEBUG_ERROR
-		std::cerr<<"GE -- pi is NULL"<<std::endl;
-		blame_info<<"GE -- pi is NULL"<<std::endl;
+		cerr<<"GE -- pi is NULL"<<endl;
+		blame_info<<"GE -- pi is NULL"<<endl;
 #endif
 		return;
 	}
 	
 #ifdef DEBUG_GRAPH_BUILD
 	if (pi->hasName())
-		blame_info<<"GE Instruction "<<pi->getName().str()<<" "<<pi->getOpcodeName()<<std::endl;
+		blame_info<<"GE Instruction "<<pi->getName().str()<<" "<<pi->getOpcodeName()<<endl;
 	else
-		blame_info<<"GE No name "<<pi->getOpcodeName()<<std::endl;
+		blame_info<<"GE No name "<<pi->getOpcodeName()<<endl;
 #endif 
 	
 	// Instruction Num 43, Call Instruction, we only look at the debug information right now
@@ -6156,21 +6400,22 @@ void FunctionBFC::genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet,
 		}
 		
 		if (typeVal == Type::StructTyID) {
-			const llvm::StructType *type = cast<StructType>(pointT);
+		  const llvm::StructType *type = cast<StructType>(pointT);
+          if (type->hasName()) {
 			string structNameFull = type->getStructName().str(); //parent module M
 			#ifdef DEBUG_GRAPH_BUILD
-			blame_info<<"GenEdges -- structNameFull -- "<<structNameFull<<std::endl;
+			blame_info<<"GenEdges -- structNameFull -- "<<structNameFull<<endl;
 			#endif 
 			
 			if (structNameFull.find("struct.descriptor_dimension") != \
-                std::string::npos) {
+                string::npos) {
 #ifdef DEBUG_P
                 cout<<structNameFull<<" find struct.descriptor_dimension"<<endl;
 #endif
                 return;
             }
 			
-			if (structNameFull.find("struct.array1") != std::string::npos) {
+			if (structNameFull.find("struct.array1") != string::npos) {
 #ifdef DEBUG_P
                 cout<<structNameFull<<" find struct.array1"<<endl;
 #endif
@@ -6183,7 +6428,8 @@ void FunctionBFC::genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet,
 							return;
 					}
 				}
-			}	
+			}
+          }
 		}
 	}
 	
@@ -6302,9 +6548,13 @@ void FunctionBFC::genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet,
 		geCall(pi, iSet, props, edge_type, currentLineNum, seenCall);
 	else if (pi->getOpcode() == Instruction::Select)
 		geDefault(pi, iSet, props, edge_type, currentLineNum);
+	else if (pi->getOpcode() == Instruction::ExtractValue)
+		geExtractValue(pi, iSet, props, edge_type, currentLineNum);
+	else if (pi->getOpcode() == Instruction::InsertValue)
+		geInsertValue(pi, iSet, props, edge_type, currentLineNum);
 	else {
 #ifdef DEBUG_ERROR
-		std::cerr<<"Other kind of opcode(1) is : "<<pi->getOpcodeName()<<"\n";
+		cerr<<"Other kind of opcode(1) is : "<<pi->getOpcodeName()<<"\n";
 #endif 
 	}		  
 }
@@ -6321,7 +6571,7 @@ void FunctionBFC::genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	oe_beg = boost::out_edges(bool_num, G).first;		// edge iterator begin
 	oe_end = boost::out_edges(bool_num, G).second;       // edge iterator end
 	
-	//std::vector<int> destNodes;
+	//vector<int> destNodes;
 	
 	// bool_num = delete Node
 	// alloc_num = recipient Node
@@ -6329,12 +6579,12 @@ void FunctionBFC::genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	NodeProps * dN =  get(get(vertex_props, G),bool_num);	
 	
 #ifdef DEBUG_GRAPH_IMPLICIT
-	blame_info<<"Collapse_(transferImplicitEdges) - transfer lineNumber "<<dN->line_num<<" from "<<dN->name<<" to "<<rN->name<<std::endl;
+	blame_info<<"Collapse_(transferImplicitEdges) - transfer lineNumber "<<dN->line_num<<" from "<<dN->name<<" to "<<rN->name<<endl;
 #endif
 	rN->lineNumbers.insert(dN->line_num);
 	
 						#ifdef DEBUG_LINE_NUMS
-	blame_info<<"Inserting line number(3) "<<dN->line_num<<" to "<<rN->name<<std::endl;
+	blame_info<<"Inserting line number(3) "<<dN->line_num<<" to "<<rN->name<<endl;
 	#endif
 	
 	if (dN->nStatus[CALL_PARAM])
@@ -6353,12 +6603,12 @@ void FunctionBFC::genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet,
 		rN->nStatus[CALL_NODE] = true;
 	}
 	
-	std::set<FuncCall *>::iterator fc_i = dN->funcCalls.begin();
+	set<FuncCall *>::iterator fc_i = dN->funcCalls.begin();
 	
 	for (; fc_i != dN->funcCalls.end(); fc_i++)
 	{
 		//FuncCall * fc = *fc_i;
-		//std::cout<<"IMPLICIT Transferring call to node "<<alloc_num<<" from "<<fc->funcName<<" param num "<<fc->paramNumber<<std::endl;
+		//cout<<"IMPLICIT Transferring call to node "<<alloc_num<<" from "<<fc->funcName<<" param num "<<fc->paramNumber<<endl;
 		rN->addFuncCall(*fc_i);
 	}
 	
@@ -6425,9 +6675,9 @@ void FunctionBFC::genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	i_beg = boost::in_edges(v_index, G).first;		// edge iterator begin
 	i_end = boost::in_edges(v_index, G).second;    // edge iterator end
 	
-	std::vector<int> destNodes;
-	std::vector<int> sourceNodes;
-	std::vector<int> allocNodes;
+	vector<int> destNodes;
+	vector<int> sourceNodes;
+	vector<int> allocNodes;
 	
 	// iterate through the edges trying to find a non-implicit instruction
 	for(; e_beg != e_end; ++e_beg) 
@@ -6465,7 +6715,7 @@ void FunctionBFC::genEdges(Instruction *pi, std::set<const char*, ltstr> &iSet,
 	}
 	
 	
-	std::vector<int>::iterator v_i;
+	vector<int>::iterator v_i;
 	
 	for (v_i = destNodes.begin(); v_i != destNodes.end(); ++v_i)
 		remove_edge(v_index, *v_i, G);
@@ -6495,7 +6745,7 @@ void FunctionBFC::collapseIO()
 		
 		if (!v) {
 #ifdef DEBUG_ERROR			
-			std::cerr<<"Null V in collapseIO\n";
+			cerr<<"Null V in collapseIO\n";
 #endif 
 			continue;
 		}
@@ -6503,7 +6753,7 @@ void FunctionBFC::collapseIO()
 		e_beg = boost::out_edges(v_index, G).first;		// edge iterator begin
 		e_end = boost::out_edges(v_index, G).second;    // edge iterator end
 		
-		std::vector< std::pair<int,int> > deleteEdges;
+		vector< pair<int,int> > deleteEdges;
 		// iterate through the edges to find matching opcode
 		for(; e_beg != e_end; ++e_beg) {
 			int opCode = get(get(edge_iore, G),*e_beg);
@@ -6514,31 +6764,31 @@ void FunctionBFC::collapseIO()
 				//c++ "<<" basic_ostream
                 //TOCHECK: Hui 12/14/15: should add "writeln"? why check targetV
                 //since edge is like: writeln -> a ??
-				std::string::size_type loc = targetV->name.find("basic_ostream", 0);
-				std::string::size_type loc2 = targetV->name.find("SolsEi", 0);
+				string::size_type loc = targetV->name.find("basic_ostream", 0);
+				string::size_type loc2 = targetV->name.find("SolsEi", 0);
 				
-				if (loc != std::string::npos) {
-					std::string tmpStr("COUT");
+				if (loc != string::npos) {
+					string tmpStr("COUT");
 					ExitProgram *ep = findOrCreateExitProgram(tmpStr);
 					if (ep != NULL) {
 						//ep->addVertex(v);
 					}
 					else {
 #ifdef DEBUG_ERROR			
-						std::cerr<<"WTF!  Why is this shiznit NULL!(2) for "<<v->name<<std::endl;	
+						cerr<<"WTF!  Why is this shiznit NULL!(2) for "<<v->name<<endl;	
 #endif 
 						continue;
 					}
 					
-					std::pair<int, int> tmpPair(sourceV->number, targetV->number);
+					pair<int, int> tmpPair(sourceV->number, targetV->number);
 #ifdef DEBUG_GRAPH_COLLAPSE
-					blame_info<<"Remove edge(hui) from "<<sourceV->name<<" to "<<targetV->name<<" [6]"<<std::endl;
+					blame_info<<"Remove edge(hui) from "<<sourceV->name<<" to "<<targetV->name<<" [6]"<<endl;
 #endif
 					deleteEdges.push_back(tmpPair);
 				}
 
-				else if (loc2 != std::string::npos) {	
-					std::string tmpStr("COUT-VAR-");
+				else if (loc2 != string::npos) {	
+					string tmpStr("COUT-VAR-");
 					if (v->llvm_inst != NULL) {
 						if (isa<Instruction>(v->llvm_inst)) {
 							Instruction *l_i = cast<Instruction>(v->llvm_inst);	
@@ -6552,7 +6802,7 @@ void FunctionBFC::collapseIO()
 								else
 								{
 #ifdef DEBUG_ERROR			
-									std::cerr<<"WTF!  Why is this shiznit NULL!(3) for "<<v->name<<std::endl;	
+									cerr<<"WTF!  Why is this shiznit NULL!(3) for "<<v->name<<endl;	
 #endif 
 									continue;
 								}
@@ -6560,20 +6810,20 @@ void FunctionBFC::collapseIO()
 						}
 					}
 					
-					std::pair<int, int> tmpPair(sourceV->number, targetV->number);
+					pair<int, int> tmpPair(sourceV->number, targetV->number);
 #ifdef DEBUG_GRAPH_COLLAPSE
-					blame_info<<"Remove edge(hui) from "<<sourceV->name<<" to "<<targetV->name<<" [7]"<<std::endl;
+					blame_info<<"Remove edge(hui) from "<<sourceV->name<<" to "<<targetV->name<<" [7]"<<endl;
 #endif
                     deleteEdges.push_back(tmpPair);
 				}
 			}
 		}
 		
-		std::vector<std::pair<int,int> >::iterator vecPair_i;
+		vector<pair<int,int> >::iterator vecPair_i;
 		
 		for (vecPair_i = deleteEdges.begin();  vecPair_i != deleteEdges.end(); vecPair_i++) {
-			std::pair<int,int> del = *vecPair_i;
-			//std::cout<<"Remove edge for "<<del.first<<" to "<<del.second<<std::endl;
+			pair<int,int> del = *vecPair_i;
+			//cout<<"Remove edge for "<<del.first<<" to "<<del.second<<endl;
 			remove_edge(del.first, del.second, G);
 		}
 	}
@@ -6600,7 +6850,7 @@ void FunctionBFC::collapseIO()
 		
 		if (opCode != 0)
 		{
-			//cout<<"Op type "<<opCode<<" from "<<v->name<<std::endl;
+			//cout<<"Op type "<<opCode<<" from "<<v->name<<endl;
 			NodeProps * targetV = get(get(vertex_props,G), target(*e_beg,G));
 			
 			if (targetV->llvm_inst != NULL)
@@ -6614,7 +6864,7 @@ void FunctionBFC::collapseIO()
 					
 					if (pi->getOpcode() == Instruction::Alloca)
 					{
-						//cout<<"Found one - "<<targetV->name<<std::endl;
+						//cout<<"Found one - "<<targetV->name<<endl;
 						transferImplicitEdges(targetV->number, top_index);
 					}
 					else
@@ -6660,12 +6910,12 @@ void FunctionBFC::collapseRedundantImplicit()
 		if (!v)
 		{
 #ifdef DEBUG_ERROR			
-			std::cerr<<"Null V in collapseRedundantImplicit\n";
+			cerr<<"Null V in collapseRedundantImplicit\n";
 #endif 
 			continue;
 		}
 		
-		std::set<int> edgesToDelete;
+		set<int> edgesToDelete;
 		
 		//graph_traits < MyGraphType >::edge_descriptor ed;
 		property_map<MyGraphType, edge_iore_t>::type edge_type = get(edge_iore, G);
@@ -6721,7 +6971,7 @@ void FunctionBFC::collapseRedundantImplicit()
 							{
 #ifdef DEBUG_GRAPH_IMPLICIT
 								blame_info<<"Implicit__(collapseRedundantImplicit) - Loop detected between ";
-								blame_info<<parentV->name<<" and "<<inTargetV->name<<std::endl;
+								blame_info<<parentV->name<<" and "<<inTargetV->name<<endl;
 #endif
 								continue;
 							}
@@ -6745,7 +6995,7 @@ void FunctionBFC::collapseRedundantImplicit()
 #ifdef DEBUG_GRAPH_IMPLICIT
 									blame_info<<"Implicit__(collapseRedundantImplicit) - NODE(TFD) "<<parentV->name;
 									blame_info<<" has implicit edge to "<<inTargetV->name<<" and "<<v->name;
-									blame_info<<" Delete imp edge from "<<inTargetV->name<<" to "<<v->name<<std::endl;
+									blame_info<<" Delete imp edge from "<<inTargetV->name<<" to "<<v->name<<endl;
 #endif
 									edgesToDelete.insert(inTargetV->number);
 								}
@@ -6757,12 +7007,12 @@ void FunctionBFC::collapseRedundantImplicit()
 			}
 		}
 		
-		std::set<int>::iterator deleteIterator;
+		set<int>::iterator deleteIterator;
 		
 		for (deleteIterator = edgesToDelete.begin();  deleteIterator != edgesToDelete.end(); deleteIterator++)
 		{
 			remove_edge(*deleteIterator, v_index , G);
-			//std::cout<<"CRI - Removeing edge from "<<*deleteIterator<<" to "<<v_index<<std::endl;
+			//cout<<"CRI - Removeing edge from "<<*deleteIterator<<" to "<<v_index<<endl;
 		}
 		
 		//edgesToDelete.erase();
@@ -6792,16 +7042,16 @@ void FunctionBFC::collapseImplicit()
 		if (!v)
 		{
 #ifdef DEBUG_ERROR			
-			std::cerr<<"Null V in collapseImplicit\n";
+			cerr<<"Null V in collapseImplicit\n";
 #endif 
 			continue;
 		}
 		
 		if ( strstr(v->name.c_str(), "toBool") != NULL )
 		{
-			//cout<<"For "<<v->name<<std::endl;
+			//cout<<"For "<<v->name<<endl;
 			findLocalVariable(v_index, v_index);
-			//cout<<std::endl;
+			//cout<<endl;
 			deleteOldImplicit(v_index);
 		}
 	}
@@ -6878,7 +7128,7 @@ bool FunctionBFC::shouldKeepEdge(int movedOpCode, NodeProps *inTargetV)
 
 int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool transferLineNumbers, bool fromGEP)
 {
-	//std::cerr<<"Made it TO here\n";
+	//cerr<<"Made it TO here\n";
 	//safe check, dN and rN can NOT be the same node, otherwise it'll go into an infinite loop
     if(dN == rN) {
         blame_info<<"Error, dN == rN  in transferEdgesAndDeleteNode!"<<endl;
@@ -6890,8 +7140,8 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
 	
 	if (shouldTransferLineNums(dN) && transferLineNumbers) {
 #ifdef DEBUG_GRAPH_COLLAPSE
-		blame_info<<"Collapse_(transferEdgesAndDeleteNode) - tranfer lineNumber "<<dN->line_num<<" from "<<dN->name<<" to "<<rN->name<<std::endl;
-		blame_info<<"Inserting line number(4) "<<dN->line_num<<" to "<<rN->name<<std::endl;
+		blame_info<<"Collapse_(transferEdgesAndDeleteNode) - tranfer lineNumber "<<dN->line_num<<" from "<<dN->name<<" to "<<rN->name<<endl;
+		blame_info<<"Inserting line number(4) "<<dN->line_num<<" to "<<rN->name<<endl;
 #endif		
 		rN->lineNumbers.insert(dN->line_num);
 	}
@@ -6900,14 +7150,14 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
 	for (int a = 0; a < NODE_PROPS_SIZE; a++)
 		blame_info<<dN->nStatus[a]<<" ";
 	
-	blame_info<<std::endl;	
+	blame_info<<endl;	
 	
 	
 	blame_info<<"Node Props for rec node "<<rN->name<<": ";
 	for (int a = 0; a < NODE_PROPS_SIZE; a++)
 		blame_info<<rN->nStatus[a]<<" ";
 	
-	blame_info<<std::endl;	
+	blame_info<<endl;	
 #endif 
 	
 	for (int a = 0; a < NODE_PROPS_SIZE; a++) {
@@ -6918,12 +7168,12 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
 	}
 	
     // The following is VERY VERY important!
-	std::set<FuncCall *>::iterator fc_i = dN->funcCalls.begin();
+	set<FuncCall *>::iterator fc_i = dN->funcCalls.begin();
 	
 	for (; fc_i != dN->funcCalls.end(); fc_i++) {
         //FuncCall * fc = *fc_i;
-		//std::cout<<getSourceFuncName()<<" - TEADN Transferring call to node "<<rN->name<<" from ";
-		//std::cout<<dN->name<<" --- "<<fc->funcName<<" param num "<<fc->paramNumber<<std::endl;	
+		//cout<<getSourceFuncName()<<" - TEADN Transferring call to node "<<rN->name<<" from ";
+		//cout<<dN->name<<" --- "<<fc->funcName<<" param num "<<fc->paramNumber<<endl;	
 		rN->addFuncCall(*fc_i);
 	}
 	
@@ -6932,7 +7182,7 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
 			rN->pointsTo = dN->pointsTo;
 		else {
 #ifdef DEBUG_ERROR
-			blame_info<<"More than one pointsTo involved, fromGEP="<<fromGEP<<std::endl;
+			blame_info<<"More than one pointsTo involved, fromGEP="<<fromGEP<<endl;
 #endif	
 		}
 	}
@@ -6971,7 +7221,7 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
 	 |----> D2
 	 */
 	
-	std::vector<int> destNodes;  // D1, T, D2
+	vector<int> destNodes;  // D1, T, D2
 	
 	for(; oe_beg != oe_end; ++oe_beg) {
 		int movedOpCode = get(get(edge_iore, G),*oe_beg);
@@ -6990,7 +7240,7 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
 
         if (fromGEP && movedOpCode == GEP_BASE_OP) {
 #ifdef DEBUG_GRAPH_COLLAPSE
-            blame_info<<"We met a GEP_BASE_OP out_edge: "<<dN->name<<"-->"<<outTargetV->name<<" so we'll keep this edge and dN"<<std::endl;
+            blame_info<<"We met a GEP_BASE_OP out_edge: "<<dN->name<<"-->"<<outTargetV->name<<" so we'll keep this edge and dN"<<endl;
 #endif 
             continue;
         }
@@ -7000,7 +7250,7 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
         //it'll remove loop line(for(;;) from redundant fields no matter they will be read or written
         else if (fromGEP && movedOpCode == IMPLICIT_OP) {
 #ifdef DEBUG_GRAPH_COLLAPSE
-            blame_info<<"We met a IMPLICIT_OP out_edge: "<<dN->name<<"-->"<<outTargetV->name<<" so we'll keep this edge and dN"<<std::endl;
+            blame_info<<"We met a IMPLICIT_OP out_edge: "<<dN->name<<"-->"<<outTargetV->name<<" so we'll keep this edge and dN"<<endl;
 #endif 
             continue;
         }
@@ -7015,27 +7265,27 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
 			    remove_edge(recipientNode, outTargetV->number, G);
 			tie(ed, inserted) = add_edge(recipientNode, outTargetV->number, G);
 			
-			//std::cout<<"**DN -- Adding edge from "<<rN->name<<"("<<recipientNode<<") to ";
-			//std::cout<<outTargetV->name<<"("<<outTargetV->number<<")"<<std::endl;
+			//cout<<"**DN -- Adding edge from "<<rN->name<<"("<<recipientNode<<") to ";
+			//cout<<outTargetV->name<<"("<<outTargetV->number<<")"<<endl;
 			if (inserted)
 				edge_type[ed] = movedOpCode;	
 			else {
 #ifdef DEBUG_ERROR			
-				std::cerr<<"Insertion fail for "<<rN->name<<" to "<<outTargetV->name<<std::endl;
+				cerr<<"Insertion fail for "<<rN->name<<" to "<<outTargetV->name<<endl;
 #endif 
 			}
 		}
 
 #ifdef DEBUG_GRAPH_COLLAPSE
-        blame_info<<"Remove edge(hui) from "<<dN->name<<" to "<<outTargetV->name<<" [1]"<<std::endl;
+        blame_info<<"Remove edge(hui) from "<<dN->name<<" to "<<outTargetV->name<<" [1]"<<endl;
 #endif 
 	}
 	
-	std::vector<int>::iterator v_i, v_e = destNodes.end();
+	vector<int>::iterator v_i, v_e = destNodes.end();
 	
 	for (v_i = destNodes.begin(); v_i != v_e; ++v_i) {
 		remove_edge(deleteNode, *v_i, G);
-		//std::cout<<"**DN -- Removing edge from "<<dN->name<<"("<<dN->number<<") to "<<*v_i<<std::endl;
+		//cout<<"**DN -- Removing edge from "<<dN->name<<"("<<dN->number<<") to "<<*v_i<<endl;
 	}	
 	
 	/* Figure out all the root nodes the would-be deleted node has incoming edges from
@@ -7046,7 +7296,7 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
 	 */
 	
 	
-	std::vector<int> sourceNodes;  // R
+	vector<int> sourceNodes;  // R
 	
 	// iterate through the in edges and create new edge to destination, delete old edge
 	boost::graph_traits<MyGraphType>::in_edge_iterator ie_beg, ie_end;
@@ -7067,7 +7317,7 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
         */
         if (fromGEP && shouldKeepEdge(movedOpCode, inTargetV)) {
 #ifdef DEBUG_GRAPH_COLLAPSE
-            blame_info<<"We met a READ in_edge: "<<inTargetV->name<<"-->"<<dN->name<<" so we'll keep this edge and dN"<<std::endl;
+            blame_info<<"We met a READ in_edge: "<<inTargetV->name<<"-->"<<dN->name<<" so we'll keep this edge and dN"<<endl;
 #endif 
             continue;
         }
@@ -7080,20 +7330,20 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
                 //edge(u,v,g) returns pair<e_d, bool>, bool=>whether edge exists
 			    remove_edge(inTargetV->number, recipientNode, G);
 			tie(ed, inserted) = add_edge(inTargetV->number, recipientNode, G);
-			//std::cout<<"**SN -- Adding edge from "<<inTargetV->name<<"("<<inTargetV->number<<") to ";
-			//std::cout<<rN->name<<"("<<recipientNode<<")"<<std::endl;
+			//cout<<"**SN -- Adding edge from "<<inTargetV->name<<"("<<inTargetV->number<<") to ";
+			//cout<<rN->name<<"("<<recipientNode<<")"<<endl;
 			
 			if (inserted)
 				edge_type[ed] = movedOpCode;	
 			else {
 #ifdef DEBUG_ERROR			
-				std::cerr<<"Insertion fail for "<<inTargetV->name<<" to "<<rN->name<<std::endl;
+				cerr<<"Insertion fail for "<<inTargetV->name<<" to "<<rN->name<<endl;
 #endif
 			}
 		}
 
 #ifdef DEBUG_GRAPH_COLLAPSE
-        blame_info<<"Remove edge(hui) from "<<inTargetV->name<<" to "<<dN->name<<" [2]"<<std::endl;
+        blame_info<<"Remove edge(hui) from "<<inTargetV->name<<" to "<<dN->name<<" [2]"<<endl;
 #endif 
 	}
 	
@@ -7101,7 +7351,7 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
 	
 	for (v_i = sourceNodes.begin(); v_i != v_e; ++v_i) {
 		remove_edge(*v_i, deleteNode, G);
-		//std::cout<<"**SN -- Removing edge from "<<*v_i<<" to "<<dN->name<<"("<<dN->number<<")"<<std::endl;
+		//cout<<"**SN -- Removing edge from "<<*v_i<<" to "<<dN->name<<"("<<dN->number<<")"<<endl;
 		
 	}	
 	
@@ -7121,7 +7371,7 @@ int FunctionBFC::transferEdgesAndDeleteNode(NodeProps *dN, NodeProps *rN, bool t
 
 
 
-int FunctionBFC::collapseAll(std::set<int>& collapseInstructions)
+int FunctionBFC::collapseAll(set<int>& collapseInstructions)
 {
 	//bool inserted;
 	int collapsedEdges = 0;
@@ -7133,98 +7383,94 @@ int FunctionBFC::collapseAll(std::set<int>& collapseInstructions)
 	
 	for(tie(i,v_end) = vertices(G); i != v_end; ++i) {
 		
-		NodeProps *v = get(get(vertex_props, G),*i);
-		int v_index = get(get(vertex_index, G),*i);
+	  NodeProps *v = get(get(vertex_props, G),*i);
+	  int v_index = get(get(vertex_index, G),*i);
 		
-		if (!v) {
+	  if (!v) {
 #ifdef DEBUG_ERROR			
-			std::cerr<<"Null V in collapseAll\n";
+		cerr<<"Null V in collapseAll\n";
 #endif 
-			continue;
-		}
+		continue;
+	  }
 		
-		boost::graph_traits<MyGraphType>::out_edge_iterator e_beg, e_end;
-		e_beg = boost::out_edges(v_index, G).first;		// edge iterator begin
-		e_end = boost::out_edges(v_index, G).second;    // edge iterator end
+	  boost::graph_traits<MyGraphType>::out_edge_iterator e_beg, e_end;
+	  e_beg = boost::out_edges(v_index, G).first;		// edge iterator begin
+	  e_end = boost::out_edges(v_index, G).second;    // edge iterator end
 		
-		// iterate through the edges to find matching opcode
-		for(; e_beg != e_end; ++e_beg) {
-			int opCode = get(get(edge_iore, G),*e_beg);
-			// It's one of the opcodes we are trying to collapse
-			if (collapseInstructions.count(opCode)) {								
-				// would be delete node
-				NodeProps *sourceV = get(get(vertex_props,G), source(*e_beg,G));
-				// would be recipient node
-				NodeProps *targetV = get(get(vertex_props,G), target(*e_beg,G));
+	  // iterate through the edges to find matching opcode
+	  for(; e_beg != e_end; ++e_beg) {
+		int opCode = get(get(edge_iore, G),*e_beg);
+		// It's one of the opcodes we are trying to collapse
+		if (collapseInstructions.count(opCode)) {								
+		 // would be delete node
+	      NodeProps *sourceV = get(get(vertex_props,G), source(*e_beg,G));
+		  // would be recipient node
+		  NodeProps *targetV = get(get(vertex_props,G), target(*e_beg,G));
 				
-				if (sourceV->isLocalVar || sourceV->isFormalArg || sourceV->isGlobal || 
-                    sourceV->name.find(PARAM_REC)!=std::string::npos || sourceV->name.find(PARAM_REC2)!=std::string::npos) {
-					if ((opCode == Instruction::BitCast || opCode == Instruction::Load) 
-						&& (!targetV->isLocalVar && !targetV->isFormalArg && !targetV->isGlobal &&
-                        targetV->name.find(PARAM_REC)==std::string::npos && targetV->name.find(PARAM_REC2)==std::string::npos)) {
-						// Swap the order for these cases 
-						transferEdgesAndDeleteNode(targetV, sourceV);
-						collapsedEdges++;
+		  if (sourceV->isLocalVar || sourceV->isFormalArg || sourceV->isGlobal) {
+			if ((opCode == Instruction::BitCast || opCode == Instruction::Load) && 
+                (!targetV->isLocalVar && !targetV->isFormalArg && !targetV->isGlobal)) {
+			  // Swap the order for these cases 
+			  transferEdgesAndDeleteNode(targetV, sourceV);
+			  collapsedEdges++;
 #ifdef DEBUG_GRAPH_COLLAPSE
-						blame_info<<"Graph__(collapseAll)--Swapping order "<<opCode<<" "<<sourceV->name<<" recipient ";
-						blame_info<<" with "<<targetV->name<<" being deleted."<<std::endl;
+			  blame_info<<"Graph__(collapseAll)--Swapping order "<<opCode<<" "<<sourceV->name<<" recipient ";
+			  blame_info<<" with "<<targetV->name<<" being deleted."<<endl;
 #endif
-						break;
-					}
-					else {
-#ifdef DEBUG_GRAPH_COLLAPSE
-						blame_info<<"Graph__(collapseAll)--Source is not a temp variable for op "<<opCode<<" "<<sourceV->name<<std::endl;
-#endif
-						break;
-					}
-				}
-				else {
-					targetV->collapsed_inst = sourceV->llvm_inst;
-					transferEdgesAndDeleteNode(sourceV, targetV);
-#ifdef DEBUG_GRAPH_COLLAPSE
-					blame_info<<"Graph__(collapseAll)--standard delete "<<opCode<<" "<<targetV->name<<" recipient ";
-					blame_info<<" with "<<sourceV->name<<" being deleted."<<std::endl;
-#endif
-					collapsedEdges++;
-					break;
-					
-				}
+			  break;
 			}
+			else {
+#ifdef DEBUG_GRAPH_COLLAPSE
+			  blame_info<<"Graph__(collapseAll)--Source is not a temp variable for op "<<opCode<<" "<<sourceV->name<<endl;
+#endif
+			  break;
+			}
+		  }
+		  else {
+			targetV->collapsed_inst = sourceV->llvm_inst;
+			transferEdgesAndDeleteNode(sourceV, targetV);
+#ifdef DEBUG_GRAPH_COLLAPSE
+			blame_info<<"Graph__(collapseAll)--standard delete "<<opCode<<" "<<targetV->name<<" recipient ";
+			blame_info<<" with "<<sourceV->name<<" being deleted."<<endl;
+#endif
+		   collapsedEdges++;
+		   break;			
+		  }
 		}
+	  }
 	}
 	
 	// Not going to be calling this function again, lets
 	// update our GEP pointers
 	if (collapsedEdges == 0) {
-		for(tie(i,v_end) = vertices(G); i != v_end; ++i) {
-			NodeProps * v = get(get(vertex_props, G),*i);
-			int v_index = get(get(vertex_index, G),*i);
-			
-			if (!v) {
+	  for(tie(i,v_end) = vertices(G); i != v_end; ++i) {
+		NodeProps * v = get(get(vertex_props, G),*i);
+		int v_index = get(get(vertex_index, G),*i);
+		
+		if (!v) {
 #ifdef DEBUG_ERROR			
-				std::cerr<<"Null V in collapseAll\n";
+	  	  cerr<<"Null V in collapseAll\n";
 #endif 
-				continue;
-			}
-			
-			if (v->pointsTo == NULL)
-				continue;
-			
-			boost::graph_traits<MyGraphType>::out_edge_iterator e_beg, e_end;
-			e_beg = boost::out_edges(v_index, G).first;		// edge iterator begin
-			e_end = boost::out_edges(v_index, G).second;    // edge iterator end
-			
-			// iterate through the edges to find matching opcode
-			for(; e_beg != e_end; ++e_beg) {
-				int opCode = get(get(edge_iore, G),*e_beg);
-				
-				if (opCode == GEP_BASE_OP) {
-					NodeProps * targetV = get(get(vertex_props,G), target(*e_beg,G));
-					v->pointsTo = targetV;
-					targetV->pointedTo.insert(v);
-				}
-			}
+		  continue;
 		}
+		if (v->pointsTo == NULL)
+		  continue;
+			
+		boost::graph_traits<MyGraphType>::out_edge_iterator e_beg, e_end;
+		e_beg = boost::out_edges(v_index, G).first;		// edge iterator begin
+		e_end = boost::out_edges(v_index, G).second;    // edge iterator end
+			
+		// iterate through the edges to find matching opcode
+		for(; e_beg != e_end; ++e_beg) {
+		  int opCode = get(get(edge_iore, G),*e_beg);
+		
+          if (opCode == GEP_BASE_OP) {
+			NodeProps * targetV = get(get(vertex_props,G), target(*e_beg,G));
+			v->pointsTo = targetV;
+			targetV->pointedTo.insert(v);
+		  }
+		}
+	  }
 	}
 	
 	return collapsedEdges;
@@ -7250,7 +7496,7 @@ int FunctionBFC::collapseInvoke()
 		if (!v)
 		{
 #ifdef DEBUG_ERROR			
-			std::cerr<<"Null V in collapseInvoke\n";
+			cerr<<"Null V in collapseInvoke\n";
 #endif 
 			continue;
 		}
@@ -7261,7 +7507,7 @@ int FunctionBFC::collapseInvoke()
 		e_beg = boost::out_edges(v_index, G).first;		// edge iterator begin
 		e_end = boost::out_edges(v_index, G).second;    // edge iterator end
 		
-		std::vector<std::pair<int,int>  > deleteEdges;
+		vector<pair<int,int>  > deleteEdges;
 		
 		// iterate through the edges to find matching opcode
 		for(; e_beg != e_end; ++e_beg) 
@@ -7273,8 +7519,8 @@ int FunctionBFC::collapseInvoke()
 				NodeProps * sourceV = get(get(vertex_props,G), source(*e_beg,G));
 				NodeProps * targetV = get(get(vertex_props,G), target(*e_beg,G));
 				
-				std::string::size_type sourceTmp = sourceV->name.find( "tmp", 0 );
-				std::string::size_type targetTmp = targetV->name.find( "tmp", 0 );
+				string::size_type sourceTmp = sourceV->name.find( "tmp", 0 );
+				string::size_type targetTmp = targetV->name.find( "tmp", 0 );
 				
 				if (sourceV->llvm_inst != NULL && targetV->llvm_inst != NULL)
 				{
@@ -7292,7 +7538,7 @@ int FunctionBFC::collapseInvoke()
 						
 						// This sees if the source node is a tmp register (as opposed to 
 						//			local variable with "tmp" in its name)
-						if (sourceTmp != std::string::npos)
+						if (sourceTmp != string::npos)
 							isSourceTmp = true;
 						
 						if ( sourceI->getOpcode() == Instruction::Alloca || sourceV->pointsTo != NULL )
@@ -7303,7 +7549,7 @@ int FunctionBFC::collapseInvoke()
 							isSourceTmp = false;
 						}
 						
-						if (targetTmp != std::string::npos)
+						if (targetTmp != string::npos)
 							isTargetTmp = true;
 						
 						if (targetI->getOpcode() == Instruction::Alloca || targetV->pointsTo != NULL )
@@ -7318,9 +7564,9 @@ int FunctionBFC::collapseInvoke()
 						if ( isSourceTmp && (isTargetTmp || isTargetVar) )
 						{
 							collapsedEdges++;
-							//std::cout<<"Collapsing (1) op "<<opCode<<" for "<<targetV->name<<" and "<<sourceV->name<<std::endl;
+							//cout<<"Collapsing (1) op "<<opCode<<" for "<<targetV->name<<" and "<<sourceV->name<<endl;
 #ifdef DEBUG_GRAPH_COLLAPSE
-							blame_info<<"Collapse(4)"<<std::endl;
+							blame_info<<"Collapse(4)"<<endl;
 #endif 
 							transferEdgesAndDeleteNode(sourceV, targetV);
 							
@@ -7351,7 +7597,7 @@ void FunctionBFC::collapseEH()
 	// For data structure and continuity reasons, we don't delete nodes,
 	// Rather we delete edges orphaning nodes(single nodes) essentially removing them
 	// implicitly from the graph
-	std::set<graph_traits < MyGraphType >::edge_descriptor> edgesToCollapse;
+	set<graph_traits < MyGraphType >::edge_descriptor> edgesToCollapse;
 	
 	for(tie(i,v_end) = vertices(G); i != v_end; ++i) {
 	  //TC: below could be v = vertex_props[*i];
@@ -7380,7 +7626,7 @@ void FunctionBFC::collapseEH()
       }
 	}
 	
-	std::set<graph_traits < MyGraphType >::edge_descriptor>::iterator set_ed_i;
+	set<graph_traits < MyGraphType >::edge_descriptor>::iterator set_ed_i;
 	
 	for (set_ed_i = edgesToCollapse.begin(); set_ed_i != edgesToCollapse.end(); set_ed_i++) {
 		remove_edge(*set_ed_i, G);
@@ -7398,7 +7644,7 @@ void FunctionBFC::collapseEH()
 // Return --> Size Calc
 void FunctionBFC::handleMallocs()
 {	
-	//std::cout<<"Entering handleMallocs"<<std::endl;
+	//cout<<"Entering handleMallocs"<<endl;
 	property_map<MyGraphType, edge_iore_t>::type edge_type
 	= get(edge_iore, G);
 	
@@ -7415,7 +7661,7 @@ void FunctionBFC::handleMallocs()
 		if (!v)
 		{
 #ifdef DEBUG_ERROR			
-			std::cerr<<"Null V in handleMallocs\n";
+			cerr<<"Null V in handleMallocs\n";
 #endif
 			continue;
 		}
@@ -7447,15 +7693,15 @@ void FunctionBFC::handleMallocs()
 					NodeProps * targetVP = get(get(vertex_props, G), target(*e_beg, G));
 					
 					int paramNum = MAX_PARAMS + 1;
-					//std::cerr<<"Call from "<<sourceVP->name<<" to "<<targetVP->name<<std::endl;
+					//cerr<<"Call from "<<sourceVP->name<<" to "<<targetVP->name<<endl;
 					
-					std::set<FuncCall *>::iterator fc_i = sourceVP->funcCalls.begin();
+					set<FuncCall *>::iterator fc_i = sourceVP->funcCalls.begin();
 					
 					for (; fc_i != sourceVP->funcCalls.end(); fc_i++)
 					{
 						FuncCall * fc = *fc_i;
 						
-						//std::cerr<<"FC -- "<<fc->funcName<<"  "<<targetVP->name<<std::endl;
+						//cerr<<"FC -- "<<fc->funcName<<"  "<<targetVP->name<<endl;
 						
 						if (fc->funcName == targetVP->name)
 						{
@@ -7469,7 +7715,7 @@ void FunctionBFC::handleMallocs()
 						}						
 					}
 					
-					//std::cerr<<"Param Num "<<paramNum<<" for "<<sourceVP->name<<std::endl;
+					//cerr<<"Param Num "<<paramNum<<" for "<<sourceVP->name<<endl;
 					
 				}
 			}			
@@ -7481,14 +7727,14 @@ void FunctionBFC::handleMallocs()
 				remove_edge(zeroParam, v->number, G);
 				tie(ed, inserted) = add_edge(zeroParam, oneParam, G);
 				
-				//std::cerr<<"Adding edge for "<<v->name<<" "<<zeroParam<<" to "<<oneParam<<std::endl;
+				//cerr<<"Adding edge for "<<v->name<<" "<<zeroParam<<" to "<<oneParam<<endl;
 				
 				if (inserted)
 					edge_type[ed] = RESOLVED_MALLOC_OP;	
 			}
 		}
 	}
-	//std::cout<<"Leaving handleMallocs"<<std::endl;
+	//cout<<"Leaving handleMallocs"<<endl;
 }
 
 
@@ -7503,7 +7749,7 @@ void FunctionBFC::collapseGraph()
 	// Collapse Exception Handling
 	collapseEH();
 	
-	std::set<int> collapseInstructions;
+	set<int> collapseInstructions;
 	
 	//collapseInstructions.insert(Instruction::Load);
 	collapseInstructions.insert(Instruction::BitCast);

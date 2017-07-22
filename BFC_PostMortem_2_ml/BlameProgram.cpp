@@ -66,6 +66,52 @@ void BlameProgram::addImplicitBlamePoints()
 	addImplicitBlamePoint("callBottom");
 }
 
+// resolve pids from PPAs by checking the EVs of callNodes for each bf
+void BlameProgram::resolvePidsFromPPAs()
+{
+  FunctionHash::iterator fh_i;  // blameFunctions;
+  for (fh_i = blameFunctions.begin(); fh_i != blameFunctions.end(); fh_i++) {
+    string bfn = (*fh_i).first;
+    BlameFunction *bf = (*fh_i).second;
+    if (bf) {
+      cout<<"In resolvePidsFromPPAs for func: "<<bfn<<endl;
+      vector<VertexProps *>::iterator vi;
+      for (vi = bf->callNodes.begin(); vi != bf->callNodes.end(); vi++) {
+        VertexProps *cn = *vi;
+        size_t pos = cn->name.find("--");
+        if (pos != string::npos) { //make sure it's a callNode
+          string cnfn = (*vi)->name.substr(0, pos);
+          cout<<"In resolvePidsFromPPAs for "<<bfn<<"'s callNode: "<<cn->name
+              <<", check cnbf: "<<cnfn<<endl;
+          if (blameFunctions.find(cnfn) != blameFunctions.end()) { 
+            BlameFunction *cnbf = blameFunctions[cnfn];
+            if (cnbf) { //we found the bf pointed by thie callNode
+              vector<FuncCall *>::iterator vec_fc_i;
+              for (vec_fc_i = cn->calls.begin(); vec_fc_i != cn->calls.end(); vec_fc_i++) {
+                FuncCall *fc = *vec_fc_i;
+                if (fc->Node->isPid == false) { //we only care when real param wasn't pid
+                  vector<VertexProps *>::iterator vi2;
+                  for (vi2 = cnbf->exitVariables.begin(); vi2 != cnbf->exitVariables.end(); vi2++) {
+                    VertexProps *ev = *vi2;
+                    if (ev->eStatus >= EXIT_VAR_PARAM) {
+                      int whichParam = ev->eStatus - EXIT_VAR_PARAM;
+                      if (ev->isPid && whichParam == fc->paramNumber) {
+                        fc->Node->isPid = true;
+                        bf->resolvePAForParamNode(fc->Node);
+                      }
+                    }
+                  } //end of all EVs of cnbf
+                } //if fc->Node->isPid=false
+              } //end of all fc
+            } //if callnodeblamefunction exists
+          }
+        } //if real callNode name
+      } //end of all callNodes
+    }
+  } //end of all bf in this bp
+}
+
+
 void BlameProgram::grabUsedModulesFromDir()
 {
   DIR *dir;

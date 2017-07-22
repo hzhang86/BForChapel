@@ -18,19 +18,19 @@
 
 using namespace std;
 
-void FunctionBFC::transferExternCallEdges(std::vector< std::pair<int, int> > &blamedNodes, int callNode, std::vector< std::pair<int, int> > & blameeNodes)
+void FunctionBFC::transferExternCallEdges(vector< pair<int, int> > &blamedNodes, int callNode, vector< pair<int, int> > & blameeNodes)
 {
 	bool inserted;
     graph_traits < MyGraphType >::edge_descriptor ed;
     property_map<MyGraphType, edge_iore_t>::type edge_type = get(edge_iore, G);
 	
-    std::vector< std::pair<int, int> >::iterator v_pair_i;
+    vector< pair<int, int> >::iterator v_pair_i;
     for (v_pair_i = blameeNodes.begin(); v_pair_i != blameeNodes.end(); v_pair_i++){
 		// First int (param number), Second int (node number)
-		std::pair<int, int> blamee = *v_pair_i;
+		pair<int, int> blamee = *v_pair_i;
 		tie(ed, inserted) = add_edge(callNode, blamee.second, G);
 		
-		blame_info<<"Adding ERCALL(1) edge for blamee param "<<blamee.first<<"("<<blamee.second<<") of "<<callNode<<" call"<<std::endl;
+		blame_info<<"Adding ERCALL(1) edge for blamee param "<<blamee.first<<"("<<blamee.second<<") of "<<callNode<<" call"<<endl;
 		
 		if (inserted) {
 			// We need to have as much info in the graph as possible,
@@ -81,11 +81,11 @@ void FunctionBFC::transferExternCallEdges(std::vector< std::pair<int, int> > &bl
 	
     for (v_pair_i = blamedNodes.begin(); v_pair_i != blamedNodes.end(); v_pair_i++) {
 		// First int (param number), Second int (node number)
-		std::pair<int, int> blamed = *v_pair_i;
+		pair<int, int> blamed = *v_pair_i;
 		remove_edge(blamed.second, callNode, G);
 		tie(ed, inserted) = add_edge(blamed.second, callNode, G);
         #ifdef DEBUG_EXTERN_CALLS
-		blame_info<<"Adding ERCALL(2) edge for blamed param "<<blamed.first<<"("<<blamed.second<<") of "<<callNode<<" call"<<std::endl;
+		blame_info<<"Adding ERCALL(2) edge for blamed param "<<blamed.first<<"("<<blamed.second<<") of "<<callNode<<" call"<<endl;
 		#endif
 		
 		if (inserted) {
@@ -102,9 +102,9 @@ void FunctionBFC::transferExternCallEdges(std::vector< std::pair<int, int> > &bl
               "exfunc", and we establish a blamees set for each blamed arg, when we do checkIfWritten for blamed arg "b", we count these
               blamees to its sets. Blamed args are NOT necessarily written but they are if anyone of the blamees is written
             */
-            std::vector<std::pair<int, int>>::iterator v_pair_i2;
+            vector<pair<int, int>>::iterator v_pair_i2;
             for (v_pair_i2=blameeNodes.begin(); v_pair_i2!=blameeNodes.end(); v_pair_i2++) {
-              std::pair<int, int> blamee2 = *v_pair_i2;
+              pair<int, int> blamee2 = *v_pair_i2;
               NodeProps *blameeV2 = get(get(vertex_props, G), blamee2.second);
               blamedV->blameesFromExFunc.insert(blameeV2);
             }
@@ -181,7 +181,7 @@ const char* FunctionBFC::getTruncStr(const char *fullStr)
 void FunctionBFC::handleOneExternCall(ExternFunctionBFC *efb, NodeProps *v)
 {
 #ifdef DEBUG_EXTERN_CALLS
-	blame_info<<"Calls__(handleOneExternCall) -looking at "<<v->name<<std::endl;
+	blame_info<<"Calls__(handleOneExternCall) -looking at "<<v->name<<endl;
 #endif
 	int v_index = v->number;
 	
@@ -190,16 +190,16 @@ void FunctionBFC::handleOneExternCall(ExternFunctionBFC *efb, NodeProps *v)
     ie_end = boost::in_edges(v_index, G).second;// edge iterator end
 	
     // First int (param number), Second int (node number)
-    std::vector< std::pair<int, int> > blameeNodes;
-    std::vector< std::pair<int, int> > blamedNodes;
+    vector< pair<int, int> > blameeNodes;
+    vector< pair<int, int> > blamedNodes;
 
     for(; ie_beg != ie_end; ++ie_beg) {
 		NodeProps *inTargetV = get(get(vertex_props,G), source(*ie_beg,G));
-		std::set<FuncCall *>::iterator fc_i = inTargetV->funcCalls.begin();
+		set<FuncCall *>::iterator fc_i = inTargetV->funcCalls.begin();
 		
 		for (; fc_i != inTargetV->funcCalls.end(); fc_i++) {
 			FuncCall *fc = *fc_i;
-			std::pair<int, int> tmpPair(fc->paramNumber, inTargetV->number);
+			pair<int, int> tmpPair(fc->paramNumber, inTargetV->number);
 			
 			if (fc->funcName != v->name)
 				continue;
@@ -208,12 +208,12 @@ void FunctionBFC::handleOneExternCall(ExternFunctionBFC *efb, NodeProps *v)
 	            blamedNodes.push_back(tmpPair);
 				inTargetV->isBlamedExternCallParam = true;
 				#ifdef DEBUG_EXTERN_CALLS
-				blame_info<<inTargetV->name<<" receives blame for extern call to "<<v->name<<std::endl;
+				blame_info<<inTargetV->name<<" receives blame for extern call to "<<v->name<<endl;
 				#endif
 				
 				inTargetV->externCallLineNumbers.insert(v->line_num);
 				// TODO: Make this part of the config file
-			    if (v->name.find("gfortran_transfer") != std::string::npos) {
+			    if (v->name.find("gfortran_transfer") != string::npos) {
 					inTargetV->isWritten = true;
 				}
 	        }
@@ -228,7 +228,7 @@ void FunctionBFC::handleOneExternCall(ExternFunctionBFC *efb, NodeProps *v)
 	}
     else {	
 #ifdef DEBUG_ERROR
-		blame_info<<"The blamed node vector(extern) was empty for "<<v->name<<" in "<<getSourceFuncName()<<std::endl;
+		blame_info<<"The blamed node vector(extern) was empty for "<<v->name<<" in "<<getSourceFuncName()<<endl;
 #endif
 	}
 }

@@ -54,11 +54,10 @@ namespace std
 #define EXIT_OUTP        2
 #define EXIT_VAR_GLOBAL  3
 #define EXIT_VAR_RETURN  4
-//#define EXIT_VAR_PARAM  EXIT_VAR_RETURN
 #define EXIT_VAR_PARAM  5 //changed by Hui 03/15/16
 
 //added for debug purpose//
-/*
+
 #define DEBUG_BLAMEES
 #define DEBUG_BLAMED_EXITS
 #define DEBUG_DETER_BH
@@ -67,7 +66,7 @@ namespace std
 #define DEBUG_ATFB
 #define DEBUG_CALCPARAM_INFO
 #define DEBUG ADD_TEMP_FIELDBLAMEES
-*/
+
 //#define DEBUG_SELINES
 //#define DEBUG_GFSN
 //newly added by Hui---//
@@ -305,7 +304,8 @@ class VertexProps {
     VertexProps * myObj;
 	std::set<VertexProps *> pidAliases;
     std::set<VertexProps *> objAliases;
-	
+    std::set<VertexProps *> PPAs;
+
 	VertexProps(string na)
 	{
 		name = na;
@@ -315,6 +315,7 @@ class VertexProps {
         sType = NULL;
 		sField = NULL;
 		eStatus = NO_EXIT;
+        genType = "NULL";
 
         //added 03/27/17 for multi-locale Chapel
         isPid = false;

@@ -56,7 +56,7 @@ static char host_name[128];
  *
  */
 //control whether record special frame info (fork*, thread_begin)
-#define ENABLE_FRAME_INFO
+//#define ENABLE_FRAME_INFO
 
 Process::cb_ret_t on_signal(Event::const_ptr evptr)
 {
@@ -92,6 +92,7 @@ Process::cb_ret_t on_signal(Event::const_ptr evptr)
       return Process::cbProcContinue;
     }
         
+    cerr<<"Third-party walkStack SUCCEEDS on "<<(int)tid<<" "<<host_name<<endl;
     // output the callstacks to the file
     fprintf(pFile,"<----START compute\n");
     // Now start outputing the stack frames
@@ -269,13 +270,22 @@ int main(int argc, char *argv[])
     cerr<<"File "<<buffer<<" failed to be created"<<endl;
     return 1;
   }
+  /////for test////
+  cerr<<"Full monitor cmd: "<<endl; //for test
+  for (int j=0; j<argc; j++)
+    cerr<<argv[j]<<" ";
+  cerr<<endl;
 
   // Create a new target process
-  string exec = argv[1];
+  string exec = argv[1]; // Chapel 1.15 put real exec at the end
+  
+  /* e.g monitor ./lulesh --elemsPerEdge 8
+   * then exec=./lulesh, args={./lulesh, --elemsPerEdge, 8}
+   */
+
   for (unsigned i=1; i<argc; i++)
-    args.push_back(std::string(argv[i]));  /* e.g monitor ./lulesh --elemsPerEdge 8
-                                            * then exec=lulesh, args={./lulesh, --elemsPerEdge, 8}
-                                            */
+    args.push_back(std::string(argv[i]));  
+
   proc = Process::createProcess(exec, args);
   walker = Walker::newWalker(proc); //create a third-party walker with the target process
  

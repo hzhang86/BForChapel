@@ -13,138 +13,139 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+using namespace std;
 
-void FunctionBFC::exportSideEffects(std::ostream &O)
+void FunctionBFC::exportSideEffects(ostream &O)
 {
 	O<<"BEGIN FUNC "<<getSourceFuncName()<<" ";
 	O<<getModuleName()<<" "<<getStartLineNum()<<" "<<getEndLineNum()<<" ";
-	O<<getModulePathName()<<std::endl;
+	O<<getModulePathName()<<endl;
 
-	std::vector< std::pair<NodeProps *, NodeProps *> >::iterator vec_pair_i;
+	vector< pair<NodeProps *, NodeProps *> >::iterator vec_pair_i;
 
 	if (seRelations.size() > 0)
 	{
-		O<<"BEGIN SE_RELATIONS"<<std::endl;
+		O<<"BEGIN SE_RELATIONS"<<endl;
 		for (vec_pair_i = seRelations.begin(); vec_pair_i != seRelations.end(); vec_pair_i++)
 		{
 			NodeProps * fir = (*vec_pair_i).first;
 			NodeProps * sec = (*vec_pair_i).second;
 				
-			std::set<NodeProps *> visited;	
+			set<NodeProps *> visited;	
 			int firNum = fir->getParamNum(visited);
 			
 			visited.clear();
 			int secNum = sec->getParamNum(visited);
 		
 			O<<"R: "<<fir->getFullName()<<"  "<<firNum<<" ";
-			O<<sec->getFullName()<<" "<<secNum<<std::endl;
+			O<<sec->getFullName()<<" "<<secNum<<endl;
 
 		}
-		O<<"END SE_RELATIONS"<<std::endl;
+		O<<"END SE_RELATIONS"<<endl;
 	}
 	
 	
 	if (seAliases.size() > 0)
 	{
-		O<<"BEGIN SE_ALIASES"<<std::endl;
+		O<<"BEGIN SE_ALIASES"<<endl;
 		for (vec_pair_i = seAliases.begin(); vec_pair_i != seAliases.end(); vec_pair_i++)
 		{
 			NodeProps * fir = (*vec_pair_i).first;
 			NodeProps * sec = (*vec_pair_i).second;
 	
-			std::string firName, secName;
+			string firName, secName;
 			
-			std::set<NodeProps *> visited;	
+			set<NodeProps *> visited;	
 			int firNum = fir->getParamNum(visited);
 			
 			visited.clear();
 			int secNum = sec->getParamNum(visited);
 		
 			O<<"A: "<<fir->getFullName()<<"  "<<firNum<<" ";
-			O<<sec->getFullName()<<" "<<secNum<<std::endl;
+			O<<sec->getFullName()<<" "<<secNum<<endl;
 		}
-		O<<"END SE_ALIASES"<<std::endl;
+		O<<"END SE_ALIASES"<<endl;
 	}
 	
 	if (seCalls.size() > 0)
 	{
-		O<<"BEGIN SE_CALLS"<<std::endl;
-		std::vector< FuncCallSE * >::iterator vec_fcse_i;
+		O<<"BEGIN SE_CALLS"<<endl;
+		vector< FuncCallSE * >::iterator vec_fcse_i;
 		for (vec_fcse_i = seCalls.begin(); vec_fcse_i != seCalls.end(); vec_fcse_i++)
 		{
 			FuncCallSE * fcse = *vec_fcse_i;
-			O<<"C: "<<fcse->callNode->name<<std::endl;
+			O<<"C: "<<fcse->callNode->name<<endl;
 		
-			std::vector<FuncCallSEElement *>::iterator vec_fcseEl_i;
+			vector<FuncCallSEElement *>::iterator vec_fcseEl_i;
 			for (vec_fcseEl_i = fcse->parameters.begin(); vec_fcseEl_i != fcse->parameters.end();
 					vec_fcseEl_i++)
 			{
-				std::set<NodeProps *> visited;
+				set<NodeProps *> visited;
 				FuncCallSEElement * fcseElement = *vec_fcseEl_i;
 				O<<"P: "<<fcseElement->ifc->paramNumber<<" ";
 				O<<fcseElement->paramEVNode->name<<" ";
-				O<<fcseElement->paramEVNode->getParamNum(visited)<<std::endl;
+				O<<fcseElement->paramEVNode->getParamNum(visited)<<endl;
 			}
 			
 			for (vec_fcseEl_i = fcse->NEVparams.begin(); vec_fcseEl_i != fcse->NEVparams.end();
 					vec_fcseEl_i++)
 			{
-							std::set<NodeProps *> visited;
+							set<NodeProps *> visited;
 
 				FuncCallSEElement * fcseElement = *vec_fcseEl_i;
 				O<<"P: "<<fcseElement->ifc->paramNumber<<" ";
 				O<<fcseElement->paramEVNode->name<<" ";
-				O<<fcseElement->paramEVNode->getParamNum(visited)<<std::endl;
+				O<<fcseElement->paramEVNode->getParamNum(visited)<<endl;
 			}
 
 			
 		}
-		O<<"END SE_CALLS"<<std::endl;
+		O<<"END SE_CALLS"<<endl;
 	}
 	
-	O<<"END FUNC "<<std::endl;
+	O<<"END FUNC "<<endl;
 }
 
 
 
-void FunctionBFC::exportEverything(std::ostream &O, bool reads)
+void FunctionBFC::exportEverything(ostream &O, bool reads)
 {
-	O<<"BEGIN FUNC "<<std::endl;
+	O<<"BEGIN FUNC "<<endl;
 	
-	O<<"BEGIN F_NAME"<<std::endl;
-	O<<getSourceFuncName()<<std::endl;
-	O<<"END F_NAME"<<std::endl;
+	O<<"BEGIN F_NAME"<<endl;
+	O<<getSourceFuncName()<<endl;
+	O<<"END F_NAME"<<endl;
 	
-	O<<"BEGIN M_NAME_PATH "<<std::endl;
-	O<<getModulePathName()<<std::endl;
-	O<<"END M_NAME_PATH "<<std::endl;
+	O<<"BEGIN M_NAME_PATH "<<endl;
+	O<<getModulePathName()<<endl;
+	O<<"END M_NAME_PATH "<<endl;
 	
-	O<<"BEGIN_M_NAME"<<std::endl;
-	O<<getModuleName()<<std::endl;
-	O<<"END M_NAME"<<std::endl;
+	O<<"BEGIN_M_NAME"<<endl;
+	O<<getModuleName()<<endl;
+	O<<"END M_NAME"<<endl;
 	
-	O<<"BEGIN F_B_LINENUM"<<std::endl;//will not be useful anymore 03/28/16
-	O<<getStartLineNum()<<std::endl;
-	O<<"END F_B_LINENUM"<<std::endl;
+	O<<"BEGIN F_B_LINENUM"<<endl;//will not be useful anymore 03/28/16
+	O<<getStartLineNum()<<endl;
+	O<<"END F_B_LINENUM"<<endl;
 			
-	O<<"BEGIN F_E_LINENUM"<<std::endl;//will not be useful anymore 03/28/16
-	O<<getEndLineNum()<<std::endl;
-	O<<"END F_E_LINENUM"<<std::endl;
+	O<<"BEGIN F_E_LINENUM"<<endl;//will not be useful anymore 03/28/16
+	O<<getEndLineNum()<<endl;
+	O<<"END F_E_LINENUM"<<endl;
 
-	O<<"BEGIN F_BPOINT"<<std::endl;
-	O<<isBFCPoint<<std::endl;
-	O<<"END F_BPOINT"<<std::endl;
+	O<<"BEGIN F_BPOINT"<<endl;
+	O<<isBFCPoint<<endl;
+	O<<"END F_BPOINT"<<endl;
 
     //Added by Hui 03/28/16, keep record of all line#s in this func
-    std::set<int>::iterator s_int_i;
-    O<<"BEGIN ALL_LINES"<<std::endl;
+    set<int>::iterator s_int_i;
+    O<<"BEGIN ALL_LINES"<<endl;
     for (s_int_i = allLineNums.begin(); s_int_i != allLineNums.end(); s_int_i++)
         O<<*s_int_i<<" ";
-    O<<std::endl;
-    O<<"END ALL_LINES"<<std::endl;
+    O<<endl;
+    O<<"END ALL_LINES"<<endl;
 
 	//This is to iterate all nodes in impVertices
-    std::set<NodeProps *>::iterator ivh_i;
+    set<NodeProps *>::iterator ivh_i;
 	for (ivh_i = impVertices.begin(); ivh_i != impVertices.end(); ivh_i++)
 	{
 		NodeProps *ivp = (*ivh_i);
@@ -152,24 +153,24 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 		if (!ivp->isExported)
 			continue;
 		
-		O<<"BEGIN VAR  "<<std::endl;
+		O<<"BEGIN VAR  "<<endl;
 		
-		O<<"BEGIN V_NAME "<<std::endl;
-		O<<ivp->name<<std::endl;
-		O<<"END V_NAME "<<std::endl;
+		O<<"BEGIN V_NAME "<<endl;
+		O<<ivp->name<<endl;
+		O<<"END V_NAME "<<endl;
 		
-		O<<"BEGIN V_TYPE "<<std::endl;
-		O<<ivp->eStatus<<std::endl;
+		O<<"BEGIN V_TYPE "<<endl;
+		O<<ivp->eStatus<<endl;
 		
-		O<<"END V_TYPE "<<std::endl;
+		O<<"END V_TYPE "<<endl;
 		
-		O<<"BEGIN N_TYPE "<<std::endl;
+		O<<"BEGIN N_TYPE "<<endl;
 		for (int a = 0; a < NODE_PROPS_SIZE; a++)
 			O<<ivp->nStatus[a]<<" ";
 			
-		O<<std::endl;
+		O<<endl;
 		
-		O<<"END N_TYPE"<<std::endl;
+		O<<"END N_TYPE"<<endl;
 				
 	
 		O<<"BEGIN DECLARED_LINE"<<endl;
@@ -181,7 +182,7 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 		O<<"END IS_WRITTEN"<<endl;
 		
 		//used to iterate all set members of ivp
-		std::set<NodeProps *>::iterator set_ivp_i;
+		set<NodeProps *>::iterator set_ivp_i;
 		
 		
 /*		O<<"BEGIN PARENTS"<<endl;
@@ -199,117 +200,117 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 			NodeProps *ivpChild = (*set_ivp_i);
 			O<<ivpChild->name<<endl;
 		}
-		O<<"END CHILDREN"<<std::endl;
+		O<<"END CHILDREN"<<endl;
 	
 		
 
-		O<<"BEGIN ALIASES "<<std::endl;
+		O<<"BEGIN ALIASES "<<endl;
 		for (set_ivp_i = ivp->aliases.begin(); set_ivp_i != ivp->aliases.end(); set_ivp_i++)
 		{
 			NodeProps * ivpAlias = (*set_ivp_i);
 			O<<ivpAlias->name<<endl;
 		}
-		O<<"END ALIASES "<<std::endl;
+		O<<"END ALIASES "<<endl;
 	
 		
-		O<<"BEGIN DATAPTRS "<<std::endl;
+		O<<"BEGIN DATAPTRS "<<endl;
 		for (set_ivp_i = ivp->dataPtrs.begin(); set_ivp_i != ivp->dataPtrs.end(); set_ivp_i++)
 		{
 			NodeProps * ivpAlias = (*set_ivp_i);
 			O<<ivpAlias->name<<endl;
 		}
-		O<<"END DATAPTRS "<<std::endl;
+		O<<"END DATAPTRS "<<endl;
 		
 
-		O<<"BEGIN DFALIAS "<<std::endl;
+		O<<"BEGIN DFALIAS "<<endl;
 		for (set_ivp_i = ivp->dfAliases.begin(); set_ivp_i != ivp->dfAliases.end(); set_ivp_i++)
 		{
 			NodeProps * child = *set_ivp_i;
 			O<<child->name<<endl;
 		}
-		O<<"END DFALIAS "<<std::endl;
+		O<<"END DFALIAS "<<endl;
 		
-		O<<"BEGIN DFCHILDREN "<<std::endl;
+		O<<"BEGIN DFCHILDREN "<<endl;
 		for (set_ivp_i = ivp->dfChildren.begin(); set_ivp_i != ivp->dfChildren.end(); set_ivp_i++)
 		{
 			NodeProps * child = *set_ivp_i;
 			O<<child->name<<endl;
 		}
-		O<<"END DFCHILDREN "<<std::endl;
+		O<<"END DFCHILDREN "<<endl;
 		
 
-		O<<"BEGIN RESOLVED_LS "<<std::endl;
+		O<<"BEGIN RESOLVED_LS "<<endl;
 		for (set_ivp_i = ivp->resolvedLS.begin(); set_ivp_i != ivp->resolvedLS.end(); set_ivp_i++)
 		{
 			NodeProps * child = *set_ivp_i;
 			O<<child->name<<endl;
 		}
-		O<<"END RESOLVED_LS "<<std::endl;		
+		O<<"END RESOLVED_LS "<<endl;		
 		
 		
-		O<<"BEGIN RESOLVEDLS_FROM "<<std::endl;
+		O<<"BEGIN RESOLVEDLS_FROM "<<endl;
 		for (set_ivp_i = ivp->resolvedLSFrom.begin(); set_ivp_i != ivp->resolvedLSFrom.end(); set_ivp_i++)
 		{			
 			NodeProps * child = *set_ivp_i;
 			O<<child->name<<endl;
 		}
-		O<<"END RESOLVEDLS_FROM "<<std::endl;
+		O<<"END RESOLVEDLS_FROM "<<endl;
 
 	
-		O<<"BEGIN RESOLVEDLS_SE "<<std::endl;
+		O<<"BEGIN RESOLVEDLS_SE "<<endl;
 		for (set_ivp_i = ivp->resolvedLSSideEffects.begin(); set_ivp_i != ivp->resolvedLSSideEffects.end(); set_ivp_i++)
 		{			
 			NodeProps * child = *set_ivp_i;
 			O<<child->name<<endl;
 		}		
-		O<<"END RESOLVEDLS_SE "<<std::endl;
+		O<<"END RESOLVEDLS_SE "<<endl;
 		
 
-		O<<"BEGIN STORES_TO" <<std::endl;
+		O<<"BEGIN STORES_TO" <<endl;
 		for (set_ivp_i = ivp->storesTo.begin(); set_ivp_i != ivp->storesTo.end(); set_ivp_i++)
 		{
 			NodeProps *child = *set_ivp_i;
 			O<<child->name<<endl;
 		}
-		O<<"END STORES_TO"<<std::endl;
+		O<<"END STORES_TO"<<endl;
 	
 		
-		O<<"BEGIN FIELDS "<<std::endl;
+		O<<"BEGIN FIELDS "<<endl;
 		for (set_ivp_i = ivp->fields.begin(); set_ivp_i != ivp->fields.end(); set_ivp_i++)
 		{
 			NodeProps * ivpAlias = (*set_ivp_i);
 			O<<ivpAlias->name<<endl;
 		}
-		O<<"END FIELDS "<<std::endl;
+		O<<"END FIELDS "<<endl;
 		
-		O<<"BEGIN FIELD_ALIAS"<<std::endl;
+		O<<"BEGIN FIELD_ALIAS"<<endl;
 		if (ivp->fieldAlias == NULL)
-			O<<"NULL"<<std::endl;
+			O<<"NULL"<<endl;
 		else 
-			O<<ivp->fieldAlias->name<<std::endl;
-		O<<"END FIELD_ALIAS"<<std::endl;
+			O<<ivp->fieldAlias->name<<endl;
+		O<<"END FIELD_ALIAS"<<endl;
 		
 
 /*
-		O<<"BEGIN ALIASEDFROM "<<std::endl;
+		O<<"BEGIN ALIASEDFROM "<<endl;
 		if (ivp->pointsTo == NULL)
-			O<<"NULL"<<std::endl;
+			O<<"NULL"<<endl;
 		else
-			O<<ivp->pointsTo->name<<std::endl;
-		O<<"END ALIASEDFROM "<<std::endl;
+			O<<ivp->pointsTo->name<<endl;
+		O<<"END ALIASEDFROM "<<endl;
 	*/
 	
-		O<<"BEGIN GEN_TYPE"<<std::endl;
+		O<<"BEGIN GEN_TYPE"<<endl;
 		const llvm::Type * origT = 0;	
 		
 		bool assigned = false;
 		
 		if (ivp->sField != NULL)
 		{
-			 if (ivp->sField->typeName.find("VOID") != std::string::npos)
+			 if (ivp->sField->typeName.find("VOID") != string::npos)
 			 {
-				blame_info<<"Void for "<<ivp->name<<std::endl;
-				 O<<ivp->sField->typeName<<std::endl;
+				blame_info<<"Void for "<<ivp->name<<endl;
+				 O<<ivp->sField->typeName<<endl;
 				 assigned = true;
 			 }
 		}
@@ -325,30 +326,30 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 			
             if (pi == NULL)
 			{
-				O<<"UNDEF"<<std::endl;
+				O<<"UNDEF"<<endl;
 			}
 			else
 			{
 				origT = pi->getType();					
-				std::string origTStr = returnTypeName(origT, std::string(" "));
-				O<<origTStr<<std::endl;
+				string origTStr = returnTypeName(origT, string(" "));
+				O<<origTStr<<endl;
 			}
 		}
 		else
 		{
             if(ivp->llvm_inst != NULL){//it could be a constant(when ivp is a gv)
                 origT = ivp->llvm_inst->getType();
-                std::string origTStr = returnTypeName(origT, std::string(" "));
-                O<<origTStr<<std::endl;
+                string origTStr = returnTypeName(origT, string(" "));
+                O<<origTStr<<endl;
             }
             else
-			    O<<"UNDEF"<<std::endl;
+			    O<<"UNDEF"<<endl;
 		}
 		
-		O<<"END GEN_TYPE"<<std::endl;
+		O<<"END GEN_TYPE"<<endl;
 		
 	
-		O<<"BEGIN STRUCTTYPE"<<std::endl;
+		O<<"BEGIN STRUCTTYPE"<<endl;
 		if (ivp->sBFC == NULL) {
             /*if(ivp->llvm_inst != NULL){ //added by Hui 01/21/16
                 llvm::Type *origT = ivp->llvm_inst->getType();
@@ -358,53 +359,53 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
                     string structNameReal = type->getStructName().str();
                     blame_info<<"Create structName("<<structNameReal<<
                         ") for "<<ivp->name<<endl;
-                    O<<structNameReal<<std::endl;
+                    O<<structNameReal<<endl;
                 }
-                else O<<"NULL"<<std::endl;
+                else O<<"NULL"<<endl;
             }*/
             //If you really need chpl_** struct, you can first make sure
             //the GEN_TYPE has "Struct" and its llvm_inst is either instruction
             //or constantExpr, then get the operand(0) of it and apply above method
-            O<<"NULL"<<std::endl;
+            O<<"NULL"<<endl;
         }
 		else
-			O<<ivp->sBFC->structName<<std::endl;
-		O<<"END STRUCTTYPE "<<std::endl;
+			O<<ivp->sBFC->structName<<endl;
+		O<<"END STRUCTTYPE "<<endl;
 	
 			
-		O<<"BEGIN STRUCTPARENT "<<std::endl;
+		O<<"BEGIN STRUCTPARENT "<<endl;
 		if (ivp->sField == NULL)
-			O<<"NULL"<<std::endl;
+			O<<"NULL"<<endl;
 		else if (ivp->sField->parentStruct == NULL)
-			O<<"NULL"<<std::endl;
+			O<<"NULL"<<endl;
 		else
-			O<<ivp->sField->parentStruct->structName<<std::endl;
-		O<<"END STRUCTPARENT "<<std::endl;
+			O<<ivp->sField->parentStruct->structName<<endl;
+		O<<"END STRUCTPARENT "<<endl;
 		
-		O<<"BEGIN STRUCTFIELDNUM "<<std::endl;
+		O<<"BEGIN STRUCTFIELDNUM "<<endl;
 		if (ivp->sField == NULL)
-			O<<"NULL"<<std::endl;
+			O<<"NULL"<<endl;
 		else
-			O<<ivp->sField->fieldNum<<std::endl;
+			O<<ivp->sField->fieldNum<<endl;
 			
-		O<<"END STRUCTFIELDNUM "<<std::endl;
+		O<<"END STRUCTFIELDNUM "<<endl;
 		
-		O<<"BEGIN STOREFROM "<<std::endl;
+		O<<"BEGIN STOREFROM "<<endl;
 		if (ivp->storeFrom == NULL)
-			O<<"NULL"<<std::endl;
+			O<<"NULL"<<endl;
 		else
-			O<<ivp->storeFrom->name<<std::endl;//changed by Hui 01/29/16, before it was just 'storeFrom'
+			O<<ivp->storeFrom->name<<endl;//changed by Hui 01/29/16, before it was just 'storeFrom'
 			
-		O<<"END STOREFROM "<<std::endl;
+		O<<"END STOREFROM "<<endl;
 
 
 /*
-		O<<"BEGIN EXITV "<<std::endl;
+		O<<"BEGIN EXITV "<<endl;
 		if (ivp->exitV == NULL)
-			O<<"NULL"<<std::endl;
+			O<<"NULL"<<endl;
 		else
-			O<<ivp->exitV->name<<std::endl;
-		O<<"END EXITV "<<std::endl;
+			O<<ivp->exitV->name<<endl;
+		O<<"END EXITV "<<endl;
 	*/
 	
 	/*
@@ -429,15 +430,15 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 		
 			
 		O<<"BEGIN CALLS"<<endl;
-		std::set<ImpFuncCall *>::iterator ifc_i;
+		set<ImpFuncCall *>::iterator ifc_i;
 		for (ifc_i = ivp->calls.begin(); ifc_i != ivp->calls.end(); ifc_i++)
 		{
 			ImpFuncCall * iFunc = (*ifc_i);
-			O<<iFunc->callNode->name<<"  "<<iFunc->paramNumber<<std::endl;
+			O<<iFunc->callNode->name<<"  "<<iFunc->paramNumber<<endl;
 		}
 		O<<"END CALLS"<<endl;
 		
-		std::set<int>::iterator si_i;
+		set<int>::iterator si_i;
 		O<<"BEGIN DOM_LN "<<endl;
 			for (si_i = ivp->domLineNumbers.begin(); si_i != ivp->domLineNumbers.end(); si_i++)
 		{
@@ -464,7 +465,7 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
 				int lineNum = lrh_i->first;
 				int numReads = lrh_i->second;
 				O<<lineNum<<" "<<numReads<<endl;
-				//blame_info<<"For EV "<<ivp->name<<" --- Line num "<<lineNum<<" has "<<numReads<<" Reads."<<std::endl;
+				//blame_info<<"For EV "<<ivp->name<<" --- Line num "<<lineNum<<" has "<<numReads<<" Reads."<<endl;
 			}
 			O<<"END READ_L_NUMS "<<endl;
 		}
@@ -492,90 +493,102 @@ void FunctionBFC::exportEverything(std::ostream &O, bool reads)
             O<<ivp->myObj->name<<endl;
 	    O<<"END MYOBJ"<<endl;
 
-		O<<"BEGIN PIDALIASES "<<std::endl;
+		O<<"BEGIN PIDALIASES "<<endl;
 		for (set_ivp_i = ivp->pidAliases.begin(); set_ivp_i != ivp->pidAliases.end(); set_ivp_i++)
 		{
 			NodeProps *ivpPidAlias = (*set_ivp_i);
 			O<<ivpPidAlias->name<<endl;
 		}
-		O<<"END PIDALIASES "<<std::endl;
+		O<<"END PIDALIASES "<<endl;
 
-		O<<"BEGIN OBJALIASES "<<std::endl;
+		O<<"BEGIN OBJALIASES "<<endl;
 		for (set_ivp_i = ivp->objAliases.begin(); set_ivp_i != ivp->objAliases.end(); set_ivp_i++)
 		{
 			NodeProps *ivpObjAlias = (*set_ivp_i);
 			O<<ivpObjAlias->name<<endl;
 		}
-		O<<"END OBJALIASES "<<std::endl;
+		O<<"END OBJALIASES "<<endl;
+
+		O<<"BEGIN PPAS "<<endl;
+		for (set_ivp_i = ivp->PPAs.begin(); set_ivp_i != ivp->PPAs.end(); set_ivp_i++)
+		{
+			NodeProps *ivpPPA = (*set_ivp_i);
+			O<<ivpPPA->name<<endl;
+		}
+		O<<"END PPAS "<<endl;
 #endif
-		
-		
-		O<<"END VAR  "<<ivp->name<<std::endl;
+		O<<"END VAR  "<<ivp->name<<endl;
 	}
 	
-	O<<"END FUNC "<<getSourceFuncName()<<std::endl;
+	O<<"END FUNC "<<getSourceFuncName()<<endl;
 }
 
 
-void FunctionBFC::exportParams(std::ostream &O)
+void FunctionBFC::exportParams(ostream &O)
 {
-	O<<"FUNCTION "<<getSourceFuncName()<<" "<<voidReturn<<" "<<numPointerParams<<std::endl;
-	std::vector<ExitVariable *>::iterator v_ev_i;
+	O<<"FUNCTION "<<getSourceFuncName()<<" "<<voidReturn<<" "<<numPointerParams<<endl;
+	vector<ExitVariable *>::iterator v_ev_i;
 	for (v_ev_i = exitVariables.begin(); v_ev_i != exitVariables.end(); v_ev_i++)
 	{
 		ExitVariable * ev = *v_ev_i;
 		if (ev->whichParam >= 0 && ev->vertex != NULL)//changed by Hui '>0'-->'>=0'
 		{
-			O<<ev->whichParam<<" "<<ev->realName<<" "<<ev->isStructPtr<<" "<<ev->vertex->descLineNumbers.size()<<std::endl;
+			O<<ev->whichParam<<" "<<ev->realName<<" "<<ev->isStructPtr<<" "<<ev->vertex->descLineNumbers.size()<<endl;
 			if (ev->vertex->descLineNumbers.size() > 0 && ev->vertex->descLineNumbers.size() < 20)
 			{
-				std::set<int>::iterator s_i_i;
+				set<int>::iterator s_i_i;
 				for (s_i_i = ev->vertex->descLineNumbers.begin(); s_i_i != ev->vertex->descLineNumbers.end(); s_i_i++)
 					O<<*s_i_i<<" ";
-				O<<std::endl;
+				O<<endl;
 			}
 		}
 	}
-	O<<"END FUNCTION"<<std::endl;
+	O<<"END FUNCTION"<<endl;
 }
 
 
-void FunctionBFC::exportCalls(std::ostream &O, ExternFuncBFCHash & efInfo)
+void FunctionBFC::exportCalls(ostream &O, ExternFuncBFCHash & efInfo)
 {
-	//std::cout<<"Entering exportCalls"<<std::endl;
-	std::set<const char *, ltstr>::iterator s_ch_i;
-	for (s_ch_i = funcCallNames.begin(); s_ch_i != funcCallNames.end(); s_ch_i++)
-	{
-		O<<*s_ch_i;
-        std::string ss(*s_ch_i);
-		if (knownFuncsInfo.count(ss))
-			O<<" K ";
-		else if (efInfo[ss])
-			O<<" E ";
-		else if (isLibraryOutput(*s_ch_i))
-			O<<" O ";
-		else if (strstr(*s_ch_i, "tmp"))
-			O<<" P ";
-		else
-			O<<" U ";
+  //cout<<"Entering exportCalls"<<endl;
+  hasParOrDistCalls = false; //Initialization for each function
+
+  set<const char *, ltstr>::iterator s_ch_i;
+  for (s_ch_i = funcCallNames.begin(); s_ch_i != funcCallNames.end(); s_ch_i++)	{
+	O<<*s_ch_i;
+    string ss(*s_ch_i);
+	if (knownFuncsInfo.count(ss))
+	  O<<" K ";
+	else if (efInfo[ss])
+	  O<<" E ";
+	else if (isLibraryOutput(*s_ch_i))
+	  O<<" O ";
+	else if (strstr(*s_ch_i, "tmp"))
+	  O<<" P ";
+	else
+	  O<<" U ";
 			
-		O<<std::endl;
-	}
+	O<<endl;
+
+    //Added by Hui 07/07/17: to tag the functions with parallel construct calls
+    if(ss.compare("_waitEndCount")==0 || ss.find("chpl_executeOn")!=string::npos)
+      hasParOrDistCalls = true;
+  }
+
 }
 
 /* Prints out a series of dot files */
 void FunctionBFC::printDotFiles(const char * strExtension, bool printImplicit)
 {
-  std::string s("DOT/");
+  string s("DOT/");
  	
-  std::string s_name = func->getName();
+  string s_name = func->getName();
  	
-	std::string extension(strExtension);
+	string extension(strExtension);
 	
   s += s_name;
   s += extension;
  	
-  std::ofstream ofs(s.c_str());
+  ofstream ofs(s.c_str());
  	
 	if (!printImplicit)
 		printToDot(ofs, NO_PRINT, PRINT_INST_TYPE, PRINT_LINE_NUM, NULL, 0);	
@@ -583,13 +596,13 @@ void FunctionBFC::printDotFiles(const char * strExtension, bool printImplicit)
 		printToDot(ofs, PRINT_IMPLICIT, PRINT_INST_TYPE, PRINT_LINE_NUM, NULL, 0 );
 	
 
- std::string s2("DOTP/");
+ string s2("DOTP/");
  	
  	
   s2 += s_name;
   s2 += extension;
 
-  std::ofstream ofs2(s2.c_str());
+  ofstream ofs2(s2.c_str());
 
 
 	printToDotPretty(ofs2, PRINT_IMPLICIT, PRINT_INST_TYPE, PRINT_LINE_NUM, NULL, 0 );
@@ -601,11 +614,11 @@ void FunctionBFC::printDotFiles(const char * strExtension, bool printImplicit)
 
 
 
-void FunctionBFC::printFinalDot(bool printAllLines, std::string ext)
+void FunctionBFC::printFinalDot(bool printAllLines, string ext)
 {
-	std::string s("DOT/");
+	string s("DOT/");
  	
-  std::string s_name = func->getName();
+  string s_name = func->getName();
  	
 	
 	  s += s_name;
@@ -613,21 +626,21 @@ void FunctionBFC::printFinalDot(bool printAllLines, std::string ext)
 	
 	if (printAllLines)
 	{
-			std::string extension("_FINAL_AL.dot");
+			string extension("_FINAL_AL.dot");
 	  s += extension;
 	}
 	else
 	{
-			std::string extension("_FINAL.dot");
+			string extension("_FINAL.dot");
 		  s += extension;
 	}
  	
-  std::ofstream O(s.c_str());
+  ofstream O(s.c_str());
 	
 	property_map<MyTruncGraphType, edge_iore_t>::type edge_type
 	= get(edge_iore, G_trunc);
 	
-  O<<"digraph G {"<<std::endl;
+  O<<"digraph G {"<<endl;
   graph_traits<MyTruncGraphType>::vertex_iterator i, v_end;
   for(tie(i,v_end) = vertices(G_trunc); i != v_end; ++i) 
 	{
@@ -636,8 +649,8 @@ void FunctionBFC::printFinalDot(bool printAllLines, std::string ext)
 		if (!v)
 		{
 #ifdef DEBUG_ERROR		
-			blame_info<<"Null IVP for "<<*i<<" in printFinalDot<<"<<std::endl;
-			std::cerr<<"Null V in printFinalDot\n";
+			blame_info<<"Null IVP for "<<*i<<" in printFinalDot<<"<<endl;
+			cerr<<"Null V in printFinalDot\n";
 #endif			
 			continue;
 		}
@@ -747,7 +760,7 @@ void FunctionBFC::printFinalDot(bool printAllLines, std::string ext)
 					}
 					else
 					{
-						//std::string fullName;
+						//string fullName;
 						//getStructName(v,fullName);
 						//O<<get(get(vertex_index, G_trunc),*i)<<"[label=\""<<fullName;
 					
@@ -926,8 +939,8 @@ void FunctionBFC::printFinalDot(bool printAllLines, std::string ext)
 		else
 		{
 		#ifdef DEBUG_ERROR
-			blame_info<<"ERROR! why didn't this node count toward something for "<<v->name<<" "<<v->eStatus<<std::endl;
-			std::cerr<<"ERROR! why didn't this node count toward something for "<<v->name<<" "<<v->eStatus<<std::endl;
+			blame_info<<"ERROR! why didn't this node count toward something for "<<v->name<<" "<<v->eStatus<<endl;
+			cerr<<"ERROR! why didn't this node count toward something for "<<v->name<<" "<<v->eStatus<<endl;
 	#endif
 		}
 
@@ -975,7 +988,7 @@ void FunctionBFC::printFinalDot(bool printAllLines, std::string ext)
 
 
 		
-		O<<" ;"<<std::endl;	
+		O<<" ;"<<endl;	
 	}
 	
 	if (printAllLines)
@@ -988,7 +1001,7 @@ void FunctionBFC::printFinalDot(bool printAllLines, std::string ext)
 			
 			O<<iS+v->impNumber+1<<"[label=\"";
 			
-			std::set<int>::iterator set_i_i;
+			set<int>::iterator set_i_i;
 		
 			//for (set_i_i = v->lineNumbers.begin(); set_i_i != v->lineNumbers.end(); set_i_i++)
 			for (set_i_i = v->descLineNumbers.begin(); set_i_i != v->descLineNumbers.end(); set_i_i++)
@@ -997,7 +1010,7 @@ void FunctionBFC::printFinalDot(bool printAllLines, std::string ext)
 			}
 			O<<"\", shape = rectangle]\n";
 			
-			O<<v->impNumber<<"->"<<iS+v->impNumber+1<<std::endl;
+			O<<v->impNumber<<"->"<<iS+v->impNumber+1<<endl;
 			
 		}
 	}
@@ -1005,12 +1018,12 @@ void FunctionBFC::printFinalDot(bool printAllLines, std::string ext)
 }
 
 
-void FunctionBFC::printFinalDotPretty(bool printAllLines, std::string ext)
+void FunctionBFC::printFinalDotPretty(bool printAllLines, string ext)
 {
-	std::string s("DOTP/");
+	string s("DOTP/");
 	//printAllLines = false;
  	
-  std::string s_name = func->getName();
+  string s_name = func->getName();
  	
 	
 	  s += s_name;
@@ -1018,21 +1031,21 @@ void FunctionBFC::printFinalDotPretty(bool printAllLines, std::string ext)
 	
 	if (printAllLines)
 	{
-			std::string extension("_FINAL_AL.dot");
+			string extension("_FINAL_AL.dot");
 	  s += extension;
 	}
 	else
 	{
-			std::string extension("_FINAL.dot");
+			string extension("_FINAL.dot");
 		  s += extension;
 	}
  	
-  std::ofstream O(s.c_str());
+  ofstream O(s.c_str());
 	
 	property_map<MyTruncGraphType, edge_iore_t>::type edge_type
 	= get(edge_iore, G_trunc);
 	
-  O<<"digraph G {"<<std::endl;
+  O<<"digraph G {"<<endl;
   graph_traits<MyTruncGraphType>::vertex_iterator i, v_end;
   for(tie(i,v_end) = vertices(G_trunc); i != v_end; ++i) 
 	{
@@ -1041,8 +1054,8 @@ void FunctionBFC::printFinalDotPretty(bool printAllLines, std::string ext)
 		if (!v)
 		{
 #ifdef DEBUG_ERROR		
-			blame_info<<"Null IVP for "<<*i<<" in printFinalDot<<"<<std::endl;
-			std::cerr<<"Null V in printFinalDot\n";
+			blame_info<<"Null IVP for "<<*i<<" in printFinalDot<<"<<endl;
+			cerr<<"Null V in printFinalDot\n";
 #endif			
 			continue;
 		}
@@ -1148,7 +1161,7 @@ void FunctionBFC::printFinalDotPretty(bool printAllLines, std::string ext)
 					}
 					else
 					{
-						//std::string fullName;
+						//string fullName;
 						//getStructName(v,fullName);
 						//O<<get(get(vertex_index, G_trunc),*i)<<"[label=\""<<fullName;
 					
@@ -1315,8 +1328,8 @@ void FunctionBFC::printFinalDotPretty(bool printAllLines, std::string ext)
 		else
 		{
 		#ifdef DEBUG_ERROR
-			blame_info<<"ERROR! why didn't this node count toward something for "<<v->name<<" "<<v->eStatus<<std::endl;
-			std::cerr<<"ERROR! why didn't this node count toward something for "<<v->name<<" "<<v->eStatus<<std::endl;
+			blame_info<<"ERROR! why didn't this node count toward something for "<<v->name<<" "<<v->eStatus<<endl;
+			cerr<<"ERROR! why didn't this node count toward something for "<<v->name<<" "<<v->eStatus<<endl;
 	#endif
 		}
 
@@ -1362,7 +1375,7 @@ void FunctionBFC::printFinalDotPretty(bool printAllLines, std::string ext)
 
 
 		
-		O<<" ;"<<std::endl;	
+		O<<" ;"<<endl;	
 	}
 	
 	if (printAllLines)
@@ -1375,7 +1388,7 @@ void FunctionBFC::printFinalDotPretty(bool printAllLines, std::string ext)
 			
 			O<<iS+v->impNumber+1<<"[label=\"";
 			
-			std::set<int>::iterator set_i_i;
+			set<int>::iterator set_i_i;
 		
 			//for (set_i_i = v->lineNumbers.begin(); set_i_i != v->lineNumbers.end(); set_i_i++)
 			for (set_i_i = v->descLineNumbers.begin(); set_i_i != v->descLineNumbers.end(); set_i_i++)
@@ -1384,7 +1397,7 @@ void FunctionBFC::printFinalDotPretty(bool printAllLines, std::string ext)
 			}
 			O<<"\", shape = rectangle]\n";
 			
-			O<<v->impNumber<<"->"<<iS+v->impNumber+1<<std::endl;
+			O<<v->impNumber<<"->"<<iS+v->impNumber+1<<endl;
 			
 		}
 	}
@@ -1393,29 +1406,29 @@ void FunctionBFC::printFinalDotPretty(bool printAllLines, std::string ext)
 
 
 
-void FunctionBFC::printFinalDotAbbr(std::string ext)
+void FunctionBFC::printFinalDotAbbr(string ext)
 {
 	bool printAllLines = true;
 
-	std::string s("DOT/");
+	string s("DOT/");
  	
-  std::string s_name = func->getName();
+  string s_name = func->getName();
  	
 	
 	  s += s_name;
 	  s += ext;
 
 	
-		std::string extension("_FINAL_abbr.dot");
+		string extension("_FINAL_abbr.dot");
 	  s += extension;
 	
  	
-  std::ofstream O(s.c_str());
+  ofstream O(s.c_str());
 	
 	property_map<MyTruncGraphType, edge_iore_t>::type edge_type
 	= get(edge_iore, G_abbr);
 	
-  O<<"digraph G {"<<std::endl;
+  O<<"digraph G {"<<endl;
   graph_traits<MyTruncGraphType>::vertex_iterator i, v_end;
   for(tie(i,v_end) = vertices(G_abbr); i != v_end; ++i) 
 	{
@@ -1424,8 +1437,8 @@ void FunctionBFC::printFinalDotAbbr(std::string ext)
 		if (!v)
 		{
 #ifdef DEBUG_ERROR		
-			blame_info<<"Null IVP for "<<*i<<" in printFinalDot<<"<<std::endl;
-			std::cerr<<"Null V in printFinalDot\n";
+			blame_info<<"Null IVP for "<<*i<<" in printFinalDot<<"<<endl;
+			cerr<<"Null V in printFinalDot\n";
 #endif			
 			continue;
 		}
@@ -1743,7 +1756,7 @@ void FunctionBFC::printFinalDotAbbr(std::string ext)
 
 
 		
-		O<<" ;"<<std::endl;	
+		O<<" ;"<<endl;	
 	}
 	
 	if (printAllLines)
@@ -1757,7 +1770,7 @@ void FunctionBFC::printFinalDotAbbr(std::string ext)
 
 				O<<iS+ivp->impNumber+1<<"[label=\"";
 			
-				std::set<int>::iterator set_i_i;
+				set<int>::iterator set_i_i;
 		
 				//for (set_i_i = v->lineNumbers.begin(); set_i_i != v->lineNumbers.end(); set_i_i++)
 				for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++)
@@ -1766,7 +1779,7 @@ void FunctionBFC::printFinalDotAbbr(std::string ext)
 				}
 				
 				O<<"\", shape = rectangle]\n";
-				O<<ivp->impNumber<<"->"<<iS+ivp->impNumber+1<<std::endl;
+				O<<ivp->impNumber<<"->"<<iS+ivp->impNumber+1<<endl;
 			}
 			
 		}
@@ -1776,10 +1789,10 @@ void FunctionBFC::printFinalDotAbbr(std::string ext)
 
 
 
-void FunctionBFC::printFinalLineNums(std::ostream &O)
+void FunctionBFC::printFinalLineNums(ostream &O)
 {
 		
-	O<<"EXIT VARIABLES"<<std::endl;
+	O<<"EXIT VARIABLES"<<endl;
 	
 	graph_traits<MyTruncGraphType>::vertex_iterator i, v_end;
 
@@ -1790,19 +1803,19 @@ void FunctionBFC::printFinalLineNums(std::ostream &O)
 		{
 			if (ivp->eStatus >= EXIT_VAR_GLOBAL)
 			{
-				O<<ivp->name<<std::endl;
-				std::set<int>::iterator set_i_i;		
+				O<<ivp->name<<endl;
+				set<int>::iterator set_i_i;		
 				for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++)
 				{
 					O<<(*set_i_i)<<" ";
 				}				
-				O<<std::endl;
+				O<<endl;
 			}
 		}
 	}
 	
 	
-	O<<"EXIT VAR FIELDS"<<std::endl;
+	O<<"EXIT VAR FIELDS"<<endl;
 	for(tie(i,v_end) = vertices(G_abbr); i != v_end; ++i) 
 	{
 		NodeProps * ivp = get(get(vertex_props, G_abbr),*i);
@@ -1810,20 +1823,20 @@ void FunctionBFC::printFinalLineNums(std::ostream &O)
 		{
 			if (ivp->nStatus[EXIT_VAR_FIELD])
 			{
-				O<<ivp->getFullName()<<std::endl;
-				std::set<int>::iterator set_i_i;		
+				O<<ivp->getFullName()<<endl;
+				set<int>::iterator set_i_i;		
 				for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++)
 				{
 					O<<(*set_i_i)<<" ";
 				}				
-				O<<std::endl;
+				O<<endl;
 			}
 		}
 	}
 
 	
 	
-	O<<"LOCAL VARIABLES"<<std::endl;
+	O<<"LOCAL VARIABLES"<<endl;
 	for(tie(i,v_end) = vertices(G_abbr); i != v_end; ++i) 
 	{
 		NodeProps * ivp = get(get(vertex_props, G_abbr),*i);
@@ -1834,18 +1847,18 @@ void FunctionBFC::printFinalLineNums(std::ostream &O)
 				if (ivp->isFakeLocal)
 					continue;
 			
-				O<<ivp->name<<std::endl;
-				std::set<int>::iterator set_i_i;		
+				O<<ivp->name<<endl;
+				set<int>::iterator set_i_i;		
 				for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++)
 				{
 					O<<(*set_i_i)<<" ";
 				}				
-				O<<std::endl;
+				O<<endl;
 			}
 		}
 	}
 	
-	O<<"LOCAL VAR FIELDS"<<std::endl;
+	O<<"LOCAL VAR FIELDS"<<endl;
 	for(tie(i,v_end) = vertices(G_abbr); i != v_end; ++i) 
 	{
 		NodeProps * ivp = get(get(vertex_props, G_abbr),*i);
@@ -1853,7 +1866,7 @@ void FunctionBFC::printFinalLineNums(std::ostream &O)
 		{
 			if (ivp->nStatus[LOCAL_VAR_FIELD])
 			{
-				std::set<NodeProps *> visited;
+				set<NodeProps *> visited;
 			
 				NodeProps * fUpPtr = ivp->fieldUpPtr;
 				NodeProps * topField = NULL;
@@ -1873,18 +1886,18 @@ void FunctionBFC::printFinalLineNums(std::ostream &O)
 				if (topField->isFakeLocal)
 					continue;
 			
-				O<<ivp->getFullName()<<std::endl;
-				std::set<int>::iterator set_i_i;		
+				O<<ivp->getFullName()<<endl;
+				set<int>::iterator set_i_i;		
 				for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++)
 				{
 					O<<(*set_i_i)<<" ";
 				}				
-				O<<std::endl;
+				O<<endl;
 			}
 		}
 	}
 
-	//std::cout<<"Leaving printFinalLineNums for"<<std::endl;
+	//cout<<"Leaving printFinalLineNums for"<<endl;
 	
 	
 }
@@ -1894,16 +1907,16 @@ void FunctionBFC::printFinalLineNums(std::ostream &O)
 
 void FunctionBFC::printTruncDotFiles(const char * strExtension, bool printImplicit)
 {
-  std::string s("DOT/");
+  string s("DOT/");
  	
-  std::string s_name = func->getName();
+  string s_name = func->getName();
  	
-	std::string extension(strExtension);
+	string extension(strExtension);
 	
   s += s_name;
   s += extension;
  	
-  std::ofstream ofs(s.c_str());
+  ofstream ofs(s.c_str());
  	
 	
 	printToDotTrunc(ofs);
@@ -1913,7 +1926,7 @@ void FunctionBFC::printTruncDotFiles(const char * strExtension, bool printImplic
 }
 
 
-void FunctionBFC::printToDotTrunc(std::ostream &O)
+void FunctionBFC::printToDotTrunc(ostream &O)
 {
 	bool printLineNum = true;
 	//int opSetSize = 0;
@@ -1922,7 +1935,7 @@ void FunctionBFC::printToDotTrunc(std::ostream &O)
 	property_map<MyGraphType, edge_iore_t>::type edge_type
 	= get(edge_iore, G);
 	
-  O<<"digraph G {"<<std::endl;
+  O<<"digraph G {"<<endl;
   graph_traits<MyGraphType>::vertex_iterator i, v_end;
   for(tie(i,v_end) = vertices(G); i != v_end; ++i) 
 	{
@@ -1932,17 +1945,17 @@ void FunctionBFC::printToDotTrunc(std::ostream &O)
 				
 		if (!v)
 		{
-			//std::cerr<<"Null V in printToDot\n";
+			//cerr<<"Null V in printToDot\n";
 			continue;
 		}
 		
 		//if (v->fbb != NULL)
-			//std::cout<<"BB is "<<v->fbb->getName()<<std::endl;
+			//cout<<"BB is "<<v->fbb->getName()<<endl;
 
 #ifdef DEBUG_OUTPUT		
 		blame_info<<"V "<<v->name<<" exit Status is "<<v->eStatus;
 		blame_info<<v->nStatus[CALL_NODE]<<" "<<v->nStatus[CALL_PARAM];
-		blame_info<<" "<<v->nStatus[CALL_RETURN]<<std::endl;
+		blame_info<<" "<<v->nStatus[CALL_RETURN]<<endl;
 #endif
 
 		if (v->eStatus >= EXIT_VAR_PARAM)
@@ -2127,7 +2140,7 @@ void FunctionBFC::printToDotTrunc(std::ostream &O)
 						O<<":("<<v->line_num<<":"<<v->lineNumOrder<<")";
 					if (v->isLocalVar == true)
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=white]\n";
-					else if (strstr(v->name.c_str(), PARAM_REC)!=NULL || strstr(v->name.c_str(), PARAM_REC2)!=NULL || v->isFormalArg)
+					else if (v->isFormalArg)
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=white]\n";
 					else
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=white]\n";
@@ -2219,7 +2232,7 @@ void FunctionBFC::printToDotTrunc(std::ostream &O)
 						else
 							O<< "[label=\""<<"ALIAS"<<"\"]";
 					
-					O<<" ;"<<std::endl;	
+					O<<" ;"<<endl;	
 	      }
 			}
 		}
@@ -2264,9 +2277,9 @@ void FunctionBFC::printToDotTrunc(std::ostream &O)
 					else if (opCode == Instruction::Call )
 					{
 						int paramNum = MAX_PARAMS + 1;
-						//std::cerr<<"Call from "<<sourceVP->name<<" to "<<targetVP->name<<std::endl;
+						//cerr<<"Call from "<<sourceVP->name<<" to "<<targetVP->name<<endl;
 						
-						std::set<FuncCall *>::iterator fc_i = sourceVP->funcCalls.begin();
+						set<FuncCall *>::iterator fc_i = sourceVP->funcCalls.begin();
 						
 						for (; fc_i != sourceVP->funcCalls.end(); fc_i++)
 						{
@@ -2279,7 +2292,7 @@ void FunctionBFC::printToDotTrunc(std::ostream &O)
 							}
 							
 							
-							//std::cerr<<"     PN is "<<fc->paramNumber<<" for func "<<fc->funcName<<std::endl;
+							//cerr<<"     PN is "<<fc->paramNumber<<" for func "<<fc->funcName<<endl;
 						}
 						
 						O<< "[color=red, label=\""<<Instruction::getOpcodeName(opCode)<<" "<<paramNum<<"\"]";
@@ -2287,7 +2300,7 @@ void FunctionBFC::printToDotTrunc(std::ostream &O)
 					else if (opCode == Instruction::Store )
 					{
 						O<<"[label=\"";
-						std::set<int>::iterator set_int_i;
+						set<int>::iterator set_int_i;
 						
 						for (set_int_i = targetVP->storeLines.begin(); set_int_i != targetVP->storeLines.end(); set_int_i++)
 							O<<(*set_int_i)<<" ";
@@ -2297,7 +2310,7 @@ void FunctionBFC::printToDotTrunc(std::ostream &O)
 					else
 						O<< "[label=\""<<Instruction::getOpcodeName(opCode)<<"\"]";
 	      }
-				O<<" ;"<<std::endl;	
+				O<<" ;"<<endl;	
 			}
 		
   }
@@ -2310,18 +2323,18 @@ void FunctionBFC::printToDotTrunc(std::ostream &O)
  printInstType - also prints the type for each instruction 
  printLineNum - also prints linenum the instruction generated from
  */
-void FunctionBFC::printToDot(std::ostream &O, bool printImplicit, bool printInstType, 
+void FunctionBFC::printToDot(ostream &O, bool printImplicit, bool printInstType, 
 															 bool printLineNum,int * opSet, int opSetSize)
 {  
   property_map<MyGraphType, edge_iore_t>::type edge_type
 	= get(edge_iore, G);
 	
-  O<<"digraph G {"<<std::endl;
+  O<<"digraph G {"<<endl;
   graph_traits<MyGraphType>::vertex_iterator i, v_end;
   for(tie(i,v_end) = vertices(G); i != v_end; ++i) 
 	{
 	#ifdef DEBUG_OUTPUT		
-		blame_info<<"Getting v for "<<*i<<std::endl;
+		blame_info<<"Getting v for "<<*i<<endl;
 #endif
 		
 		NodeProps * v = get(get(vertex_props, G),*i);
@@ -2329,8 +2342,8 @@ void FunctionBFC::printToDot(std::ostream &O, bool printImplicit, bool printInst
 		if (!v)
 		{
 #ifdef DEBUG_ERROR				
-			blame_info<<"V is NULL"<<std::endl;
-			std::cerr<<"Null V in printToDot\n";
+			blame_info<<"V is NULL"<<endl;
+			cerr<<"Null V in printToDot\n";
 			#endif
 			continue;
 		}
@@ -2361,7 +2374,7 @@ void FunctionBFC::printToDot(std::ostream &O, bool printImplicit, bool printInst
 					//shouldIContinue = false;
 			//}	
 			
-			if (v->name.find("--") != std::string::npos)
+			if (v->name.find("--") != string::npos)
 				shouldIContinue = false;
 			
 			if (shouldIContinue)
@@ -2384,7 +2397,7 @@ void FunctionBFC::printToDot(std::ostream &O, bool printImplicit, bool printInst
 						O<<":("<<v->line_num<<":"<<v->lineNumOrder<<")";
 					if (v->isLocalVar == true)
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=forestgreen]\n";
-					else if (strstr(v->name.c_str(), PARAM_REC)!=NULL || strstr(v->name.c_str(), PARAM_REC2)!=NULL || v->isFormalArg)
+					else if (v->isFormalArg)
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=green]\n";
 					else
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=darkseagreen]\n";
@@ -2459,7 +2472,7 @@ void FunctionBFC::printToDot(std::ostream &O, bool printImplicit, bool printInst
 					else
 						O<< "[label=\""<<"ALIAS"<<"\"]";
                 }
-				O<<" ;"<<std::endl;	
+				O<<" ;"<<endl;	
 	        }
 		}
 	}
@@ -2513,9 +2526,9 @@ void FunctionBFC::printToDot(std::ostream &O, bool printImplicit, bool printInst
 					else if (opCode == Instruction::Call )
 					{
 						int paramNum = MAX_PARAMS + 1;
-						//std::cerr<<"Call from "<<sourceVP->name<<" to "<<targetVP->name<<std::endl;
+						//cerr<<"Call from "<<sourceVP->name<<" to "<<targetVP->name<<endl;
 						
-						std::set<FuncCall *>::iterator fc_i = sourceVP->funcCalls.begin();
+						set<FuncCall *>::iterator fc_i = sourceVP->funcCalls.begin();
 						
 						for (; fc_i != sourceVP->funcCalls.end(); fc_i++)
 						{
@@ -2528,7 +2541,7 @@ void FunctionBFC::printToDot(std::ostream &O, bool printImplicit, bool printInst
 							}
 							
 							
-							//std::cerr<<"     PN is "<<fc->paramNumber<<" for func "<<fc->funcName<<std::endl;
+							//cerr<<"     PN is "<<fc->paramNumber<<" for func "<<fc->funcName<<endl;
 						}
 						
 						
@@ -2538,7 +2551,7 @@ void FunctionBFC::printToDot(std::ostream &O, bool printImplicit, bool printInst
 					else
 						O<< "[label=\""<<Instruction::getOpcodeName(opCode)<<"\"]";
 	      }
-				O<<" ;"<<std::endl;	
+				O<<" ;"<<endl;	
 			}
 		}
   }
@@ -2553,7 +2566,7 @@ void FunctionBFC::printToDot(std::ostream &O, bool printImplicit, bool printInst
  printInstType - also prints the type for each instruction 
  printLineNum - also prints linenum the instruction generated from
  */
-void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool printInstType, 
+void FunctionBFC::printToDotPretty(ostream &O, bool printImplicit, bool printInstType, 
 															 bool printLineNum,int * opSet, int opSetSize)
 {  
   property_map<MyGraphType, edge_iore_t>::type edge_type
@@ -2561,12 +2574,12 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
 	
  printLineNum = false;	
 	
-  O<<"digraph G {"<<std::endl;
+  O<<"digraph G {"<<endl;
   graph_traits<MyGraphType>::vertex_iterator i, v_end;
   for(tie(i,v_end) = vertices(G); i != v_end; ++i) 
 	{
 	#ifdef DEBUG_OUTPUT		
-		blame_info<<"Getting v for "<<*i<<std::endl;
+		blame_info<<"Getting v for "<<*i<<endl;
 #endif
 		
 		NodeProps * v = get(get(vertex_props, G),*i);
@@ -2574,8 +2587,8 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
 		if (!v)
 		{
 #ifdef DEBUG_ERROR				
-			blame_info<<"V is NULL"<<std::endl;
-			std::cerr<<"Null V in printToDot\n";
+			blame_info<<"V is NULL"<<endl;
+			cerr<<"Null V in printToDot\n";
 			#endif
 			continue;
 		}
@@ -2606,7 +2619,7 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
 					//shouldIContinue = false;
 			//}	
 			
-			if (v->name.find("--") != std::string::npos)
+			if (v->name.find("--") != string::npos)
 				shouldIContinue = false;
 			
 			if (shouldIContinue)
@@ -2629,7 +2642,7 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
 						O<<":("<<v->line_num<<":"<<v->lineNumOrder<<")";
 					if (v->isLocalVar == true)
 						O<<"\",shape=rectangle, style=filled, fillcolor=pink]\n";
-					else if (strstr(v->name.c_str(), PARAM_REC)!=NULL || strstr(v->name.c_str(), PARAM_REC2)!=NULL || v->isFormalArg)
+					else if (v->isFormalArg)
 						O<<"\",shape=invtriangle, style=filled, fillcolor=green]\n";
 					else
 						O<<"\",shape=Mdiamond, style=filled, fillcolor=darkseagreen]\n";
@@ -2658,8 +2671,8 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
 				}
 				else
 				{
-					std::string constNum;
-                    std::size_t plusPos = v->name.find("+");
+					string constNum;
+                    size_t plusPos = v->name.find("+");
 					if (plusPos != string::npos)
 					{
 						unsigned plusPos2 = v->name.find("+",plusPos+1);
@@ -2716,7 +2729,7 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
 			    O<< "[label=\""<<"ALIAS"<<"\"]";
 					
           }
-		  O<<" ;"<<std::endl;	
+		  O<<" ;"<<endl;	
 	    }
 	  }
 	}
@@ -2774,9 +2787,9 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
 					else if (opCode == Instruction::Call )
 					{
 						int paramNum = MAX_PARAMS + 1;
-						//std::cerr<<"Call from "<<sourceVP->name<<" to "<<targetVP->name<<std::endl;
+						//cerr<<"Call from "<<sourceVP->name<<" to "<<targetVP->name<<endl;
 						
-						std::set<FuncCall *>::iterator fc_i = sourceVP->funcCalls.begin();
+						set<FuncCall *>::iterator fc_i = sourceVP->funcCalls.begin();
 						
 						for (; fc_i != sourceVP->funcCalls.end(); fc_i++)
 						{
@@ -2789,7 +2802,7 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
 							}
 							
 							
-							//std::cerr<<"     PN is "<<fc->paramNumber<<" for func "<<fc->funcName<<std::endl;
+							//cerr<<"     PN is "<<fc->paramNumber<<" for func "<<fc->funcName<<endl;
 						}
 						
 						
@@ -2803,7 +2816,7 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
 
 					}
 	      }
-				O<<" ;"<<std::endl;	
+				O<<" ;"<<endl;	
 			}
 		}
   }
@@ -2819,9 +2832,9 @@ void FunctionBFC::printToDotPretty(std::ostream &O, bool printImplicit, bool pri
  - Name
  - Return Type
  */
-void FunctionBFC::printFunctionDetails(std::ostream & O)
+void FunctionBFC::printFunctionDetails(ostream & O)
 {
-  O<<"Function "<<func->getName().data()<<" has return type of "<<returnTypeName(func->getReturnType(), std::string(" "))<<"\n";
+  O<<"Function "<<func->getName().data()<<" has return type of "<<returnTypeName(func->getReturnType(), string(" "))<<"\n";
   O<<"Parameters: \n";
 	
   for(Function::arg_iterator af_i = func->arg_begin(); af_i != func->arg_end(); af_i++)
@@ -2829,7 +2842,7 @@ void FunctionBFC::printFunctionDetails(std::ostream & O)
 		Value *v = af_i;
 		
 		if (v->hasName())
-			O<<v->getName().str()<<" of type " << returnTypeName(v->getType(), std::string(" "))<< "\n";
+			O<<v->getName().str()<<" of type " << returnTypeName(v->getType(), string(" "))<< "\n";
 	}
 	
 }

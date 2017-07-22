@@ -23,7 +23,7 @@
 
 using namespace std;
 
-std::ofstream struct_file;
+ofstream struct_file;
 //populate blame relationship from externFuncions
 void importSharedBFC(const char *path, ExternFuncBFCHash &externFuncInformation)
 {
@@ -67,26 +67,77 @@ void importSharedBFC(const char *path, ExternFuncBFCHash &externFuncInformation)
 }
 
 //Helper function
-void exportUserFuncsInfo(FuncSigHash &kFI, std::ostream &O)
+void exportUserFuncsInfo(FuncSigHash &kFI, ostream &O)
 {
     FuncSigHash::iterator fsh_i;
     for (fsh_i = kFI.begin(); fsh_i != kFI.end(); fsh_i++) {
       string fname = fsh_i->first;
       FuncSignature *fs = fsh_i->second;
-      string ftypeName = FunctionBFC::returnTypeName(fs->returnType, std::string(""));
+      string ftypeName = FunctionBFC::returnTypeName(fs->returnType, string(""));
       O<<"FUNCTION "<<fname<<" "<<ftypeName<<endl;
       
-      std::vector<FuncFormalArg*>::iterator sa_i;
+      vector<FuncFormalArg*>::iterator sa_i;
       for (sa_i=fs->args.begin(); sa_i!=fs->args.end(); sa_i++) {
         FuncFormalArg *arg = *sa_i;
         O<<arg->argIdx<<" "<<arg->name<<" "<<
-            FunctionBFC::returnTypeName(arg->argType, std::string(""))<<endl;
+            FunctionBFC::returnTypeName(arg->argType, string(""))<<endl;
       }
       
       O<<"END FUNCTION\n"<<endl;
     }
 
 }
+
+
+// check hasParOrDistCallsReal of each function to propagate that tag and produce warning 07/07/17
+int calcFuncParDistTags (FuncSigHash &kFI)
+{
+    FuncSigHash::iterator fsh_i, fsh_e;
+    int oldTotalTag = 0, newTotalTag = 0;
+
+    for (fsh_i = kFI.begin(), fsh_e = kFI.end(); fsh_i != fsh_e; fsh_i++) {
+      string fn = fsh_i->first;
+      FuncSignature *fs = fsh_i->second;
+        
+      set<const char *, ltstr>::iterator si;
+      for (si = fs->calleeNames.begin(); si != fs->calleeNames.end(); si++) {
+        string callName(*si);
+        
+        if (kFI.count(callName)) {
+          if (kFI[callName]->hasParOrDistCallsReal) {
+            fs->hasParOrDistCallsReal = true;
+            break;
+          }
+        }
+      }
+      newTotalTag += fs->hasParOrDistCallsReal;
+    }
+
+    // Iteratively check the hasParOrDistCallsReal
+    while (newTotalTag != oldTotalTag) {
+      oldTotalTag = newTotalTag; //reserve the old total tag val
+      newTotalTag = 0; //recompute the new total tag val
+      for (fsh_i = kFI.begin(), fsh_e = kFI.end(); fsh_i != fsh_e; fsh_i++) {
+        string fn = fsh_i->first;
+        FuncSignature *fs = fsh_i->second;
+        
+        set<const char *, ltstr>::iterator si;
+        for (si = fs->calleeNames.begin(); si != fs->calleeNames.end(); si++) {
+          string callName(*si);
+          if (kFI.count(callName)) {
+            if (kFI[callName]->hasParOrDistCallsReal) {
+              fs->hasParOrDistCallsReal = true;
+              break;
+            }
+          }
+        }
+        newTotalTag += fs->hasParOrDistCallsReal;
+      }
+    }
+
+    return newTotalTag;
+}
+
 
 /* Main pass that takes in a module and runs analysis on each function */
 bool BFC::runOnModule(Module &M)
@@ -224,48 +275,48 @@ bool BFC::runOnModule(Module &M)
 //  NOT SURE THE ABOVE IS NEEDED FOR Chapel Program //
 
     // SETUP all the exports files 
-    std::string blame_path("EXPORT/");
-	std::string struct_path = blame_path;
-	std::string calls_path = blame_path;
-	std::string params_path = blame_path;
-	std::string se_path = blame_path;
-	std::string sea_path = blame_path;
-	std::string alias_path = blame_path;
-	std::string loops_path = blame_path;
-	std::string conds_path = blame_path;
-    std::string funcs_path = blame_path;
+    string blame_path("EXPORT/");
+	string struct_path = blame_path;
+	string calls_path = blame_path;
+	string params_path = blame_path;
+	string se_path = blame_path;
+	string sea_path = blame_path;
+	string alias_path = blame_path;
+	string loops_path = blame_path;
+	string conds_path = blame_path;
+    string funcs_path = blame_path;
 	
-	std::string mod_name = M.getModuleIdentifier();
-	std::string blame_extension(".blm");
+	string mod_name = M.getModuleIdentifier();
+	string blame_extension(".blm");
 	blame_path += mod_name;
 	blame_path += blame_extension;
-	std::ofstream blame_file(blame_path.c_str());
+	ofstream blame_file(blame_path.c_str());
 	
-	std::string se_extension(".se");
+	string se_extension(".se");
 	se_path += mod_name;
 	se_path += se_extension;
-	std::ofstream blame_se_file(se_path.c_str());
+	ofstream blame_se_file(se_path.c_str());
 	
-	std::string struct_extension(".structs");
+	string struct_extension(".structs");
 	struct_path += mod_name;
 	struct_path += struct_extension;
     //Here we make struct_file to be global in case we need to addin more later
 	struct_file.open(struct_path.c_str());
 	
-	std::string calls_extension(".calls");
+	string calls_extension(".calls");
 	calls_path += mod_name;
 	calls_path += calls_extension;
-	std::ofstream calls_file(calls_path.c_str());
+	ofstream calls_file(calls_path.c_str());
 	
-	std::string params_extension(".params");
+	string params_extension(".params");
 	params_path += mod_name;
 	params_path += params_extension;
-	std::ofstream params_file(params_path.c_str());
+	ofstream params_file(params_path.c_str());
 	
-	std::string funcs_extension(".funcs");
+	string funcs_extension(".funcs");
 	funcs_path += mod_name;
 	funcs_path += funcs_extension;
-	std::ofstream funcs_file(funcs_path.c_str());
+	ofstream funcs_file(funcs_path.c_str());
 
 
 	bm->exportStructs(struct_file);
@@ -277,7 +328,7 @@ bool BFC::runOnModule(Module &M)
 
       DISubprogram *dsp = new DISubprogram(*I);
       if (!dsp->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
-        std::string dspName = dsp->getName().str();
+        string dspName = dsp->getName().str();
         if (dspName.find("wrap") != 0) { //no 'wrap*'
            //if (dspName.compare("main")==0 || dspName.compare("sayhello")==0 ||\
                  dspName.compare("factorial")==0) 
@@ -320,13 +371,13 @@ bool BFC::runOnModule(Module &M)
     
     ////////////////////// EXTERN PASS for internal module functions //////////
     //Functions from internal modules:keep blamed paramNum in chapel_internals.bs
-    std::ofstream args_file("./chapel_internal.bs");
+    ofstream args_file("./chapel_internal.bs");
     for (DebugInfoFinder::iterator I = Finder.subprogram_begin(),
 	    E = Finder.subprogram_end(); I != E; I++) {
 
       DISubprogram *dsp = new DISubprogram(*I);
       if (!dsp->getDirectory().equals(StringRef(PRJ_HOME_DIR))) { //Non-user functions
-        std::string dspName = dsp->getName().str();
+        string dspName = dsp->getName().str();
         if (dspName.find("wrap") != 0) { //no 'wrap*'
           Function *F = dsp->getFunction();
           FunctionBFC *fb;
@@ -369,11 +420,11 @@ bool BFC::runOnModule(Module &M)
 
       DISubprogram *dsp = new DISubprogram(*I);
       if (dsp->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
-        std::string dspName = dsp->getName().str();
+        string dspName = dsp->getName().str();
         //dspName chopped everything after(include) "_chpl"
-        if (dspName.find("chpl")==std::string::npos && dspName.compare("=")!=0) { 
+        if (dspName.find("chpl")==string::npos && dspName.compare("=")!=0) { 
           //no chpl in user funcNm
-          if (!dspName.empty() && (*(dspName.begin()) != '_')) { //no '_XXX'
+          if (!dspName.empty() && (*(dspName.begin()) != '_') && (dspName.find("wrap") != 0)) { //no '_XXX'
            //if (dspName.compare("main")==0 || dspName.compare("sayhello")==0 ||\
                  dspName.compare("factorial")==0) 
             Function *F = dsp->getFunction();
@@ -413,8 +464,6 @@ bool BFC::runOnModule(Module &M)
 
     exportUserFuncsInfo(knownFuncsInfo, funcs_file);
     //////////////// FIRST PASS ////////////////////////////////////
-       
-    FuncBFCHash funcInformation;
 
     int numMissing = 0;
     int numMEV = 0;
@@ -425,53 +474,106 @@ bool BFC::runOnModule(Module &M)
     for (DebugInfoFinder::iterator I = Finder.subprogram_begin(),
 	    E = Finder.subprogram_end(); I != E; I++) {
 
-        DISubprogram *dsp = new DISubprogram(*I);
-        if (dsp->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
-            std::string dspName = dsp->getName().str();
-            if (dspName.find("chpl") == std::string::npos && dspName.compare("=") != 0) { //no chpl in user funcNm
-                // no name starts with '_' and "wrap", we don't need to analyze wrap* functions anymore
-                if (!dspName.empty() && (*(dspName.begin()) != '_') && (dspName.find("wrap") != 0)) { 
-                
-                    Function *F = dsp->getFunction();
-                    FunctionBFC *fb;
+      DISubprogram *dsp = new DISubprogram(*I);
+      if (dsp->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
+        string dspName = dsp->getName().str();
+        //no chpl in user funcNm
+        if (dspName.find("chpl") == string::npos && dspName.compare("=") != 0) { 
+        // no name starts with '_' and "wrap", we don't need to analyze wrap* functions anymore
+          if (!dspName.empty() && (*(dspName.begin()) != '_') && (dspName.find("wrap") != 0)) { 
+           
+            Function *F = dsp->getFunction();
+            FunctionBFC *fb;
 
-                    if (F->isDeclaration())
-                        continue;
-                    else {
-                        // Run regular blame calculation
-                        fb = new FunctionBFC(F, knownFuncsInfo);
-                        fb->setModule(&M);
-                        fb->setModuleBFC(bm);
-                                                                           //dspName won't have "_chpl" suffix
-                        calls_file<<"FUNCTION "<<F->getName().str()<<endl; //F->getName will have "_chpl" suffix
+            if (F->isDeclaration())
+              continue;
+            else {
+              // Run regular blame calculation
+              fb = new FunctionBFC(F, knownFuncsInfo);
+              fb->setModule(&M);
+              fb->setModuleBFC(bm);
+              //dspName won't have "_chpl" suffix
+              calls_file<<"FUNCTION "<<F->getName().str()<<endl; //F->getName will have "_chpl" suffix
 #ifdef DEBUG_P  
-                        cout<<"Running firstPass on Func: "<<F->getName().str()<<endl;
+              cout<<"Running firstPass on Func: "<<F->getName().str()<<endl;
 #endif
-                        fb->firstPass(F, globalVars, externFuncInformation, 
-                            blame_file, blame_se_file, calls_file, numMissing);
-                        calls_file<<"END FUNCTION "<<endl;
+              fb->firstPass(F, globalVars, externFuncInformation, 
+                       blame_file, blame_se_file, calls_file, numMissing);
+              calls_file<<"END FUNCTION "<<endl;
 
-                        int numMEVL = 0;
-                        int numMEV2L = 0;
-                        int numMEV3L = 0;
+              int numMEVL = 0;
+              int numMEV2L = 0;
+              int numMEV3L = 0;
                         
-                        fb->moreThanOneEV(numMEVL, numMEV2L, numMEV3L);
+              fb->moreThanOneEV(numMEVL, numMEV2L, numMEV3L);
 
-                        numMEV += numMEVL;
-                        numMEV2 += numMEV2L;
-                        numMEV3 += numMEV3L;
+              numMEV += numMEVL;
+              numMEV2 += numMEV2L;
+              numMEV3 += numMEV3L;
 
-                        fb->exportParams(params_file);
-                        params_file<<"NEVs - "<<numMEVL<<" "<<numMEV2L<<" " \
-                            <<numMEV3L<<" out of "<<knownFuncsInfo.size()<<endl;
-                        params_file<<endl;
+              fb->exportParams(params_file);
+              params_file<<"NEVs - "<<numMEVL<<" "<<numMEV2L<<" " \
+                  <<numMEV3L<<" out of "<<knownFuncsInfo.size()<<endl;
+              params_file<<endl;
 
-                        delete(fb);
-                    }
-                } //end of != '_'
-            } //end of ==string::npos
-        }
+              //store necessary information for each func to use after delete
+              FuncSignature *fs = knownFuncsInfo[F->getName().str()];
+              fs->calleeNames = fb->funcCallNames;
+              fs->hasParOrDistCallsReal = fb->hasParOrDistCalls;
+              
+              //Hui 07/17/17: sizeof bf ~1.5kB, so we can keep fb for now
+              delete(fb);
+            }
+          } //end of != '_'
+        } //end of ==string::npos
+      }
     }
+
+    //07/17/17: we need to keep the inter-procedure info in order to set pids
+
+    // 07/07/17 calculate hasParDistCalls for each FunctionBFC
+    int tagTotal = calcFuncParDistTags(knownFuncsInfo);
+    // Warn user if there're multiple callsites of the same ParDistCalls
+    if (tagTotal) {
+      FuncSigHash::iterator fsh_i, fsh_e;
+
+      for (fsh_i = knownFuncsInfo.begin(), fsh_e = knownFuncsInfo.end(); 
+                                                    fsh_i != fsh_e; fsh_i++) {
+        string fn = fsh_i->first;
+        FuncSignature *fs = fsh_i->second;
+        
+        set<const char *, ltstr>::iterator si;
+        for (si = fs->calleeNames.begin(); si != fs->calleeNames.end(); si++) {
+          string calleeName(*si);
+          if (knownFuncsInfo.count(calleeName)) {
+            FuncSignature *callee = knownFuncsInfo[calleeName];
+            callee->callerNames.insert(fn);
+          }
+        }
+      }
+
+      for (fsh_i = knownFuncsInfo.begin(), fsh_e = knownFuncsInfo.end(); 
+                                                    fsh_i != fsh_e; fsh_i++) {
+        string fn = fsh_i->first;
+        FuncSignature *fs = fsh_i->second;
+        
+        // if fb has par/dist construct and more than one callsites of it
+        if (fs->hasParOrDistCallsReal && fs->callerNames.size() >= 2) { 
+          set<string>::iterator si;
+          for (si=fs->callerNames.begin(); si!=fs->callerNames.end(); si++) {
+            string callerName(*si);
+            if (knownFuncsInfo.count(callerName)) {
+              FuncSignature *caller = knownFuncsInfo[callerName];
+            
+              caller->maybeMissBlamed = true;
+              cerr<<"Attention: there might be incorrect blame to "<<
+                  caller->fname<<" from one of its callees "<<fs->fname<<endl;
+            }
+          }
+        }
+      }
+    }
+
 
     struct_file<<"END STRUCTS"<<endl; //IMPORTANT! Moved here from exportStructs
     params_file<<"NEVs - "<<numMEV<<" "<<numMEV3<<" "<<numMEV2<<" out of "<< \
@@ -484,7 +586,8 @@ bool BFC::runOnModule(Module &M)
     calls_file.close();
     params_file.close();
     funcs_file.close();
-        
+ 
+    externFuncInformation.clear();
     knownFuncsInfo.clear();
     return false;
 }

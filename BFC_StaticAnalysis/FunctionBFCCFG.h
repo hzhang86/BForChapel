@@ -73,35 +73,35 @@ class FunctionBFC;
 class FunctionBFCBB {
 
 public:
-	string bbName;
-	set<int> lineNumbers;
-	string getName() {return bbName;}
+    std::string bbName;
+	std::set<int> lineNumbers;
+    std::string getName() {return bbName;}
 
 	// To figure out the control flow and how it 
 	//  affects variables we set up the gen/kill sets
 	//  to use reaching definitions
-	set<NodeProps *>  genBB;
-	set<NodeProps *>  killBB;
+	std::set<NodeProps *>  genBB;
+	std::set<NodeProps *>  killBB;
 
-	set<NodeProps *>  inBB;
-	set<NodeProps *>  outBB;
+	std::set<NodeProps *>  inBB;
+	std::set<NodeProps *>  outBB;
 	
 	// Same thing but for the reaching defs for  Pointers
-	set<NodeProps *>  genPTR_BB;
-	set<NodeProps *>  killPTR_BB;
+	std::set<NodeProps *>  genPTR_BB;
+	std::set<NodeProps *>  killPTR_BB;
 
-	set<NodeProps *>  inPTR_BB;
-	set<NodeProps *>  outPTR_BB;
+	std::set<NodeProps *>  inPTR_BB;
+	std::set<NodeProps *>  outPTR_BB;
 	
 	// Ancestors and Descendants in CFG
-	set<FunctionBFCBB *> ancestors;
-	set<FunctionBFCBB *> descendants;
+	std::set<FunctionBFCBB *> ancestors;
+	std::set<FunctionBFCBB *> descendants;
 	
 	void genD(FunctionBFCBB *fbb, std::set<FunctionBFCBB *> &visited);
 	void genA(FunctionBFCBB *fbb, std::set<FunctionBFCBB *> &visited);
 	// Predecessors and Successors in CFG
-	set<FunctionBFCBB *>  preds;
-	set<FunctionBFCBB *>  succs;
+	std::set<FunctionBFCBB *>  preds;
+	std::set<FunctionBFCBB *>  succs;
 	
 	void assignGenKill();
 	void assignPTRGenKill();
@@ -114,13 +114,13 @@ public:
 	//    by line numbers, and then do tie breakers by 
 	//    order in the LLVM code
 	//  Only the NodeProps that contain stores are considered
-	vector<NodeProps *> relevantInstructions;
+	std::vector<NodeProps *> relevantInstructions;
 	
 	// relevantInstructions is usually applicable to local (non-pointer) variables
 	// singleStores are for GEP grabs of pointers.  singleStores is a little misleading,
 	// as the on GEP will only have one store to it, the variable the GEP grabbed from
 	// may have multiple stores
-	vector<NodeProps *> singleStores;
+	std::vector<NodeProps *> singleStores;
 	llvm::BasicBlock *llvmBB;
 
 public:

@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -106,7 +106,7 @@ void chpl_task_do_callbacks_internal(chpl_task_cb_event_kind_t event_kind,
                                      int32_t filename,
                                      int lineno,
                                      uint64_t id,
-                                     int is_fork) {
+                                     int is_executeOn) {
   struct cb_info* cbp;
   chpl_task_cb_info_t info;
   int i;
@@ -125,7 +125,7 @@ void chpl_task_do_callbacks_internal(chpl_task_cb_event_kind_t event_kind,
       info.iu.full.filename = filename;
       info.iu.full.lineno = lineno;
       info.iu.full.id = id;
-      info.iu.full.is_fork = is_fork;
+      info.iu.full.is_executeOn = is_executeOn;
       break;
 
     case chpl_task_cb_info_kind_id_only:

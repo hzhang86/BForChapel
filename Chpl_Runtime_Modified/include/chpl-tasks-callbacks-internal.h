@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2016 Cray Inc.
+ * Copyright 2004-2017 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -38,7 +38,7 @@ void chpl_task_do_callbacks_internal(chpl_task_cb_event_kind_t,
                                      int32_t filename,
                                      int lineno,
                                      uint64_t id,
-                                     int is_fork);
+                                     int is_executeOn);
 
 
 static inline
@@ -54,10 +54,10 @@ void chpl_task_do_callbacks(chpl_task_cb_event_kind_t event_kind,
                             int32_t filename,
                             int lineno,
                             uint64_t id,
-                            int is_fork) {
+                            int is_executeOn) {
   if (chpl_task_have_callbacks(event_kind))
     chpl_task_do_callbacks_internal(event_kind,
-                                    fid, filename, lineno, id, is_fork);
+                        fid, filename, lineno, id, is_executeOn);
 }
 
 #endif
