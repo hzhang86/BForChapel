@@ -387,7 +387,7 @@ int main(int argc, char** argv)
     if (instances.size())
       outputParsedSamples(instances, whichNode, "COMPUTE");
     else
-      cerr<<"Error: file exists but instances empty in "<<inputFile<<endl;
+      cerr<<"Check: file exists but instances empty in "<<inputFile<<endl;
     ifs_compute.close(); //CLOSE the file
   }
     
@@ -399,7 +399,7 @@ int main(int argc, char** argv)
     if (preSpawnInstances.size())
       outputParsedSamples(preSpawnInstances, inputFile, "PRESPAWN");
     else
-      cerr<<"Error: file exists but instances empty in "<<inputFile<<endl;
+      cerr<<"Check: file exists but instances empty in "<<inputFile<<endl;
     ifs_preSpawn.close(); //CLOSE the file
   }
 
@@ -411,7 +411,7 @@ int main(int argc, char** argv)
     if (forkInstances.size())
       outputParsedSamples(forkInstances, inputFile, "FORK");
     else
-      cerr<<"Error: file exists but instances empty in "<<inputFile<<endl;
+      cerr<<"Check: file exists but instances empty in "<<inputFile<<endl;
     ifs_fork.close(); //CLOSE the file
   }
 
@@ -423,7 +423,7 @@ int main(int argc, char** argv)
     if (fork_nbInstances.size())
       outputParsedSamples(fork_nbInstances, inputFile, "FORK");
     else
-      cerr<<"Error: file exists but instances empty in "<<inputFile<<endl;
+      cerr<<"Check: file exists but instances empty in "<<inputFile<<endl;
     ifs_fork_nb.close(); //CLOSE the file
   }
 
@@ -435,7 +435,7 @@ int main(int argc, char** argv)
     if (fork_fastInstances.size())
       outputParsedSamples(fork_fastInstances, inputFile, "FORK");
     else
-      cerr<<"Error: file exists but instances empty in "<<inputFile<<endl;
+      cerr<<"Check: file exists but instances empty in "<<inputFile<<endl;
     ifs_fork_fast.close(); //CLOSE the file
   }
 

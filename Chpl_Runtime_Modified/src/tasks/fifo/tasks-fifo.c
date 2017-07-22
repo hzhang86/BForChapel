@@ -131,6 +131,9 @@ static void enablePAPI(void);
 extern int THRESHOLD;
 __thread task_pool_p task_pool_node = NULL;
 chpl_thread_mutex_t stack_unwind_lock; // critical section lock
+chpl_thread_mutex_t on_lock; // critical section lock
+chpl_thread_mutex_t on_nb_lock; // critical section lock
+chpl_thread_mutex_t on_fast_lock; // critical section lock
 #define NUMFID 1048 // should be >= size of chpl_ftable
 static chpl_fn_int_t fidArray[NUMFID]; //static var is initialized to 0 by default
 static int zeroFid; 
@@ -489,9 +492,12 @@ void chpl_task_init(void) {
   }
 
   // Install callbacks for task and comm layers
-  if (getenv("ENABLE_TASK")!=NULL || getenv("ENABLE_COMM")!=NULL) {
-    install_callbacks();
-  }
+  // we need some locks for fork* files but not pre* since that's
+  // called based on assumption that a lock has been accquired
+  chpl_thread_mutexInit(&on_lock);
+  chpl_thread_mutexInit(&on_nb_lock);
+  chpl_thread_mutexInit(&on_fast_lock);
+  install_callbacks();
 
   chpl_thread_init(thread_begin, thread_end);
 
@@ -522,9 +528,7 @@ void chpl_task_init(void) {
 
 void chpl_task_exit(void) {
   // Uninstall callbacks for task and comm layers
-  if (getenv("ENABLE_TASK")!=NULL || getenv("ENABLE_COMM")!=NULL) {
-    uninstall_callbacks();
-  }
+  uninstall_callbacks();
 
   if (!initialized)
     return;

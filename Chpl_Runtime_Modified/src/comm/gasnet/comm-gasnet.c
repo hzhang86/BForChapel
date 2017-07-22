@@ -59,6 +59,9 @@ __thread chpl_comm_on_bundle_t *param_plain;
 __thread chpl_comm_on_bundle_t *param_nb;
 __thread chpl_comm_on_bundle_t *param_large;
 __thread chpl_comm_on_bundle_t *param_nb_large;
+extern chpl_thread_mutex_t on_lock; // protect execute_on file
+extern chpl_thread_mutex_t on_nb_lock; // protect execute_on_nb file
+extern chpl_thread_mutex_t on_fast_lock; // protect execute_on_fast file
 #define NUMFORK 16384 //should be enough for #(caller, callee, fid) on each node
 typedef struct {
   int caller;
@@ -74,6 +77,7 @@ static int zeroFork; //used for special case(0,0,0)
 static int findOldForkInfo(int caller, int callee, chpl_fn_int_t fid)
 {
   int i;
+
   // If the forkInfo is (0,0,0), we still need to do_comm_callback for the FIRST time
   if (caller==0 && callee==0 && fid==0 && zeroFork==0) {
     printf("Interesting: we have fork info as (0,0,0)\n");
@@ -95,6 +99,7 @@ static int findOldForkInfo(int caller, int callee, chpl_fn_int_t fid)
       return 0;
     }
   }
+
   // forkInfoArray overflow!
   printf("Error: forkInfoArray overflow!\n");
   return -1;
@@ -1610,12 +1615,18 @@ void  chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
   } else {
     // Communications callback support
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn)) {
+      // begin critical section
+      chpl_thread_mutexLock(&on_lock);
+
       if (!findOldForkInfo(chpl_nodeID, node, fid)) {
-      chpl_comm_cb_info_t cb_data = 
-        {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
-         .iu.executeOn={f_num, subloc, fid, arg, arg_size}};
-      chpl_comm_do_callbacks (&cb_data);
+        chpl_comm_cb_info_t cb_data = 
+          {chpl_comm_cb_event_kind_executeOn, chpl_nodeID, node,
+           .iu.executeOn={f_num, subloc, fid, arg, arg_size}};
+        chpl_comm_do_callbacks (&cb_data);
       }
+
+      // end critical section
+      chpl_thread_mutexUnlock(&on_lock);
     }
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
@@ -1656,12 +1667,18 @@ void  chpl_comm_execute_on_nb(c_nodeid_t node, c_sublocid_t subloc,
   } else {
     // Communications callback support
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_nb)) {
-    if (!findOldForkInfo(chpl_nodeID, node, fid)) {
-      chpl_comm_cb_info_t cb_data = 
-        {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
-         .iu.executeOn={f_num, subloc, fid, arg, arg_size}};
-      chpl_comm_do_callbacks (&cb_data);
-    }
+      // begin critical section
+      chpl_thread_mutexLock(&on_nb_lock);
+
+      if (!findOldForkInfo(chpl_nodeID, node, fid)) {
+        chpl_comm_cb_info_t cb_data = 
+          {chpl_comm_cb_event_kind_executeOn_nb, chpl_nodeID, node,
+           .iu.executeOn={f_num, subloc, fid, arg, arg_size}};
+        chpl_comm_do_callbacks (&cb_data);
+      }
+
+      // end critical section
+      chpl_thread_mutexUnlock(&on_nb_lock);
     }
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)
@@ -1694,12 +1711,18 @@ void  chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
   } else {
     // Communications callback support
     if (chpl_comm_have_callbacks(chpl_comm_cb_event_kind_executeOn_fast)) {
+      // begin critical section
+      chpl_thread_mutexLock(&on_fast_lock);
+
       if (!findOldForkInfo(chpl_nodeID, node, fid)) {
-      chpl_comm_cb_info_t cb_data = 
-        {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
-         .iu.executeOn={f_num, subloc, fid, arg, arg_size}};
-      chpl_comm_do_callbacks (&cb_data);
+        chpl_comm_cb_info_t cb_data = 
+          {chpl_comm_cb_event_kind_executeOn_fast, chpl_nodeID, node,
+           .iu.executeOn={f_num, subloc, fid, arg, arg_size}};
+        chpl_comm_do_callbacks (&cb_data);
       }
+
+      // end critical section
+      chpl_thread_mutexUnlock(&on_fast_lock);
     }
 
     if (chpl_verbose_comm && !chpl_comm_no_debug_private)

@@ -28,36 +28,36 @@ const uint8_t chpl_bitops_debruijn32[chpl_bitops_debruijn3223,747
 const uint8_t chpl_bitops_debruijn64[chpl_bitops_debruijn6428,918
 
 /lustre/hzhang86/bin/chapel-15/runtime/src/chpl-blame.c,995
-int chpl_vdebug_fd 83,2985
-int chpl_vdebug 84,3010
-#define TID_STRING(86,3032
-int chpl_dprintf 88,3126
-static int chpl_make_vdebug_file 105,3465
-void chpl_vdebug_start 143,4550
-void chpl_vdebug_stop 217,7167
-void chpl_vdebug_mark 252,8330
-void chpl_vdebug_tagname 263,8703
-void chpl_vdebug_tag 269,8899
-void chpl_vdebug_pause 293,9697
-void cb_comm_put_nb 326,10937
-void cb_comm_get_nb 347,11822
-void cb_comm_put 367,12656
-void cb_comm_get 388,13540
-void cb_comm_put_strd 407,14373
-void cb_comm_get_strd 430,15359
-void cb_comm_executeOn 449,16237
-void cb_comm_executeOn_blame 468,16967
-void  cb_comm_executeOn_nb 546,19428
-void  cb_comm_executeOn_nb_blame 562,20123
-void cb_comm_executeOn_fast 640,22614
-void  cb_comm_executeOn_fast_blame 658,23334
-int install_callbacks 735,25784
-int uninstall_callbacks 804,28152
-void PAPIhandler(840,29905
-void cb_task_create 920,32385
-void cb_task_create_blame 941,33328
-void cb_task_begin 1015,35644
-void cb_task_end 1029,36069
+int chpl_vdebug_fd 86,3196
+int chpl_vdebug 87,3221
+#define TID_STRING(89,3243
+int chpl_dprintf 91,3337
+static int chpl_make_vdebug_file 108,3676
+void chpl_vdebug_start 146,4761
+void chpl_vdebug_stop 220,7378
+void chpl_vdebug_mark 255,8541
+void chpl_vdebug_tagname 266,8914
+void chpl_vdebug_tag 272,9110
+void chpl_vdebug_pause 296,9908
+void cb_comm_put_nb 329,11148
+void cb_comm_get_nb 350,12033
+void cb_comm_put 370,12867
+void cb_comm_get 391,13751
+void cb_comm_put_strd 410,14584
+void cb_comm_get_strd 433,15570
+void cb_comm_executeOn 452,16448
+void cb_comm_executeOn_blame 471,17178
+void  cb_comm_executeOn_nb 555,19771
+void  cb_comm_executeOn_nb_blame 571,20466
+void cb_comm_executeOn_fast 655,23095
+void  cb_comm_executeOn_fast_blame 673,23815
+int install_callbacks 756,26407
+int uninstall_callbacks 825,28775
+void PAPIhandler(861,30528
+void cb_task_create 941,33008
+void cb_task_create_blame 962,33951
+void cb_task_begin 1036,36267
+void cb_task_end 1050,36692
 
 /lustre/hzhang86/bin/chapel-15/runtime/src/chpl-cache-support.c,759
 typedef int64_t cache_seqn_t;27,847
@@ -694,7 +694,7 @@ const char* chpl_get_real_binary_wrapper(403,11734
 const char* chpl_get_real_binary_name(412,11938
 int main(416,12023
 
-/lustre/hzhang86/bin/chapel-15/runtime/src/tasks/fifo/tasks-fifo.c,3812
+/lustre/hzhang86/bin/chapel-15/runtime/src/tasks/fifo/tasks-fifo.c,3935
 static chpl_bool        initialized 51,1370
 static volatile chpl_bool canCountRunningTasks 53,1416
 static chpl_thread_mutex_t threading_lock;55,1473
@@ -717,72 +717,75 @@ static chpl_thread_mutex_t taskTable_lock;80,2905
 static chpl_fn_p comm_task_fn;82,2978
 __thread task_pool_p task_pool_node 132,5315
 chpl_thread_mutex_t stack_unwind_lock;133,5359
-#define NUMFID 134,5423
-static chpl_fn_int_t fidArray[fidArray135,5479
-static int zeroFid;136,5562
-static int findOldFid(138,5622
-static void enablePAPI(163,6073
-static void sync_wait_and_lock(288,9880
-void chpl_sync_lock(347,11713
-void chpl_sync_unlock(351,11793
-void chpl_sync_waitFullAndLock(355,11877
-void chpl_sync_waitEmptyAndLock(360,12050
-static chpl_bool chpl_thread_sync_suspend(365,12226
-static void chpl_thread_sync_awaken(383,12776
-void chpl_sync_markAndSignalFull(389,12996
-void chpl_sync_markAndSignalEmpty(395,13128
-chpl_bool chpl_sync_isFull(401,13262
-static void chpl_thread_condvar_init(406,13378
-void chpl_sync_initAux(411,13555
-static void chpl_thread_condvar_destroy(418,13751
-void chpl_sync_destroyAux(428,14182
-static void setup_main_thread_private_data(434,14368
-void chpl_task_init(473,15713
-void chpl_task_exit(523,17119
-typedef void (*main_ptr_t)main_ptr_t536,17356
-static void* do_callMain(537,17390
-void chpl_task_callMain(562,18095
-void chpl_task_stdModulesInitialized(615,19417
-int chpl_task_createCommTask(653,20683
-static void comm_task_wrapper(659,20827
-void enqueue_task(699,22159
-void dequeue_task(730,22791
-void chpl_task_addToTaskList(764,23559
-void chpl_task_executeTasksInList(809,25070
-void chpl_task_taskCallFTable(903,27759
-void taskCallBody(912,28080
-void chpl_task_startMovedTask(930,28651
-chpl_taskID_t chpl_task_getId(963,29500
-chpl_bool chpl_task_idEquals(967,29582
-char* chpl_task_idToString(971,29675
-void chpl_task_yield(979,29864
-void chpl_task_sleep(984,29920
-chpl_bool chpl_task_getSerial(1008,30549
-void chpl_task_setSerial(1012,30641
-uint32_t chpl_task_getMaxPar(1016,30740
-c_sublocid_t chpl_task_getNumSublocales(1034,31304
-chpl_task_prvData_t* chpl_task_getPrvData(1038,31367
-size_t chpl_task_getCallStackSize(1042,31471
-uint32_t chpl_task_getNumQueuedTasks(1046,31557
-uint32_t chpl_task_getNumRunningTasks(1048,31629
-int32_t  chpl_task_getNumBlockedTasks(1053,31754
-static chpl_taskID_t get_next_task_id(1080,32324
-static thread_private_data_t* get_thread_private_data(1096,32652
-static task_pool_p get_current_ptask(1111,32961
-static void set_current_ptask(1119,33120
-static void report_locked_threads(1129,33394
-static void report_all_tasks(1154,34009
-static void SIGINT_handler(1178,34592
-static void initializeLockReportForThread(1203,35338
-static chpl_bool set_block_loc(1238,36460
-static void unset_block_loc(1271,37237
-static void check_for_deadlock(1290,37618
-thread_begin(1317,38309
-static void thread_end(1495,44095
-static void maybe_add_thread(1523,44796
-task_pool_p add_to_task_pool(1555,45779
-uint32_t chpl_task_getNumThreads(1632,48496
-uint32_t chpl_task_getNumIdleThreads(1636,48578
+chpl_thread_mutex_t on_lock;134,5423
+chpl_thread_mutex_t on_nb_lock;135,5477
+chpl_thread_mutex_t on_fast_lock;136,5534
+#define NUMFID 137,5593
+static chpl_fn_int_t fidArray[fidArray138,5649
+static int zeroFid;139,5732
+static int findOldFid(141,5792
+static void enablePAPI(166,6243
+static void sync_wait_and_lock(291,10050
+void chpl_sync_lock(350,11883
+void chpl_sync_unlock(354,11963
+void chpl_sync_waitFullAndLock(358,12047
+void chpl_sync_waitEmptyAndLock(363,12220
+static chpl_bool chpl_thread_sync_suspend(368,12396
+static void chpl_thread_sync_awaken(386,12946
+void chpl_sync_markAndSignalFull(392,13166
+void chpl_sync_markAndSignalEmpty(398,13298
+chpl_bool chpl_sync_isFull(404,13432
+static void chpl_thread_condvar_init(409,13548
+void chpl_sync_initAux(414,13725
+static void chpl_thread_condvar_destroy(421,13921
+void chpl_sync_destroyAux(431,14352
+static void setup_main_thread_private_data(437,14538
+void chpl_task_init(476,15883
+void chpl_task_exit(529,17457
+typedef void (*main_ptr_t)main_ptr_t540,17620
+static void* do_callMain(541,17654
+void chpl_task_callMain(566,18359
+void chpl_task_stdModulesInitialized(619,19681
+int chpl_task_createCommTask(657,20947
+static void comm_task_wrapper(663,21091
+void enqueue_task(703,22423
+void dequeue_task(734,23055
+void chpl_task_addToTaskList(768,23823
+void chpl_task_executeTasksInList(813,25334
+void chpl_task_taskCallFTable(907,28023
+void taskCallBody(916,28344
+void chpl_task_startMovedTask(934,28915
+chpl_taskID_t chpl_task_getId(967,29764
+chpl_bool chpl_task_idEquals(971,29846
+char* chpl_task_idToString(975,29939
+void chpl_task_yield(983,30128
+void chpl_task_sleep(988,30184
+chpl_bool chpl_task_getSerial(1012,30813
+void chpl_task_setSerial(1016,30905
+uint32_t chpl_task_getMaxPar(1020,31004
+c_sublocid_t chpl_task_getNumSublocales(1038,31568
+chpl_task_prvData_t* chpl_task_getPrvData(1042,31631
+size_t chpl_task_getCallStackSize(1046,31735
+uint32_t chpl_task_getNumQueuedTasks(1050,31821
+uint32_t chpl_task_getNumRunningTasks(1052,31893
+int32_t  chpl_task_getNumBlockedTasks(1057,32018
+static chpl_taskID_t get_next_task_id(1084,32588
+static thread_private_data_t* get_thread_private_data(1100,32916
+static task_pool_p get_current_ptask(1115,33225
+static void set_current_ptask(1123,33384
+static void report_locked_threads(1133,33658
+static void report_all_tasks(1158,34273
+static void SIGINT_handler(1182,34856
+static void initializeLockReportForThread(1207,35602
+static chpl_bool set_block_loc(1242,36724
+static void unset_block_loc(1275,37501
+static void check_for_deadlock(1294,37882
+thread_begin(1321,38573
+static void thread_end(1499,44359
+static void maybe_add_thread(1527,45060
+task_pool_p add_to_task_pool(1559,46043
+uint32_t chpl_task_getNumThreads(1636,48760
+uint32_t chpl_task_getNumIdleThreads(1640,48842
 
 include/tasks/fifo/tasks-fifo.h,1151
 #define _tasks_fifo_h_21,724
@@ -893,158 +896,158 @@ __thread chpl_comm_on_bundle_t *param_plain;param_plain58,1791
 __thread chpl_comm_on_bundle_t *param_nb;param_nb59,1836
 __thread chpl_comm_on_bundle_t *param_large;param_large60,1878
 __thread chpl_comm_on_bundle_t *param_nb_large;param_nb_large61,1923
-#define NUMFORK 62,1971
-  int caller;64,2069
-  int callee;65,2083
-  chpl_fn_int_t fid;66,2097
-} forkID_t;67,2118
-static forkID_t forkInfoArray[forkInfoArray69,2193
-static int zeroFork;70,2233
-static int findOldForkInfo(74,2344
-gasnet_handlerarg_t get_arg_from_ptr0(107,3444
-gasnet_handlerarg_t get_arg_from_ptr1(114,3644
-uintptr_t get_uintptr_from_args(121,3831
-void* get_ptr_from_args(128,4043
-#define Arg0(137,4249
-#define Arg1(138,4303
-#define GASNET_Safe(143,4426
-#define GASNET_Safe_Retval(162,5480
-  atomic_uint_least32_t count;186,6777
-  uint_least32_t        target;187,6808
-  volatile int          flag;188,6840
-} done_t;189,6870
-void init_done_obj(195,6933
-void wait_done_obj(202,7087
-  c_nodeid_t    caller;215,7310
-  c_sublocid_t  subloc;216,7334
-  void*         ack;218,7359
-  chpl_bool     serial_state;220,7381
-  chpl_fn_int_t fid;221,7455
-  uint16_t      payload_size;222,7476
-} small_fork_hdr_t;224,7507
-  small_fork_hdr_t hdr;227,7545
-  void*            arg;228,7569
-  size_t           arg_size;229,7593
-} large_fork_t;230,7622
-#define MAX_SMALL_FORK_SIZE 232,7639
-  unsigned char space[space235,7689
-} small_fork_space_t;236,7733
-  small_fork_hdr_t   small;239,7772
-  large_fork_t       large;240,7800
-  small_fork_space_t space;241,7828
-} special_fork_t;242,7856
-  chpl_comm_on_bundle_t bundle;245,7892
-  special_fork_t        space;246,7924
-} small_fork_task_t;247,7955
-  chpl_comm_on_bundle_t bundle;250,7994
-  large_fork_t          large;251,8026
-} large_fork_task_t;252,8057
-  void*   ack;255,8096
-  int     id;256,8111
-  int     size;257,8174
-  char    data[data258,8210
-} priv_bcast_t;259,8238
-  void* ack;262,8272
-  int   id;263,8285
-  int   size;264,8346
-  int   offset;265,8380
-  char  data[data266,8425
-} priv_bcast_large_t;267,8451
-  void* ack;270,8491
-  void* tgt;271,8530
-  void* src;272,8568
-  size_t size;273,8606
-} xfer_info_t;274,8641
-  FORK 281,8695
-  FORK_SMALL,282,8739
-  FORK_LARGE,283,8789
-  FORK_NB,284,8854
-  FORK_NB_SMALL,285,8899
-  FORK_NB_LARGE,286,8950
-  FORK_FAST,287,9016
-  FORK_FAST_SMALL,288,9091
-  SIGNAL,290,9167
-  SIGNAL_LONG,291,9237
-  PRIV_BCAST,292,9306
-  PRIV_BCAST_LARGE,293,9379
-  FREE,294,9452
-  EXIT_ANY,295,9497
-  BCAST_SEGINFO,296,9567
-  DO_REPLY_PUT,297,9627
-  DO_COPY_PAYLOAD 298,9688
-} AM_handler_function_idx_t;299,9750
-static void AM_fork_fast(301,9780
-size_t setup_small_fork_task(314,10197
-size_t setup_large_fork_task(332,10742
-static void AM_fork_fast_small(347,11183
-static void fork_wrapper(365,11718
-static void AM_fork(374,12026
-static void AM_fork_small(383,12471
-static void fork_large_wrapper(400,13027
-static void AM_fork_large(440,14242
-static void fork_nb_wrapper(455,14783
-static void AM_fork_nb(461,14952
-static void AM_fork_nb_small(473,15474
-static void fork_nb_large_wrapper(491,16087
-static void AM_fork_nb_large(527,17144
-static void AM_signal(542,17691
-static void AM_signal_long(551,18057
-static void AM_priv_bcast(561,18481
-static void AM_priv_bcast_large(570,18826
-static void AM_free(579,19209
-static void AM_exit_any(587,19491
-static int bcast_seginfo_done 600,20115
-static void AM_bcast_seginfo(601,20150
-static void AM_reply_put(611,20567
-void AM_copy_payload(623,20952
-static gasnet_handlerentry_t ftable[ftable634,21311
-chpl_comm_nb_handle_t chpl_comm_put_nb(657,21979
-chpl_comm_nb_handle_t chpl_comm_get_nb(695,23133
-int chpl_comm_test_nb_complete(733,24291
-void chpl_comm_wait_nb_some(738,24381
-int chpl_comm_try_nb_some(744,24589
-int chpl_comm_addr_gettable(750,24814
-int32_t chpl_comm_getMaxThreads(775,25311
-static volatile int pollingRunning;789,25923
-static volatile int pollingQuit;790,25959
-static void polling(792,25993
-static void set_max_segsize_env_var(801,26151
-static void set_max_segsize(810,26457
-void chpl_comm_init(837,27118
-void chpl_comm_post_mem_init(923,30798
-int chpl_comm_numPollingTasks(925,30838
-int chpl_comm_run_in_gdb(932,30927
-void chpl_comm_post_task_init(936,31021
-void chpl_comm_rollcall(955,31484
-void chpl_comm_desired_shared_heap(961,31685
-void chpl_comm_broadcast_global_vars(973,32119
-void chpl_comm_broadcast_private(984,32445
-void chpl_comm_barrier(1041,34656
-void chpl_comm_pre_task_exit(1065,35488
-static void exit_common(1079,35744
-static void exit_any_dirty(1095,36133
-static void exit_any_clean(1115,36611
-void chpl_comm_exit(1131,37114
-void  chpl_comm_put(1141,37312
-void  chpl_comm_get(1223,40352
-void  chpl_comm_get_strd(1352,44656
-void  chpl_comm_put_strd(1419,47258
-void  execute_on_common(1483,49838
-void  chpl_comm_execute_on(1597,53491
-void  chpl_comm_execute_on_nb(1634,54752
-void  chpl_comm_execute_on_fast(1681,56457
-void chpl_comm_make_progress(1719,57765
-void chpl_startVerboseComm(1725,57825
-void chpl_stopVerboseComm(1733,58080
-void chpl_startVerboseCommHere(1741,58334
-void chpl_stopVerboseCommHere(1745,58397
-void chpl_startCommDiagnostics(1749,58459
-void chpl_stopCommDiagnostics(1757,58726
-void chpl_startCommDiagnosticsHere(1765,58992
-void chpl_stopCommDiagnosticsHere(1769,59063
-void chpl_resetCommDiagnosticsHere(1773,59133
-void chpl_getCommDiagnosticsHere(1779,59342
-void chpl_comm_gasnet_help_register_global_var(1785,59579
+#define NUMFORK 65,2176
+  int caller;67,2274
+  int callee;68,2288
+  chpl_fn_int_t fid;69,2302
+} forkID_t;70,2323
+static forkID_t forkInfoArray[forkInfoArray72,2398
+static int zeroFork;73,2438
+static int findOldForkInfo(77,2549
+gasnet_handlerarg_t get_arg_from_ptr0(112,3651
+gasnet_handlerarg_t get_arg_from_ptr1(119,3851
+uintptr_t get_uintptr_from_args(126,4038
+void* get_ptr_from_args(133,4250
+#define Arg0(142,4456
+#define Arg1(143,4510
+#define GASNET_Safe(148,4633
+#define GASNET_Safe_Retval(167,5687
+  atomic_uint_least32_t count;191,6984
+  uint_least32_t        target;192,7015
+  volatile int          flag;193,7047
+} done_t;194,7077
+void init_done_obj(200,7140
+void wait_done_obj(207,7294
+  c_nodeid_t    caller;220,7517
+  c_sublocid_t  subloc;221,7541
+  void*         ack;223,7566
+  chpl_bool     serial_state;225,7588
+  chpl_fn_int_t fid;226,7662
+  uint16_t      payload_size;227,7683
+} small_fork_hdr_t;229,7714
+  small_fork_hdr_t hdr;232,7752
+  void*            arg;233,7776
+  size_t           arg_size;234,7800
+} large_fork_t;235,7829
+#define MAX_SMALL_FORK_SIZE 237,7846
+  unsigned char space[space240,7896
+} small_fork_space_t;241,7940
+  small_fork_hdr_t   small;244,7979
+  large_fork_t       large;245,8007
+  small_fork_space_t space;246,8035
+} special_fork_t;247,8063
+  chpl_comm_on_bundle_t bundle;250,8099
+  special_fork_t        space;251,8131
+} small_fork_task_t;252,8162
+  chpl_comm_on_bundle_t bundle;255,8201
+  large_fork_t          large;256,8233
+} large_fork_task_t;257,8264
+  void*   ack;260,8303
+  int     id;261,8318
+  int     size;262,8381
+  char    data[data263,8417
+} priv_bcast_t;264,8445
+  void* ack;267,8479
+  int   id;268,8492
+  int   size;269,8553
+  int   offset;270,8587
+  char  data[data271,8632
+} priv_bcast_large_t;272,8658
+  void* ack;275,8698
+  void* tgt;276,8737
+  void* src;277,8775
+  size_t size;278,8813
+} xfer_info_t;279,8848
+  FORK 286,8902
+  FORK_SMALL,287,8946
+  FORK_LARGE,288,8996
+  FORK_NB,289,9061
+  FORK_NB_SMALL,290,9106
+  FORK_NB_LARGE,291,9157
+  FORK_FAST,292,9223
+  FORK_FAST_SMALL,293,9298
+  SIGNAL,295,9374
+  SIGNAL_LONG,296,9444
+  PRIV_BCAST,297,9513
+  PRIV_BCAST_LARGE,298,9586
+  FREE,299,9659
+  EXIT_ANY,300,9704
+  BCAST_SEGINFO,301,9774
+  DO_REPLY_PUT,302,9834
+  DO_COPY_PAYLOAD 303,9895
+} AM_handler_function_idx_t;304,9957
+static void AM_fork_fast(306,9987
+size_t setup_small_fork_task(319,10404
+size_t setup_large_fork_task(337,10949
+static void AM_fork_fast_small(352,11390
+static void fork_wrapper(370,11925
+static void AM_fork(379,12233
+static void AM_fork_small(388,12678
+static void fork_large_wrapper(405,13234
+static void AM_fork_large(445,14449
+static void fork_nb_wrapper(460,14990
+static void AM_fork_nb(466,15159
+static void AM_fork_nb_small(478,15681
+static void fork_nb_large_wrapper(496,16294
+static void AM_fork_nb_large(532,17351
+static void AM_signal(547,17898
+static void AM_signal_long(556,18264
+static void AM_priv_bcast(566,18688
+static void AM_priv_bcast_large(575,19033
+static void AM_free(584,19416
+static void AM_exit_any(592,19698
+static int bcast_seginfo_done 605,20322
+static void AM_bcast_seginfo(606,20357
+static void AM_reply_put(616,20774
+void AM_copy_payload(628,21159
+static gasnet_handlerentry_t ftable[ftable639,21518
+chpl_comm_nb_handle_t chpl_comm_put_nb(662,22186
+chpl_comm_nb_handle_t chpl_comm_get_nb(700,23340
+int chpl_comm_test_nb_complete(738,24498
+void chpl_comm_wait_nb_some(743,24588
+int chpl_comm_try_nb_some(749,24796
+int chpl_comm_addr_gettable(755,25021
+int32_t chpl_comm_getMaxThreads(780,25518
+static volatile int pollingRunning;794,26130
+static volatile int pollingQuit;795,26166
+static void polling(797,26200
+static void set_max_segsize_env_var(806,26358
+static void set_max_segsize(815,26664
+void chpl_comm_init(842,27325
+void chpl_comm_post_mem_init(928,31005
+int chpl_comm_numPollingTasks(930,31045
+int chpl_comm_run_in_gdb(937,31134
+void chpl_comm_post_task_init(941,31228
+void chpl_comm_rollcall(960,31691
+void chpl_comm_desired_shared_heap(966,31892
+void chpl_comm_broadcast_global_vars(978,32326
+void chpl_comm_broadcast_private(989,32652
+void chpl_comm_barrier(1046,34863
+void chpl_comm_pre_task_exit(1070,35695
+static void exit_common(1084,35951
+static void exit_any_dirty(1100,36340
+static void exit_any_clean(1120,36818
+void chpl_comm_exit(1136,37321
+void  chpl_comm_put(1146,37519
+void  chpl_comm_get(1228,40559
+void  chpl_comm_get_strd(1357,44863
+void  chpl_comm_put_strd(1424,47465
+void  execute_on_common(1488,50045
+void  chpl_comm_execute_on(1602,53698
+void  chpl_comm_execute_on_nb(1645,55111
+void  chpl_comm_execute_on_fast(1698,56978
+void chpl_comm_make_progress(1742,58448
+void chpl_startVerboseComm(1748,58508
+void chpl_stopVerboseComm(1756,58763
+void chpl_startVerboseCommHere(1764,59017
+void chpl_stopVerboseCommHere(1768,59080
+void chpl_startCommDiagnostics(1772,59142
+void chpl_stopCommDiagnostics(1780,59409
+void chpl_startCommDiagnosticsHere(1788,59675
+void chpl_stopCommDiagnosticsHere(1792,59746
+void chpl_resetCommDiagnosticsHere(1796,59816
+void chpl_getCommDiagnosticsHere(1802,60025
+void chpl_comm_gasnet_help_register_global_var(1808,60262
 
 /lustre/hzhang86/bin/chapel-15/runtime/src/launch/gasnetrun_ibv/launch-gasnetrun_ibv.c,262
 #define LAUNCH_PATH_HELP 26,806

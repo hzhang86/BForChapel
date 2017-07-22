@@ -56,6 +56,9 @@ extern FILE *execute_on_nbFile;
 extern FILE *execute_on_fastFile;
 extern FILE *compFile;
 extern chpl_thread_mutex_t stack_unwind_lock; // critical section lock
+//extern chpl_thread_mutex_t on_lock; // protect execute_on file
+//extern chpl_thread_mutex_t on_nb_lock; // protect execute_on_nb file
+//extern chpl_thread_mutex_t on_fast_lock; // protect execute_on_fast file
 
 int install_callbacks (void);
 int uninstall_callbacks (void);
@@ -480,6 +483,10 @@ void cb_comm_executeOn_blame (const chpl_comm_cb_info_t *info) {
   uint16_t fork_num=0;
 
   const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
+
+  // begin critical section
+  //chpl_thread_mutexLock(&on_lock);
+
 #ifdef ENABLE_OUTPUT_TO_FILE
   fprintf(execute_onFile,"<----START fork %d %d %d %d\n",  
           info->localNodeID, info->remoteNodeID, cm->fid, cm->executeOn_num);
@@ -539,6 +546,8 @@ void cb_comm_executeOn_blame (const chpl_comm_cb_info_t *info) {
   fprintf(execute_onFile,"---->END\n");
 #endif
 
+  // end critical section
+  //chpl_thread_mutexUnlock(&on_lock);
 }
 
 // Record>  fork_nb: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
@@ -574,6 +583,10 @@ void  cb_comm_executeOn_nb_blame (const chpl_comm_cb_info_t *info) {
   uint16_t fork_num=0;
 
   const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
+
+  // begin critical section
+  //chpl_thread_mutexLock(&on_nb_lock);
+
 #ifdef ENABLE_OUTPUT_TO_FILE
   fprintf(execute_on_nbFile,"<----START fork_nb %d %d %d %d\n",  
           info->localNodeID, info->remoteNodeID, cm->fid, cm->executeOn_num);
@@ -633,6 +646,8 @@ void  cb_comm_executeOn_nb_blame (const chpl_comm_cb_info_t *info) {
   fprintf(execute_on_nbFile,"---->END\n");
 #endif
 
+  // end critical section
+  //chpl_thread_mutexUnlock(&on_nb_lock);
 }
 
 // Record>  f_fork: time.sec nodeId forkNodeId subLoc funcId arg argSize forkTaskId
@@ -670,6 +685,10 @@ void  cb_comm_executeOn_fast_blame (const chpl_comm_cb_info_t *info) {
   uint16_t fork_num=0;
 
   const struct chpl_comm_info_comm_executeOn *cm = &info->iu.executeOn;
+
+  // begin critical section
+  //chpl_thread_mutexLock(&on_fast_lock);
+
 #ifdef ENABLE_OUTPUT_TO_FILE
   fprintf(execute_on_fastFile,"<----START fork_fast %d %d %d %d\n",  
           info->localNodeID, info->remoteNodeID, cm->fid, cm->executeOn_num);
@@ -729,6 +748,8 @@ void  cb_comm_executeOn_fast_blame (const chpl_comm_cb_info_t *info) {
   fprintf(execute_on_fastFile,"---->END\n");
 #endif
 
+  // end critical section
+  //chpl_thread_mutexUnlock(&on_fast_lock);
 }
 // Task layer callbacks
 
