@@ -308,7 +308,7 @@ private:
     RegHashProps variables; //Hash of registers that gets turned into graph
     //CFG for the class
     FunctionBFCCFG *cfg;
-    //Set of all valid line numbers in program
+    //Set of all valid line numbers in this function scope
     std::set<int> allLineNums;
     //All other function informs in this module
     FuncSigHash knownFuncsInfo; //This should just be a reference since we
@@ -354,7 +354,7 @@ private:
     char* trimTruncStr(const char *truncStr);
   //////////////////// Important Vertices ////////////////////////////////////////
 	void populateImportantVertices();
-	void recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std::set<int> &visited);
+	void recursiveExamineChildren(NodeProps *v, NodeProps *origVP, std::set<int> &visited, int preOpcode);
 	
 	void resolveIVCalls();
 	void resolveCallsDomLines();
@@ -396,6 +396,8 @@ private:
     std::string getUpperLevelFieldName(std::string rawStructVarName, User *pi, std::string instName);
     Value* getValueFromOrig(Instruction *vInstLoad);
     std::string getUniqueNameAsFieldForNode(Value *reg, int errNo, std::string rawStructVarName);
+    std::string resolveGEPBaseFromLoad(Instruction *vInst, NodeProps *vBaseNode, std::string rawStructVarName);
+    std::string getNameForVal(Value *val);
 
 	std::string geGetElementPtr(User *pi, std::set<const char*, ltstr> &iSet, property_map<MyGraphType, vertex_props_t>::type props, property_map<MyGraphType, edge_iore_t>::type edge_type, int &currentLineNum);
 														 
@@ -515,6 +517,7 @@ private:
 
 	int pointerLevel(const llvm::Type *t, int counter);
     unsigned getPointedTypeID(const llvm::Type *t);
+    const llvm::Type* getPointedType(const llvm::Type *t);
 
 	void calcAggregateLN();
 	void calcAggregateLNRecursive(NodeProps *ivp, std::set<NodeProps *> &vStack, std::set<NodeProps *> &vRevisit);

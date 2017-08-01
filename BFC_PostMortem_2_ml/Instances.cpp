@@ -84,7 +84,7 @@ void Instance::removeRedundantFrames(ModuleHash &modules, string nodeName)
   
 
 // Actually this func is not necessary since wrap* funcs were deleted due to the missing bf
-// Mainly used for removing fork_*_wrapper, thread_begin, and chpl_gen_main
+// Mainly used for removing fork_*_wrapper, thread_begin
 void Instance::removeWrapFrames(string node, int InstNum)
 {
   stack_info<<"In removeWrapFrames for instance #"<<InstNum<<" on "<<node<<endl;
@@ -96,15 +96,17 @@ void Instance::removeWrapFrames(string node, int InstNum)
     if ((*vec_SF_i).frameName.find("wrapcoforall")==0 
         || (*vec_SF_i).frameName.find("wrapon")==0 
         || isForkStarWrapper((*vec_SF_i).frameName) 
-        || (*vec_SF_i).frameName=="thread_begin"
-        || ((*vec_SF_i).frameName.find("chpl_gen_main")==0 && newFrames.size()>=2 
-            && (*(vec_SF_i-1)).frameName.find("chpl_user_main")==0)) {
+        || (*vec_SF_i).frameName=="thread_begin") {
         
       stack_info<<"Removable frame :"<<(*vec_SF_i).frameName<<
             ", delete frame# "<<(*vec_SF_i).frameNumber<<endl;
       (*vec_SF_i).toRemove = true;
     }
   }
+
+  // Remove the last frame if it's chpl_gen_main TODO: Shall we keep chpl_gen_main?
+  //if (*(newFrames.end()-1).frameName=="chpl_gen_main" && newFrames.size()>=2) 
+  //  *(newFrames.end()-1).toRemove = true;
 
   //pick all the valid frames and push_back to "frames" again
   for (vec_SF_i=newFrames.begin(); vec_SF_i!=newFrames.end(); vec_SF_i++) {
@@ -247,21 +249,21 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, string nodeName)
         string fName = (*vec_SF_i).frameName;
         BlameFunction *bf = bm->getFunction(fName);
         if (bf == NULL) { //would remove frames corresponding to wrapcoforall/wrapon,etc.
-          if (fName == "chpl_gen_main") { // we keep it for now even it doesn't have bf
-            isMainThread = true;
-            continue;
-          }
-          else {
+          //if (fName == "chpl_gen_main") { // we keep it for now even it doesn't have bf
+          //  isMainThread = true;
+          //  continue;
+          //}
+          //else {
             stack_info<<"BF is NULL, delete frame #"<<(*vec_SF_i).frameNumber<<" "<<fName<<endl;
             (*vec_SF_i).toRemove = true;
-          }
+          //}
         }
         else { //we found bf using frameName
-          if (fName == "chpl_user_main") {
-            if (bf->getBLineNum()==(*vec_SF_i).lineNumber) { //probably won't need this anymore 
+          if (fName == "chpl_user_main" || fName == "chpl_gen_main") {
+            /*if (bf->getBLineNum()==(*vec_SF_i).lineNumber) { //probably won't need this anymore 
               stack_info<<"Frame can't be main while the ln is BLineNum (main thread), delete frame "<<(*vec_SF_i).frameNumber<<endl;
               (*vec_SF_i).toRemove = true;
-            }
+            }*/
             isMainThread = true;//we know it's from the main thread if this inst has a frame of chpl_user_main
           }
           else {

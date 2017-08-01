@@ -245,7 +245,10 @@ class BlameFunction
 	void determineBlameHolders_OAR(std::set<VertexProps *> & blamees,std::set<VertexProps *> & oldBlamees,VertexProps * callNode,int lineNum, short isBlamePoint, std::set<VertexProps *> & localBlamees,std::set<VertexProps *> & DQblamees);			
 								
 	void outputFrameBlamees_OAR(std::set<VertexProps *> & blamees, std::set<VertexProps *> & localBlamees,std::set<VertexProps *> &  DQBlamees, std::ostream &O);		
-     ///////////////////////////////////////////////////
+  
+    ///////////////Some Utility Functions////////////////////////////////////
+    bool endWithNumber(const std::string &str);
+    bool anySubstrIsNumber(const std::string &str);
      ///// For Converging Samples///////////////////
 	std::vector<FullSample *> fullSamples; 
      /////////////////////////////////////////////////////

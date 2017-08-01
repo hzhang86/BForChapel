@@ -517,7 +517,7 @@ void FunctionBFC::exportEverything(ostream &O, bool reads)
 		}
 		O<<"END PPAS "<<endl;
 #endif
-		O<<"END VAR  "<<ivp->name<<endl;
+		O<<"END VAR "<<ivp->name<<endl;
 	}
 	
 	O<<"END FUNC "<<getSourceFuncName()<<endl;

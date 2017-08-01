@@ -73,7 +73,7 @@ void FunctionBFC::transferExternCallEdges(vector< pair<int, int> > &blamedNodes,
 				blameeV->nStatus[CALL_NODE] = false;
 
 #ifdef ONLY_FOR_PARAM1 // we still want all call-related nodes to be important
-                blameeV->nStatus[IMP_REG] = true;
+                //blameeV->nStatus[IMP_REG] = true; //commented out by Hui 07/31/17
 #endif
 			}
 		}
@@ -136,7 +136,7 @@ void FunctionBFC::transferExternCallEdges(vector< pair<int, int> > &blamedNodes,
 				blamedV->nStatus[CALL_NODE] = false;
 	
 #ifdef ONLY_FOR_PARAM1  //we still want all call-related nodes to be important
-                blamedV->nStatus[IMP_REG] = true;
+                //blamedV->nStatus[IMP_REG] = true;//commented out by Hui 07/31/17
 #endif
             }
 		}

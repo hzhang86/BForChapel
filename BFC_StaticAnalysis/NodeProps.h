@@ -188,7 +188,9 @@ public:
 	bool isExported;
 	
     ///added by Hui 01/14/16///////////////////////////////////////////
-    const char *uniqueNameAsField; //2.P.I.8.P.3.P.topStructName
+    //We should always use string instead of const char* in c++ !!!
+    //uninitialized string is empty
+    std::string uniqueNameAsField; //2.P.I.8.P.3.P.topStructName
     //////////////////////////////////////////////////////////////////
 
     std::string name;
@@ -240,6 +242,10 @@ public:
     //helper set for pidAliases from collapsable pair
     std::set<NodeProps *> collapseNodes; //all deleted nodes from cp pairs
     NodeProps *collapseTo;  //the recipient node
+
+    //used to propagate line# for GEP bases
+    std::set<NodeProps *> GEPChildren; //each one has to be GEP base, bottom GEP base has no it
+    NodeProps *GEPFather; //for top GEP, it's either LV or EV, for others, it has to be GEP base
 
 	// true if this is a param that takes the blame for an extern call
 	bool isBlamedExternCallParam;
@@ -430,9 +436,6 @@ public:
         number = nu;
 		impNumber = -1;
         name = na;
-		//added by Hui 01/14/16///////
-        uniqueNameAsField = NULL;
-        //////////////////////////////
 		paramNum = 0;
 		
 		// We have calculated the more elaborate name
@@ -493,7 +496,8 @@ public:
         isRemoteWritten = false;
         myPid = NULL;
         myObj = NULL;
-		
+		GEPFather = NULL;//only GEP base node will have this field
+
 		isBlamedExternCallParam = false;
 		
         //printf("Address of pointsTo for %s is 0x%x\n", name.c_str(), pointsTo);
@@ -520,6 +524,7 @@ public:
         objAliasesIn.clear();
         objAliases.clear();
         blameesFromExFunc.clear();
+        GEPChildren.clear();
 
 		funcCalls.clear();
 		

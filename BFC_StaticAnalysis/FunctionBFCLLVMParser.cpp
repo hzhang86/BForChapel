@@ -80,7 +80,7 @@ void FunctionBFC::adjustLVnEVs()
         allLineNums.insert(v->line_num);
 
         if (((*lv_i)->varName.find(".") != string::npos || 
-             (*lv_i)->varName.find("0x") != string::npos)
+             (*lv_i)->varName.find("chpl_macro_tmp") != string::npos)
             && (*lv_i)->varName.find("equiv.") == string::npos   
             && (*lv_i)->varName.find("result.") == string::npos) 
                     //TC: not sure about above conds
@@ -89,7 +89,7 @@ void FunctionBFC::adjustLVnEVs()
         }
         break; //No need to continue search for this v anymore
       }
-    }
+    }//end of localVars
   } //end of variables
 
   //Now we check if v is EV, We don't tag arg holders/global vars/retVal as isFormalAr
@@ -2255,7 +2255,7 @@ void FunctionBFC::ieGen_LHS_Alloca(Instruction *pi, int &varCount, int &currentL
 	
 	//if (name.find(".") != string::npos || name.find("0x") != string::npos)  
     //"." refers to names as: *.addr in llvm 3.3, not sure what it represents in 2.5 !
-	if (name.find(".")!=string::npos || name.find("0x")!=string::npos) {
+	if (name.find(".")!=string::npos || name.find("chpl_macro_tmp")!=string::npos) {
         LocalVar *lv = new LocalVar();
 		lv->definedLine = currentLineNum;
 		lv->varName = name;
@@ -2763,9 +2763,10 @@ void FunctionBFC::ieGen_OperandsStore(Instruction *pi, int &varCount, int &curre
 			}
 		}
         //added cases when the "content" is a register
-        else if(!v->hasName() && v->getValueID() != Value::ConstantFPVal && v->getValueID() != Value::ConstantIntVal 
-                && v->getValueID() != Value::ConstantPointerNullVal && v->getValueID() != Value::ConstantExprVal) {
-        //else if(!v->hasName() && !isa<Constant>(v))  
+        //else if(!v->hasName() && v->getValueID() != Value::ConstantFPVal && v->getValueID() != Value::ConstantIntVal 
+        //        && v->getValueID() != Value::ConstantPointerNullVal && v->getValueID() != Value::ConstantExprVal) {
+        //also need to exclude Value::ConstantAggregateZeroVal
+        else if (!v->hasName() && !isa<Constant>(v)) { //07/27/17 changed from above 
  			char tempBuf2[18];
 			sprintf(tempBuf2, "0x%x", /*(unsigned)*/v);
 			string name(tempBuf2);

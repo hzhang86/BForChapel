@@ -182,7 +182,7 @@ public class BlameContainer {
 				
 				String truncName = evName.substring(evName.lastIndexOf('.')+1);
 				
-				if (ev.isGlobal /*&& !evName.contains("_tmp")*/) //2nd Cond is uncertain
+				if (ev.isGlobal) 
 				{
 					System.out.println("Adding " + evName + " to allGlobalVariablesHash.");
                     //added by Hui 02/16/16
@@ -195,16 +195,17 @@ public class BlameContainer {
                         double preAggBlame = gv.getAggregateBlame();
                         preAggBlame = preAggBlame + ev.getAggregateBlame();
                         gv.setAggregateBlame(preAggBlame);
-                        //second update the parentBF if it's not main
+                        //second update the parentBF if it's not chpl_gen_main
                         BlameFunction pbf = gv.getParentBF();
                         if (pbf == null) {
                             System.out.println("Weird, egv("+evName+") didn't have a parentBF.");
-                            pbf = getAllFunctions().get("main");
+                            pbf = getAllFunctions().get("chpl_gen_main");
                             gv.setParentBF(pbf);
                         }
-                        else if(pbf != null && pbf.getName().compareTo("main") !=0)
+                        // 07/27/17: we now have bf for chpl_gen_main, all GVs should belong to it
+                        else if(pbf != null && pbf.getName().compareTo("chpl_gen_main") !=0)
                         {
-                            pbf = getAllFunctions().get("main");
+                            pbf = getAllFunctions().get("chpl_gen_main");
                             gv.setParentBF(pbf);
                         }
                     }

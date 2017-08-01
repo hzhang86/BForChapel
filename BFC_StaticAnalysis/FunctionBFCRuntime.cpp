@@ -85,7 +85,7 @@ void FunctionBFC::spGetPrivatizedCopy(Instruction *pi)
       retName.insert(0, name.c_str());
     }
 */
-    NodeProps *objectPid, *pidObject;
+    NodeProps *objectPid = NULL, *pidObject = NULL;
     Value::use_iterator ui, ue;
     for (ui=pi->use_begin(),ue=pi->use_end(); ui!=ue; ui++) {
       if (Instruction *stInst = dyn_cast<Instruction>(*ui)) {
@@ -162,7 +162,38 @@ void FunctionBFC::spGetPrivatizedCopy(Instruction *pi)
               }
               else blame_info<<"CHECK ERROR: firstInst isn't GEP"<<endl;
             }
-            else blame_info<<"CHECK ERROR: firstInst isn't inst"<<endl;
+            else if (isa<ConstantExpr>(first)) { //it can be a constant expression 
+              ConstantExpr *firstCe = cast<ConstantExpr>(first);
+              if (firstCe->getOpcode() == Instruction::GetElementPtr) {
+                Value *realPid = *(firstCe->op_begin());
+                if (realPid->hasName()) 
+                  firstName = realPid->getName().str();
+                else {
+                  char tempBuf[20];
+                  sprintf(tempBuf, "0x%x", realPid);
+                  string name(tempBuf);
+                  firstName.insert(0, name.c_str());
+#ifdef DEBUG_SPECIAL_PROC
+                  blame_info<<"Weird: unamed pid: "<<firstName<<endl;
+#endif
+                }
+
+                if (variables.count(firstName) >0) {
+                  objectPid = variables[firstName];
+#ifdef DEBUG_SPECIAL_PROC
+                  blame_info<<"We found pid (getPrivatizedCopy): "<<firstName<<endl;
+#endif
+                }
+                else {
+#ifdef DEBUG_SPECIAL_PROC
+                  blame_info<<"Error:(objectPid)"<<firstName<<" Unfound in vars"<<endl;
+#endif
+                  return;
+                }
+              }
+              else blame_info<<"CHECK ERROR: firstCe isn't GEP"<<endl;
+            } 
+            else blame_info<<"CHECK ERROR: first isn't inst nor constantexpr"<<endl;
           }
           else blame_info<<"CHECK ERROR: pidInst isn't Load"<<endl;
         }
@@ -172,12 +203,16 @@ void FunctionBFC::spGetPrivatizedCopy(Instruction *pi)
     }
     else blame_info<<"CHECK ERROR: argPidInst isn't inst"<<endl;
 
-    pair<NodeProps*, NodeProps*> pidToObj(objectPid, pidObject);
-    distObjs.push_back(pidToObj);
-    objectPid->isPid = true;
-    objectPid->myObj = pidObject;
-    pidObject->isObj = true;
-    pidObject->myPid = objectPid;
+    //when parsing internal module funcs, such as getPrivatizeCopy, you won't be
+    //able to find the objectPid since the "pid" is directly passed-in as integer
+    if (objectPid && pidObject) { 
+      pair<NodeProps*, NodeProps*> pidToObj(objectPid, pidObject);
+      distObjs.push_back(pidToObj);
+      objectPid->isPid = true;
+      objectPid->myObj = pidObject;
+      pidObject->isObj = true;
+      pidObject->myPid = objectPid;
+    }
 }
 
 //getPrivatizedClass + bitcast = getPrivatizedCopy
@@ -194,7 +229,7 @@ void FunctionBFC::spGetPrivatizedClass(Instruction *pi)
       retName.insert(0, name.c_str());
     }
 */
-    NodeProps *objectPid, *pidObject;
+    NodeProps *objectPid = NULL, *pidObject = NULL;
     Value::use_iterator ui, ue, ui2, ue2;
     for (ui=pi->use_begin(),ue=pi->use_end(); ui!=ue; ui++) {
       if (Instruction *i = dyn_cast<Instruction>(*ui)) {
@@ -276,7 +311,38 @@ void FunctionBFC::spGetPrivatizedClass(Instruction *pi)
               }
               else blame_info<<"CHECK ERROR2: firstInst isn't GEP"<<endl;
             }
-            else blame_info<<"CHECK ERROR2: firstInst isn't inst"<<endl;
+            else if (isa<ConstantExpr>(first)) { //it can be a constant expression 
+              ConstantExpr *firstCe = cast<ConstantExpr>(first);
+              if (firstCe->getOpcode() == Instruction::GetElementPtr) {
+                Value *realPid = *(firstCe->op_begin());
+                if (realPid->hasName()) 
+                  firstName = realPid->getName().str();
+                else {
+                  char tempBuf[20];
+                  sprintf(tempBuf, "0x%x", realPid);
+                  string name(tempBuf);
+                  firstName.insert(0, name.c_str());
+#ifdef DEBUG_SPECIAL_PROC
+                  blame_info<<"Weird2: unamed pid: "<<firstName<<endl;
+#endif
+                }
+
+                if (variables.count(firstName) >0) {
+                  objectPid = variables[firstName];
+#ifdef DEBUG_SPECIAL_PROC
+                  blame_info<<"We found pid (getPrivatizedClass): "<<firstName<<endl;
+#endif
+                }
+                else {
+#ifdef DEBUG_SPECIAL_PROC
+                  blame_info<<"Error2:(objectPid)"<<firstName<<" Unfound in vars"<<endl;
+#endif
+                  return;
+                }
+              }
+              else blame_info<<"CHECK ERROR2: firstCe isn't GEP"<<endl;
+            } 
+            else blame_info<<"CHECK ERROR2: first isn't inst nor constantexpr"<<endl;
           }
           else blame_info<<"CHECK ERROR2: pidInst isn't Load"<<endl;
         }
@@ -286,12 +352,16 @@ void FunctionBFC::spGetPrivatizedClass(Instruction *pi)
     }
     else blame_info<<"CHECK ERROR2: argPidInst isn't inst"<<endl;
 
-    pair<NodeProps*, NodeProps*> pidToObj(objectPid, pidObject);
-    distObjs.push_back(pidToObj);
-    objectPid->isPid = true;
-    objectPid->myObj = pidObject;
-    pidObject->isObj = true;
-    pidObject->myPid = objectPid;
+    //when parsing internal module funcs, such as getPrivatizeCopy, you won't be
+    //able to find the objectPid since the "pid" is directly passed-in as integer
+    if (objectPid && pidObject) { 
+      pair<NodeProps*, NodeProps*> pidToObj(objectPid, pidObject);
+      distObjs.push_back(pidToObj);
+      objectPid->isPid = true;
+      objectPid->myObj = pidObject;
+      pidObject->isObj = true;
+      pidObject->myPid = objectPid;
+    }
 }
 
 
@@ -838,7 +908,7 @@ void FunctionBFC::resolvePidAliasForNode_fw(NodeProps *currNode, set<int> &visit
     //When a(early) and b(late) are collapsePair, and b is not finally deleted
     //due to some reasons we added, then we need to mark b as Pid if a is Pid
     string fieldName;
-    if (currNode->uniqueNameAsField)
+    if (!(currNode->uniqueNameAsField.empty()))
       fieldName = string(currNode->uniqueNameAsField);
     if (!fieldName.empty()) {
       if (cpHash.count(fieldName) >0) {
@@ -957,7 +1027,7 @@ void FunctionBFC::resolvePidAliasForNode_fw_new(NodeProps *currNode, set<int> &v
     //When a(early) and b(late) are collapsePair, and b is not finally deleted
     //due to some reasons we added, then we need to mark b as Pid if a is Pid
     string fieldName;
-    if (currNode->uniqueNameAsField)
+    if (!(currNode->uniqueNameAsField.empty()))
       fieldName = string(currNode->uniqueNameAsField);
     if (!fieldName.empty()) {
       if (cpHash.count(fieldName) >0) {

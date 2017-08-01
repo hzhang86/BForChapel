@@ -71,8 +71,8 @@ public class BlameDataTrunc extends BlameData {
 		//int frameNum = Integer.valueOf(strFrameNum).intValue();
 		String funcName = pathTokens[2];
         /////////////added by HUI 08/23/15////////////////
-        String cleanFuncName = funcName.replaceAll("chpl_user_main","main");
-        funcName = cleanFuncName.replace("_chpl","");
+        //String cleanFuncName = funcName.replaceAll("chpl_user_main","main");
+        funcName = funcName.replace("_chpl","");
         //////////////////////////////////////////////////
 		String moduleName = pathTokens[3];
 		String pathName = pathTokens[4];

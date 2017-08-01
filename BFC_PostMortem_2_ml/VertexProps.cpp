@@ -96,7 +96,7 @@ void VertexProps::printParsed(std::ostream & O)
 		}
 		O<<"END LINENUMS "<<endl;
 		
-		O<<"END VAR  "<<name<<std::endl;
+		O<<"END VAR "<<name<<std::endl;
 
 }
 

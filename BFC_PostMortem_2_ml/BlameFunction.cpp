@@ -880,6 +880,7 @@ BlameFunction * BlameFunction::parseBlameFunction(ifstream & bI)
       
       // Get Variable Name
       getline(bI, line);
+
       VertexProps * vp = findOrCreateVP(line);
       
       // END V_NAME
@@ -2694,6 +2695,15 @@ void BlameFunction::outputFrameBlamees(std::set<VertexProps *> & blamees, std::s
 #ifdef DEBUG_BLAMEES
     std::cout<<"Outputing blamee: "<<vp->name<<" estatus="<<vp->eStatus<<std::endl;
 #endif
+    //We don't add CE.XX as real blamee nodes to the final PARSE* files 07/31/17
+    //if (endWithNumber(vp->name))
+    if (anySubstrIsNumber(vp->name)) //more powerful version of endWithNumber
+      continue;
+    else if (vp->nStatus[EXIT_VAR_FIELD] || vp->nStatus[LOCAL_VAR_FIELD] || vp->isDerived) {  
+      string fsn = getFullStructName(vp);
+      if (anySubstrIsNumber(fsn)) //for field vp, it'll print out the full struct name on file
+        continue;
+    }
 
     if (vp->isDerived) {
       VertexProps *rootField = vp;
@@ -3681,3 +3691,40 @@ void BlameFunction::resolveLineNum(vector<StackFrame> & frames, ModuleHash & mod
   // TODO:: Automatic detection of V param, V return (explicit blame points)
 }
 
+
+// Utility Function: tell whether the string is end with dot&numbers(".XX")
+bool BlameFunction::endWithNumber(const string &str)
+{
+  int pos = str.find_last_of('.');
+  if (pos == string::npos)
+    return false;
+  else {
+    pos++;
+    string subStr = str.substr(pos);
+    bool check = !subStr.empty() && subStr.find_first_not_of("0123456789") == std::string::npos;
+    return check;
+  }
+}
+
+// Utility Function: tell whether any substr of this string is number
+bool BlameFunction::anySubstrIsNumber(const string &str)
+{
+  int pos = str.find_last_of('.');
+  if (pos == string::npos)
+    return false;
+    
+  string leftStr = string(str); //left part of '.' of the updated string
+  bool check = false; //keep the return value
+  while (pos != string::npos && !check) {
+    pos++;
+    string rightStr = leftStr.substr(pos); //substr start from pos, to the end of leftStr
+    check |= !rightStr.empty() && rightStr.find_first_not_of("0123456789") == std::string::npos;
+    // update str and pos for the next iteration
+    leftStr = leftStr.substr(0, pos-1); //substr(start position, length of substr)
+    pos = leftStr.find_last_of('.');
+    // for debugging
+    cout<<"now leftstr="<<leftStr<<endl;
+  }
+
+  return check;
+}

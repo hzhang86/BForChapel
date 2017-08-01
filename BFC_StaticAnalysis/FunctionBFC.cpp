@@ -154,14 +154,14 @@ void FunctionBFC::addControlFlowChildren(NodeProps * oP, NodeProps * tP)
 }
 
 
-void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, set<int> & visited)
+void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, set<int> & visited, int preOpcode)
 {
 	int v_index = v->number;
 	if (visited.count(v_index) > 0)
 		return;
 	
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN
-	blame_info<<"Calling recursiveExamineChildren for "<<v->name<<" from "<<origVP->name<<endl;
+	blame_info<<"Calling recursiveExamineChildren on "<<v->name<<" for "<<origVP->name<<endl;
 #endif
 	visited.insert(v_index);
 	
@@ -198,8 +198,7 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, set<
 	for(; e_beg != e_end; ++e_beg) {
 		NodeProps *targetVP = get(get(vertex_props, G), target(*e_beg, G));
 		int opCode = get(get(edge_iore, G),*e_beg);
-		int in_deg = in_degree(targetVP->number, G);
-		
+		int in_deg = in_degree(targetVP->number, G);		
 		// We need a store that has went through our CFG parsing and has
 		//  a RESOLVED_L_S instruction as an input
 		/*if (opCode == Instruction::Store && (targetVP->storeLines.size() > 0 && in_deg != 1)) {	
@@ -224,23 +223,6 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, set<
 		
 		if ( targetVP->eStatus > 0 || targetVP->nStatus[ANY_EXIT] ) {
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN
-	/*		blame_info<<"Target "<<targetVP->name<<" "<<targetVP->exitV<<" "<<origVP->exitV;
-			blame_info<<" ";
-			if (targetVP->dpUpPtr) //dpUpPtr: Up pointer, =itself by default
-				blame_info<<targetVP->dpUpPtr->name;
-			else
-				blame_info<<targetVP->dpUpPtr;
-			
-			blame_info<<" ";
-			
-			if (origVP->dpUpPtr)
-				blame_info<<origVP->dpUpPtr->name;
-			else
-				blame_info<<origVP->dpUpPtr;
-			
-			blame_info<<endl;
-	*/
-            
 			if (targetVP->exitV)
 				blame_info<<"TargetV->exitV - "<<targetVP->exitV->name<<endl;
             else
@@ -269,18 +251,27 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, set<
                 blame_info<<"TargetV->dpUpPtr - NULL"<<endl;
 #endif 			
 			
-            //For v-GEP_BASE_OP->targetV, like origV->v; v=GEP targetV,...; we don't add C/P relationship between "v-targetV" and "origV-targetV"
-            //because field shouldn't have all blamed lines as the structure, so shouldn't anyone who only depends on the field. So we added last Cond:opCode!=GEP..
-			if ((targetVP->pointsTo!=origVP->pointsTo || (targetVP->pointsTo==NULL && origVP->pointsTo==NULL)) 
-                && targetVP->dpUpPtr!=origVP->dpUpPtr && opCode!=GEP_BASE_OP) // || (targetVP->dpUpPtr == NULL && origVP->dpUpPtr == NULL))) 
-            {
+            //For v-GEP_BASE_OP->targetV, like origV->v; v=GEP targetV,...; we don't add C/P relationship between "v-targetV" 
+            //and "origV-targetV" because field shouldn't have all blamed lines as the structure, so shouldn't anyone who only 
+            //depends on the field. So we added last Cond:opCode!=GEP.. EXCEPT: v is a param of previous edge
+            if (opCode==GEP_BASE_OP && preOpcode!=RESOLVED_EXTERN_OP && preOpcode!=RESOLVED_EXTERN_OP
+                && preOpcode!=Instruction::Call && preOpcode!=Instruction::Invoke) {
+                origVP->lineNumbers.insert(targetVP->line_num);
+                continue;
+            }
+
+            // here includes the case where opCode==GEP_BASE_OP and orig->...call(v), v->GEP_BASE_OP->targetV, 
+            // in which case, we should add the GEP base to the Children of origV
+            else if ((targetVP->pointsTo!=origVP->pointsTo || (targetVP->pointsTo==NULL && origVP->pointsTo==NULL)) 
+                && targetVP->dpUpPtr!=origVP->dpUpPtr) {
 #ifdef DEBUG_RECURSIVE_EX_CHILDREN			
 				blame_info<<"Adding Child/Parent relation between "<<targetVP->name<<" and "<<origVP->name<<endl;
 #endif
 				origVP->children.insert(targetVP);
 				targetVP->parents.insert(origVP);
 				
-                if ((origVP->nStatus[EXIT_VAR_PTR] || origVP->nStatus[LOCAL_VAR_PTR]) && (targetVP->nStatus[EXIT_VAR_PTR] || targetVP->nStatus[LOCAL_VAR_PTR])) {
+                if ((origVP->nStatus[EXIT_VAR_PTR] || origVP->nStatus[LOCAL_VAR_PTR]) && 
+                    (targetVP->nStatus[EXIT_VAR_PTR] || targetVP->nStatus[LOCAL_VAR_PTR])) {
 					//addControlFlowChildren(origVP, targetVP);
 					set<NodeProps *> visited;
 					//visited.insert(targetVP->dpUpPtr);
@@ -299,9 +290,8 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, set<
 #endif
 			origVP->suckedInEVs.insert(targetVP);
 		}
-		
+		//we should stop finding children on this line if we met a GEP base(father)
         else {
-			visited.insert(v_index);
 			origVP->lineNumbers.insert(targetVP->line_num);
 #ifdef DEBUG_LINE_NUMS			
 			blame_info<<"Inserting line number(8) "<<targetVP->line_num<<" to "<<origVP->name<<endl;
@@ -314,7 +304,10 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, set<
 				origVP->lineNumbers.insert(*ln_i);
 			}
 			
-			recursiveExamineChildren(targetVP, origVP, visited);
+#ifdef DEBUG_RECURSIVE_EX_CHILDREN
+            blame_info<<"Start recursion of recursiveExamineChildren on "<<targetVP->name<<endl;
+#endif
+			recursiveExamineChildren(targetVP, origVP, visited, opCode);
 		}
 	}
 	
@@ -392,7 +385,7 @@ void FunctionBFC::populateImportantVertices()
 		
 		if (anyImp) 
 			targetVP->nStatus[ANY_EXIT] = true;
-		else { //added by Hui 03/22/16: we need to keep regs like %2 in 'store %1, %2'
+		else { //added by Hui 03/22/16: we need to keep regs like %1, %2 in 'store %1, %2'
 		    int v_index = get(get(vertex_index, G),*i);
             boost::graph_traits<MyGraphType>::out_edge_iterator e_beg, e_end;
             e_beg = boost::out_edges(v_index, G).first;		// edge iterator begin
@@ -408,14 +401,16 @@ void FunctionBFC::populateImportantVertices()
                     storeValue->nStatus[IMP_REG] = true;
                 }
             }
+
 #ifdef NEW_FOR_PARAM1
             //for cases like store %1, var; %1 is nothing, but we need this reg
+            //Also for GEP base, we should always keep it
             boost::graph_traits<MyGraphType>::in_edge_iterator ei_beg, ei_end;
             ei_beg = boost::in_edges(v_index, G).first;		
             ei_end = boost::in_edges(v_index, G).second;    
             for(; ei_beg != ei_end; ++ei_beg) {
                 int opCode = get(get(edge_iore, G), *ei_beg);
-                if(opCode == Instruction::Store) { //when the register is 
+                if(opCode == Instruction::Store || opCode == GEP_BASE_OP) { //when the register is 
 	                //NodeProps *storeValue = get(get(vertex_props,G), target(*ei_beg,G));
                     targetVP->nStatus[ANY_EXIT] = true;
                     //storeValue->nStatus[ANY_EXIT] = true;
@@ -425,9 +420,11 @@ void FunctionBFC::populateImportantVertices()
                 }
             }
 #endif
-            //We also need to keep pid and obj as important vertices, most of them aren't reg
-            if (targetVP->isPid || targetVP->isObj)
+           //We also need to keep pid and obj as important vertices, most of them aren't reg
+            if (targetVP->isPid || targetVP->isObj) {
                 targetVP->nStatus[ANY_EXIT] = true;
+                targetVP->nStatus[IMP_REG] = true;
+            }
         }
 	}
 	
@@ -441,8 +438,8 @@ void FunctionBFC::populateImportantVertices()
 			blame_info<<"In populateImportantVertices for "<<targetVP->name<<endl;
 #endif
 			
-			recursiveExamineChildren(targetVP, targetVP, visited);
-			
+			recursiveExamineChildren(targetVP, targetVP, visited, 0); //original call. preOpcode=0
+			                                                        //since there's no edge before this call
 #ifdef DEBUG_IMPORTANT_VERTICES
 			blame_info<<"Finished Calling recursiveExamineChildren for "<<targetVP->name<<endl;
 #endif
@@ -1067,7 +1064,7 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, set<NodeProps *> &vSt
 	ivp->descLineNumbers.insert(ivp->lineNumbers.begin(), ivp->lineNumbers.end());
 #ifdef DEBUG_PRINT_LINE_NUMS
 	blame_info<<"After insert lineNumbers(-1) from baseline for "<<ivp->name<<endl;
-	for (set_i_i = ivp->lineNumbers.begin(); set_i_i != ivp->lineNumbers.end(); set_i_i++) {
+	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
 		blame_info<<*set_i_i<<" ";
 	}
 	blame_info<<endl;
@@ -1298,28 +1295,9 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, set<NodeProps *> &vSt
 			vRevisit.insert(ivp);
 		}
 
-		/////////////////////added by Hui/////////////////////////
-#ifdef REVERSE_CP_REL2 //This condition may not needed anymore 03/10/17
-        bool existed;
-        graph_traits < MyGraphType >::edge_descriptor Edge;
-#endif
-        /////////////////////////////////////////////////////////
-
 		if (!(child->nStatus[LOCAL_VAR] && child->storesTo.size() > 1) && 
                 !(child->nStatus[CALL_NODE]) && !(child->nStatus[LOCAL_VAR] && 
                 child->nStatus[CALL_PARAM])) {
-            ////////added by Hui///////////////////////
-#ifdef REVERSE_CP_REL2
-            tie(Edge, existed) = edge(ivp->number, child->number, G);
-            if(existed && get(get(edge_iore, G),Edge)==GEP_BASE_OP && ivp->isWritten) {
-                //ivp->line_num=child->line_num;
-                ivp->descLineNumbers.insert(child->line_num);
-                blame_info<<"child "<<child->name<<" is actually the parent";
-                blame_info<<", and it's line_num="<<child->line_num<<endl;
-                continue; //field only blamed for struct's declaration line
-            }
-#endif
-            //////////////////////////////////////////////////////
 			ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
 			debugPrintLineNumbers(ivp, child, 2);
 		}
@@ -1718,6 +1696,32 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, set<NodeProps *> &vSt
 	blame_info<<endl;
 #endif
 
+    //The following for GEP base line# propagation
+    for (v_vp_i = ivp->GEPChildren.begin(); v_vp_i != ivp->GEPChildren.end(); v_vp_i++) {
+      NodeProps *child = *v_vp_i;
+      if (child->calcAgg == false)
+        calcAggregateLNRecursive(child, vStack, vRevisit);
+        
+      if (vStack.count(child)) {
+#ifdef DEBUG_LINE_NUMS
+        blame_info<<"Conflict in LNRecursive. Need to revisit "<<child->name<<" and "<<ivp->name<<endl;
+#endif
+        vRevisit.insert(child);
+        vRevisit.insert(ivp);
+      }
+        
+      if (child->isWritten && child != ivp) {
+        ivp->descLineNumbers.insert(child->descLineNumbers.begin(), child->descLineNumbers.end());
+        debugPrintLineNumbers(ivp, child, 13);
+      }
+    }
+#ifdef DEBUG_LINE_NUMS
+	blame_info<<"After GEPChildren "<<ivp->name<<endl;
+	for (set_i_i = ivp->descLineNumbers.begin(); set_i_i != ivp->descLineNumbers.end(); set_i_i++) {
+		blame_info<<*set_i_i<<" ";
+	}
+	blame_info<<endl;
+#endif
 #endif //ADD_MULTI_LOCALE
 
 #ifdef DEBUG_LINE_NUMS
@@ -2721,6 +2725,8 @@ void FunctionBFC::tweakBlamedArgs()
       blamedArgs.clear();
       blamedArgs.insert(0);
     }
+    /* wrap* funcs will never be called explicitly(triggered implicitly with fid),
+    // on/coforall/cobegin can be called outside wrap*, so we should keep their blamed args
     else if (fname.find("_local_wrapon_fn") == 0 || fname.find("_local_on_fn") == 0) 
       blamedArgs.clear();
     else if (fname.find("wrapon_fn") == 0 || fname.find("on_fn") == 0)
@@ -2729,6 +2735,7 @@ void FunctionBFC::tweakBlamedArgs()
       blamedArgs.clear();
     else if (fname.find("wrapcobegin_fn") == 0 || fname.find("cobegin_fn") == 0)
       blamedArgs.clear();
+    */
     else if (fname.find("chpl_executeOn") == 0 || fname.find("chpl_executeOnFast") == 0
           || fname.find("chpl_executeOnNB") == 0 || fname.find("chpl_taskListAddBegin") == 0
           || fname.find("chpl_taskListAddCoStmt") == 0 || fname.find("chpl_taskListProcess") == 0
@@ -2777,14 +2784,25 @@ void FunctionBFC::tweakBlamedArgs()
     // Iterates through all formal args for a function 
     for (Function::arg_iterator af_i = func->arg_begin(); af_i != func->arg_end(); af_i++) {
       Value *v = af_i;
+      const Type *origT = getPointedType(v->getType());
       if (v->hasName()) {
         string argName = v->getName().str();
         if (argName.compare("_fn")==0 || argName.compare("_ln")==0) {
           if (blamedArgs.find(whichParam) != blamedArgs.end()) //if it's already in blamedParams
             blamedArgs.erase(whichParam);
         }
-      }
-      
+        // TODO: make it more robust, special case for Barrier class'related functions
+        else if (origT->getTypeID() == Type::StructTyID) {
+		  const llvm::StructType *arg_st = cast<StructType>(origT);
+          if (arg_st->hasName()) { //conservative way for the Barrier-related type name as far as we know
+			string arg_st_name = arg_st->getName().str(); //type name of arg
+            if (arg_st_name.find("Barrier_") != string::npos 
+                    || arg_st_name.find("_Barrier") != string::npos)
+              blamedArgs.insert(whichParam);
+          }
+        }
+      }//formal args should always have names
+      //check next formal arg
       whichParam++;
     }   
 }

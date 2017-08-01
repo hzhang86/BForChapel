@@ -189,10 +189,12 @@ public class ProfilerData {
 		//int frameNum = Integer.valueOf(strFrameNum).intValue();
 		String funcName = pathTokens[2];
         /////////////added by HUI 08/23/15////////////////
-        String cleanFuncName = funcName.replaceAll("chpl_user_main","main");
-        funcName = cleanFuncName.replace("_chpl","");
+        //String cleanFuncName = funcName.replaceAll("chpl_user_main","main");
+        funcName = funcName.replace("_chpl","");
         // remove all generated frames inside the call path 05/08/17
-        funcName = removeGenFrames(funcName);
+        // commented out on 07/31/17 to enable display of chpl_user_main and chpl_gen_main, 
+        // not sure whether we shall cleanup non-user frames since sometimes that's valuable info
+        //funcName = removeGenFrames(funcName);
         
         if (!funcName.isEmpty()) {
 		    // we only add this instance if the trimed funcName isn't empty (means we have at least one usr frame in this call path)

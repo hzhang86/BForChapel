@@ -232,17 +232,18 @@ bool BFC::runOnModule(Module &M)
                 <<" "<<dgv->getDirectory().str()<<endl;
 #endif
             GlobalVariable *gv = dgv->getGlobal();
+            unsigned line_num = dgv->getLineNumber();//the declaration linenum of this gv
             if (gv->hasName() && !gv->isConstant()) { //don't bother constants
 #ifdef DEBUG_P
                 cout<<"GV: "<<(gv->getName()).str()<<" is real gv to be stored"<<endl;
 #endif
                 if (gv->hasInitializer()) {
-                    NodeProps *v = new NodeProps(globalNumber, gv->getName(), 0, gv->getInitializer());
+                    NodeProps *v = new NodeProps(globalNumber, gv->getName(), line_num, gv->getInitializer());
                     globalNumber++;
                     globalVars.push_back(v);
                 }
                 else {
-                    NodeProps *v = new NodeProps(globalNumber, gv->getName(), 0, NULL);
+                    NodeProps *v = new NodeProps(globalNumber, gv->getName(), line_num, NULL);
                     globalNumber++;
                     globalVars.push_back(v);
                 }
@@ -421,12 +422,10 @@ bool BFC::runOnModule(Module &M)
       DISubprogram *dsp = new DISubprogram(*I);
       if (dsp->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
         string dspName = dsp->getName().str();
-        //dspName chopped everything after(include) "_chpl"
-        if (dspName.find("chpl")==string::npos && dspName.compare("=")!=0) { 
-          //no chpl in user funcNm
-          if (!dspName.empty() && (*(dspName.begin()) != '_') && (dspName.find("wrap") != 0)) { //no '_XXX'
-           //if (dspName.compare("main")==0 || dspName.compare("sayhello")==0 ||\
-                 dspName.compare("factorial")==0) 
+        //dspName chopped everything from "_chpl", but we need to keep chpl_gen_main and init funcs
+        if (!dspName.empty() && dspName.compare("=")!=0) { 
+          //no '_XXX' or wrap* in interesting dspName
+          if ((*(dspName.begin()) != '_') && (dspName.find("wrap") != 0)) { 
             Function *F = dsp->getFunction();
 #ifdef DEBUG_P
             cout<<"Same directory of DISP: "<<dsp->getName().str()<< \
@@ -477,10 +476,10 @@ bool BFC::runOnModule(Module &M)
       DISubprogram *dsp = new DISubprogram(*I);
       if (dsp->getDirectory().equals(StringRef(PRJ_HOME_DIR))) {
         string dspName = dsp->getName().str();
-        //no chpl in user funcNm
-        if (dspName.find("chpl") == string::npos && dspName.compare("=") != 0) { 
-        // no name starts with '_' and "wrap", we don't need to analyze wrap* functions anymore
-          if (!dspName.empty() && (*(dspName.begin()) != '_') && (dspName.find("wrap") != 0)) { 
+        //dspName chopped everything from "_chpl", but we need to keep chpl_gen_main and init funcs
+        if (!dspName.empty() && dspName.compare("=")!=0) { 
+          //no '_XXX' or wrap* in interesting dspName
+          if ((*(dspName.begin()) != '_') && (dspName.find("wrap") != 0)) { 
            
             Function *F = dsp->getFunction();
             FunctionBFC *fb;
@@ -587,6 +586,7 @@ bool BFC::runOnModule(Module &M)
     params_file.close();
     funcs_file.close();
  
+    globalVars.clear();
     externFuncInformation.clear();
     knownFuncsInfo.clear();
     return false;
