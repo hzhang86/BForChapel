@@ -6139,6 +6139,7 @@ void FunctionBFC::geStore(Instruction *pi, set<const char*, ltstr> &iSet,
 		secondName.insert(0, tempStr);
 	}
 
+    //08/02/17 We should never add implicit edges between first and iSet since that's READ, not WRITTEN
 	if (first->hasName()){
 		firstName = first->getName().str();
 		
@@ -6151,7 +6152,7 @@ void FunctionBFC::geStore(Instruction *pi, set<const char*, ltstr> &iSet,
 		}*/
 		
 		//	addEdge(second->getName().data(), first->getName().data(), pi);
-		addImplicitEdges(first, iSet, edge_type, NULL, false);
+		//addImplicitEdges(first, iSet, edge_type, NULL, false); //commented out by Hui 08/02/17
 	}
 
 	else if (first->getValueID() == Value::ConstantExprVal) {
@@ -6209,7 +6210,7 @@ void FunctionBFC::geStore(Instruction *pi, set<const char*, ltstr> &iSet,
 		
 		firstName.insert(0, vName);
 		
-		addImplicitEdges(pi, iSet, edge_type, vName, true);
+		//addImplicitEdges(pi, iSet, edge_type, vName, true); //commented out by Hui 08/02/17
 	} 
 
 	else if (first->getValueID() == Value::ConstantFPVal) {
@@ -6240,7 +6241,7 @@ void FunctionBFC::geStore(Instruction *pi, set<const char*, ltstr> &iSet,
 		
 		firstName.insert(0, vName);
 		
-		addImplicitEdges(pi, iSet, edge_type, vName, true);
+		//addImplicitEdges(pi, iSet, edge_type, vName, true); //commented out by Hui 08/02/17
 	}
 
 	else  // FORTRAN support

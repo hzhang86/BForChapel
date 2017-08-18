@@ -3722,8 +3722,6 @@ bool BlameFunction::anySubstrIsNumber(const string &str)
     // update str and pos for the next iteration
     leftStr = leftStr.substr(0, pos-1); //substr(start position, length of substr)
     pos = leftStr.find_last_of('.');
-    // for debugging
-    cout<<"now leftstr="<<leftStr<<endl;
   }
 
   return check;
