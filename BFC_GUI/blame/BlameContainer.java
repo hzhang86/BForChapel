@@ -197,19 +197,43 @@ public class BlameContainer {
                         gv.setAggregateBlame(preAggBlame);
                         //second update the parentBF if it's not chpl_gen_main
                         BlameFunction pbf = gv.getParentBF();
-                        if (pbf == null) {
+                        if (pbf == null) 
+                        {
                             System.out.println("Weird, egv("+evName+") didn't have a parentBF.");
                             pbf = getAllFunctions().get("chpl_gen_main");
                             gv.setParentBF(pbf);
                         }
-                        // 07/27/17: we now have bf for chpl_gen_main, all GVs should belong to it
-                        else if(pbf != null && pbf.getName().compareTo("chpl_gen_main") !=0)
+                        // 07/27/17: we now have bf for chpl_gen_main,
+                        // all GVs should belong to it
+                        else if(pbf != null && pbf.getName().compareTo("chpl_gen_main") !=0) 
                         {
                             pbf = getAllFunctions().get("chpl_gen_main");
                             gv.setParentBF(pbf);
                         }
-                    }
-				}
+
+                        //we also need to merge all nodeInstances and varInstances of each nI 08/19/17
+                        for (Map.Entry<String, NodeInstance> nI_e: ev.nodeInstances.entrySet()) 
+                        {
+                            String nodeName = nI_e.getKey();
+                            NodeInstance nI = nI_e.getValue();
+                            
+                            //get previous nI node from gv
+                            NodeInstance pre_nI = gv.nodeInstances.get(nodeName);
+                            if (pre_nI == null)
+                                gv.nodeInstances.put(nodeName, nI);
+                            else 
+                            {
+                                //put all vIs from the nI to the previous nI
+                                for (Map.Entry<Integer, VariableInstance> vI_e: nI.getVarInstances().entrySet())
+                                {
+                                    if (pre_nI.getVarInstances().containsKey(vI_e.getKey()) && evName.compareTo("elemToNode")==0)
+                                        System.out.println("It had key: "+vI_e.getKey());
+                                    pre_nI.getVarInstances().put(vI_e.getKey(), vI_e.getValue());
+                                }
+                            } 
+                        }//for all ev's nodeInstances
+                    }//allGlobalVariableHash had this ev
+				} //isGlobal
 			}
 		}
 

@@ -36,7 +36,6 @@ public class VariableInstance {
 	public void setVar(ExitSuper var) {
 		this.var = var;
 	}
-
 	
 	VariableInstance(Vector<Integer> ln, Instance inst, String varName)
 	{

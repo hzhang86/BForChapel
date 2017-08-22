@@ -10,14 +10,14 @@ public class NodeInstance {
 	int numTotalInstances;
 	
 	//private Vector<VariableInstance> varInstances;
-	private HashMap<Integer, VariableInstance > varInstances;
+	private HashMap<Integer, VariableInstance > varInstances; //unique instNum in each node
 	private HashMap<Integer, VariableInstance > skidVarInstances;
 	
 	
 	NodeInstance(String vN, String nN)
 	{
 		varName = vN;
-		System.out.println("Setting Node Name(2) to " + nN);
+		//System.out.println("Setting Node Name(2) to " + nN);
 		nodeName = nN;
 		varInstances = new HashMap<Integer, VariableInstance>();
 		skidVarInstances = new HashMap<Integer, VariableInstance>();
@@ -47,6 +47,7 @@ public class NodeInstance {
 	
 	void addInstance(VariableInstance vi)
 	{
+        //String instID = vi.getInst().getNodeName() + "-" + vi.getInst().getInstanceNum();
 		varInstances.put(vi.getInst().getInstanceNum(), vi);
 		//varInstances.add(vi);
 	}

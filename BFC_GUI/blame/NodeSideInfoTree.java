@@ -84,13 +84,13 @@ public class NodeSideInfoTree extends JPanel {
 
 	        //this.bc = bc;
 	        
-	        //Create the nodes.
-	       // DefaultMutableTreeNode 
+	        // DefaultMutableTreeNode 
 	        top =    new DefaultMutableTreeNode("Nodes");
 	        nodes = null;
 	        instances = null;
 	        
-	        //createNodes(top, es);
+	        //Nodes will be created once clicked on a variable (es)
+            //createdNodes called in BlameTreeDataCentric
 
 	        //Create a tree that allows one selection at a time.
 	        tree = new JTree(top);
@@ -160,7 +160,7 @@ public class NodeSideInfoTree extends JPanel {
 			{
 				NodeInstance ni = (NodeInstance)ni_it.next();
 				nodes = new DefaultMutableTreeNode(ni);
-				System.out.println("Adding node for " + ni.getNodeName());
+				//System.out.println("Adding node for " + ni.getNodeName());
 				top.add(nodes);
 				
 				//Vector<VariableInstance> viVec = ni.getVarInstances();
@@ -169,7 +169,7 @@ public class NodeSideInfoTree extends JPanel {
 				{
 					VariableInstance vi = (VariableInstance)vi_it.next();
 					instances = new DefaultMutableTreeNode(vi);
-					System.out.println("Adding node for Instance " + vi.getInst().getInstanceNum());
+					//System.out.println("Adding node for Instance " + vi.getInst().getInstanceNum());
 					nodes.add(instances);
 				}	
 			}
@@ -210,7 +210,7 @@ public class NodeSideInfoTree extends JPanel {
 	        frame.pack();
 	        frame.setVisible(true);
 	    }
-	}
+}
 	
 	
 	

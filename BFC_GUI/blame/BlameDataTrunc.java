@@ -73,6 +73,8 @@ public class BlameDataTrunc extends BlameData {
         /////////////added by HUI 08/23/15////////////////
         //String cleanFuncName = funcName.replaceAll("chpl_user_main","main");
         funcName = funcName.replace("_chpl","");
+        //we merge all on_fn* and coforall_fn* frames into their callers, so no this functions appear in GUI
+        //funcName = funcName.replaceAll("");Not good for now since different loc with same name would merge
         //////////////////////////////////////////////////
 		String moduleName = pathTokens[3];
 		String pathName = pathTokens[4];
@@ -218,9 +220,18 @@ public class BlameDataTrunc extends BlameData {
                     ///added by Hui 01/08/16, to distinguish global vars from params/rets
                     else if (strEVType.indexOf("EGV") >=0)
                     {
-                        ExitVariable ev = bf.getOrCreateEV(strVarName);
-                        ev.isGlobal = true;
-                        es = ev;
+                        //we shouldn't blame the same GV for the same instance twice even though they appear in two different frames
+                        if (!currInst.nodeGVHash.contains(strVarName)) {
+                            ExitVariable ev = bf.getOrCreateEV(strVarName);
+                            ev.isGlobal = true;
+                            es = ev;
+                            currInst.nodeGVHash.add(strVarName);
+                            System.out.println("Add in EGV "+strVarName+" for inst "+currInst.getInstanceNum()+" on node "+currInst.getNodeName());
+                        }
+                        else {//to forall, it means we only created EV for coforall_fn, but not for on_fn and further
+                          evLine = bufReader.readLine();
+                          continue;
+                        }
                     }
                     ////////////////////////////////////////////////////////////////
                     else if (strEVType.indexOf("EO") >= 0)

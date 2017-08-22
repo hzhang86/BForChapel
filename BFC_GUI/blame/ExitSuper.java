@@ -529,17 +529,28 @@ public class ExitSuper implements Comparable<ExitSuper> {
 		//System.out.println("In function addInstanceTrunc");
 		
 		Double value = this.blameByNode.get(currInst.getNodeName());
-		if (value == null)
-		{
+		if (value == null) {
 			this.blameByNode.put(currInst.getNodeName(), 1.0);
 		}
-		else
-		{
+		else {
 			value++;
 			this.blameByNode.put(currInst.getNodeName(), value);
 		}		
 		aggregateBlame++;
-		//System.out.println("New value for aggregate blame is " + aggregateBlame + " for variable " + name);
+		
+        //added 08/18/17: to support NodeSideInfoTree info, copied from addInstance
+        String nodeName = currInst.getNodeName();
+		NodeInstance nI = nodeInstances.get(nodeName);
+		if (nI == null) {
+			nI = new NodeInstance(name, nodeName);
+			nodeInstances.put(nodeName, nI);
+		}
+		
+		VariableInstance vi = new VariableInstance(this, currInst);
+		
+		if (this.getEvTypeName().contains("-") == false) {
+			nI.addInstance(vi);
+		}
 	}
 	
 	protected double percentageBlame()

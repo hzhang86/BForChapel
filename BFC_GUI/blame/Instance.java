@@ -11,6 +11,8 @@ public class Instance {
 	private String nodeName;
 	
 	private	Vector<StackFrame> stackFrames;
+    //08/20/17: make it public for easy access in BlameDataTrunc
+    public HashSet<String> nodeGVHash;
 
 	private Vector<ExitSuper> variables;
 	private Vector<ExitSuper> noSkidVariables;
@@ -69,6 +71,7 @@ public class Instance {
 		this.nodeName = nodeName;
 		instanceNum = iN;
 		stackFrames = new Vector<StackFrame>();
+        nodeGVHash = new HashSet<String>();//added by Hui 08/20/17
 		variables = new Vector<ExitSuper>();
 		noSkidVariables = new Vector<ExitSuper>();
 	}
