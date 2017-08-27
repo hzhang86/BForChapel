@@ -1,15 +1,22 @@
 /*
-*  BFC.cpp    
-*  
-*  Comments:
-*  Implementation file for BFC.h 
-*  Most important:  runOnModule
-*
-*  Created by Hui Zhang on 02/10/15.
-*  Previous contribution by Nick Rutar
-*  Copyright 2015 __MyCompanyName__. All rights reserved.
-*
-*/
+ *  Copyright 2014-2017 Hui Zhang
+ *  All rights reserved.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ */
+
 #include "BFC.h"
 #include "ModuleBFC.h"
 #include "NodeProps.h"
@@ -146,7 +153,10 @@ bool BFC::runOnModule(Module &M)
     cerr<<"Module name: "<<M.getModuleIdentifier()<<endl;
     ModuleBFC *bm = new ModuleBFC(&M); //address of a ref=address of the 
 					   //address of the object it refers to
-
+    if (getenv("EXCLUSIVE_BLAME") != NULL)
+      exclusive_blame = true;
+    else
+      exclusive_blame = false;
     ////////////////// GLOBAL VARIABLES ////////////////////////////////////////////
     vector<NodeProps *> globalVars;
     int globalNumber = 0; //global variable index

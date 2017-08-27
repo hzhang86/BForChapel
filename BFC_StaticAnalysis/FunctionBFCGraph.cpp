@@ -1,10 +1,20 @@
 /*
- *  FunctionBFCGraph.cpp
- *  Implementation of graph generation
+ *  Copyright 2014-2017 Hui Zhang
+ *  Previous contribution by Nick Rutar 
+ *  All rights reserved.
  *
- *  Created by Hui Zhang on 03/20/15.
- *  Previous contribution by Nick Rutar
- *  Copyright 2015 __MyCompanyName__. All rights reserved.
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 
@@ -4140,6 +4150,9 @@ const Type* FunctionBFC::getPointedType(const Type *t)
 void FunctionBFC::addImplicitEdges(Value *v, set<const char*, ltstr> &iSet,                        	 
         property_map<MyGraphType, edge_iore_t>::type edge_type, const char *vName, bool useName)
 {
+    if (exclusive_blame) //In exclusive blame, the loop iteration line should not be included in blameSet of it
+        return;
+
     bool inserted;
     graph_traits < MyGraphType >::edge_descriptor ed;
 	
@@ -4158,11 +4171,14 @@ void FunctionBFC::addImplicitEdges(Value *v, set<const char*, ltstr> &iSet,
 		string tempStr(tempBuf);
 		impName.insert(0, tempStr);			
 	}
-	
+
+	if (variables.count(impName) <= 0) 
+        return;
+
 	// Take Care of Implicit Edges
 	for (set<const char*, ltstr>::iterator s_iter = iSet.begin(); s_iter != iSet.end(); s_iter++) { 
         string s_iterString(*s_iter);
-		if (variables.count(impName)>0 && variables.count(s_iterString)>0) {
+		if (variables.count(s_iterString)>0) {
 #ifdef DEBUG_GRAPH_IMPLICIT		
 			blame_info<<"Adding implicit edges between "<<impName<<" and "<<*s_iter<<endl;
 #endif 
@@ -4178,7 +4194,8 @@ void FunctionBFC::addImplicitEdges(Value *v, set<const char*, ltstr> &iSet,
 		}
 
 		else
-			return;
+            continue;
+			//return;
 	}
 }
 

@@ -1,11 +1,21 @@
 /*
- *  FunctionBFC.cpp
- *  
- *  Implementation of Function-level LLVM pass 
- *  Created by Hui Zhang on 02/18/15.
- *  Previous contribution by Nick Rutar
- *  Copyright 2015 __MyCompanyName__. All rights reserved.
- *  lalaland
+ *  Copyright 2014-2017 Hui Zhang
+ *  Previous contribution by Nick Rutar 
+ *  All rights reserved.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  */
 
 #include "FunctionBFC.h"
@@ -254,8 +264,8 @@ void FunctionBFC::recursiveExamineChildren(NodeProps *v, NodeProps *origVP, set<
             //For v-GEP_BASE_OP->targetV, like origV->v; v=GEP targetV,...; we don't add C/P relationship between "v-targetV" 
             //and "origV-targetV" because field shouldn't have all blamed lines as the structure, so shouldn't anyone who only 
             //depends on the field. So we added last Cond:opCode!=GEP.. EXCEPT: v is a param of previous edge
-            if (opCode==GEP_BASE_OP && preOpcode!=RESOLVED_EXTERN_OP && preOpcode!=RESOLVED_EXTERN_OP
-                && preOpcode!=Instruction::Call && preOpcode!=Instruction::Invoke) {
+            if (opCode==GEP_BASE_OP && preOpcode!=RESOLVED_EXTERN_OP && 
+                preOpcode!=Instruction::Call && preOpcode!=Instruction::Invoke) {
                 origVP->lineNumbers.insert(targetVP->line_num);
                 continue;
             }
@@ -1069,7 +1079,10 @@ void FunctionBFC::calcAggregateLNRecursive(NodeProps *ivp, set<NodeProps *> &vSt
 	}
 	blame_info<<endl;
 #endif
-	
+    // added on 08/22/17: stop here if we are using exclusive blame
+    if (exclusive_blame)
+        return;
+
 	// TODO: DETAILS BELOW
 	//7/12/2010  INVESTIGATE FURTHER, do we need this still and why
 #ifdef ONLY_FOR_PARAM1
@@ -1840,7 +1853,7 @@ void FunctionBFC::calcAggregateLN()
 
 }
 
-
+//not used anymore
 void FunctionBFC::trimLocalVarPointers()
 {
 	set<NodeProps *>::iterator ivh_i;
