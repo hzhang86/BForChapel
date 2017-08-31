@@ -635,25 +635,33 @@ int main(int argc, char** argv)
         glueStackTraces(node, iCounter, (*vec_I_i),
                         pre_instance_table, gForkInsts);
 
-      // Result check, due to the BAD libunwind missing info !!!
-      if ((*vec_I_i).frames.size()>1 && ((*vec_I_i).frames.back().frameName 
-         =="thread_begin" || isForkStarWrapper((*vec_I_i).frames.back().frameName)))
-        numUnresolvedInsts++;
-
       // Polish stacktrace again: rm all wrap* functions such as wrapcoforall_fn_chpl
+      // also remove the hook frames such as thread_begin and fork_wrapper*
       (*vec_I_i).removeWrapFrames(node, iCounter);
-
-      // Result check, invalid samples end up in polling task
-      if ((*vec_I_i).frames.empty())
-        emptyInst++;
 
       // concise_print the final "perfect" stacktrace for each compute sample
       stack_info<<"NOW final stacktrace for inst#"<<iCounter<<" on "<<node<<endl;
       (*vec_I_i).printInstance_concise();
 
-      // handle the perfect instance now !
-      (*vec_I_i).handleInstance(bp.blameModules, gOut, iCounter, verbose);
-    
+      // Result check, invalid samples end up in pthread_spin_lock or others
+      if ((*vec_I_i).frames.empty())
+        emptyInst++;
+      else { //only handle instance while it's not empty
+        // need to print instance with only frame polling/chpl_comm_barrier/pthread_spin_lock
+        if ((*vec_I_i).frames.back().frameName=="polling" 
+            || (*vec_I_i).frames.back().frameName=="chpl_comm_barrier"
+            || (*vec_I_i).frames.back().frameName=="pthread_spin_lock") {
+          if ((*vec_I_i).frames.size()==1)
+            (*vec_I_i).handleRuntimeInst(gOut, iCounter, verbose);
+          else {
+            stack_info<<"Valid instance ends with "<<(*vec_I_i).frames.back().frameName<<"??"<<endl;
+            numUnresolvedInsts++;
+          }
+        }
+        // handle the perfect instance now !
+        (*vec_I_i).handleInstance(bp.blameModules, gOut, iCounter, verbose);
+      }
+
       gOut<<"$$$INSTANCE "<<iCounter<<"  $$$"<<std::endl; 
       iCounter++;
     }

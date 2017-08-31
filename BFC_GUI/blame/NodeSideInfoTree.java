@@ -211,7 +211,7 @@ public class NodeSideInfoTree extends JPanel {
 	        }
 
 	        //Create and set up the window.
-	        JFrame frame = new JFrame("Node PopOut for Variable");
+	        JFrame frame = new JFrame("Node Information for Variable");
 	        //frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 	        
 	        // Exit app when frame is closed.

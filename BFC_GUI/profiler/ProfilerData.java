@@ -311,7 +311,7 @@ public class ProfilerData {
 					if (atLeastOneFrame == false)
 					{
 	
-						String funcName = "UNRSESOLVED";
+						String funcName = "UNRESOLVED";
 						ProfilerFunction pf = allFunctions.get(funcName);
 						
 						if (pf == null)

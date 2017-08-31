@@ -32,4 +32,6 @@ public class Global {
 	
 	//global var to indicate whether we are process exclusive blame
     public static boolean exclusive_blame;
+    //interval = THRESHOLD/frequency
+    public static final double SAMPLE_INTERVAL = 0.3835;
 }

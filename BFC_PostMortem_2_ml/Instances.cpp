@@ -248,20 +248,25 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, string nodeName)
   frames.clear(); //clear up this::frames after we copy everything to newFrames
   
   for (vec_SF_i=newFrames.begin(); vec_SF_i!=newFrames.end(); vec_SF_i++) {
-    if ((*vec_SF_i).lineNumber <= 0) {
-      stack_info<<"LineNum <=0, delete frame "<<(*vec_SF_i).frameNumber<<endl;
-      (*vec_SF_i).toRemove = true;
-    }
-    else { //lineNumber >0
+    //if ((*vec_SF_i).lineNumber <= 0) {
+    //  stack_info<<"LineNum <=0, delete frame "<<(*vec_SF_i).frameNumber<<endl;
+    //  (*vec_SF_i).toRemove = true;
+    //}
+    //else { //lineNumber >0 Chapel has to be built with debug info
       BlameModule *bm = NULL;
       if ((*vec_SF_i).moduleName.empty()==false);
         bm = modules[(*vec_SF_i).moduleName];
       if (bm == NULL) {
-        if (!isForkStarWrapper((*vec_SF_i).frameName) && (*vec_SF_i).frameName!="thread_begin") {
-          (*vec_SF_i).toRemove = true; //delete it if it's not fork*wrapper frame
-          stack_info<<"BM is NULL and it's neither fork*wrapper or thread_begin, delete frame "<<(*vec_SF_i).frameNumber<<endl;
+        //we always keep the frame: fork*wrapper, thread_begin, polling&comm_barrier or pthread_spin_lock(if it's the last frame)
+        if (isForkStarWrapper((*vec_SF_i).frameName) || (*vec_SF_i).frameName=="thread_begin"
+            || (*vec_SF_i).frameName=="polling" || (*vec_SF_i).frameName=="chpl_comm_barrier"
+            || ((*vec_SF_i).frameName=="pthread_spin_lock" && (vec_SF_i+1)==newFrames.end())) {
+          continue;
         }
-        else continue; //we always keep the frame with "fork*wrapper" or "thread_begin" name
+        else {
+          (*vec_SF_i).toRemove = true; 
+          stack_info<<"BM is NULL and it's neither important runtime functions, delete frame "<<(*vec_SF_i).frameNumber<<endl;
+        }   
       }
       else { //bm != NULL, it's from user code
         // Use the combination of the module and the line number to determine the function & compare with frameName
@@ -313,7 +318,7 @@ void Instance::trimFrames(ModuleHash &modules, int InstanceNum, string nodeName)
           }
         }
       }
-    }
+    //}
   }
 
   //pick all the valid frames and push_back to "frames" again
@@ -379,7 +384,7 @@ void Instance::handleInstance(ModuleHash &modules, std::ostream &O, int Instance
   bool isBottomParsed = true;
   vector<StackFrame>::iterator vec_SF_i;
   for (vec_SF_i = frames.begin(); vec_SF_i != frames.end(); vec_SF_i++) {
-    if ((*vec_SF_i).lineNumber > 0 && (*vec_SF_i).toRemove == false) {
+    if ((*vec_SF_i).toRemove == false) {
       // Get the module from the debugging information
       BlameModule *bm = modules[(*vec_SF_i).moduleName];   
       if (bm) {
@@ -426,11 +431,24 @@ void Instance::handleInstance(ModuleHash &modules, std::ostream &O, int Instance
       }
     }
     else
-      cerr<<"Error: LINE#<=0-- At Frame "<<(*vec_SF_i).frameNumber<<" "<<
+      cerr<<"Error: toRemove=true-- At Frame "<<(*vec_SF_i).frameNumber<<" "<<
         (*vec_SF_i).lineNumber<<" "<<(*vec_SF_i).moduleName<<" "<<std::hex<<
         (*vec_SF_i).address<<std::dec<<(*vec_SF_i).frameName<<endl;
   }
 }
 
 
+void Instance::handleRuntimeInst(std::ostream &O, int InstanceNum, bool verbose)
+{   
+  cout<<"\nIn handleRuntimeInst for inst#"<<InstanceNum<<endl;
+  //since it should only has one frame, we simply get the last frame in this instance
+  StackFrame sf = *(frames.begin());
+
+  O<<"FRAME# "<<sf.frameNumber<<" "<<sf.frameName; 
+  //really not matter for the value below since we only need the frameName ("polling/comm_barrier")
+  O<<" "<<sf.moduleName<<" "<<"chaple/runtime";
+  O<<" "<<sf.lineNumber<<" 0 0 0"<<endl;
+  //mimic user frames that have no blamed vars
+  O<<"***No EV[EO, EP] found*** ["<<sf.frameName<<"]"<<endl;
+}
 

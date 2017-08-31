@@ -107,6 +107,7 @@ struct Instance
   void printInstance();
   void printInstance_concise();
   void handleInstance(ModuleHash & modules, std::ostream &O, int InstanceNum, bool verbose);
+  void handleRuntimeInst(std::ostream &O, int InstanceNum, bool verbose);
   void trimFrames(ModuleHash &modules, int InstanceNum, std::string nodeName); 
   void removeRedundantFrames(ModuleHash &modules, std::string nodeName);
   void removeWrapFrames(string node, int InstNum);

@@ -21,6 +21,7 @@
 package blame;
 
 import java.util.HashMap;
+import java.text.*;
 
 public class NodeInstance {
 
@@ -62,7 +63,9 @@ public class NodeInstance {
 	
 	public String toString()
 	{
-		return "Node:" + nodeName + ", Num Samples: " + numInstances();
+        double cpuTime = Global.SAMPLE_INTERVAL*numInstances(); 
+        DecimalFormat df = new DecimalFormat("#.###");
+		return "Node:" + nodeName + ", Total CPU time(s): " + df.format(cpuTime);
 	}
 	
 	void addInstance(VariableInstance vi)
