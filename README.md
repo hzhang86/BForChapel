@@ -5,4 +5,4 @@ Blame tool for Chapel programs
 BFC-ml-llvm3.3-chpl1.15
 
 # README
-Check README-EXTENDED.txt
+Check README-chplBlamer.txt
