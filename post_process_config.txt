@@ -1,0 +1,7 @@
+1
+$HPL/EXPORT/chpl__module.bc.blm
+1
+$HPL/EXPORT/chpl__module.bc.structs
+1
+$HPL/EXPORT/chpl__module.bc.se
+
